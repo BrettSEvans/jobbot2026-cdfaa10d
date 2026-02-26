@@ -29,14 +29,18 @@ serve(async (req) => {
     }
 
     const brandingContext = branding ? `
-Company Branding (use these design elements):
-- Color Scheme: ${JSON.stringify(branding.colors || {})}
+Company Branding (use these EXACT design elements — match the company's actual website palette):
+- Primary Colors: ${JSON.stringify(branding.colors || {})}
+- CSS-Extracted Colors (from actual site CSS — USE THESE as ground truth): ${JSON.stringify(branding.extractedColors || {})}
 - Fonts: ${JSON.stringify(branding.fonts || [])}
+- CSS-Extracted Fonts (from actual site): ${JSON.stringify(branding.extractedFonts || [])}
 - Typography: ${JSON.stringify(branding.typography || {})}
 - Logo URL: ${branding.logo || branding.images?.logo || 'N/A'}
 - Color Scheme Type: ${branding.colorScheme || 'light'}
 - Spacing: ${JSON.stringify(branding.spacing || {})}
 - Button Styles: ${JSON.stringify(branding.components || {})}
+
+CRITICAL COLOR MATCHING: Look at the "CSS-Extracted Colors" and "Primary Colors" data above. The "dominant-1", "dominant-2", etc. entries are the most frequently used colors on the actual company website. Use these as your PRIMARY design palette. The "css-background-color", "css-color" entries show actual CSS property values from key selectors. Match these exactly in your dashboard design. If both Firecrawl branding colors and extracted colors exist, prefer the extracted colors as they come directly from the site's CSS.
 ` : 'No branding data available — use a clean, professional design with teal (#0a8080) and coral (#f45d48) accents.';
 
     const competitorContext = competitors?.length ? `\nKey Competitors: ${competitors.join(', ')}` : '';
@@ -76,7 +80,14 @@ CRITICAL DATA & INTERACTION REQUIREMENTS:
 - RESPONSIVE DESIGN: The entire dashboard MUST use a fully responsive layout. Use CSS Grid or Flexbox with media queries. On mobile, the sidebar collapses to a hamburger menu. Tables use horizontal scroll on small screens. Charts resize proportionally. All font sizes, padding, and margins scale appropriately.
 - DRILL-DOWN FUNCTIONALITY: Every table MUST support drill-down. Clicking a row should expand or navigate to show related detail data. For example, clicking a customer row shows their deals; clicking a competitor shows their battlecard detail; clicking a product shows its metrics breakdown.
 - CROSS-FILTERING / REACTIVE GRAPHS: When the user clicks a row or applies a filter on any table, at least one other chart or graph on the page MUST reactively update to reflect the new selection. For example: selecting a region in a table filters a revenue chart to that region; selecting a product filters the pipeline chart. Use JavaScript event listeners to connect tables and charts.
-- INTELLIGENT SIZING: All charts and tables MUST be intelligently sized to fit on screen without excessive scrolling. Use CSS max-height with overflow-y: auto on tables. Charts should have a reasonable max-height (300-400px). Use a grid layout that distributes sections evenly. The dashboard should look complete and professional on a 1080p screen without needing to scroll excessively, while supporting scrolling for detailed data views.
+- INTELLIGENT SIZING (CRITICAL — DO NOT IGNORE): 
+  * Every Chart.js canvas MUST be wrapped in a container div with a fixed max-height of 320px and overflow:hidden. The canvas itself must also have max-height:300px; width:100%.
+  * Create all Chart.js instances with options: { responsive: true, maintainAspectRatio: false }.
+  * Every data table MUST be wrapped in a scrollable container with max-height:400px; overflow-y:auto. The table scrolls internally — the page must NOT grow unbounded.
+  * Each dashboard section/view MUST have overflow-y:auto on its main content wrapper so content scrolls within the section, NOT the entire page body.
+  * The main content area (right of sidebar) must be height:100vh; overflow-y:auto.
+  * Use CSS grid with constrained row heights to prevent any single chart or table from dominating the viewport.
+  * NEVER let a chart grow taller than 320px or a table taller than 400px on screen. The dashboard must look polished on 1080p (1920x1080) with each section fitting or scrolling within its bounds.
 - FUNCTIONAL SIDEBAR NAVIGATION: The sidebar MUST contain clearly labeled, visible text links for each dashboard section (e.g., "Overview", "Pipeline", "Competitors", "Customers", "Products", "Analytics", "Agentic Workflows", "CFO View"). Each link MUST be fully clickable and functional. Clicking a sidebar link MUST hide all other sections and show ONLY the corresponding section/view in the main content area on the right. Use JavaScript click handlers that toggle section visibility (display:none / display:block). The sidebar must highlight the currently active section. Do NOT use empty or placeholder hotspots — every sidebar item must have visible text and a working click handler. On mobile, the sidebar should collapse into a hamburger menu that still provides the same navigation functionality.
 
 IMPORTANT RULES:

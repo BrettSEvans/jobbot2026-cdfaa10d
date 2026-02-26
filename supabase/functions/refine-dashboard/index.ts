@@ -37,6 +37,7 @@ RULES:
 - Preserve Chart.js charts and interactive elements
 - Apply the requested changes precisely
 - The sidebar MUST have clearly labeled, visible text links for each section. Each link must be clickable and toggle visibility of the corresponding section in the main content area. Highlight the active section. No empty or placeholder hotspots.
+- CHART SIZING (CRITICAL): Every Chart.js canvas MUST be in a container with max-height:320px; overflow:hidden. Canvas must have max-height:300px. Use Chart.js options { responsive: true, maintainAspectRatio: false }. Tables must be in containers with max-height:400px; overflow-y:auto. Main content area must be height:100vh; overflow-y:auto. NEVER let charts grow beyond 320px tall.
 - Do NOT add explanations — output ONLY the HTML`;
 
     const messages: Array<{role: string; content: string}> = [

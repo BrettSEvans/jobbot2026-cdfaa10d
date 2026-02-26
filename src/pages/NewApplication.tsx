@@ -57,8 +57,19 @@ const NewApplication = () => {
   const [editingField, setEditingField] = useState<string | null>(null);
   const [tempEdit, setTempEdit] = useState("");
 
+  const isValidUrl = (str: string) => {
+    try {
+      const u = new URL(str.startsWith('http') ? str : `https://${str}`);
+      return !!u.hostname.includes('.');
+    } catch { return false; }
+  };
+
   const handleAnalyze = async () => {
     if (!jobUrl.trim()) return;
+    if (!isValidUrl(jobUrl)) {
+      toast({ title: "Invalid URL", description: "Please enter a valid job posting URL.", variant: "destructive" });
+      return;
+    }
     setStep("analyzing");
 
     try {

@@ -35,6 +35,8 @@ const NewApplication = () => {
   // Inputs
   const [jobUrl, setJobUrl] = useState("");
   const [companyUrl, setCompanyUrl] = useState("");
+  const [manualJobDescription, setManualJobDescription] = useState("");
+  const [useManualInput, setUseManualInput] = useState(false);
 
   // State
   const [step, setStep] = useState<Step>("input");
@@ -65,18 +67,28 @@ const NewApplication = () => {
   };
 
   const handleAnalyze = async () => {
-    if (!jobUrl.trim()) return;
-    if (!isValidUrl(jobUrl)) {
+    if (!useManualInput && !jobUrl.trim()) return;
+    if (useManualInput && !manualJobDescription.trim()) return;
+    if (!useManualInput && !isValidUrl(jobUrl)) {
       toast({ title: "Invalid URL", description: "Please enter a valid job posting URL.", variant: "destructive" });
       return;
     }
     setStep("analyzing");
 
     try {
-      // Step 1: Scrape job posting
-      setLoadingMsg("Scraping job posting...");
-      const { markdown } = await scrapeJob(jobUrl);
-      setJobMarkdown(markdown);
+      let markdown = "";
+
+      if (useManualInput) {
+        // Use manually pasted job description
+        markdown = manualJobDescription.trim();
+        setJobMarkdown(markdown);
+      } else {
+        // Scrape job posting
+        setLoadingMsg("Scraping job posting...");
+        const result = await scrapeJob(jobUrl);
+        markdown = result.markdown;
+        setJobMarkdown(markdown);
+      }
 
       // Step 2: Scrape company branding (if URL provided)
       let brandingData = null;
@@ -254,17 +266,42 @@ const NewApplication = () => {
           <div className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Link className="h-5 w-5" /> Job Posting URL
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    {useManualInput ? <FileText className="h-5 w-5" /> : <Link className="h-5 w-5" />}
+                    {useManualInput ? "Paste Job Description" : "Job Posting URL"}
+                  </CardTitle>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setUseManualInput(!useManualInput)}
+                    className="text-xs"
+                  >
+                    {useManualInput ? "Use URL instead" : "Paste text instead"}
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
-                <Input
-                  type="url"
-                  placeholder="https://jobs.example.com/role/12345"
-                  value={jobUrl}
-                  onChange={(e) => setJobUrl(e.target.value)}
-                />
+                {useManualInput ? (
+                  <Textarea
+                    placeholder="Paste the full job description text here..."
+                    value={manualJobDescription}
+                    onChange={(e) => setManualJobDescription(e.target.value)}
+                    rows={10}
+                  />
+                ) : (
+                  <Input
+                    type="url"
+                    placeholder="https://jobs.example.com/role/12345"
+                    value={jobUrl}
+                    onChange={(e) => setJobUrl(e.target.value)}
+                  />
+                )}
+                {!useManualInput && (
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Can't scrape the page? Click "Paste text instead" above.
+                  </p>
+                )}
               </CardContent>
             </Card>
 
@@ -287,7 +324,12 @@ const NewApplication = () => {
               </CardContent>
             </Card>
 
-            <Button onClick={handleAnalyze} disabled={!jobUrl.trim()} className="w-full" size="lg">
+            <Button
+              onClick={handleAnalyze}
+              disabled={useManualInput ? !manualJobDescription.trim() : !jobUrl.trim()}
+              className="w-full"
+              size="lg"
+            >
               <Sparkles className="mr-2 h-4 w-4" /> Analyze & Generate
             </Button>
           </div>
@@ -306,6 +348,20 @@ const NewApplication = () => {
         {/* Step: Review */}
         {step === "review" && (
           <div className="space-y-4">
+            {/* Job Description */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5" /> Job Description
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="whitespace-pre-wrap text-sm leading-relaxed max-h-[200px] overflow-y-auto bg-muted/50 rounded-md p-3">
+                  {jobMarkdown}
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Company Analysis */}
             <Card>
               <CardHeader>

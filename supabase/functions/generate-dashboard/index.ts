@@ -70,8 +70,7 @@ Your task: Generate a COMPLETE, standalone HTML file (with embedded CSS and Java
    - Customer segments and target accounts
    - Revenue/pipeline analytics with Chart.js charts
 4. INTERACTIVITY: Include Chart.js charts, clickable tables, toast notifications, and a chat modal
-5. CLIPBOARD: Include a button that copies the entire HTML to clipboard
-6. AGENTIC WORKFORCE TAB (COMING SOON PAGE): Include a dedicated "Agentic Workforce" section/tab in the sidebar. This section is NOT a functional page — it is a forward-looking "Coming Soon" preview. It MUST include:
+5. AGENTIC WORKFORCE TAB (COMING SOON PAGE): Include a dedicated "Agentic Workforce" section/tab in the sidebar. This section is NOT a functional page — it is a forward-looking "Coming Soon" preview. It MUST include:
    - A prominent "Under Construction" / "Coming Soon" banner at the top with a construction icon/emoji (🚧) and a message like "Agentic Workforce — Coming Soon" with a brief subtitle about AI-powered agents being developed to augment the team.
    - Below the banner, display a styled data TABLE (not cards) listing AI agents that would help the department and role being applied for, as well as partner departments. The table MUST have exactly these 3 columns:
      * "Agent Name" — a creative, descriptive name for the agent (e.g., "Deal Risk Sentinel", "Competitive Intel Compiler", "Pipeline Forecast Engine")
@@ -80,7 +79,7 @@ Your task: Generate a COMPLETE, standalone HTML file (with embedded CSS and Java
    - Include at least 8-10 agents in the table. Customize agents to match the specific role, department, and company context. Include agents for the primary department AND cross-functional agents that serve partner departments.
    - Style the table with the company branding. The entire page should feel polished but clearly communicate "not yet available" — use subtle muted tones or a slight opacity/grayscale effect on the table to reinforce the coming-soon feel.
    - Do NOT include any "Run" buttons, status indicators, or functional interactions. This is purely informational/aspirational.
-7. CFO WHAT-IF SCENARIO VIEW: Include a dedicated "CFO View" section/tab in the sidebar. This section MUST contain exactly three interactive what-if scenario tools, each with adjustable sliders/inputs and a reactive Chart.js chart showing projected revenue impact over the next 3 quarters (Q1, Q2, Q3). The three tools should be:
+6. CFO WHAT-IF SCENARIO VIEW: Include a dedicated "CFO View" section/tab in the sidebar. This section MUST contain exactly three interactive what-if scenario tools, each with adjustable sliders/inputs and a reactive Chart.js chart showing projected revenue impact over the next 3 quarters (Q1, Q2, Q3). The three tools should be:
    Tool 1 - "Pricing Impact Analyzer": Sliders for price change % (-30% to +30%), volume elasticity factor (0.5-2.0), and market growth rate (0%-15%). The chart updates in real-time showing projected revenue per quarter based on these variables.
    Tool 2 - "Headcount & Capacity Planner": Sliders for new hires per quarter (0-20), ramp time in months (1-6), and quota per rep. The chart shows projected pipeline and revenue contribution from the new capacity.
    Tool 3 - "Market Expansion Modeler": Inputs for new market TAM ($), expected penetration rate (1%-10%), and investment required ($). The chart shows projected incremental revenue vs. investment over 3 quarters with break-even indicator.

@@ -19,6 +19,8 @@ const Index = () => {
   const [jobData, setJobData] = useState<string | null>(null);
   const [showInstructions, setShowInstructions] = useState(false);
   const [instructions, setInstructions] = useState("");
+  const [useManualInput, setUseManualInput] = useState(false);
+  const [manualJobDescription, setManualJobDescription] = useState("");
 
   const generate = useCallback(async (jobMarkdown: string, customInstructions?: string) => {
     setAppState("loading");
@@ -50,6 +52,17 @@ const Index = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (useManualInput) {
+      if (!manualJobDescription.trim()) return;
+      setAppState("loading");
+      setLoadingMessage("Generating tailored cover letter...");
+      const markdown = manualJobDescription.trim();
+      setJobData(markdown);
+      await generate(markdown);
+      return;
+    }
+
     if (!url.trim()) return;
     if (!isValidUrl(url)) {
       toast({ title: "Invalid URL", description: "Please enter a valid job posting URL.", variant: "destructive" });
@@ -92,6 +105,8 @@ const Index = () => {
     setJobData(null);
     setShowInstructions(false);
     setInstructions("");
+    setManualJobDescription("");
+    setUseManualInput(false);
     setAppState("input");
   };
 
@@ -117,14 +132,46 @@ const Index = () => {
           <Card>
             <CardContent className="pt-6">
               <form onSubmit={handleSubmit} className="space-y-4">
-                <Input
-                  type="url"
-                  placeholder="https://jobs.example.com/role/12345"
-                  value={url}
-                  onChange={(e) => setUrl(e.target.value)}
-                  required
-                />
-                <Button type="submit" className="w-full" size="lg">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">
+                    {useManualInput ? "Paste Job Description" : "Job Posting URL"}
+                  </span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setUseManualInput(!useManualInput)}
+                    className="text-xs"
+                  >
+                    {useManualInput ? "Use URL instead" : "Paste text instead"}
+                  </Button>
+                </div>
+                {useManualInput ? (
+                  <Textarea
+                    placeholder="Paste the full job description text here..."
+                    value={manualJobDescription}
+                    onChange={(e) => setManualJobDescription(e.target.value)}
+                    rows={10}
+                  />
+                ) : (
+                  <Input
+                    type="url"
+                    placeholder="https://jobs.example.com/role/12345"
+                    value={url}
+                    onChange={(e) => setUrl(e.target.value)}
+                  />
+                )}
+                {!useManualInput && (
+                  <p className="text-xs text-muted-foreground">
+                    Can't scrape the page? Click "Paste text instead" above.
+                  </p>
+                )}
+                <Button
+                  type="submit"
+                  className="w-full"
+                  size="lg"
+                  disabled={useManualInput ? !manualJobDescription.trim() : !url.trim()}
+                >
                   <FileText className="mr-2 h-4 w-4" />
                   Generate Cover Letter
                 </Button>

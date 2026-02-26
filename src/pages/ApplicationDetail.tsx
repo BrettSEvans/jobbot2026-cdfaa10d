@@ -27,7 +27,9 @@ import {
   RefreshCw,
 } from "lucide-react";
 import SaveAsTemplate from "@/components/SaveAsTemplate";
+import DashboardRevisions from "@/components/DashboardRevisions";
 import { backgroundGenerator } from "@/lib/backgroundGenerator";
+import { saveDashboardRevision } from "@/lib/api/dashboardRevisions";
 
 const ApplicationDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -56,6 +58,8 @@ const ApplicationDetail = () => {
   const [chatHistory, setChatHistory] = useState<Array<{ role: string; content: string }>>([]);
   const [isRefining, setIsRefining] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
+  const [revisionTrigger, setRevisionTrigger] = useState(0);
+  const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
@@ -165,6 +169,11 @@ const ApplicationDetail = () => {
         },
       });
       await saveField({ dashboard_html: accumulated });
+      // Save as revision
+      try {
+        await saveDashboardRevision(id!, accumulated, "Regenerated");
+        setRevisionTrigger((t) => t + 1);
+      } catch { /* non-critical */ }
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
@@ -189,6 +198,11 @@ const ApplicationDetail = () => {
         chatHistory: newHistory,
         jobUrl: app.job_url,
       });
+      // Save pre-refinement as revision
+      try {
+        await saveDashboardRevision(id!, dashboardHtml, `Before: ${msg.slice(0, 50)}`);
+        setRevisionTrigger((t) => t + 1);
+      } catch { /* non-critical */ }
       toast({ title: "Refining", description: "Dashboard refinement started. It will continue even if you navigate away." });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
@@ -315,12 +329,31 @@ const ApplicationDetail = () => {
               </Card>
             )}
 
+            {/* Revision History */}
+            {id && dashboardHtml && (
+              <DashboardRevisions
+                applicationId={id}
+                currentHtml={dashboardHtml}
+                onPreviewRevision={(html) => setPreviewHtml(html === dashboardHtml ? null : html)}
+                refreshTrigger={revisionTrigger}
+              />
+            )}
+
+            {previewHtml && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Badge variant="secondary">Previewing older version</Badge>
+                <Button variant="ghost" size="sm" onClick={() => setPreviewHtml(null)}>
+                  Back to current
+                </Button>
+              </div>
+            )}
+
             {dashboardHtml ? (
               <Card className="overflow-hidden">
                 <div className="w-full" style={{ height: "70vh" }}>
                   <iframe
                     ref={iframeRef}
-                    srcDoc={dashboardHtml}
+                    srcDoc={previewHtml || dashboardHtml}
                     className="w-full h-full border-0"
                     sandbox="allow-scripts"
                     title="Dashboard Preview"

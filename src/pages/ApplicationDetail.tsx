@@ -27,6 +27,7 @@ import {
   ExternalLink,
   RefreshCw,
 } from "lucide-react";
+import SaveAsTemplate from "@/components/SaveAsTemplate";
 
 const ApplicationDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -59,6 +60,11 @@ const ApplicationDetail = () => {
 
   useEffect(() => {
     if (id) loadApplication(id);
+    // Poll for background generation updates
+    const interval = setInterval(() => {
+      if (id) loadApplication(id);
+    }, 10000);
+    return () => clearInterval(interval);
   }, [id]);
 
   const loadApplication = async (appId: string) => {
@@ -263,6 +269,15 @@ const ApplicationDetail = () => {
                 {isRegenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
                 Regenerate
               </Button>
+              {dashboardHtml && (
+                <SaveAsTemplate
+                  dashboardHtml={dashboardHtml}
+                  applicationId={id}
+                  defaultLabel={`${companyName} ${jobTitle} Dashboard`.trim()}
+                  defaultJobFunction={jobTitle}
+                  defaultDepartment=""
+                />
+              )}
             </div>
 
             {/* AI Chat */}

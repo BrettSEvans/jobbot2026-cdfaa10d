@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { jobDescription, branding, companyName, jobTitle, competitors, customers, products, department } = await req.json();
+    const { jobDescription, branding, companyName, jobTitle, competitors, customers, products, department, templateHtml } = await req.json();
 
     if (!jobDescription) {
       return new Response(
@@ -108,6 +108,18 @@ IMPORTANT RULES:
 - Include realistic metrics, charts, and data tables
 - The dashboard title should reference "${companyName || 'the company'}" and the role "${jobTitle || 'the position'}"`;
 
+    const templateContext = templateHtml ? `
+
+TEMPLATE INSTRUCTIONS: You have been provided a template dashboard HTML below. Use this template as the STRUCTURAL and LAYOUT basis for the new dashboard. Keep the same section layout, navigation structure, chart types, and interactive patterns. However, you MUST:
+1. Replace ALL company-specific content (names, colors, branding, data) with the NEW company's information
+2. Update CSS colors and fonts to match the new company's branding data provided above
+3. Replace competitor names, product names, customer segments with the new company's data
+4. Regenerate all mock data to be contextually relevant to the new role and company
+5. Keep the template's design quality, interactivity, and drill-down patterns
+
+TEMPLATE HTML:
+${templateHtml.slice(0, 50000)}
+` : '';
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -120,7 +132,7 @@ IMPORTANT RULES:
           { role: 'system', content: systemPrompt },
           {
             role: 'user',
-            content: `Generate a complete, self-contained HTML Business Intelligence Dashboard for this job application:\n\nCompany: ${companyName || 'Unknown'}\nRole: ${jobTitle || 'Unknown'}\nDepartment: ${department || 'GTM / Sales / Marketing'}\n\nJob Description:\n${jobDescription}`
+            content: `Generate a complete, self-contained HTML Business Intelligence Dashboard for this job application:\n\nCompany: ${companyName || 'Unknown'}\nRole: ${jobTitle || 'Unknown'}\nDepartment: ${department || 'GTM / Sales / Marketing'}\n\nJob Description:\n${jobDescription}${templateContext}`
           },
         ],
         stream: true,

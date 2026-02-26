@@ -42,6 +42,7 @@ export async function streamDashboardGeneration({
   customers,
   products,
   department,
+  templateHtml,
   onDelta,
   onDone,
 }: {
@@ -53,6 +54,7 @@ export async function streamDashboardGeneration({
   customers?: string[];
   products?: string[];
   department?: string;
+  templateHtml?: string;
   onDelta: (text: string) => void;
   onDone: () => void;
 }) {
@@ -64,7 +66,7 @@ export async function streamDashboardGeneration({
         'Content-Type': 'application/json',
         Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
       },
-      body: JSON.stringify({ jobDescription, branding, companyName, jobTitle, competitors, customers, products, department }),
+      body: JSON.stringify({ jobDescription, branding, companyName, jobTitle, competitors, customers, products, department, templateHtml }),
     }
   );
 

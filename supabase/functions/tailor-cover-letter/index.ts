@@ -45,8 +45,10 @@ serve(async (req) => {
 
     const systemPrompt = `You are an expert cover letter writer. You will be given Brett Evans' base cover letter and a job description. Your task is to lightly tailor the cover letter to match the job.
 
-Rules:
-- Replace the company name and role title to match the job posting
+CRITICAL Rules:
+- You MUST replace EVERY instance of "Gusto" with the actual company name from the job posting. The base letter uses "Gusto" as a placeholder — it is NOT the target company unless the job posting is literally for Gusto.
+- You MUST replace the role title ("Head of GTM Process & Tooling") with the actual role title from the job posting.
+- You MUST replace the greeting ("To the Gusto GTM Team") with an appropriate greeting for the target company and team.
 - Adjust 2-3 talking points to align with the job's key requirements
 - Keep Brett's core narrative, tone, and experience intact
 - Maintain the same general structure and length

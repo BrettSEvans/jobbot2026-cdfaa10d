@@ -24,6 +24,7 @@ import {
   Edit3,
   Copy,
   Layers,
+  Download,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -571,6 +572,22 @@ function DashboardPreview({
           defaultJobFunction={jobTitle}
           defaultDepartment={department}
         />
+        <Button
+          variant="outline"
+          onClick={() => {
+            const blob = new Blob([currentHtml], { type: "text/html" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `${(companyName || "dashboard").replace(/\s+/g, "-").toLowerCase()}-dashboard.html`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+          }}
+        >
+          <Download className="mr-2 h-4 w-4" /> Download HTML
+        </Button>
         <Button variant="ghost" onClick={() => navigate("/applications")}>
           <ArrowLeft className="mr-2 h-4 w-4" /> All Applications
         </Button>

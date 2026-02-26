@@ -25,6 +25,7 @@ import {
   Sparkles,
   ExternalLink,
   RefreshCw,
+  Download,
 } from "lucide-react";
 import SaveAsTemplate from "@/components/SaveAsTemplate";
 import DashboardRevisions from "@/components/DashboardRevisions";
@@ -304,6 +305,24 @@ const ApplicationDetail = () => {
                     defaultJobFunction={jobTitle}
                     defaultDepartment=""
                   />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const blob = new Blob([dashboardHtml], { type: "text/html" });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = `${(companyName || "dashboard").replace(/\s+/g, "-").toLowerCase()}-dashboard.html`;
+                      document.body.appendChild(a);
+                      a.click();
+                      document.body.removeChild(a);
+                      URL.revokeObjectURL(url);
+                      toast({ title: "Downloaded", description: "Dashboard HTML file saved." });
+                    }}
+                  >
+                    <Download className="mr-2 h-4 w-4" /> Download HTML
+                  </Button>
                 </>
               )}
             </div>

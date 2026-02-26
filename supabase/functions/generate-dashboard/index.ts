@@ -65,12 +65,18 @@ ${competitorContext}
 ${customerContext}
 ${productContext}
 
+CRITICAL DATA & INTERACTION REQUIREMENTS:
+- MOCK DATA VOLUME: Every data table MUST contain at least 500 rows of realistic, varied mock data. Generate the data programmatically in JavaScript (use loops with realistic randomization — names, dates, amounts, statuses, regions, product lines, etc.). Do NOT hard-code 500 rows in HTML — generate them in JS and render into the DOM.
+- RESPONSIVE DESIGN: The entire dashboard MUST use a fully responsive layout. Use CSS Grid or Flexbox with media queries. On mobile, the sidebar collapses to a hamburger menu. Tables use horizontal scroll on small screens. Charts resize proportionally. All font sizes, padding, and margins scale appropriately.
+- DRILL-DOWN FUNCTIONALITY: Every table MUST support drill-down. Clicking a row should expand or navigate to show related detail data. For example, clicking a customer row shows their deals; clicking a competitor shows their battlecard detail; clicking a product shows its metrics breakdown.
+- CROSS-FILTERING / REACTIVE GRAPHS: When the user clicks a row or applies a filter on any table, at least one other chart or graph on the page MUST reactively update to reflect the new selection. For example: selecting a region in a table filters a revenue chart to that region; selecting a product filters the pipeline chart. Use JavaScript event listeners to connect tables and charts.
+- INTELLIGENT SIZING: All charts and tables MUST be intelligently sized to fit on screen without excessive scrolling. Use CSS max-height with overflow-y: auto on tables. Charts should have a reasonable max-height (300-400px). Use a grid layout that distributes sections evenly. The dashboard should look complete and professional on a 1080p screen without needing to scroll excessively, while supporting scrolling for detailed data views.
+
 IMPORTANT RULES:
 - Output ONLY the complete HTML file, starting with <!DOCTYPE html> and ending with </html>
 - ALL CSS must be embedded in a <style> tag
 - ALL JavaScript must be embedded in <script> tags
 - The file must be completely self-contained and work when opened directly in a browser
-- Make it responsive (mobile-friendly)
 - Use CSS variables for the design system
 - Include at least 5-6 dashboard sections relevant to the role
 - Include realistic metrics, charts, and data tables

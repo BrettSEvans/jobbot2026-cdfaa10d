@@ -90,7 +90,7 @@ const Applications = () => {
         ) : (
           <div className="space-y-3">
             {applications.map((app) => (
-              <Card key={app.id} className="hover:shadow-md transition-shadow">
+              <Card key={app.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate(`/applications/${app.id}`)}>
                 <CardContent className="py-4">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
@@ -112,7 +112,7 @@ const Applications = () => {
                         ))}
                       </div>
                     </div>
-                    <div className="flex gap-1 flex-shrink-0">
+                    <div className="flex gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
                       {app.cover_letter && (
                         <Button size="sm" variant="ghost" onClick={() => handleCopyCoverLetter(app.cover_letter)} title="Copy cover letter">
                           <FileText className="h-4 w-4" />

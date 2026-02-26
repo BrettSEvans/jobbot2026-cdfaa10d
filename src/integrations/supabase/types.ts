@@ -14,6 +14,41 @@ export type Database = {
   }
   public: {
     Tables: {
+      cover_letter_revisions: {
+        Row: {
+          application_id: string
+          cover_letter: string
+          created_at: string
+          id: string
+          label: string | null
+          revision_number: number
+        }
+        Insert: {
+          application_id: string
+          cover_letter: string
+          created_at?: string
+          id?: string
+          label?: string | null
+          revision_number?: number
+        }
+        Update: {
+          application_id?: string
+          cover_letter?: string
+          created_at?: string
+          id?: string
+          label?: string | null
+          revision_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cover_letter_revisions_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "job_applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dashboard_revisions: {
         Row: {
           application_id: string

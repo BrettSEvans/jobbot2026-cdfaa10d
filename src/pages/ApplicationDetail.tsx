@@ -28,8 +28,10 @@ import {
 } from "lucide-react";
 import SaveAsTemplate from "@/components/SaveAsTemplate";
 import DashboardRevisions from "@/components/DashboardRevisions";
+import CoverLetterRevisions from "@/components/CoverLetterRevisions";
 import { backgroundGenerator } from "@/lib/backgroundGenerator";
 import { saveDashboardRevision } from "@/lib/api/dashboardRevisions";
+import { saveCoverLetterRevision } from "@/lib/api/coverLetterRevisions";
 
 const ApplicationDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -60,6 +62,8 @@ const ApplicationDetail = () => {
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [revisionTrigger, setRevisionTrigger] = useState(0);
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
+  const [previewCoverLetter, setPreviewCoverLetter] = useState<string | null>(null);
+  const [coverLetterRevisionTrigger, setCoverLetterRevisionTrigger] = useState(0);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
@@ -117,6 +121,13 @@ const ApplicationDetail = () => {
       toast({ title: "No job description", description: "A job description is needed to generate a cover letter.", variant: "destructive" });
       return;
     }
+    // Save current version as revision before regenerating
+    if (coverLetter.trim() && id) {
+      try {
+        await saveCoverLetterRevision(id, coverLetter, "Before regeneration");
+        setCoverLetterRevisionTrigger((t) => t + 1);
+      } catch { /* non-critical */ }
+    }
     setIsRegenerating(true);
     setCoverLetter("");
     try {
@@ -130,6 +141,11 @@ const ApplicationDetail = () => {
         onDone: () => {},
       });
       await saveField({ cover_letter: accumulated });
+      // Save new version as revision
+      try {
+        await saveCoverLetterRevision(id!, accumulated, "Regenerated");
+        setCoverLetterRevisionTrigger((t) => t + 1);
+      } catch { /* non-critical */ }
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
@@ -393,6 +409,25 @@ const ApplicationDetail = () => {
               </Button>
             </div>
 
+            {/* Cover Letter Revision History */}
+            {id && coverLetter && (
+              <CoverLetterRevisions
+                applicationId={id}
+                currentCoverLetter={coverLetter}
+                onPreviewRevision={(text) => setPreviewCoverLetter(text === coverLetter ? null : text)}
+                refreshTrigger={coverLetterRevisionTrigger}
+              />
+            )}
+
+            {previewCoverLetter && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Badge variant="secondary">Previewing older version</Badge>
+                <Button variant="ghost" size="sm" onClick={() => setPreviewCoverLetter(null)}>
+                  Back to current
+                </Button>
+              </div>
+            )}
+
             <Card>
               <CardContent className="pt-6">
                 {editingCoverLetter ? (
@@ -426,8 +461,8 @@ const ApplicationDetail = () => {
                       </Button>
                     </div>
                   </div>
-                ) : coverLetter ? (
-                  <div className="whitespace-pre-wrap text-sm leading-relaxed">{coverLetter}</div>
+                ) : (previewCoverLetter || coverLetter) ? (
+                  <div className="whitespace-pre-wrap text-sm leading-relaxed">{previewCoverLetter || coverLetter}</div>
                 ) : (
                   <div className="text-center py-8">
                     <p className="text-muted-foreground mb-4">No cover letter yet.</p>

@@ -41,9 +41,20 @@ const Index = () => {
     }
   }, [jobData, toast]);
 
+  const isValidUrl = (str: string) => {
+    try {
+      const u = new URL(str.startsWith('http') ? str : `https://${str}`);
+      return !!u.hostname.includes('.');
+    } catch { return false; }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!url.trim()) return;
+    if (!isValidUrl(url)) {
+      toast({ title: "Invalid URL", description: "Please enter a valid job posting URL.", variant: "destructive" });
+      return;
+    }
 
     setAppState("loading");
     setLoadingMessage("Scraping job posting...");

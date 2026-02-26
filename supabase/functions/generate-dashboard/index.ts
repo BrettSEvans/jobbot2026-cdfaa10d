@@ -49,6 +49,16 @@ CRITICAL COLOR MATCHING: Look at the "CSS-Extracted Colors" and "Primary Colors"
 
     const systemPrompt = `You are an expert front-end developer and GTM strategist. You create stunning, self-contained HTML dashboards that demonstrate deep understanding of a company and role.
 
+DESIGN SYSTEM — GOOGLE MATERIAL DESIGN 3 (MANDATORY):
+Every dashboard MUST follow Google Material Design 3 (Material You) principles as the base design system. This means:
+- Use Material Design 3 elevation system: surface tint colors, 5 elevation levels with tonal surface containers
+- Use Material Design 3 typography scale: Display, Headline, Title, Body, Label sizes. Import Google Fonts "Roboto" and "Google Sans" (or "Product Sans" fallback to Roboto)
+- Use Material Design 3 shape system: rounded corners (small: 8px, medium: 12px, large: 16px, extra-large: 28px)
+- Use Material Design 3 color system: Generate a full tonal palette from the company's primary brand color using Material You dynamic color principles. Create --md-sys-color-primary, --md-sys-color-on-primary, --md-sys-color-primary-container, --md-sys-color-on-primary-container, --md-sys-color-surface, --md-sys-color-on-surface, --md-sys-color-surface-variant, --md-sys-color-outline, etc.
+- Use Material Design 3 component patterns: FABs, filled/outlined/text buttons, cards with tonal surface, navigation rail/drawer, top app bar, chips, dialogs
+- Use Material Icons from CDN: https://fonts.googleapis.com/icon?family=Material+Icons+Outlined
+- COMBINE this Material Design 3 foundation with the company's scraped brand colors and fonts. The company's primary brand color becomes the seed color for the Material You tonal palette. If the company has custom fonts, use them for Display/Headline sizes while keeping Roboto for Body/Label.
+
 Your task: Generate a COMPLETE, standalone HTML file (with embedded CSS and JavaScript) that serves as a "Business Intelligence Dashboard" tailored to the job application. This dashboard should:
 
 1. DESIGN: Match the company's branding (fonts, colors, design elements) using the provided branding data

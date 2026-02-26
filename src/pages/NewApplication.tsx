@@ -30,9 +30,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import BatchJobInput from "@/components/BatchJobInput";
 import TemplateSelector from "@/components/TemplateSelector";
 import SaveAsTemplate from "@/components/SaveAsTemplate";
+import GenerationProgressBar, { type PipelineStage } from "@/components/GenerationProgressBar";
 import type { DashboardTemplate } from "@/lib/api/templates";
 
 type Step = "input" | "analyzing" | "review" | "generating" | "preview";
+type AnalyzeStage = "scraping" | "branding" | "analyzing" | "cover-letter" | "complete";
 
 const NewApplication = () => {
   const { toast } = useToast();
@@ -47,6 +49,7 @@ const NewApplication = () => {
   // State
   const [step, setStep] = useState<Step>("input");
   const [loadingMsg, setLoadingMsg] = useState("");
+  const [pipelineStage, setPipelineStage] = useState<PipelineStage>("scraping");
 
   // Data
   const [jobMarkdown, setJobMarkdown] = useState("");
@@ -83,6 +86,7 @@ const NewApplication = () => {
       return;
     }
     setStep("analyzing");
+    setPipelineStage("scraping");
 
     try {
       let markdown = "";
@@ -101,6 +105,7 @@ const NewApplication = () => {
       let brandingData = null;
       let companyMarkdown = "";
       if (companyUrl.trim()) {
+        setPipelineStage("branding");
         setLoadingMsg("Scraping company branding & design...");
         try {
           const result = await scrapeCompanyBranding(companyUrl);
@@ -113,6 +118,7 @@ const NewApplication = () => {
       }
 
       // AI analysis
+      setPipelineStage("analyzing");
       setLoadingMsg("Analyzing company, competitors & products...");
       try {
         const analysis = await analyzeCompany({
@@ -131,6 +137,7 @@ const NewApplication = () => {
       }
 
       // Generate cover letter
+      setPipelineStage("cover-letter");
       setLoadingMsg("Generating tailored cover letter...");
       setCoverLetter("");
       await streamTailoredLetter({
@@ -148,6 +155,7 @@ const NewApplication = () => {
 
   const handleGenerateDashboard = async () => {
     setStep("generating");
+    setPipelineStage("dashboard");
     setLoadingMsg("Generating branded dashboard...");
     setDashboardHtml("");
 
@@ -357,9 +365,9 @@ const NewApplication = () => {
         {/* Step: Analyzing */}
         {step === "analyzing" && (
           <Card>
-            <CardContent className="py-12 flex flex-col items-center gap-4">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <p className="text-muted-foreground">{loadingMsg}</p>
+            <CardContent className="py-10 space-y-6">
+              <GenerationProgressBar currentStage={pipelineStage} />
+              <p className="text-sm text-muted-foreground text-center">{loadingMsg}</p>
             </CardContent>
           </Card>
         )}
@@ -446,11 +454,11 @@ const NewApplication = () => {
         {/* Step: Generating */}
         {step === "generating" && (
           <Card>
-            <CardContent className="py-12 flex flex-col items-center gap-4">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <p className="text-muted-foreground">{loadingMsg}</p>
+            <CardContent className="py-10 space-y-6">
+              <GenerationProgressBar currentStage={pipelineStage} />
+              <p className="text-sm text-muted-foreground text-center">{loadingMsg}</p>
               {dashboardHtml && (
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-muted-foreground text-center">
                   {Math.round(dashboardHtml.length / 1024)}KB generated...
                 </p>
               )}

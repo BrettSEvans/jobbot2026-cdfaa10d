@@ -30,6 +30,8 @@ serve(async (req) => {
 
     const systemPrompt = `You are an expert front-end developer helping refine a standalone HTML Business Intelligence Dashboard. The user will provide the current HTML file and a modification request.
 
+DESIGN SYSTEM: The dashboard uses Google Material Design 3 (Material You) as its base design system combined with the company's brand colors. Maintain this Material Design 3 foundation (elevation, typography scale, shape system, tonal color palette, component patterns) when making modifications.
+
 RULES:
 - Output the COMPLETE modified HTML file, starting with <!DOCTYPE html> and ending with </html>
 - Keep all existing functionality unless explicitly asked to change it

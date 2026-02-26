@@ -1,19 +1,33 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { getJobApplications, deleteJobApplication } from "@/lib/api/jobApplication";
 import {
   Plus,
   FileText,
-  Globe,
   Trash2,
   Eye,
   Copy,
   Loader2,
+  LayoutTemplate,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+
+type SortKey = "company_name" | "job_title" | "status" | "created_at" | "updated_at";
+type SortDir = "asc" | "desc";
 
 const Applications = () => {
   const { toast } = useToast();
@@ -21,6 +35,8 @@ const Applications = () => {
   const [applications, setApplications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [previewId, setPreviewId] = useState<string | null>(null);
+  const [sortKey, setSortKey] = useState<SortKey>("created_at");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
 
   useEffect(() => {
     loadApplications();
@@ -37,7 +53,8 @@ const Applications = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
     try {
       await deleteJobApplication(id);
       setApplications((prev) => prev.filter((a) => a.id !== id));
@@ -47,29 +64,59 @@ const Applications = () => {
     }
   };
 
-  const handleCopyHtml = async (html: string) => {
+  const handleCopyHtml = async (html: string, e: React.MouseEvent) => {
+    e.stopPropagation();
     await navigator.clipboard.writeText(html);
     toast({ title: "Copied!", description: "Dashboard HTML copied to clipboard." });
   };
 
-  const handleCopyCoverLetter = async (text: string) => {
+  const handleCopyCoverLetter = async (text: string, e: React.MouseEvent) => {
+    e.stopPropagation();
     await navigator.clipboard.writeText(text);
     toast({ title: "Copied!", description: "Cover letter copied to clipboard." });
+  };
+
+  const toggleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+  };
+
+  const sorted = useMemo(() => {
+    return [...applications].sort((a, b) => {
+      const aVal = (a[sortKey] || "").toString().toLowerCase();
+      const bVal = (b[sortKey] || "").toString().toLowerCase();
+      const cmp = aVal.localeCompare(bVal);
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+  }, [applications, sortKey, sortDir]);
+
+  const SortIcon = ({ col }: { col: SortKey }) => {
+    if (sortKey !== col) return <ArrowUpDown className="h-3 w-3 ml-1 opacity-40" />;
+    return sortDir === "asc" ? <ArrowUp className="h-3 w-3 ml-1" /> : <ArrowDown className="h-3 w-3 ml-1" />;
   };
 
   const previewApp = applications.find((a) => a.id === previewId);
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-5xl mx-auto p-4 md:p-8 space-y-6">
+      <div className="max-w-6xl mx-auto p-4 md:p-8 space-y-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Job Applications</h1>
             <p className="text-muted-foreground text-sm">Your saved applications and dashboards</p>
           </div>
-          <Button onClick={() => navigate("/applications/new")}>
-            <Plus className="mr-2 h-4 w-4" /> New Application
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => navigate("/templates")}>
+              <LayoutTemplate className="mr-2 h-4 w-4" /> Templates
+            </Button>
+            <Button onClick={() => navigate("/applications/new")}>
+              <Plus className="mr-2 h-4 w-4" /> New Application
+            </Button>
+          </div>
         </div>
 
         {loading ? (
@@ -88,67 +135,117 @@ const Applications = () => {
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-3">
-            {applications.map((app) => (
-              <Card key={app.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate(`/applications/${app.id}`)}>
-                <CardContent className="py-4">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold truncate">
-                          {app.company_name || "Unknown Company"} — {app.job_title || "Unknown Role"}
-                        </h3>
-                        <Badge variant={app.status === "complete" ? "default" : "secondary"}>
+          <>
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("company_name")}>
+                      <div className="flex items-center">Company <SortIcon col="company_name" /></div>
+                    </TableHead>
+                    <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("job_title")}>
+                      <div className="flex items-center">Role <SortIcon col="job_title" /></div>
+                    </TableHead>
+                    <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("status")}>
+                      <div className="flex items-center">Status <SortIcon col="status" /></div>
+                    </TableHead>
+                    <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("created_at")}>
+                      <div className="flex items-center">Created <SortIcon col="created_at" /></div>
+                    </TableHead>
+                    <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("updated_at")}>
+                      <div className="flex items-center">Updated <SortIcon col="updated_at" /></div>
+                    </TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {sorted.map((app) => (
+                    <TableRow
+                      key={app.id}
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => navigate(`/applications/${app.id}`)}
+                    >
+                      <TableCell className="font-medium">
+                        {app.company_name || "Unknown"}
+                      </TableCell>
+                      <TableCell>{app.job_title || "Unknown"}</TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={
+                            app.status === "complete"
+                              ? "default"
+                              : app.status === "generating"
+                              ? "secondary"
+                              : app.status === "error"
+                              ? "destructive"
+                              : "secondary"
+                          }
+                        >
                           {app.status}
                         </Badge>
-                      </div>
-                      <p className="text-xs text-muted-foreground truncate">{app.job_url}</p>
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {app.products?.slice(0, 3).map((p: string, i: number) => (
-                          <Badge key={i} variant="outline" className="text-xs">{p}</Badge>
-                        ))}
-                        {app.competitors?.slice(0, 2).map((c: string, i: number) => (
-                          <Badge key={i} variant="outline" className="text-xs">vs {c}</Badge>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="flex gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
-                      {app.cover_letter && (
-                        <Button size="sm" variant="ghost" onClick={() => handleCopyCoverLetter(app.cover_letter)} title="Copy cover letter">
-                          <FileText className="h-4 w-4" />
-                        </Button>
-                      )}
-                      {app.dashboard_html && (
-                        <>
-                          <Button size="sm" variant="ghost" onClick={() => setPreviewId(previewId === app.id ? null : app.id)} title="Preview dashboard">
-                            <Eye className="h-4 w-4" />
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {new Date(app.created_at).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {new Date(app.updated_at).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-1 justify-end" onClick={(e) => e.stopPropagation()}>
+                          {app.cover_letter && (
+                            <Button size="sm" variant="ghost" onClick={(e) => handleCopyCoverLetter(app.cover_letter, e)} title="Copy cover letter">
+                              <FileText className="h-4 w-4" />
+                            </Button>
+                          )}
+                          {app.dashboard_html && (
+                            <>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setPreviewId(previewId === app.id ? null : app.id);
+                                }}
+                                title="Preview"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button size="sm" variant="ghost" onClick={(e) => handleCopyHtml(app.dashboard_html, e)} title="Copy HTML">
+                                <Copy className="h-4 w-4" />
+                              </Button>
+                            </>
+                          )}
+                          <Button size="sm" variant="ghost" onClick={(e) => handleDelete(app.id, e)} title="Delete">
+                            <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
-                          <Button size="sm" variant="ghost" onClick={() => handleCopyHtml(app.dashboard_html)} title="Copy HTML">
-                            <Copy className="h-4 w-4" />
-                          </Button>
-                        </>
-                      )}
-                      <Button size="sm" variant="ghost" onClick={() => handleDelete(app.id)} title="Delete">
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </div>
-                  </div>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
 
-                  {/* Inline preview */}
-                  {previewId === app.id && app.dashboard_html && (
-                    <div className="mt-4 border rounded-lg overflow-hidden" style={{ height: "60vh" }}>
-                      <iframe
-                        srcDoc={app.dashboard_html}
-                        className="w-full h-full border-0"
-                        sandbox="allow-scripts"
-                        title="Dashboard Preview"
-                      />
-                    </div>
-                  )}
-                </CardContent>
+            {/* Inline preview */}
+            {previewApp?.dashboard_html && (
+              <Card className="overflow-hidden">
+                <div className="p-2 bg-muted flex items-center justify-between">
+                  <span className="text-sm font-medium px-2">
+                    Preview: {previewApp.company_name} — {previewApp.job_title}
+                  </span>
+                  <Button size="sm" variant="ghost" onClick={() => setPreviewId(null)}>Close</Button>
+                </div>
+                <div style={{ height: "60vh" }}>
+                  <iframe
+                    srcDoc={previewApp.dashboard_html}
+                    className="w-full h-full border-0"
+                    sandbox="allow-scripts"
+                    title="Dashboard Preview"
+                  />
+                </div>
               </Card>
-            ))}
-          </div>
+            )}
+          </>
         )}
       </div>
     </div>

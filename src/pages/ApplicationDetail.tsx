@@ -11,7 +11,6 @@ import {
   getJobApplication,
   saveJobApplication,
   streamDashboardGeneration,
-  streamDashboardRefinement,
 } from "@/lib/api/jobApplication";
 import { streamTailoredLetter } from "@/lib/api/coverLetter";
 import {
@@ -28,6 +27,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import SaveAsTemplate from "@/components/SaveAsTemplate";
+import { backgroundGenerator } from "@/lib/backgroundGenerator";
 
 const ApplicationDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -71,7 +71,10 @@ const ApplicationDetail = () => {
     try {
       const data = await getJobApplication(appId);
       setApp(data);
-      setCoverLetter(data.cover_letter || "");
+      // Don't overwrite cover letter while user is editing
+      if (!editingCoverLetter) {
+        setCoverLetter(data.cover_letter || "");
+      }
       setJobDescription(data.job_description_markdown || "");
       setCompanyUrl(data.company_url || "");
       setCompanyName(data.company_name || "");
@@ -169,7 +172,7 @@ const ApplicationDetail = () => {
     }
   };
 
-  // AI refine chat
+  // AI refine chat — runs in background so it persists across navigation
   const handleSendChat = async () => {
     if (!chatInput.trim() || isRefining) return;
     const msg = chatInput.trim();
@@ -179,26 +182,14 @@ const ApplicationDetail = () => {
     setIsRefining(true);
 
     try {
-      let accumulated = "";
-      await streamDashboardRefinement({
+      await backgroundGenerator.startRefinement({
+        applicationId: id!,
         currentHtml: dashboardHtml,
         userMessage: msg,
         chatHistory: newHistory,
-        onDelta: (text) => { accumulated += text; },
-        onDone: () => {
-          let clean = accumulated;
-          const htmlStart = clean.indexOf("<!DOCTYPE html>");
-          const htmlStartAlt = clean.indexOf("<!doctype html>");
-          const start = htmlStart !== -1 ? htmlStart : htmlStartAlt;
-          if (start > 0) clean = clean.slice(start);
-          const htmlEnd = clean.lastIndexOf("</html>");
-          if (htmlEnd !== -1) clean = clean.slice(0, htmlEnd + 7);
-          setDashboardHtml(clean);
-          const updatedHistory = [...newHistory, { role: "assistant", content: "✅ Dashboard updated!" }];
-          setChatHistory(updatedHistory);
-          saveField({ dashboard_html: clean, chat_history: updatedHistory });
-        },
+        jobUrl: app.job_url,
       });
+      toast({ title: "Refining", description: "Dashboard refinement started. It will continue even if you navigate away." });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
       setChatHistory((prev) => [...prev, { role: "assistant", content: `❌ Error: ${err.message}` }]);
@@ -257,11 +248,6 @@ const ApplicationDetail = () => {
           {/* Dashboard Tab */}
           <TabsContent value="dashboard" className="space-y-4">
             <div className="flex flex-wrap gap-2">
-              {dashboardHtml && (
-                <Button variant="outline" size="sm" onClick={() => handleCopy(dashboardHtml, "Dashboard HTML")}>
-                  <Copy className="mr-2 h-4 w-4" /> Copy HTML
-                </Button>
-              )}
               <Button variant="outline" size="sm" onClick={() => setChatOpen(!chatOpen)}>
                 <Edit3 className="mr-2 h-4 w-4" /> {chatOpen ? "Hide Chat" : "Refine with AI"}
               </Button>

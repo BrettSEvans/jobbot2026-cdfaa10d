@@ -239,6 +239,77 @@ class BackgroundGenerationManager {
       } catch {}
     }
   }
+
+  /**
+   * Start a dashboard refinement in the background.
+   * Continues even if the user navigates away.
+   */
+  async startRefinement({
+    applicationId,
+    currentHtml,
+    userMessage,
+    chatHistory,
+    jobUrl,
+  }: {
+    applicationId: string;
+    currentHtml: string;
+    userMessage: string;
+    chatHistory: Array<{ role: string; content: string }>;
+    jobUrl: string;
+  }): Promise<void> {
+    const job: GenerationJob = {
+      applicationId,
+      status: "dashboard",
+      progress: "Refining dashboard...",
+    };
+    this.jobs.set(applicationId, job);
+    this.notify();
+
+    this.runRefinement(applicationId, currentHtml, userMessage, chatHistory, jobUrl);
+  }
+
+  private async runRefinement(
+    appId: string,
+    currentHtml: string,
+    userMessage: string,
+    chatHistory: Array<{ role: string; content: string }>,
+    jobUrl: string,
+  ) {
+    try {
+      const { streamDashboardRefinement } = await import("@/lib/api/jobApplication");
+
+      let accumulated = "";
+      await streamDashboardRefinement({
+        currentHtml,
+        userMessage,
+        chatHistory,
+        onDelta: (text) => { accumulated += text; },
+        onDone: () => {
+          let clean = accumulated;
+          const htmlStart = clean.indexOf("<!DOCTYPE html>");
+          const htmlStartAlt = clean.indexOf("<!doctype html>");
+          const start = htmlStart !== -1 ? htmlStart : htmlStartAlt;
+          if (start > 0) clean = clean.slice(start);
+          const htmlEnd = clean.lastIndexOf("</html>");
+          if (htmlEnd !== -1) clean = clean.slice(0, htmlEnd + 7);
+          accumulated = clean;
+        },
+      });
+
+      const updatedHistory = [...chatHistory, { role: "assistant", content: "✅ Dashboard updated!" }];
+      await saveJobApplication({
+        id: appId,
+        job_url: jobUrl,
+        dashboard_html: accumulated,
+        chat_history: updatedHistory,
+      } as any);
+
+      this.updateJob(appId, { status: "complete", progress: "Refinement complete!" });
+    } catch (err: any) {
+      console.error("Background refinement error:", err);
+      this.updateJob(appId, { status: "error", progress: "Refinement failed", error: err.message });
+    }
+  }
 }
 
 // Singleton — persists across React navigations

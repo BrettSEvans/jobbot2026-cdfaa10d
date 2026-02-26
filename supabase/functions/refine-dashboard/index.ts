@@ -36,6 +36,7 @@ RULES:
 - Maintain the self-contained nature (all CSS/JS embedded)
 - Preserve Chart.js charts and interactive elements
 - Apply the requested changes precisely
+- The sidebar MUST have clearly labeled, visible text links for each section. Each link must be clickable and toggle visibility of the corresponding section in the main content area. Highlight the active section. No empty or placeholder hotspots.
 - Do NOT add explanations — output ONLY the HTML`;
 
     const messages: Array<{role: string; content: string}> = [

@@ -23,8 +23,14 @@ import {
   Check,
   Edit3,
   Copy,
+  Layers,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import BatchJobInput from "@/components/BatchJobInput";
+import TemplateSelector from "@/components/TemplateSelector";
+import SaveAsTemplate from "@/components/SaveAsTemplate";
+import type { DashboardTemplate } from "@/lib/api/templates";
 
 type Step = "input" | "analyzing" | "review" | "generating" | "preview";
 
@@ -55,6 +61,9 @@ const NewApplication = () => {
   const [dashboardHtml, setDashboardHtml] = useState("");
   const [applicationId, setApplicationId] = useState<string | null>(null);
 
+  // Template
+  const [selectedTemplate, setSelectedTemplate] = useState<DashboardTemplate | null>(null);
+
   // Editable fields
   const [editingField, setEditingField] = useState<string | null>(null);
   const [tempEdit, setTempEdit] = useState("");
@@ -79,18 +88,16 @@ const NewApplication = () => {
       let markdown = "";
 
       if (useManualInput) {
-        // Use manually pasted job description
         markdown = manualJobDescription.trim();
         setJobMarkdown(markdown);
       } else {
-        // Scrape job posting
         setLoadingMsg("Scraping job posting...");
         const result = await scrapeJob(jobUrl);
         markdown = result.markdown;
         setJobMarkdown(markdown);
       }
 
-      // Step 2: Scrape company branding (if URL provided)
+      // Scrape company branding
       let brandingData = null;
       let companyMarkdown = "";
       if (companyUrl.trim()) {
@@ -105,7 +112,7 @@ const NewApplication = () => {
         }
       }
 
-      // Step 3: AI analysis
+      // AI analysis
       setLoadingMsg("Analyzing company, competitors & products...");
       try {
         const analysis = await analyzeCompany({
@@ -123,7 +130,7 @@ const NewApplication = () => {
         console.warn("Analysis failed, continuing:", e);
       }
 
-      // Step 4: Generate cover letter
+      // Generate cover letter
       setLoadingMsg("Generating tailored cover letter...");
       setCoverLetter("");
       await streamTailoredLetter({
@@ -155,12 +162,12 @@ const NewApplication = () => {
         customers,
         products,
         department,
+        templateHtml: selectedTemplate?.dashboard_html,
         onDelta: (text) => {
           accumulated += text;
           setDashboardHtml(accumulated);
         },
         onDone: () => {
-          // Clean: extract just the HTML from possible markdown code fences
           let clean = accumulated;
           const htmlStart = clean.indexOf("<!DOCTYPE html>");
           const htmlStartAlt = clean.indexOf("<!doctype html>");
@@ -172,10 +179,9 @@ const NewApplication = () => {
         },
       });
 
-      // Save application
       const saved = await saveJobApplication({
         id: applicationId || undefined,
-        job_url: jobUrl,
+        job_url: jobUrl || "manual-input",
         company_url: companyUrl || undefined,
         company_name: companyName || undefined,
         job_title: jobTitle || undefined,
@@ -263,76 +269,89 @@ const NewApplication = () => {
 
         {/* Step: Input */}
         {step === "input" && (
-          <div className="space-y-4">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
+          <Tabs defaultValue="single" className="space-y-4">
+            <TabsList>
+              <TabsTrigger value="single">Single Application</TabsTrigger>
+              <TabsTrigger value="batch">
+                <Layers className="mr-1 h-4 w-4" /> Batch ({`up to ${10}`})
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="single" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2">
+                      {useManualInput ? <FileText className="h-5 w-5" /> : <Link className="h-5 w-5" />}
+                      {useManualInput ? "Paste Job Description" : "Job Posting URL"}
+                    </CardTitle>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setUseManualInput(!useManualInput)}
+                      className="text-xs"
+                    >
+                      {useManualInput ? "Use URL instead" : "Paste text instead"}
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {useManualInput ? (
+                    <Textarea
+                      placeholder="Paste the full job description text here..."
+                      value={manualJobDescription}
+                      onChange={(e) => setManualJobDescription(e.target.value)}
+                      rows={10}
+                    />
+                  ) : (
+                    <Input
+                      type="url"
+                      placeholder="https://jobs.example.com/role/12345"
+                      value={jobUrl}
+                      onChange={(e) => setJobUrl(e.target.value)}
+                    />
+                  )}
+                  {!useManualInput && (
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Can't scrape the page? Click "Paste text instead" above.
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    {useManualInput ? <FileText className="h-5 w-5" /> : <Link className="h-5 w-5" />}
-                    {useManualInput ? "Paste Job Description" : "Job Posting URL"}
+                    <Globe className="h-5 w-5" /> Company Website URL (optional)
                   </CardTitle>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setUseManualInput(!useManualInput)}
-                    className="text-xs"
-                  >
-                    {useManualInput ? "Use URL instead" : "Paste text instead"}
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {useManualInput ? (
-                  <Textarea
-                    placeholder="Paste the full job description text here..."
-                    value={manualJobDescription}
-                    onChange={(e) => setManualJobDescription(e.target.value)}
-                    rows={10}
-                  />
-                ) : (
+                </CardHeader>
+                <CardContent>
                   <Input
                     type="url"
-                    placeholder="https://jobs.example.com/role/12345"
-                    value={jobUrl}
-                    onChange={(e) => setJobUrl(e.target.value)}
+                    placeholder="https://example.com"
+                    value={companyUrl}
+                    onChange={(e) => setCompanyUrl(e.target.value)}
                   />
-                )}
-                {!useManualInput && (
                   <p className="text-xs text-muted-foreground mt-2">
-                    Can't scrape the page? Click "Paste text instead" above.
+                    Used to scrape branding (fonts, colors, design) for the dashboard
                   </p>
-                )}
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Globe className="h-5 w-5" /> Company Website URL (optional)
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Input
-                  type="url"
-                  placeholder="https://example.com"
-                  value={companyUrl}
-                  onChange={(e) => setCompanyUrl(e.target.value)}
-                />
-                <p className="text-xs text-muted-foreground mt-2">
-                  Used to scrape branding (fonts, colors, design) for the dashboard
-                </p>
-              </CardContent>
-            </Card>
+              <Button
+                onClick={handleAnalyze}
+                disabled={useManualInput ? !manualJobDescription.trim() : !jobUrl.trim()}
+                className="w-full"
+                size="lg"
+              >
+                <Sparkles className="mr-2 h-4 w-4" /> Analyze & Generate
+              </Button>
+            </TabsContent>
 
-            <Button
-              onClick={handleAnalyze}
-              disabled={useManualInput ? !manualJobDescription.trim() : !jobUrl.trim()}
-              className="w-full"
-              size="lg"
-            >
-              <Sparkles className="mr-2 h-4 w-4" /> Analyze & Generate
-            </Button>
-          </div>
+            <TabsContent value="batch">
+              <BatchJobInput />
+            </TabsContent>
+          </Tabs>
         )}
 
         {/* Step: Analyzing */}
@@ -348,7 +367,6 @@ const NewApplication = () => {
         {/* Step: Review */}
         {step === "review" && (
           <div className="space-y-4">
-            {/* Job Description */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -362,7 +380,6 @@ const NewApplication = () => {
               </CardContent>
             </Card>
 
-            {/* Company Analysis */}
             <Card>
               <CardHeader>
                 <CardTitle>Company & Role Analysis</CardTitle>
@@ -371,24 +388,9 @@ const NewApplication = () => {
                 <EditableField label="Company" field="companyName" value={companyName} />
                 <EditableField label="Role" field="jobTitle" value={jobTitle} />
                 <EditableField label="Department" field="department" value={department} />
-                <EditableField
-                  label="Products"
-                  field="products"
-                  value={products.join(", ")}
-                  displayValue={products.length ? undefined : "—"}
-                />
-                <EditableField
-                  label="Competitors"
-                  field="competitors"
-                  value={competitors.join(", ")}
-                  displayValue={competitors.length ? undefined : "—"}
-                />
-                <EditableField
-                  label="Customers"
-                  field="customers"
-                  value={customers.join(", ")}
-                  displayValue={customers.length ? undefined : "—"}
-                />
+                <EditableField label="Products" field="products" value={products.join(", ")} displayValue={products.length ? undefined : "—"} />
+                <EditableField label="Competitors" field="competitors" value={competitors.join(", ")} displayValue={competitors.length ? undefined : "—"} />
+                <EditableField label="Customers" field="customers" value={customers.join(", ")} displayValue={customers.length ? undefined : "—"} />
                 {branding && (
                   <div className="flex items-center gap-2 pt-2">
                     <span className="text-sm font-medium text-muted-foreground">Branding:</span>
@@ -406,7 +408,6 @@ const NewApplication = () => {
               </CardContent>
             </Card>
 
-            {/* Cover Letter */}
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -425,7 +426,16 @@ const NewApplication = () => {
               </CardContent>
             </Card>
 
-            {/* Generate Dashboard */}
+            {/* Template selection + Generate */}
+            <div className="flex items-center gap-2">
+              <TemplateSelector onSelect={(t) => setSelectedTemplate(t)} />
+              {selectedTemplate && (
+                <Badge variant="secondary" className="text-xs">
+                  Using: {selectedTemplate.label}
+                </Badge>
+              )}
+            </div>
+
             <Button onClick={handleGenerateDashboard} className="w-full" size="lg">
               <Sparkles className="mr-2 h-4 w-4" /> Generate Branded Dashboard
               <ArrowRight className="ml-2 h-4 w-4" />
@@ -453,11 +463,14 @@ const NewApplication = () => {
           <DashboardPreview
             html={dashboardHtml}
             applicationId={applicationId}
+            companyName={companyName}
+            jobTitle={jobTitle}
+            department={department}
             onCopy={handleCopyHtml}
             onSave={async (html) => {
               setDashboardHtml(html);
               if (applicationId) {
-                await saveJobApplication({ id: applicationId, dashboard_html: html, job_url: jobUrl });
+                await saveJobApplication({ id: applicationId, dashboard_html: html, job_url: jobUrl || "manual-input" });
               }
             }}
             navigate={navigate}
@@ -468,16 +481,22 @@ const NewApplication = () => {
   );
 };
 
-// Dashboard Preview with AI Chat
+// Dashboard Preview with AI Chat + Save as Template
 function DashboardPreview({
   html,
   applicationId,
+  companyName,
+  jobTitle,
+  department,
   onCopy,
   onSave,
   navigate,
 }: {
   html: string;
   applicationId: string | null;
+  companyName?: string;
+  jobTitle?: string;
+  department?: string;
   onCopy: () => void;
   onSave: (html: string) => Promise<void>;
   navigate: (path: string) => void;
@@ -507,7 +526,6 @@ function DashboardPreview({
         chatHistory: newHistory,
         onDelta: (text) => { accumulated += text; },
         onDone: () => {
-          // Clean
           let clean = accumulated;
           const htmlStart = clean.indexOf("<!DOCTYPE html>");
           const htmlStartAlt = clean.indexOf("<!doctype html>");
@@ -538,12 +556,18 @@ function DashboardPreview({
         <Button onClick={() => setChatOpen(!chatOpen)} variant="outline">
           <Edit3 className="mr-2 h-4 w-4" /> {chatOpen ? "Hide Chat" : "Refine with AI"}
         </Button>
+        <SaveAsTemplate
+          dashboardHtml={currentHtml}
+          applicationId={applicationId || undefined}
+          defaultLabel={`${companyName || ""} ${jobTitle || ""} Dashboard`.trim()}
+          defaultJobFunction={jobTitle}
+          defaultDepartment={department}
+        />
         <Button variant="ghost" onClick={() => navigate("/applications")}>
           <ArrowLeft className="mr-2 h-4 w-4" /> All Applications
         </Button>
       </div>
 
-      {/* AI Chat */}
       {chatOpen && (
         <Card>
           <CardContent className="pt-4 space-y-3">
@@ -580,7 +604,6 @@ function DashboardPreview({
         </Card>
       )}
 
-      {/* Dashboard Preview */}
       <Card className="overflow-hidden">
         <div className="w-full" style={{ height: "70vh" }}>
           <iframe

@@ -8,6 +8,7 @@ import Applications from "./pages/Applications";
 import NewApplication from "./pages/NewApplication";
 import ApplicationDetail from "./pages/ApplicationDetail";
 import NotFound from "./pages/NotFound";
+import BackgroundJobsBanner from "./components/BackgroundJobsBanner";
 
 const queryClient = new QueryClient();
 
@@ -16,6 +17,7 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
+      <BackgroundJobsBanner />
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />

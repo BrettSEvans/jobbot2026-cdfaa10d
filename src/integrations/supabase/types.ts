@@ -14,6 +14,44 @@ export type Database = {
   }
   public: {
     Tables: {
+      dashboard_templates: {
+        Row: {
+          created_at: string
+          dashboard_html: string
+          department: string
+          id: string
+          job_function: string
+          label: string
+          source_application_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          dashboard_html: string
+          department?: string
+          id?: string
+          job_function?: string
+          label: string
+          source_application_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          dashboard_html?: string
+          department?: string
+          id?: string
+          job_function?: string
+          label?: string
+          source_application_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dashboard_templates_source_application_id_fkey"
+            columns: ["source_application_id"]
+            isOneToOne: false
+            referencedRelation: "job_applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       job_applications: {
         Row: {
           branding: Json | null
@@ -25,6 +63,8 @@ export type Database = {
           created_at: string
           customers: Json | null
           dashboard_html: string | null
+          generation_error: string | null
+          generation_status: string
           id: string
           job_description_markdown: string | null
           job_title: string | null
@@ -43,6 +83,8 @@ export type Database = {
           created_at?: string
           customers?: Json | null
           dashboard_html?: string | null
+          generation_error?: string | null
+          generation_status?: string
           id?: string
           job_description_markdown?: string | null
           job_title?: string | null
@@ -61,6 +103,8 @@ export type Database = {
           created_at?: string
           customers?: Json | null
           dashboard_html?: string | null
+          generation_error?: string | null
+          generation_status?: string
           id?: string
           job_description_markdown?: string | null
           job_title?: string | null

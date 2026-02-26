@@ -77,17 +77,25 @@ ${productContext}
 
 CRITICAL DATA & INTERACTION REQUIREMENTS:
 - MOCK DATA VOLUME: Every data table MUST contain at least 500 rows of realistic, varied mock data. Generate the data programmatically in JavaScript (use loops with realistic randomization — names, dates, amounts, statuses, regions, product lines, etc.). Do NOT hard-code 500 rows in HTML — generate them in JS and render into the DOM.
+- DATA VARIATION (CRITICAL): Every section's description text, metric labels, and card copy MUST be unique and contextual to that specific section. Do NOT reuse the same placeholder description across sections. Each section should feel hand-crafted with distinct insights, commentary, and narrative relevant to its topic. Vary the tone: some sections analytical, some action-oriented, some strategic. Mock data must have realistic distribution — not uniform. Include outliers, trends, seasonal patterns, and realistic variance in amounts, dates, and statuses.
 - RESPONSIVE DESIGN: The entire dashboard MUST use a fully responsive layout. Use CSS Grid or Flexbox with media queries. On mobile, the sidebar collapses to a hamburger menu. Tables use horizontal scroll on small screens. Charts resize proportionally. All font sizes, padding, and margins scale appropriately.
-- DRILL-DOWN FUNCTIONALITY: Every table MUST support drill-down. Clicking a row should expand or navigate to show related detail data. For example, clicking a customer row shows their deals; clicking a competitor shows their battlecard detail; clicking a product shows its metrics breakdown.
+- CHARTING (CRITICAL — READ CAREFULLY):
+  * Use Chart.js from CDN for all charts.
+  * Choose the BEST chart type for each dataset: bar charts for comparisons, line charts for trends over time, doughnut/pie for composition, radar for multi-dimensional scoring, scatter for correlations, stacked bar for part-to-whole over categories, area charts for cumulative trends. NEVER default to bar charts for everything.
+  * SIZING: Each chart canvas MUST be inside a container div with style="height:380px; max-height:380px; position:relative;". The canvas gets width:100%; height:100%. Use Chart.js options: { responsive: true, maintainAspectRatio: false }.
+  * Charts should be COMFORTABLE to read — not cramped. Give them breathing room with proper padding (at least 16px around each chart card). Use clear, readable font sizes for labels (12-14px) and titles (16-18px).
+  * Use rich visual styling: gradient fills on area/bar charts, rounded bars (borderRadius: 6), subtle grid lines (color: 'rgba(0,0,0,0.06)'), custom tooltips with context, legend positioned for readability.
+  * Each section should have 2-3 well-sized charts in a responsive grid (1-2 columns), NOT a wall of tiny cramped charts.
+- DRILL-DOWN FUNCTIONALITY (CRITICAL):
+  * CHART DRILL-DOWN: Clicking a segment/bar/point on any chart MUST open a detailed filtered view. Use Chart.js onClick handlers. When clicked, show a modal or slide-in panel containing: a filtered table of the underlying data for that segment, a more detailed breakdown chart, and summary statistics. Include a "Back" or "Close" button to return.
+  * TABLE DRILL-DOWN: Clicking any table row MUST open a styled popup card/modal showing a detailed view of that record. The card should display ALL fields for that row in a clean, readable layout with labels and values. Include related data where relevant (e.g., clicking a customer shows their deals, activity timeline, and key metrics). Style the card with the company branding, rounded corners, subtle shadow, and a close button.
+  * Both drill-down types must feel polished — use CSS transitions for opening/closing (fade + scale), and darken the background with an overlay.
 - CROSS-FILTERING / REACTIVE GRAPHS: When the user clicks a row or applies a filter on any table, at least one other chart or graph on the page MUST reactively update to reflect the new selection. For example: selecting a region in a table filters a revenue chart to that region; selecting a product filters the pipeline chart. Use JavaScript event listeners to connect tables and charts.
-- INTELLIGENT SIZING (CRITICAL — DO NOT IGNORE): 
-  * Every Chart.js canvas MUST be wrapped in a container div with a fixed max-height of 320px and overflow:hidden. The canvas itself must also have max-height:300px; width:100%.
-  * Create all Chart.js instances with options: { responsive: true, maintainAspectRatio: false }.
-  * Every data table MUST be wrapped in a scrollable container with max-height:400px; overflow-y:auto. The table scrolls internally — the page must NOT grow unbounded.
+- LAYOUT SIZING:
+  * Every data table MUST be wrapped in a scrollable container with max-height:450px; overflow-y:auto. The table scrolls internally — the page must NOT grow unbounded.
   * Each dashboard section/view MUST have overflow-y:auto on its main content wrapper so content scrolls within the section, NOT the entire page body.
   * The main content area (right of sidebar) must be height:100vh; overflow-y:auto.
-  * Use CSS grid with constrained row heights to prevent any single chart or table from dominating the viewport.
-  * NEVER let a chart grow taller than 320px or a table taller than 400px on screen. The dashboard must look polished on 1080p (1920x1080) with each section fitting or scrolling within its bounds.
+  * Use a comfortable layout grid — do NOT cram charts. Each chart card should have min-width:400px in a flex-wrap or CSS grid layout.
 - FUNCTIONAL SIDEBAR NAVIGATION: The sidebar MUST contain clearly labeled, visible text links for each dashboard section (e.g., "Overview", "Pipeline", "Competitors", "Customers", "Products", "Analytics", "Agentic Workflows", "CFO View"). Each link MUST be fully clickable and functional. Clicking a sidebar link MUST hide all other sections and show ONLY the corresponding section/view in the main content area on the right. Use JavaScript click handlers that toggle section visibility (display:none / display:block). The sidebar must highlight the currently active section. Do NOT use empty or placeholder hotspots — every sidebar item must have visible text and a working click handler. On mobile, the sidebar should collapse into a hamburger menu that still provides the same navigation functionality.
 
 IMPORTANT RULES:

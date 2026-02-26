@@ -1,1 +1,7 @@
 project_id = "eeewehiqamfebbwbscrb"
+
+[functions.scrape-job]
+verify_jwt = false
+
+[functions.tailor-cover-letter]
+verify_jwt = false

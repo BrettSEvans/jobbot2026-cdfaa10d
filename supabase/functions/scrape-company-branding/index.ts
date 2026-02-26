@@ -113,9 +113,29 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Extract a valid URL from potentially messy input
     let formattedUrl = url.trim();
-    if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
-      formattedUrl = `https://${formattedUrl}`;
+    
+    // If input contains multiple URLs or garbage, try to extract a clean URL
+    const urlMatch = formattedUrl.match(/https?:\/\/[^\s"'<>]+/);
+    if (urlMatch) {
+      formattedUrl = urlMatch[0];
+    } else {
+      // No http(s) URL found, try to clean and prefix
+      formattedUrl = formattedUrl.replace(/[^\w.\-\/:#?&=]/g, '').trim();
+      if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
+        formattedUrl = `https://${formattedUrl}`;
+      }
+    }
+
+    // Final validation
+    try {
+      new URL(formattedUrl);
+    } catch {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Invalid URL provided' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     console.log('Scraping branding from:', formattedUrl);

@@ -1,0 +1,232 @@
+import { supabase } from '@/integrations/supabase/client';
+
+// --- Scrape company branding ---
+export async function scrapeCompanyBranding(url: string) {
+  const { data, error } = await supabase.functions.invoke('scrape-company-branding', {
+    body: { url },
+  });
+  if (error) throw new Error(error.message);
+  if (!data?.success) throw new Error(data?.error || 'Failed to scrape branding');
+  return { branding: data.branding, markdown: data.markdown, metadata: data.metadata, links: data.links };
+}
+
+// --- Analyze company (competitors, customers, products) ---
+export async function analyzeCompany(params: {
+  companyMarkdown?: string;
+  jobDescription?: string;
+  companyName?: string;
+}) {
+  const { data, error } = await supabase.functions.invoke('analyze-company', {
+    body: params,
+  });
+  if (error) throw new Error(error.message);
+  if (data?.error) throw new Error(data.error);
+  return data as {
+    success: boolean;
+    companyName: string;
+    department: string;
+    products: string[];
+    competitors: string[];
+    customers: string[];
+    jobTitle: string;
+  };
+}
+
+// --- Stream dashboard HTML generation ---
+export async function streamDashboardGeneration({
+  jobDescription,
+  branding,
+  companyName,
+  jobTitle,
+  competitors,
+  customers,
+  products,
+  department,
+  onDelta,
+  onDone,
+}: {
+  jobDescription: string;
+  branding?: any;
+  companyName?: string;
+  jobTitle?: string;
+  competitors?: string[];
+  customers?: string[];
+  products?: string[];
+  department?: string;
+  onDelta: (text: string) => void;
+  onDone: () => void;
+}) {
+  const resp = await fetch(
+    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-dashboard`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+      },
+      body: JSON.stringify({ jobDescription, branding, companyName, jobTitle, competitors, customers, products, department }),
+    }
+  );
+
+  if (!resp.ok || !resp.body) {
+    const errData = await resp.json().catch(() => ({}));
+    throw new Error(errData.error || `Request failed (${resp.status})`);
+  }
+
+  await processSSEStream(resp.body, onDelta, onDone);
+}
+
+// --- Stream dashboard refinement ---
+export async function streamDashboardRefinement({
+  currentHtml,
+  userMessage,
+  chatHistory,
+  onDelta,
+  onDone,
+}: {
+  currentHtml: string;
+  userMessage: string;
+  chatHistory?: Array<{ role: string; content: string }>;
+  onDelta: (text: string) => void;
+  onDone: () => void;
+}) {
+  const resp = await fetch(
+    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/refine-dashboard`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+      },
+      body: JSON.stringify({ currentHtml, userMessage, chatHistory }),
+    }
+  );
+
+  if (!resp.ok || !resp.body) {
+    const errData = await resp.json().catch(() => ({}));
+    throw new Error(errData.error || `Request failed (${resp.status})`);
+  }
+
+  await processSSEStream(resp.body, onDelta, onDone);
+}
+
+// --- CRUD for job applications ---
+export async function saveJobApplication(app: {
+  id?: string;
+  job_url: string;
+  company_url?: string;
+  company_name?: string;
+  job_title?: string;
+  job_description_markdown?: string;
+  cover_letter?: string;
+  branding?: any;
+  dashboard_html?: string;
+  chat_history?: any[];
+  competitors?: string[];
+  customers?: string[];
+  products?: string[];
+  status?: string;
+}) {
+  if (app.id) {
+    const { data, error } = await supabase
+      .from('job_applications')
+      .update({ ...app, updated_at: new Date().toISOString() })
+      .eq('id', app.id)
+      .select()
+      .single();
+    if (error) throw new Error(error.message);
+    return data;
+  } else {
+    const { data, error } = await supabase
+      .from('job_applications')
+      .insert(app)
+      .select()
+      .single();
+    if (error) throw new Error(error.message);
+    return data;
+  }
+}
+
+export async function getJobApplications() {
+  const { data, error } = await supabase
+    .from('job_applications')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+export async function getJobApplication(id: string) {
+  const { data, error } = await supabase
+    .from('job_applications')
+    .select('*')
+    .eq('id', id)
+    .single();
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+export async function deleteJobApplication(id: string) {
+  const { error } = await supabase
+    .from('job_applications')
+    .delete()
+    .eq('id', id);
+  if (error) throw new Error(error.message);
+}
+
+// --- SSE Stream processor (shared) ---
+async function processSSEStream(
+  body: ReadableStream<Uint8Array>,
+  onDelta: (text: string) => void,
+  onDone: () => void
+) {
+  const reader = body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let streamDone = false;
+
+  while (!streamDone) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+
+    let idx: number;
+    while ((idx = buffer.indexOf('\n')) !== -1) {
+      let line = buffer.slice(0, idx);
+      buffer = buffer.slice(idx + 1);
+      if (line.endsWith('\r')) line = line.slice(0, -1);
+      if (line.startsWith(':') || line.trim() === '') continue;
+      if (!line.startsWith('data: ')) continue;
+
+      const json = line.slice(6).trim();
+      if (json === '[DONE]') { streamDone = true; break; }
+
+      try {
+        const parsed = JSON.parse(json);
+        const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+        if (content) onDelta(content);
+      } catch {
+        buffer = line + '\n' + buffer;
+        break;
+      }
+    }
+  }
+
+  // flush remaining
+  if (buffer.trim()) {
+    for (let raw of buffer.split('\n')) {
+      if (!raw) continue;
+      if (raw.endsWith('\r')) raw = raw.slice(0, -1);
+      if (!raw.startsWith('data: ')) continue;
+      const json = raw.slice(6).trim();
+      if (json === '[DONE]') continue;
+      try {
+        const parsed = JSON.parse(json);
+        const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+        if (content) onDelta(content);
+      } catch { /* ignore */ }
+    }
+  }
+
+  onDone();
+}

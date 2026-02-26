@@ -5,7 +5,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { scrapeJob, streamTailoredLetter } from "@/lib/api/coverLetter";
-import { Copy, RefreshCw, PenLine, FileText, Loader2, ArrowLeft } from "lucide-react";
+import { Copy, RefreshCw, PenLine, FileText, Loader2, ArrowLeft, Briefcase } from "lucide-react";
+import { Link } from "react-router-dom";
 
 type AppState = "input" | "loading" | "result";
 
@@ -94,6 +95,11 @@ const Index = () => {
           <p className="text-muted-foreground">
             Paste a job posting URL and get a tailored cover letter in seconds.
           </p>
+          <Link to="/applications">
+            <Button variant="outline" size="sm" className="mt-2">
+              <Briefcase className="mr-2 h-4 w-4" /> Full Job Application Suite
+            </Button>
+          </Link>
         </header>
 
         {appState === "input" && (

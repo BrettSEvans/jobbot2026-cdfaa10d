@@ -14,6 +14,41 @@ export type Database = {
   }
   public: {
     Tables: {
+      dashboard_revisions: {
+        Row: {
+          application_id: string
+          created_at: string
+          dashboard_html: string
+          id: string
+          label: string | null
+          revision_number: number
+        }
+        Insert: {
+          application_id: string
+          created_at?: string
+          dashboard_html: string
+          id?: string
+          label?: string | null
+          revision_number?: number
+        }
+        Update: {
+          application_id?: string
+          created_at?: string
+          dashboard_html?: string
+          id?: string
+          label?: string | null
+          revision_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dashboard_revisions_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "job_applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dashboard_templates: {
         Row: {
           created_at: string

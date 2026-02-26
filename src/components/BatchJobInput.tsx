@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -19,6 +19,28 @@ export type BatchEntry = {
 
 const MAX_BATCH = 10;
 
+const URL_REGEX = /^https?:\/\/[^\s"'<>]+\.[^\s"'<>]{2,}$/i;
+
+function isValidUrl(value: string): boolean {
+  if (!value.trim()) return true; // empty is ok (optional or handled separately)
+  let url = value.trim();
+  if (!url.startsWith("http://") && !url.startsWith("https://")) {
+    url = `https://${url}`;
+  }
+  return URL_REGEX.test(url);
+}
+
+function getUrlError(value: string, label: string): string | null {
+  if (!value.trim()) return null;
+  if (!isValidUrl(value)) return `${label} doesn't look like a valid URL`;
+  return null;
+}
+
+type EntryErrors = {
+  jobUrl?: string;
+  companyUrl?: string;
+};
+
 function createEntry(): BatchEntry {
   return {
     id: crypto.randomUUID(),
@@ -34,7 +56,18 @@ export default function BatchJobInput() {
   const navigate = useNavigate();
   const [entries, setEntries] = useState<BatchEntry[]>([createEntry()]);
   const [submitting, setSubmitting] = useState(false);
+  const [touched, setTouched] = useState<Map<string, Set<string>>>(new Map());
   const [results, setResults] = useState<Map<string, { appId?: string; status: string }>>(new Map());
+
+  const markTouched = (id: string, field: string) => {
+    setTouched((prev) => {
+      const next = new Map(prev);
+      const fields = new Set(next.get(id) || []);
+      fields.add(field);
+      next.set(id, fields);
+      return next;
+    });
+  };
 
   const addEntry = () => {
     if (entries.length >= MAX_BATCH) {
@@ -59,15 +92,49 @@ export default function BatchJobInput() {
     );
   };
 
-  const isEntryValid = (entry: BatchEntry) => {
-    if (entry.useManual) return entry.jobDescription.trim().length > 0;
-    return entry.jobUrl.trim().length > 0;
+  const getEntryErrors = (entry: BatchEntry): EntryErrors => {
+    const errors: EntryErrors = {};
+    if (!entry.useManual) {
+      const jobErr = getUrlError(entry.jobUrl, "Job URL");
+      if (jobErr) errors.jobUrl = jobErr;
+    }
+    const compErr = getUrlError(entry.companyUrl, "Company URL");
+    if (compErr) errors.companyUrl = compErr;
+    return errors;
   };
 
+  const allErrors = useMemo(() => {
+    const map = new Map<string, EntryErrors>();
+    entries.forEach((e) => {
+      const errs = getEntryErrors(e);
+      if (Object.keys(errs).length > 0) map.set(e.id, errs);
+    });
+    return map;
+  }, [entries]);
+
+  const isEntryValid = (entry: BatchEntry) => {
+    if (entry.useManual) return entry.jobDescription.trim().length > 0;
+    return entry.jobUrl.trim().length > 0 && isValidUrl(entry.jobUrl);
+  };
+
+  const hasAnyErrors = allErrors.size > 0;
   const validEntries = entries.filter(isEntryValid);
 
   const handleSubmitBatch = async () => {
-    if (validEntries.length === 0) return;
+    // Mark all fields as touched to show errors
+    const allTouched = new Map<string, Set<string>>();
+    entries.forEach((e) => allTouched.set(e.id, new Set(["jobUrl", "companyUrl"])));
+    setTouched(allTouched);
+
+    if (hasAnyErrors || validEntries.length === 0) {
+      toast({
+        title: "Invalid entries",
+        description: "Please fix the highlighted URL errors before submitting.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setSubmitting(true);
     const newResults = new Map<string, { appId?: string; status: string }>();
 
@@ -93,7 +160,6 @@ export default function BatchJobInput() {
       description: `${validEntries.length} job application(s) are being generated in the background. You can navigate away — they'll continue processing.`,
     });
 
-    // Navigate to applications list after a short delay
     setTimeout(() => navigate("/applications"), 2000);
   };
 
@@ -148,19 +214,37 @@ export default function BatchJobInput() {
                 className="text-sm"
               />
             ) : (
-              <Input
-                placeholder="Job posting URL"
-                value={entry.jobUrl}
-                onChange={(e) => updateEntry(entry.id, "jobUrl", e.target.value)}
-                className="text-sm"
-              />
+              <div>
+                <Input
+                  placeholder="Job posting URL (e.g. https://company.com/jobs/123)"
+                  value={entry.jobUrl}
+                  onChange={(e) => updateEntry(entry.id, "jobUrl", e.target.value)}
+                  onBlur={() => markTouched(entry.id, "jobUrl")}
+                  className={`text-sm ${touched.get(entry.id)?.has("jobUrl") && allErrors.get(entry.id)?.jobUrl ? "border-destructive" : ""}`}
+                />
+                {touched.get(entry.id)?.has("jobUrl") && allErrors.get(entry.id)?.jobUrl && (
+                  <p className="text-xs text-destructive mt-1 flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" />
+                    {allErrors.get(entry.id)!.jobUrl}
+                  </p>
+                )}
+              </div>
             )}
-            <Input
-              placeholder="Company website URL (optional)"
-              value={entry.companyUrl}
-              onChange={(e) => updateEntry(entry.id, "companyUrl", e.target.value)}
-              className="text-sm"
-            />
+            <div>
+              <Input
+                placeholder="Company website URL (optional, e.g. https://company.com)"
+                value={entry.companyUrl}
+                onChange={(e) => updateEntry(entry.id, "companyUrl", e.target.value)}
+                onBlur={() => markTouched(entry.id, "companyUrl")}
+                className={`text-sm ${touched.get(entry.id)?.has("companyUrl") && allErrors.get(entry.id)?.companyUrl ? "border-destructive" : ""}`}
+              />
+              {touched.get(entry.id)?.has("companyUrl") && allErrors.get(entry.id)?.companyUrl && (
+                <p className="text-xs text-destructive mt-1 flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" />
+                  {allErrors.get(entry.id)!.companyUrl}
+                </p>
+              )}
+            </div>
           </CardContent>
         </Card>
       ))}

@@ -14,7 +14,63 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      job_applications: {
+        Row: {
+          branding: Json | null
+          chat_history: Json | null
+          company_name: string | null
+          company_url: string | null
+          competitors: Json | null
+          cover_letter: string | null
+          created_at: string
+          customers: Json | null
+          dashboard_html: string | null
+          id: string
+          job_description_markdown: string | null
+          job_title: string | null
+          job_url: string
+          products: Json | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          branding?: Json | null
+          chat_history?: Json | null
+          company_name?: string | null
+          company_url?: string | null
+          competitors?: Json | null
+          cover_letter?: string | null
+          created_at?: string
+          customers?: Json | null
+          dashboard_html?: string | null
+          id?: string
+          job_description_markdown?: string | null
+          job_title?: string | null
+          job_url: string
+          products?: Json | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          branding?: Json | null
+          chat_history?: Json | null
+          company_name?: string | null
+          company_url?: string | null
+          competitors?: Json | null
+          cover_letter?: string | null
+          created_at?: string
+          customers?: Json | null
+          dashboard_html?: string | null
+          id?: string
+          job_description_markdown?: string | null
+          job_title?: string | null
+          job_url?: string
+          products?: Json | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

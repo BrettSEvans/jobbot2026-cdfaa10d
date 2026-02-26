@@ -5,3 +5,15 @@ verify_jwt = false
 
 [functions.tailor-cover-letter]
 verify_jwt = false
+
+[functions.scrape-company-branding]
+verify_jwt = false
+
+[functions.analyze-company]
+verify_jwt = false
+
+[functions.generate-dashboard]
+verify_jwt = false
+
+[functions.refine-dashboard]
+verify_jwt = false

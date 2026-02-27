@@ -256,7 +256,7 @@ const Applications = () => {
 function ApplicationStatusCell({ appId, dbStatus, generationStatus }: { appId: string; dbStatus: string; generationStatus: string }) {
   const bgJob = backgroundGenerator.getJob(appId);
   const isActive = bgJob && !["complete", "error"].includes(bgJob.status);
-  const isDbGenerating = generationStatus && !["complete", "error"].includes(generationStatus) && generationStatus !== "pending";
+  const isDbGenerating = dbStatus !== "complete" && dbStatus !== "error" && generationStatus && !["complete", "error", "pending"].includes(generationStatus);
 
   if (isActive) {
     return (

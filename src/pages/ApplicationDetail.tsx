@@ -33,6 +33,7 @@ import CoverLetterRevisions from "@/components/CoverLetterRevisions";
 import { backgroundGenerator } from "@/lib/backgroundGenerator";
 import { saveDashboardRevision } from "@/lib/api/dashboardRevisions";
 import { saveCoverLetterRevision } from "@/lib/api/coverLetterRevisions";
+import { useBackgroundJob } from "@/hooks/useBackgroundJob";
 
 const ApplicationDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -66,6 +67,15 @@ const ApplicationDetail = () => {
   const [previewCoverLetter, setPreviewCoverLetter] = useState<string | null>(null);
   const [coverLetterRevisionTrigger, setCoverLetterRevisionTrigger] = useState(0);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const bgJob = useBackgroundJob(id);
+  const isBgGenerating = bgJob && !["complete", "error"].includes(bgJob.status);
+
+  // Re-fetch when background job completes
+  useEffect(() => {
+    if (bgJob?.status === "complete" && id) {
+      loadApplication(id);
+    }
+  }, [bgJob?.status]);
 
   useEffect(() => {
     if (id) loadApplication(id);
@@ -394,6 +404,14 @@ const ApplicationDetail = () => {
                     title="Dashboard Preview"
                   />
                 </div>
+              </Card>
+            ) : isBgGenerating ? (
+              <Card>
+                <CardContent className="py-12 text-center space-y-3">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+                  <p className="text-muted-foreground font-medium">{bgJob?.progress || "Generating dashboard..."}</p>
+                  <p className="text-xs text-muted-foreground">You can navigate away — generation continues in the background.</p>
+                </CardContent>
               </Card>
             ) : (
               <Card>

@@ -25,6 +25,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { backgroundGenerator } from "@/lib/backgroundGenerator";
+import { useActiveJobCount } from "@/hooks/useBackgroundJob";
 
 type SortKey = "company_name" | "job_title" | "status" | "created_at" | "updated_at";
 type SortDir = "asc" | "desc";
@@ -38,8 +40,18 @@ const Applications = () => {
   const [sortKey, setSortKey] = useState<SortKey>("created_at");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 
+  const activeJobCount = useActiveJobCount();
+
   useEffect(() => {
     loadApplications();
+  }, []);
+
+  // Re-fetch applications when background jobs complete
+  useEffect(() => {
+    const unsub = backgroundGenerator.subscribe(() => {
+      loadApplications();
+    });
+    return () => { unsub(); };
   }, []);
 
   const loadApplications = async () => {
@@ -170,19 +182,7 @@ const Applications = () => {
                       </TableCell>
                       <TableCell>{app.job_title || "Unknown"}</TableCell>
                       <TableCell>
-                        <Badge
-                          variant={
-                            app.status === "complete"
-                              ? "default"
-                              : app.status === "generating"
-                              ? "secondary"
-                              : app.status === "error"
-                              ? "destructive"
-                              : "secondary"
-                          }
-                        >
-                          {app.status}
-                        </Badge>
+                        <ApplicationStatusCell appId={app.id} dbStatus={app.status} generationStatus={app.generation_status} />
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {new Date(app.created_at).toLocaleDateString()}
@@ -251,5 +251,40 @@ const Applications = () => {
     </div>
   );
 };
+
+/** Per-row status cell that reacts to background generation state */
+function ApplicationStatusCell({ appId, dbStatus, generationStatus }: { appId: string; dbStatus: string; generationStatus: string }) {
+  const bgJob = backgroundGenerator.getJob(appId);
+  const isActive = bgJob && !["complete", "error"].includes(bgJob.status);
+  const isDbGenerating = generationStatus && !["complete", "error"].includes(generationStatus) && generationStatus !== "pending";
+
+  if (isActive) {
+    return (
+      <Badge variant="secondary" className="flex items-center gap-1.5 w-fit">
+        <Loader2 className="h-3 w-3 animate-spin" />
+        {bgJob.progress || "Generating..."}
+      </Badge>
+    );
+  }
+
+  if (isDbGenerating) {
+    return (
+      <Badge variant="secondary" className="flex items-center gap-1.5 w-fit">
+        <Loader2 className="h-3 w-3 animate-spin" />
+        Generating...
+      </Badge>
+    );
+  }
+
+  return (
+    <Badge
+      variant={
+        dbStatus === "complete" ? "default" : dbStatus === "error" ? "destructive" : "secondary"
+      }
+    >
+      {dbStatus}
+    </Badge>
+  );
+}
 
 export default Applications;

@@ -116,6 +116,45 @@ CRITICAL DATA & INTERACTION REQUIREMENTS:
   * Use a comfortable layout grid — do NOT cram charts. Each chart card should have min-width:400px in a flex-wrap or CSS grid layout.
 - FUNCTIONAL SIDEBAR NAVIGATION: The sidebar MUST contain clearly labeled, visible text links for each dashboard section (e.g., "Overview", "Pipeline", "Competitors", "Customers", "Products", "Analytics", "Agentic Workflows", "CFO View"). Each link MUST be fully clickable and functional. Clicking a sidebar link MUST hide all other sections and show ONLY the corresponding section/view in the main content area on the right. Use JavaScript click handlers that toggle section visibility (display:none / display:block). The sidebar must highlight the currently active section. Do NOT use empty or placeholder hotspots — every sidebar item must have visible text and a working click handler. On mobile, the sidebar should collapse into a hamburger menu that still provides the same navigation functionality.
 
+CRITICAL JAVASCRIPT IMPLEMENTATION RULES (READ VERY CAREFULLY):
+
+A) HAMBURGER MENU — MANDATORY IMPLEMENTATION:
+   - Include a hamburger button (☰ icon) in the top header bar, visible at ALL screen sizes (not just mobile).
+   - The hamburger button MUST toggle the sidebar open/closed using JavaScript: onclick handler that adds/removes a CSS class (e.g., "sidebar-collapsed") on the sidebar element.
+   - When collapsed, the sidebar should have width:0; overflow:hidden; or transform:translateX(-100%). When open, it should show normally.
+   - The hamburger button must ALWAYS be visible and clickable, regardless of sidebar state.
+   - Example pattern:
+     document.getElementById('hamburger-btn').addEventListener('click', function() {
+       document.getElementById('sidebar').classList.toggle('collapsed');
+     });
+
+B) SIDEBAR NAVIGATION LINKS — MANDATORY IMPLEMENTATION:
+   - Each sidebar link must have a data-section attribute matching the id of its target section div.
+   - Use this exact JavaScript pattern for navigation:
+     document.querySelectorAll('.nav-link').forEach(function(link) {
+       link.addEventListener('click', function(e) {
+         e.preventDefault();
+         var targetId = this.getAttribute('data-section');
+         document.querySelectorAll('.dashboard-section').forEach(function(s) { s.style.display = 'none'; });
+         document.getElementById(targetId).style.display = 'block';
+         document.querySelectorAll('.nav-link').forEach(function(l) { l.classList.remove('active'); });
+         this.classList.add('active');
+       });
+     });
+   - On page load, show only the first section and mark the first nav link as active.
+
+C) CHART.JS CHARTS — MANDATORY IMPLEMENTATION:
+   - Load Chart.js from CDN in a <script> tag BEFORE your custom scripts.
+   - ALL Chart.js initialization MUST be inside a DOMContentLoaded event listener or placed at the end of <body>.
+   - Every chart MUST use: new Chart(document.getElementById('canvasId').getContext('2d'), { ... });
+   - Charts in initially hidden sections MUST be initialized/re-rendered when their section becomes visible. Add this to the nav click handler:
+     // After showing the section, trigger chart resize
+     if (window.Chart) {
+       Chart.helpers.each(Chart.instances, function(instance) { instance.resize(); });
+     }
+   - Test that Chart.js is loaded before using it: wrap chart init in if (typeof Chart !== 'undefined') { ... }
+   - Each chart canvas MUST have a unique id attribute.
+
 IMPORTANT RULES:
 - Output ONLY the complete HTML file, starting with <!DOCTYPE html> and ending with </html>
 - ALL CSS must be embedded in a <style> tag

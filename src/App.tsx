@@ -9,6 +9,7 @@ import ApplicationDetail from "./pages/ApplicationDetail";
 import Templates from "./pages/Templates";
 import NotFound from "./pages/NotFound";
 import BackgroundJobsBanner from "./components/BackgroundJobsBanner";
+import AiChat from "./components/AiChat";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +29,7 @@ const App = () => (
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
+        <AiChat />
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

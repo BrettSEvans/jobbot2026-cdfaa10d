@@ -256,7 +256,6 @@ const Applications = () => {
 function ApplicationStatusCell({ appId, dbStatus, generationStatus }: { appId: string; dbStatus: string; generationStatus: string }) {
   const bgJob = backgroundGenerator.getJob(appId);
   const isActive = bgJob && !["complete", "error"].includes(bgJob.status);
-  const isDbGenerating = dbStatus !== "complete" && dbStatus !== "error" && generationStatus && !["complete", "error", "pending"].includes(generationStatus);
 
   if (isActive) {
     return (
@@ -267,7 +266,12 @@ function ApplicationStatusCell({ appId, dbStatus, generationStatus }: { appId: s
     );
   }
 
-  if (isDbGenerating) {
+  // Determine display status: trust dbStatus first, fall back to generation_status
+  const isComplete = dbStatus === "complete" || generationStatus === "complete";
+  const isError = dbStatus === "error" || generationStatus === "error";
+  const isGenerating = !isComplete && !isError && generationStatus && !["idle", "pending"].includes(generationStatus);
+
+  if (isGenerating) {
     return (
       <Badge variant="secondary" className="flex items-center gap-1.5 w-fit">
         <Loader2 className="h-3 w-3 animate-spin" />
@@ -276,14 +280,10 @@ function ApplicationStatusCell({ appId, dbStatus, generationStatus }: { appId: s
     );
   }
 
-  const label = dbStatus === "complete" ? "Complete" : dbStatus === "error" ? "Error" : dbStatus;
+  const label = isComplete ? "Complete" : isError ? "Error" : dbStatus === "draft" ? "Draft" : dbStatus;
 
   return (
-    <Badge
-      variant={
-        dbStatus === "complete" ? "default" : dbStatus === "error" ? "destructive" : "secondary"
-      }
-    >
+    <Badge variant={isComplete ? "default" : isError ? "destructive" : "secondary"}>
       {label}
     </Badge>
   );

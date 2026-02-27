@@ -1,0 +1,1 @@
+UPDATE job_applications SET status = 'complete', generation_status = 'complete' WHERE status = 'generating' AND dashboard_html IS NOT NULL AND cover_letter IS NOT NULL;

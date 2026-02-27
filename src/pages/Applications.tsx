@@ -262,7 +262,7 @@ function ApplicationStatusCell({ appId, dbStatus, generationStatus }: { appId: s
     return (
       <Badge variant="secondary" className="flex items-center gap-1.5 w-fit">
         <Loader2 className="h-3 w-3 animate-spin" />
-        {bgJob.progress || "Generating..."}
+        Generating...
       </Badge>
     );
   }
@@ -276,13 +276,15 @@ function ApplicationStatusCell({ appId, dbStatus, generationStatus }: { appId: s
     );
   }
 
+  const label = dbStatus === "complete" ? "Complete" : dbStatus === "error" ? "Error" : dbStatus;
+
   return (
     <Badge
       variant={
         dbStatus === "complete" ? "default" : dbStatus === "error" ? "destructive" : "secondary"
       }
     >
-      {dbStatus}
+      {label}
     </Badge>
   );
 }

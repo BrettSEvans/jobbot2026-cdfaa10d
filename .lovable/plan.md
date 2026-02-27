@@ -1,47 +1,48 @@
 
 
-# Cover Letter Tailoring Tool
+# AI Chat Interface Implementation
 
 ## Overview
-A single-page app where Brett pastes a job posting URL, and the tool scrapes the job description and generates a lightly tailored version of his cover letter — swapping company name, role title, and adjusting 2-3 talking points to match the job.
+Add a persistent AI chat popup accessible from every page. The chat will be a floating button in the bottom-right corner (more natural for chat UX than a header link), with a popup panel that lets users ask questions and receive mock contextual responses.
 
-## How It Works
+## Components to Create
 
-### 1. Landing Page
-A clean, simple interface with:
-- A **URL input field** for the job posting link
-- A **"Generate Cover Letter"** button
-- Brett's base cover letter stored in the app as the template
+### 1. `src/components/AiChat.tsx` - Main Chat Component
+- Floating action button (bottom-right corner) with a chat/sparkles icon, always visible
+- Click toggles a chat popup panel (not a full modal -- stays anchored to the corner)
+- Chat panel contains:
+  - Header with title and close button
+  - Scrollable message area showing conversation history
+  - Input field + send button at bottom
+- State: `isOpen`, `messages[]`, `isThinking`
+- On send:
+  1. Add user message to history
+  2. Show "thinking" animation (animated dots) for 1.5s
+  3. Generate a mock response that references the current page context
+- Context awareness: Uses `useLocation()` from react-router to detect current route and tailors mock responses accordingly (e.g., "I see you're viewing the Applications list..." or "Looking at the dashboard for [company]...")
+- Keyboard: Enter to send, Escape to close
 
-### 2. Job Scraping (Firecrawl)
-When the user submits a URL:
-- The app calls a **Supabase Edge Function** that uses **Firecrawl** to scrape the job posting page
-- Extracts the job title, company name, key responsibilities, and requirements as markdown
+### 2. Add to `src/App.tsx`
+- Import and render `<AiChat />` inside the `BrowserRouter` (so it has access to router context) but outside `<Routes>`, making it persistent across all pages
 
-### 3. AI-Powered Tailoring (Lovable Cloud AI)
-A second Edge Function sends the scraped job description + Brett's base cover letter to the AI with instructions to:
-- Replace the company name and role title
-- Adjust 2-3 talking points to align with the job's key requirements
-- Keep Brett's core narrative, tone, and experience intact
-- Maintain the same general structure and length
+## Technical Details
 
-### 4. Results Display
-- Shows a **loading state** while scraping and generating
-- Displays the **tailored cover letter** as formatted text on screen
-- Includes a **"Copy to Clipboard"** button for easy use
+- **No backend needed** -- this is a mock/prototype. Responses are generated client-side with simple template strings
+- **Styling**: Uses existing shadcn/ui components (Button, Input, ScrollArea, Card) and Tailwind classes
+- **Non-blocking**: The chat is a fixed-position overlay that doesn't interfere with page content
+- **Context detection**: Parses `location.pathname` to determine which view the user is on and includes that in mock responses
+- **Message format**: `{ role: 'user' | 'assistant', content: string }`
 
-### 5. Retry Options
-After viewing the result, two buttons are shown:
-- **"Regenerate"** — rewrites the cover letter using the same job data and default instructions (produces a fresh variation)
-- **"Rewrite with Instructions"** — opens a text input where Brett can type natural language guidance (e.g. "Emphasize my analytics experience more" or "Make the tone more casual") and the AI regenerates accordingly
+## Mock Response Logic
+- Maintains a small set of contextual response templates per route pattern:
+  - `/` or `/applications` -- references the job applications table
+  - `/applications/new` -- references the application creation flow
+  - `/applications/:id` -- references the specific dashboard being viewed
+  - `/templates` -- references template management
+- Responses feel conversational and reference the current view naturally
 
-Both options keep the same scraped job data so there's no need to re-scrape.
-
-A **"New Job"** button is also available to start over with a different URL.
-
-## Tech Stack
-- **Firecrawl connector** → scrape job posting URLs
-- **Lovable Cloud AI** → generate the tailored cover letter
-- **Supabase Edge Functions** → backend for scraping + AI calls
-- **React frontend** → simple, clean UI with the existing shadcn components
-
+## Files Changed
+| File | Action |
+|------|--------|
+| `src/components/AiChat.tsx` | Create |
+| `src/App.tsx` | Edit -- add `<AiChat />` inside `<BrowserRouter>` |

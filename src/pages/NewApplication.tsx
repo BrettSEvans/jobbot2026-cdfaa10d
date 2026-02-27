@@ -34,7 +34,7 @@ import SaveAsTemplate from "@/components/SaveAsTemplate";
 import GenerationProgressBar, { type PipelineStage } from "@/components/GenerationProgressBar";
 import type { DashboardTemplate } from "@/lib/api/templates";
 
-type Step = "input" | "analyzing" | "review" | "generating" | "preview";
+type Step = "input" | "analyzing" | "generating" | "preview";
 type AnalyzeStage = "scraping" | "branding" | "analyzing" | "cover-letter" | "complete";
 
 const NewApplication = () => {
@@ -52,7 +52,7 @@ const NewApplication = () => {
   const [loadingMsg, setLoadingMsg] = useState("");
   const [pipelineStage, setPipelineStage] = useState<PipelineStage>("scraping");
 
-  // Data
+  // Data - using refs to avoid stale closures in the async pipeline
   const [jobMarkdown, setJobMarkdown] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [jobTitle, setJobTitle] = useState("");
@@ -121,18 +121,26 @@ const NewApplication = () => {
       // AI analysis
       setPipelineStage("analyzing");
       setLoadingMsg("Analyzing company, competitors & products...");
+      let companyNameLocal = "", jobTitleLocal = "", departmentLocal = "";
+      let competitorsLocal: string[] = [], customersLocal: string[] = [], productsLocal: string[] = [];
       try {
         const analysis = await analyzeCompany({
           companyMarkdown,
           jobDescription: markdown,
           companyName: companyName || undefined,
         });
-        setCompanyName(analysis.companyName || "");
-        setJobTitle(analysis.jobTitle || "");
-        setDepartment(analysis.department || "");
-        setCompetitors(analysis.competitors || []);
-        setCustomers(analysis.customers || []);
-        setProducts(analysis.products || []);
+        companyNameLocal = analysis.companyName || "";
+        jobTitleLocal = analysis.jobTitle || "";
+        departmentLocal = analysis.department || "";
+        competitorsLocal = analysis.competitors || [];
+        customersLocal = analysis.customers || [];
+        productsLocal = analysis.products || [];
+        setCompanyName(companyNameLocal);
+        setJobTitle(jobTitleLocal);
+        setDepartment(departmentLocal);
+        setCompetitors(competitorsLocal);
+        setCustomers(customersLocal);
+        setProducts(productsLocal);
       } catch (e) {
         console.warn("Analysis failed, continuing:", e);
       }
@@ -141,36 +149,32 @@ const NewApplication = () => {
       setPipelineStage("cover-letter");
       setLoadingMsg("Generating tailored cover letter...");
       setCoverLetter("");
+      let finalCoverLetter = "";
       await streamTailoredLetter({
         jobDescription: markdown,
-        onDelta: (text) => setCoverLetter((prev) => prev + text),
+        onDelta: (text) => {
+          finalCoverLetter += text;
+          setCoverLetter(finalCoverLetter);
+        },
         onDone: () => {},
       });
 
-      setStep("review");
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
-      setStep("input");
-    }
-  };
+      // Auto-generate dashboard immediately after cover letter
+      setPipelineStage("dashboard");
+      setStep("generating");
+      setLoadingMsg("Generating branded dashboard...");
+      setDashboardHtml("");
 
-  const handleGenerateDashboard = async () => {
-    setStep("generating");
-    setPipelineStage("dashboard");
-    setLoadingMsg("Generating branded dashboard...");
-    setDashboardHtml("");
-
-    try {
       let accumulated = "";
       await streamDashboardGeneration({
-        jobDescription: jobMarkdown,
-        branding,
-        companyName,
-        jobTitle,
-        competitors,
-        customers,
-        products,
-        department,
+        jobDescription: markdown,
+        branding: brandingData,
+        companyName: companyNameLocal,
+        jobTitle: jobTitleLocal,
+        competitors: competitorsLocal,
+        customers: customersLocal,
+        products: productsLocal,
+        department: departmentLocal,
         templateHtml: selectedTemplate?.dashboard_html,
         onDelta: (text) => {
           accumulated += text;
@@ -185,6 +189,7 @@ const NewApplication = () => {
           const htmlEnd = clean.lastIndexOf("</html>");
           if (htmlEnd !== -1) clean = clean.slice(0, htmlEnd + 7);
           setDashboardHtml(clean);
+          accumulated = clean;
         },
       });
 
@@ -192,15 +197,15 @@ const NewApplication = () => {
         id: applicationId || undefined,
         job_url: jobUrl || "manual-input",
         company_url: companyUrl || undefined,
-        company_name: companyName || undefined,
-        job_title: jobTitle || undefined,
-        job_description_markdown: jobMarkdown,
-        cover_letter: coverLetter,
-        branding,
-        dashboard_html: dashboardHtml,
-        competitors,
-        customers,
-        products,
+        company_name: companyNameLocal || undefined,
+        job_title: jobTitleLocal || undefined,
+        job_description_markdown: markdown,
+        cover_letter: finalCoverLetter,
+        branding: brandingData,
+        dashboard_html: accumulated,
+        competitors: competitorsLocal,
+        customers: customersLocal,
+        products: productsLocal,
         status: "complete",
       });
       setApplicationId(saved.id);
@@ -208,7 +213,7 @@ const NewApplication = () => {
       setStep("preview");
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
-      setStep("review");
+      setStep("input");
     }
   };
 
@@ -374,83 +379,7 @@ const NewApplication = () => {
         )}
 
         {/* Step: Review */}
-        {step === "review" && (
-          <div className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5" /> Job Description
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="whitespace-pre-wrap text-sm leading-relaxed max-h-[200px] overflow-y-auto bg-muted/50 rounded-md p-3">
-                  {jobMarkdown}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Company & Role Analysis</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-1">
-                <EditableField label="Company" field="companyName" value={companyName} />
-                <EditableField label="Role" field="jobTitle" value={jobTitle} />
-                <EditableField label="Department" field="department" value={department} />
-                <EditableField label="Products" field="products" value={products.join(", ")} displayValue={products.length ? undefined : "—"} />
-                <EditableField label="Competitors" field="competitors" value={competitors.join(", ")} displayValue={competitors.length ? undefined : "—"} />
-                <EditableField label="Customers" field="customers" value={customers.join(", ")} displayValue={customers.length ? undefined : "—"} />
-                {branding && (
-                  <div className="flex items-center gap-2 pt-2">
-                    <span className="text-sm font-medium text-muted-foreground">Branding:</span>
-                    <Badge variant="secondary">✓ Captured</Badge>
-                    {branding.colors && Object.entries(branding.colors).slice(0, 4).map(([key, val]) => (
-                      <div
-                        key={key}
-                        className="h-5 w-5 rounded-full border"
-                        style={{ backgroundColor: val as string }}
-                        title={`${key}: ${val}`}
-                      />
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2">
-                    <FileText className="h-5 w-5" /> Tailored Cover Letter
-                  </CardTitle>
-                  <Button variant="outline" size="sm" onClick={handleCopyCoverLetter}>
-                    <Copy className="h-3 w-3 mr-1" /> Copy
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="whitespace-pre-wrap text-sm leading-relaxed max-h-[300px] overflow-y-auto">
-                  {coverLetter}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Template selection + Generate */}
-            <div className="flex items-center gap-2">
-              <TemplateSelector onSelect={(t) => setSelectedTemplate(t)} />
-              {selectedTemplate && (
-                <Badge variant="secondary" className="text-xs">
-                  Using: {selectedTemplate.label}
-                </Badge>
-              )}
-            </div>
-
-            <Button onClick={handleGenerateDashboard} className="w-full" size="lg">
-              <Sparkles className="mr-2 h-4 w-4" /> Generate Branded Dashboard
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </div>
-        )}
+        {/* Review step removed — dashboard auto-generates after analysis */}
 
         {/* Step: Generating */}
         {step === "generating" && (

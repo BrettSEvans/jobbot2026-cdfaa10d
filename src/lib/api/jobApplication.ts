@@ -1,13 +1,28 @@
 import { supabase } from '@/integrations/supabase/client';
 
 // --- Scrape company branding ---
-export async function scrapeCompanyBranding(url: string) {
-  const { data, error } = await supabase.functions.invoke('scrape-company-branding', {
-    body: { url },
-  });
-  if (error) throw new Error(error.message);
-  if (!data?.success) throw new Error(data?.error || 'Failed to scrape branding');
-  return { branding: data.branding, markdown: data.markdown, metadata: data.metadata, links: data.links };
+export async function scrapeCompanyBranding(url: string, retries = 3) {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    const { data, error } = await supabase.functions.invoke('scrape-company-branding', {
+      body: { url },
+    });
+    if (error) {
+      if (attempt < retries) {
+        await new Promise(r => setTimeout(r, 2000 * attempt));
+        continue;
+      }
+      throw new Error(error.message);
+    }
+    if (!data?.success) {
+      if (attempt < retries && (data?.error?.includes('unexpected') || data?.error?.includes('UNKNOWN'))) {
+        await new Promise(r => setTimeout(r, 2000 * attempt));
+        continue;
+      }
+      throw new Error(data?.error || 'Failed to scrape branding');
+    }
+    return { branding: data.branding, markdown: data.markdown, metadata: data.metadata, links: data.links };
+  }
+  throw new Error('Failed to scrape branding after retries');
 }
 
 // --- Analyze company (competitors, customers, products) ---

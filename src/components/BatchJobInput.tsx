@@ -138,7 +138,10 @@ export default function BatchJobInput() {
     setSubmitting(true);
     const newResults = new Map<string, { appId?: string; status: string }>();
 
-    for (const entry of validEntries) {
+    for (let i = 0; i < validEntries.length; i++) {
+      const entry = validEntries[i];
+      // Stagger requests by 3s each to avoid overwhelming Firecrawl
+      if (i > 0) await new Promise(r => setTimeout(r, 3000));
       try {
         const appId = await backgroundGenerator.startFullGeneration({
           jobUrl: entry.useManual ? "manual-input" : entry.jobUrl,

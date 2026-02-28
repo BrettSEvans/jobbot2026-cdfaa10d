@@ -12,6 +12,7 @@ import {
   saveJobApplication,
 } from "@/lib/api/jobApplication";
 import { scrapeJob, streamTailoredLetter } from "@/lib/api/coverLetter";
+import { parseLlmJsonOutput, assembleDashboardHtml } from "@/lib/dashboard/assembler";
 import {
   Loader2,
   Globe,
@@ -181,15 +182,24 @@ const NewApplication = () => {
           setDashboardHtml(accumulated);
         },
         onDone: () => {
-          let clean = accumulated;
-          const htmlStart = clean.indexOf("<!DOCTYPE html>");
-          const htmlStartAlt = clean.indexOf("<!doctype html>");
-          const start = htmlStart !== -1 ? htmlStart : htmlStartAlt;
-          if (start > 0) clean = clean.slice(start);
-          const htmlEnd = clean.lastIndexOf("</html>");
-          if (htmlEnd !== -1) clean = clean.slice(0, htmlEnd + 7);
-          setDashboardHtml(clean);
-          accumulated = clean;
+          // Try parsing as JSON (new format) and assembling with templates
+          const parsed = parseLlmJsonOutput(accumulated);
+          if (parsed) {
+            const html = assembleDashboardHtml(parsed);
+            setDashboardHtml(html);
+            accumulated = html;
+          } else {
+            // Fallback: treat as raw HTML (backward compat)
+            let clean = accumulated;
+            const htmlStart = clean.indexOf("<!DOCTYPE html>");
+            const htmlStartAlt = clean.indexOf("<!doctype html>");
+            const start = htmlStart !== -1 ? htmlStart : htmlStartAlt;
+            if (start > 0) clean = clean.slice(start);
+            const htmlEnd = clean.lastIndexOf("</html>");
+            if (htmlEnd !== -1) clean = clean.slice(0, htmlEnd + 7);
+            setDashboardHtml(clean);
+            accumulated = clean;
+          }
         },
       });
 

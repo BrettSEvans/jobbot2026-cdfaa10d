@@ -53,11 +53,21 @@ export function parseLlmJsonOutput(raw: string): DashboardData | null {
   // Find first { and last }
   const firstBrace = clean.indexOf("{");
   const lastBrace = clean.lastIndexOf("}");
-  if (firstBrace === -1 || lastBrace === -1) return null;
+  if (firstBrace === -1 || lastBrace === -1) {
+    console.error("[DashboardParser] No JSON braces found in LLM output (length:", raw.length, ")");
+    return null;
+  }
   clean = clean.slice(firstBrace, lastBrace + 1);
   try {
-    return JSON.parse(clean) as DashboardData;
-  } catch {
+    const parsed = JSON.parse(clean) as DashboardData;
+    // Validate minimum required fields
+    if (!parsed.meta || !parsed.branding || !parsed.navigation || !parsed.sections) {
+      console.error("[DashboardParser] JSON parsed but missing required fields:", Object.keys(parsed));
+      return null;
+    }
+    return parsed;
+  } catch (e) {
+    console.error("[DashboardParser] JSON.parse failed:", (e as Error).message, "| JSON length:", clean.length, "| Last 50 chars:", clean.slice(-50));
     return null;
   }
 }

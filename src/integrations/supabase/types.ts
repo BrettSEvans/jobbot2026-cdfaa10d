@@ -132,6 +132,7 @@ export type Database = {
           cover_letter: string | null
           created_at: string
           customers: Json | null
+          dashboard_data: Json | null
           dashboard_html: string | null
           generation_error: string | null
           generation_status: string
@@ -152,6 +153,7 @@ export type Database = {
           cover_letter?: string | null
           created_at?: string
           customers?: Json | null
+          dashboard_data?: Json | null
           dashboard_html?: string | null
           generation_error?: string | null
           generation_status?: string
@@ -172,6 +174,7 @@ export type Database = {
           cover_letter?: string | null
           created_at?: string
           customers?: Json | null
+          dashboard_data?: Json | null
           dashboard_html?: string | null
           generation_error?: string | null
           generation_status?: string

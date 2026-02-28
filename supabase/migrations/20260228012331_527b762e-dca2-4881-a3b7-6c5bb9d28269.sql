@@ -1,0 +1,1 @@
+ALTER TABLE public.job_applications ADD COLUMN IF NOT EXISTS dashboard_data jsonb DEFAULT NULL;

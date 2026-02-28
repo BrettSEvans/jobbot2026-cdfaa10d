@@ -11,6 +11,7 @@ import {
   saveJobApplication,
 } from "@/lib/api/jobApplication";
 import { scrapeJob, streamTailoredLetter } from "@/lib/api/coverLetter";
+import { parseLlmJsonOutput, assembleDashboardHtml } from "@/lib/dashboard/assembler";
 
 export type GenerationJob = {
   applicationId: string;
@@ -189,9 +190,9 @@ class BackgroundGenerationManager {
         generation_status: "dashboard",
       } as any);
 
-      // 5. Generate dashboard
+      // 5. Generate dashboard (now outputs JSON, assembled into HTML by templates)
       this.updateJob(appId, { status: "dashboard", progress: "Generating dashboard..." });
-      let dashboardHtml = "";
+      let dashboardRaw = "";
       await streamDashboardGeneration({
         jobDescription: markdown,
         branding: brandingData,
@@ -201,25 +202,35 @@ class BackgroundGenerationManager {
         customers,
         products,
         department,
-        onDelta: (text) => { dashboardHtml += text; },
-        onDone: () => {
-          // Clean HTML
-          let clean = dashboardHtml;
-          const htmlStart = clean.indexOf("<!DOCTYPE html>");
-          const htmlStartAlt = clean.indexOf("<!doctype html>");
-          const start = htmlStart !== -1 ? htmlStart : htmlStartAlt;
-          if (start > 0) clean = clean.slice(start);
-          const htmlEnd = clean.lastIndexOf("</html>");
-          if (htmlEnd !== -1) clean = clean.slice(0, htmlEnd + 7);
-          dashboardHtml = clean;
-        },
+        onDelta: (text) => { dashboardRaw += text; },
+        onDone: () => {},
       });
+
+      // Parse JSON and assemble HTML from templates
+      let dashboardHtml = "";
+      let dashboardData: any = null;
+      const parsed = parseLlmJsonOutput(dashboardRaw);
+      if (parsed) {
+        dashboardData = parsed;
+        dashboardHtml = assembleDashboardHtml(parsed);
+      } else {
+        // Fallback: treat as raw HTML (backward compat with old prompt)
+        console.warn("Failed to parse dashboard JSON, falling back to raw HTML");
+        dashboardHtml = dashboardRaw;
+        const htmlStart = dashboardHtml.indexOf("<!DOCTYPE html>") !== -1
+          ? dashboardHtml.indexOf("<!DOCTYPE html>")
+          : dashboardHtml.indexOf("<!doctype html>");
+        if (htmlStart > 0) dashboardHtml = dashboardHtml.slice(htmlStart);
+        const htmlEnd = dashboardHtml.lastIndexOf("</html>");
+        if (htmlEnd !== -1) dashboardHtml = dashboardHtml.slice(0, htmlEnd + 7);
+      }
 
       // 6. Save final result
       await saveJobApplication({
         id: appId,
         job_url: jobUrl,
         dashboard_html: dashboardHtml,
+        dashboard_data: dashboardData,
         status: "complete",
         generation_status: "complete",
       } as any);
@@ -285,14 +296,21 @@ class BackgroundGenerationManager {
         chatHistory,
         onDelta: (text) => { accumulated += text; },
         onDone: () => {
-          let clean = accumulated;
-          const htmlStart = clean.indexOf("<!DOCTYPE html>");
-          const htmlStartAlt = clean.indexOf("<!doctype html>");
-          const start = htmlStart !== -1 ? htmlStart : htmlStartAlt;
-          if (start > 0) clean = clean.slice(start);
-          const htmlEnd = clean.lastIndexOf("</html>");
-          if (htmlEnd !== -1) clean = clean.slice(0, htmlEnd + 7);
-          accumulated = clean;
+          // Try parsing as JSON first (new format)
+          const parsed = parseLlmJsonOutput(accumulated);
+          if (parsed) {
+            accumulated = assembleDashboardHtml(parsed);
+          } else {
+            // Fallback: clean as raw HTML
+            let clean = accumulated;
+            const htmlStart = clean.indexOf("<!DOCTYPE html>");
+            const htmlStartAlt = clean.indexOf("<!doctype html>");
+            const start = htmlStart !== -1 ? htmlStart : htmlStartAlt;
+            if (start > 0) clean = clean.slice(start);
+            const htmlEnd = clean.lastIndexOf("</html>");
+            if (htmlEnd !== -1) clean = clean.slice(0, htmlEnd + 7);
+            accumulated = clean;
+          }
         },
       });
 

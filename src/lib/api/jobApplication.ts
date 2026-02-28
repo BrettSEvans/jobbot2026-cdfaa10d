@@ -138,11 +138,14 @@ export async function saveJobApplication(app: {
   cover_letter?: string;
   branding?: any;
   dashboard_html?: string;
+  dashboard_data?: any;
   chat_history?: any[];
   competitors?: string[];
   customers?: string[];
   products?: string[];
   status?: string;
+  generation_status?: string;
+  generation_error?: string;
 }) {
   if (app.id) {
     const { data, error } = await supabase

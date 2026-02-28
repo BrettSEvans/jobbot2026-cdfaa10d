@@ -26,6 +26,7 @@ import {
   ExternalLink,
   RefreshCw,
   Download,
+  FolderArchive,
 } from "lucide-react";
 import SaveAsTemplate from "@/components/SaveAsTemplate";
 import DashboardRevisions from "@/components/DashboardRevisions";
@@ -34,6 +35,9 @@ import { backgroundGenerator } from "@/lib/backgroundGenerator";
 import { saveDashboardRevision } from "@/lib/api/dashboardRevisions";
 import { saveCoverLetterRevision } from "@/lib/api/coverLetterRevisions";
 import { useBackgroundJob } from "@/hooks/useBackgroundJob";
+import { parseLlmJsonOutput, assembleDashboardHtml, getDashboardZipFiles } from "@/lib/dashboard/assembler";
+import type { DashboardData } from "@/lib/dashboard/schema";
+import JSZip from "jszip";
 
 const ApplicationDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -57,6 +61,7 @@ const ApplicationDetail = () => {
 
   // Dashboard
   const [dashboardHtml, setDashboardHtml] = useState("");
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
   const [chatInput, setChatInput] = useState("");
   const [chatHistory, setChatHistory] = useState<Array<{ role: string; content: string }>>([]);
@@ -99,6 +104,7 @@ const ApplicationDetail = () => {
       setCompanyName(data.company_name || "");
       setJobTitle(data.job_title || "");
       setDashboardHtml(data.dashboard_html || "");
+      setDashboardData(data.dashboard_data as unknown as DashboardData | null);
       setChatHistory(Array.isArray(data.chat_history) ? data.chat_history as Array<{ role: string; content: string }> : []);
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
@@ -169,6 +175,7 @@ const ApplicationDetail = () => {
     if (!jobDescription.trim()) return;
     setIsRegenerating(true);
     setDashboardHtml("");
+    setDashboardData(null);
     try {
       let accumulated = "";
       await streamDashboardGeneration({
@@ -181,21 +188,33 @@ const ApplicationDetail = () => {
         products: app?.products || [],
         onDelta: (text) => {
           accumulated += text;
-          setDashboardHtml(accumulated);
+          // Show a "generating..." placeholder instead of streaming partial JSON
         },
         onDone: () => {
-          let clean = accumulated;
-          const htmlStart = clean.indexOf("<!DOCTYPE html>");
-          const htmlStartAlt = clean.indexOf("<!doctype html>");
-          const start = htmlStart !== -1 ? htmlStart : htmlStartAlt;
-          if (start > 0) clean = clean.slice(start);
-          const htmlEnd = clean.lastIndexOf("</html>");
-          if (htmlEnd !== -1) clean = clean.slice(0, htmlEnd + 7);
-          setDashboardHtml(clean);
-          accumulated = clean;
+          // Try parsing as JSON (new format)
+          const parsed = parseLlmJsonOutput(accumulated);
+          if (parsed) {
+            const html = assembleDashboardHtml(parsed);
+            setDashboardHtml(html);
+            setDashboardData(parsed);
+            accumulated = html;
+          } else {
+            // Fallback: treat as raw HTML (backward compat)
+            let clean = accumulated;
+            const htmlStart = clean.indexOf("<!DOCTYPE html>");
+            const htmlStartAlt = clean.indexOf("<!doctype html>");
+            const start = htmlStart !== -1 ? htmlStart : htmlStartAlt;
+            if (start > 0) clean = clean.slice(start);
+            const htmlEnd = clean.lastIndexOf("</html>");
+            if (htmlEnd !== -1) clean = clean.slice(0, htmlEnd + 7);
+            setDashboardHtml(clean);
+            accumulated = clean;
+          }
         },
       });
-      await saveField({ dashboard_html: accumulated });
+      const savePayload: Record<string, any> = { dashboard_html: accumulated };
+      if (dashboardData) savePayload.dashboard_data = dashboardData;
+      await saveField(savePayload);
       // Save as revision
       try {
         await saveDashboardRevision(id!, accumulated, "Regenerated");
@@ -206,6 +225,26 @@ const ApplicationDetail = () => {
     } finally {
       setIsRegenerating(false);
     }
+  };
+
+  // ZIP download for JSON-based dashboards
+  const handleDownloadZip = async () => {
+    if (!dashboardData) return;
+    const files = getDashboardZipFiles(dashboardData);
+    const zip = new JSZip();
+    Object.entries(files).forEach(([name, content]) => {
+      zip.file(name, content);
+    });
+    const blob = await zip.generateAsync({ type: "blob" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${(companyName || "dashboard").replace(/\s+/g, "-").toLowerCase()}-dashboard.zip`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast({ title: "Downloaded", description: "Dashboard ZIP with separate files saved." });
   };
 
   // AI refine chat — runs in background so it persists across navigation
@@ -315,24 +354,30 @@ const ApplicationDetail = () => {
                     defaultJobFunction={jobTitle}
                     defaultDepartment=""
                   />
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      const blob = new Blob([dashboardHtml], { type: "text/html" });
-                      const url = URL.createObjectURL(blob);
-                      const a = document.createElement("a");
-                      a.href = url;
-                      a.download = `${(companyName || "dashboard").replace(/\s+/g, "-").toLowerCase()}-dashboard.html`;
-                      document.body.appendChild(a);
-                      a.click();
-                      document.body.removeChild(a);
-                      URL.revokeObjectURL(url);
-                      toast({ title: "Downloaded", description: "Dashboard HTML file saved." });
-                    }}
-                  >
-                    <Download className="mr-2 h-4 w-4" /> Download HTML
-                  </Button>
+                  {dashboardData ? (
+                    <Button variant="outline" size="sm" onClick={handleDownloadZip}>
+                      <FolderArchive className="mr-2 h-4 w-4" /> Download ZIP
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const blob = new Blob([dashboardHtml], { type: "text/html" });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement("a");
+                        a.href = url;
+                        a.download = `${(companyName || "dashboard").replace(/\s+/g, "-").toLowerCase()}-dashboard.html`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                        toast({ title: "Downloaded", description: "Dashboard HTML file saved." });
+                      }}
+                    >
+                      <Download className="mr-2 h-4 w-4" /> Download HTML
+                    </Button>
+                  )}
                 </>
               )}
             </div>

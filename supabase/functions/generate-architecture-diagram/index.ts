@@ -75,17 +75,29 @@ DIAGRAM REQUIREMENTS:
 5. Group related nodes into labeled sections/swim lanes (e.g., "Client Layer", "API Gateway", "Backend Services", "Data Layer")
 6. Include a title header with project name, a "Last Updated: ${currentDate}" subtitle, and a legend explaining node types and arrow colors
 
-SVG ARROW ANCHORING RULES (CRITICAL):
-1. Every arrow must start and end at the vertical center of its respective node div.
-2. The horizontal anchor point must be at the edge (left or right border) of the node — never the center or an arbitrary point.
-3. Choose the shortest path: if the source node is to the right of the target, start at source's left edge and end at target's right edge. If source is to the left, start at source's right edge and end at target's left edge.
-4. Arrows must never float in empty space or overlap node interiors — they connect edge-to-edge.
-5. Use SVG line or path elements with marker-end arrowheads. Calculate coordinates based on actual node positions using CSS layout.
+ARROW CONNECTION TECHNIQUE (CRITICAL — DO NOT USE STATIC SVG COORDINATES):
+Instead of hardcoding SVG x/y coordinates, you MUST use JavaScript that runs after DOM load to dynamically calculate arrow positions from the actual rendered node elements.
 
-SVG ARROW TECHNIQUE:
-- Define arrowhead markers in an SVG defs block
-- Use SVG path or line elements for connections
-- Color-code arrows: data flow vs control flow vs async events
+Implementation pattern:
+1. Give every node div a unique id attribute (e.g., id="node-api-gateway").
+2. Place a single full-screen SVG overlay with pointer-events:none, position:absolute, top:0, left:0, width:100%, height:100%, z-index:10.
+3. Define arrowhead markers in an SVG <defs> block inside this overlay.
+4. Define a JavaScript array of connections: [{from: "node-api-gateway", to: "node-auth-service", color: "#3b82f6", label: "REST"}].
+5. In a window.addEventListener("load", ...) handler (plus a small setTimeout of 100ms for layout settling):
+   a. For each connection, use getBoundingClientRect() on both the source and target node elements.
+   b. Calculate the center-y of each node rect.
+   c. Determine whether source is left/right of target, then use the appropriate horizontal edge (right edge of source → left edge of target, or vice versa).
+   d. Subtract the SVG container's own getBoundingClientRect() offset so coordinates are relative to the SVG.
+   e. Create an SVG <line> or <path> element with these calculated coordinates and append it to the overlay SVG.
+   f. Optionally add a <text> label at the midpoint of the line.
+6. Also call this drawing function on window resize.
+
+This ensures arrows ALWAYS connect to actual node edges regardless of layout changes.
+
+COLOR-CODE arrows by type:
+- Data flow: use accent color
+- Control flow: use primary color  
+- Async/event: use dashed stroke with a third color
 
 The architecture should feel authentic to ${companyName || 'the company'}'s tech stack and industry. Reference realistic technologies that match the job description.
 

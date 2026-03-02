@@ -412,6 +412,27 @@ tbody tr:hover { background: var(--md-surface-container-high); }
 
 .agentic-table { opacity: 0.85; }
 
+/* Agentic Workforce table text wrapping — no horizontal scroll */
+#section-agentic-workforce .table-scroll {
+  overflow-x: hidden;
+}
+#section-agentic-workforce table {
+  table-layout: fixed;
+  width: 100%;
+}
+#section-agentic-workforce th,
+#section-agentic-workforce td {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
+}
+#section-agentic-workforce th:nth-child(1),
+#section-agentic-workforce td:nth-child(1) { width: 18%; }
+#section-agentic-workforce th:nth-child(2),
+#section-agentic-workforce td:nth-child(2) { width: 52%; }
+#section-agentic-workforce th:nth-child(3),
+#section-agentic-workforce td:nth-child(3) { width: 30%; }
+
 /* === CFO SCENARIOS === */
 .cfo-card {
   background: var(--md-surface-container);

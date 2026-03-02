@@ -58,6 +58,7 @@ export async function streamDashboardGeneration({
   products,
   department,
   templateHtml,
+  researchedSections,
   onDelta,
   onDone,
 }: {
@@ -70,6 +71,7 @@ export async function streamDashboardGeneration({
   products?: string[];
   department?: string;
   templateHtml?: string;
+  researchedSections?: any[];
   onDelta: (text: string) => void;
   onDone: () => void;
 }) {
@@ -81,7 +83,7 @@ export async function streamDashboardGeneration({
         'Content-Type': 'application/json',
         Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
       },
-      body: JSON.stringify({ jobDescription, branding, companyName, jobTitle, competitors, customers, products, department, templateHtml }),
+      body: JSON.stringify({ jobDescription, branding, companyName, jobTitle, competitors, customers, products, department, templateHtml, researchedSections }),
     }
   );
 
@@ -148,6 +150,7 @@ export async function saveJobApplication(app: {
   status?: string;
   generation_status?: string;
   generation_error?: string;
+  research_reasoning?: string;
 }) {
   if (app.id) {
     const { data, error } = await supabase

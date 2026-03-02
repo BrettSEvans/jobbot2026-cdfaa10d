@@ -16,6 +16,7 @@ import { streamTailoredLetter } from "@/lib/api/coverLetter";
 import { streamExecutiveReport } from "@/lib/api/executiveReport";
 import { streamRaidLog } from "@/lib/api/raidLog";
 import { streamArchitectureDiagram } from "@/lib/api/architectureDiagram";
+import { streamRoadmap } from "@/lib/api/roadmap";
 import {
   ArrowLeft,
   Copy,
@@ -33,6 +34,7 @@ import {
   ClipboardList,
   Shield,
   Network,
+  Map,
 } from "lucide-react";
 import SaveAsTemplate from "@/components/SaveAsTemplate";
 import DashboardRevisions from "@/components/DashboardRevisions";
@@ -90,6 +92,10 @@ const ApplicationDetail = () => {
   const [archDiagramHtml, setArchDiagramHtml] = useState("");
   const [isGeneratingArchDiagram, setIsGeneratingArchDiagram] = useState(false);
 
+  // Roadmap
+  const [roadmapHtml, setRoadmapHtml] = useState("");
+  const [isGeneratingRoadmap, setIsGeneratingRoadmap] = useState(false);
+
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const bgJob = useBackgroundJob(id);
   const isBgGenerating = bgJob && !["complete", "error"].includes(bgJob.status);
@@ -145,6 +151,7 @@ const ApplicationDetail = () => {
       setExecutiveReportHtml((data as any).executive_report_html || "");
       setRaidLogHtml((data as any).raid_log_html || "");
       setArchDiagramHtml((data as any).architecture_diagram_html || "");
+      setRoadmapHtml((data as any).roadmap_html || "");
       setChatHistory(Array.isArray(data.chat_history) ? data.chat_history as Array<{ role: string; content: string }> : []);
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
@@ -400,6 +407,46 @@ const ApplicationDetail = () => {
     }
   };
 
+  // Generate roadmap
+  const handleGenerateRoadmap = async () => {
+    if (!jobDescription.trim()) {
+      toast({ title: "No job description", description: "A job description is needed to generate a roadmap.", variant: "destructive" });
+      return;
+    }
+    setIsGeneratingRoadmap(true);
+    setRoadmapHtml("");
+    try {
+      let accumulated = "";
+      await streamRoadmap({
+        jobDescription,
+        companyName,
+        jobTitle,
+        competitors: app?.competitors || [],
+        customers: app?.customers || [],
+        products: app?.products || [],
+        department: "",
+        branding: app?.branding,
+        onDelta: (text) => {
+          accumulated += text;
+          setRoadmapHtml(accumulated);
+        },
+        onDone: () => {},
+      });
+      let clean = accumulated.trim();
+      clean = clean.replace(/^```(?:html)?\s*\n?/i, "").replace(/\n?```\s*$/i, "").trim();
+      const htmlStart = clean.indexOf("<!DOCTYPE html>") !== -1 ? clean.indexOf("<!DOCTYPE html>") : clean.indexOf("<!doctype html>");
+      if (htmlStart > 0) clean = clean.slice(htmlStart);
+      const htmlEnd = clean.lastIndexOf("</html>");
+      if (htmlEnd !== -1) clean = clean.slice(0, htmlEnd + 7);
+      setRoadmapHtml(clean);
+      await saveField({ roadmap_html: clean });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setIsGeneratingRoadmap(false);
+    }
+  };
+
   // ZIP download for JSON-based dashboards
   const handleDownloadZip = async () => {
     if (!dashboardData) return;
@@ -498,6 +545,7 @@ const ApplicationDetail = () => {
             <TabsTrigger value="executive-report">Executive Report</TabsTrigger>
             <TabsTrigger value="raid-log">RAID Log</TabsTrigger>
             <TabsTrigger value="architecture">Architecture</TabsTrigger>
+            <TabsTrigger value="roadmap">Roadmap</TabsTrigger>
             <TabsTrigger value="job-description">Job Description</TabsTrigger>
             <TabsTrigger value="details">Details</TabsTrigger>
           </TabsList>
@@ -920,7 +968,68 @@ const ApplicationDetail = () => {
             )}
           </TabsContent>
 
-          {/* Job Description Tab */}
+          {/* Roadmap Tab */}
+          <TabsContent value="roadmap" className="space-y-4">
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" size="sm" onClick={handleGenerateRoadmap} disabled={isGeneratingRoadmap}>
+                {isGeneratingRoadmap ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                {roadmapHtml ? "Regenerate" : "Generate"} Roadmap
+              </Button>
+              {roadmapHtml && (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleCopy(roadmapHtml, "Roadmap HTML")}
+                  >
+                    <Copy className="mr-2 h-4 w-4" /> Copy HTML
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const blob = new Blob([roadmapHtml], { type: "text/html" });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = `${(companyName || "roadmap").replace(/\s+/g, "-").toLowerCase()}-roadmap.html`;
+                      document.body.appendChild(a);
+                      a.click();
+                      document.body.removeChild(a);
+                      URL.revokeObjectURL(url);
+                      toast({ title: "Downloaded", description: "Roadmap HTML file saved." });
+                    }}
+                  >
+                    <Download className="mr-2 h-4 w-4" /> Download HTML
+                  </Button>
+                </>
+              )}
+            </div>
+
+            {roadmapHtml ? (
+              <Card className="overflow-hidden">
+                <div className="w-full" style={{ height: "70vh" }}>
+                  <iframe
+                    srcDoc={roadmapHtml}
+                    className="w-full h-full border-0"
+                    sandbox="allow-scripts"
+                    title="Roadmap Preview"
+                  />
+                </div>
+              </Card>
+            ) : (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <Map className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground mb-4">No cross-functional roadmap generated yet.</p>
+                  <Button onClick={handleGenerateRoadmap} disabled={isGeneratingRoadmap}>
+                    <Sparkles className="mr-2 h-4 w-4" /> Generate Roadmap
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
           <TabsContent value="job-description" className="space-y-4">
             <div className="flex flex-wrap gap-2">
               {jobDescription && (

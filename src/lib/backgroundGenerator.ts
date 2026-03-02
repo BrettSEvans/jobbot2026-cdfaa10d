@@ -15,11 +15,12 @@ import { scrapeJob, streamTailoredLetter } from "@/lib/api/coverLetter";
 import { streamExecutiveReport } from "@/lib/api/executiveReport";
 import { streamRaidLog } from "@/lib/api/raidLog";
 import { streamArchitectureDiagram } from "@/lib/api/architectureDiagram";
+import { streamRoadmap } from "@/lib/api/roadmap";
 import { parseLlmJsonOutput, assembleDashboardHtml } from "@/lib/dashboard/assembler";
 
 export type GenerationJob = {
   applicationId: string;
-  status: "pending" | "scraping" | "analyzing" | "cover-letter" | "dashboard" | "executive-report" | "raid-log" | "architecture-diagram" | "complete" | "error";
+  status: "pending" | "scraping" | "analyzing" | "cover-letter" | "dashboard" | "executive-report" | "raid-log" | "architecture-diagram" | "roadmap" | "complete" | "error";
   progress: string;
   error?: string;
 };
@@ -341,7 +342,37 @@ class BackgroundGenerationManager {
         console.warn("Architecture diagram generation failed:", e);
       }
 
-      // 9. Save final result
+      // 9. Generate Cross-Functional Roadmap
+      this.updateJob(appId, { status: "roadmap", progress: "Generating cross-functional roadmap..." });
+      let roadmapHtml = "";
+      try {
+        let roadmapAccumulated = "";
+        await streamRoadmap({
+          jobDescription: markdown,
+          companyName,
+          jobTitle,
+          competitors,
+          customers,
+          products,
+          department,
+          branding: brandingData,
+          onDelta: (text) => { roadmapAccumulated += text; },
+          onDone: () => {},
+        });
+        let cleanRoadmap = roadmapAccumulated.trim();
+        cleanRoadmap = cleanRoadmap.replace(/^```(?:html)?\s*\n?/i, "").replace(/\n?```\s*$/i, "").trim();
+        const rmHtmlStart = cleanRoadmap.indexOf("<!DOCTYPE html>") !== -1
+          ? cleanRoadmap.indexOf("<!DOCTYPE html>")
+          : cleanRoadmap.indexOf("<!doctype html>");
+        if (rmHtmlStart > 0) cleanRoadmap = cleanRoadmap.slice(rmHtmlStart);
+        const rmHtmlEnd = cleanRoadmap.lastIndexOf("</html>");
+        if (rmHtmlEnd !== -1) cleanRoadmap = cleanRoadmap.slice(0, rmHtmlEnd + 7);
+        roadmapHtml = cleanRoadmap;
+      } catch (e) {
+        console.warn("Roadmap generation failed:", e);
+      }
+
+      // 10. Save final result
       await saveJobApplication({
         id: appId,
         job_url: jobUrl,
@@ -350,6 +381,7 @@ class BackgroundGenerationManager {
         executive_report_html: execReportHtml || undefined,
         raid_log_html: raidLogHtml || undefined,
         architecture_diagram_html: archDiagramHtml || undefined,
+        roadmap_html: roadmapHtml || undefined,
         status: "complete",
         generation_status: "complete",
       } as any);

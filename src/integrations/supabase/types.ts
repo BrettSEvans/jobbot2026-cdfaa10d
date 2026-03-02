@@ -145,6 +145,7 @@ export type Database = {
           products: Json | null
           raid_log_html: string | null
           research_reasoning: string | null
+          roadmap_html: string | null
           status: string
           updated_at: string
         }
@@ -170,6 +171,7 @@ export type Database = {
           products?: Json | null
           raid_log_html?: string | null
           research_reasoning?: string | null
+          roadmap_html?: string | null
           status?: string
           updated_at?: string
         }
@@ -195,6 +197,7 @@ export type Database = {
           products?: Json | null
           raid_log_html?: string | null
           research_reasoning?: string | null
+          roadmap_html?: string | null
           status?: string
           updated_at?: string
         }

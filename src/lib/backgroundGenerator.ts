@@ -14,11 +14,12 @@ import {
 import { scrapeJob, streamTailoredLetter } from "@/lib/api/coverLetter";
 import { streamExecutiveReport } from "@/lib/api/executiveReport";
 import { streamRaidLog } from "@/lib/api/raidLog";
+import { streamArchitectureDiagram } from "@/lib/api/architectureDiagram";
 import { parseLlmJsonOutput, assembleDashboardHtml } from "@/lib/dashboard/assembler";
 
 export type GenerationJob = {
   applicationId: string;
-  status: "pending" | "scraping" | "analyzing" | "cover-letter" | "dashboard" | "executive-report" | "raid-log" | "complete" | "error";
+  status: "pending" | "scraping" | "analyzing" | "cover-letter" | "dashboard" | "executive-report" | "raid-log" | "architecture-diagram" | "complete" | "error";
   progress: string;
   error?: string;
 };
@@ -310,7 +311,37 @@ class BackgroundGenerationManager {
         console.warn("RAID log generation failed:", e);
       }
 
-      // 8. Save final result
+      // 8. Generate Architecture Diagram
+      this.updateJob(appId, { status: "architecture-diagram", progress: "Generating architecture diagram..." });
+      let archDiagramHtml = "";
+      try {
+        let archAccumulated = "";
+        await streamArchitectureDiagram({
+          jobDescription: markdown,
+          companyName,
+          jobTitle,
+          competitors,
+          customers,
+          products,
+          department,
+          branding: brandingData,
+          onDelta: (text) => { archAccumulated += text; },
+          onDone: () => {},
+        });
+        let cleanArch = archAccumulated.trim();
+        cleanArch = cleanArch.replace(/^```(?:html)?\s*\n?/i, "").replace(/\n?```\s*$/i, "").trim();
+        const archHtmlStart = cleanArch.indexOf("<!DOCTYPE html>") !== -1
+          ? cleanArch.indexOf("<!DOCTYPE html>")
+          : cleanArch.indexOf("<!doctype html>");
+        if (archHtmlStart > 0) cleanArch = cleanArch.slice(archHtmlStart);
+        const archHtmlEnd = cleanArch.lastIndexOf("</html>");
+        if (archHtmlEnd !== -1) cleanArch = cleanArch.slice(0, archHtmlEnd + 7);
+        archDiagramHtml = cleanArch;
+      } catch (e) {
+        console.warn("Architecture diagram generation failed:", e);
+      }
+
+      // 9. Save final result
       await saveJobApplication({
         id: appId,
         job_url: jobUrl,
@@ -318,6 +349,7 @@ class BackgroundGenerationManager {
         dashboard_data: dashboardData,
         executive_report_html: execReportHtml || undefined,
         raid_log_html: raidLogHtml || undefined,
+        architecture_diagram_html: archDiagramHtml || undefined,
         status: "complete",
         generation_status: "complete",
       } as any);

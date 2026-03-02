@@ -155,6 +155,7 @@ ${sectionInstructions}
 - Branding colors derived from provided branding data using Material You tonal palette principles
 - Chart datasets: use contextual colors derived from branding, not random colors
 - Table generateRows fields: use company-specific options (competitor names, product names, region names from context)
+- DATE REALISM: Today's date is ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}. All reporting periods, chart month labels, and date fields must be realistic relative to today. Use the 3-6 months leading up to today for trend data. Upcoming deadlines should be in the future.
 ${brandingContext}
 ${competitorContext}
 ${customerContext}

@@ -32,6 +32,8 @@ serve(async (req) => {
     const primaryColor = brandColors.primary || '#1a365d';
     const accentColor = brandColors.secondary || brandColors.accent || '#2563eb';
 
+    const now = new Date();
+    const currentDate = now.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
     const systemPrompt = `You are an elite, highly experienced ${jobTitle || 'senior leader'} who specializes in executive communication. You distill complex technical implementations into actionable, strategic insights for C-suite leaders and stakeholders.
 
 You must create a highly realistic, customized 1-page Executive Status Report for a strategic project that ${companyName || 'the company'} would realistically execute right now.
@@ -48,8 +50,15 @@ OUTPUT FORMAT: Clean, self-contained HTML with modern inline CSS styling. Use th
 - Primary: ${primaryColor}
 - Accent: ${accentColor}
 
+DATE REALISM (CRITICAL):
+- Today's date is ${currentDate}. Use this as the report date / "As of" date.
+- Completed milestones should have dates within the 1-6 months prior to today.
+- Upcoming milestones should have target dates 1-6 months in the future.
+- Next review / follow-up dates should be 1-2 weeks after today.
+- Sprint or iteration dates should align with a realistic 2-week cadence around today.
+
 REQUIRED SECTIONS:
-1. **Header**: Project Name, Date (use today's date), Overall Health Status (Green/Yellow/Red indicator), Target Launch Date
+1. **Header**: Project Name, Date (${currentDate}), Overall Health Status (Green/Yellow/Red indicator), Target Launch Date
 2. **Executive Summary**: 3-4 sentences — recent milestones achieved + overarching business value
 3. **Key Milestones**: Status table with 3-4 major deliverables (columns: Deliverable, Status, Owner, Target Date)
 4. **Top Risks/Blockers**: 2 critical technical or cross-functional blockers with assigned "Asks" from leadership

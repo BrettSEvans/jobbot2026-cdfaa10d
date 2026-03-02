@@ -211,6 +211,11 @@ class BackgroundGenerationManager {
       let dashboardData: any = null;
       const parsed = parseLlmJsonOutput(dashboardRaw);
       if (parsed) {
+        // Inject logoUrl from branding if LLM omitted it
+        if (!parsed.meta.logoUrl && brandingData) {
+          const logoUrl = brandingData.logo || brandingData.images?.logo || brandingData.images?.favicon;
+          if (logoUrl) parsed.meta.logoUrl = logoUrl;
+        }
         dashboardData = parsed;
         dashboardHtml = assembleDashboardHtml(parsed);
       } else {

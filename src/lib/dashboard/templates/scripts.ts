@@ -150,17 +150,44 @@ export function getScriptsJs(): string {
     }
   }
 
+  // === LOGO ===
+  function buildLogo(meta) {
+    var container = document.getElementById('sidebar-logo');
+    if (!container) return;
+
+    var logoUrl = meta.logoUrl || '';
+    var name = meta.companyName || 'Dashboard';
+
+    if (logoUrl) {
+      var img = document.createElement('img');
+      img.src = logoUrl;
+      img.alt = name + ' logo';
+      img.crossOrigin = 'anonymous';
+      img.onerror = function() {
+        // Fallback to letter avatar
+        img.remove();
+        var letter = el('span', { className: 'logo-letter' }, name.charAt(0).toUpperCase());
+        container.insertBefore(letter, container.firstChild);
+      };
+      container.appendChild(img);
+    } else {
+      container.appendChild(el('span', { className: 'logo-letter' }, name.charAt(0).toUpperCase()));
+    }
+
+    container.appendChild(el('span', { className: 'logo-name' }, name));
+  }
+
   // === NAVIGATION ===
   function buildNavigation(nav, meta) {
     var header = document.getElementById('sidebar-header');
-    header.appendChild(el('h2', {}, meta.companyName || 'Dashboard'));
     header.appendChild(el('p', {}, meta.jobTitle || ''));
 
     var navEl = document.getElementById('sidebar-nav');
     nav.forEach(function(item) {
-      var link = el('a', { className: 'nav-link', 'data-section': item.id, href: '#' },
+      var label = el('span', { className: 'nav-label' }, item.label);
+      var link = el('a', { className: 'nav-link', 'data-section': item.id, 'data-tooltip': item.label, href: '#' },
         el('span', { className: 'material-icons-outlined' }, item.icon || 'dashboard'),
-        document.createTextNode(' ' + item.label)
+        label
       );
       link.addEventListener('click', function(e) {
         e.preventDefault();
@@ -174,7 +201,7 @@ export function getScriptsJs(): string {
       navEl.appendChild(link);
     });
 
-    document.getElementById('page-title').textContent = meta.companyName + ' \\u2014 ' + meta.department + ' Dashboard';
+    document.getElementById('page-title').textContent = meta.companyName + ' \\u2014 ' + (meta.department || '') + ' Dashboard';
   }
 
   function showSection(id) {
@@ -589,6 +616,7 @@ export function getScriptsJs(): string {
     }
 
     applyBranding(data.branding);
+    buildLogo(data.meta);
     buildNavigation(data.navigation, data.meta);
     renderSections(data);
 
@@ -599,9 +627,18 @@ export function getScriptsJs(): string {
       if (firstLink) firstLink.classList.add('active');
     }
 
-    // Hamburger
+    // Restore collapsed state from localStorage
+    var sidebar = document.getElementById('sidebar');
+    var savedCollapsed = false;
+    try { savedCollapsed = localStorage.getItem('dashboard-sidebar-collapsed') === 'true'; } catch(e) {}
+    if (savedCollapsed && window.innerWidth > 768) {
+      sidebar.classList.add('collapsed');
+    }
+
+    // Hamburger toggle — icon strip, not hide
     document.getElementById('hamburger-btn').addEventListener('click', function() {
-      document.getElementById('sidebar').classList.toggle('collapsed');
+      sidebar.classList.toggle('collapsed');
+      try { localStorage.setItem('dashboard-sidebar-collapsed', sidebar.classList.contains('collapsed')); } catch(e) {}
     });
 
     // Escape key closes drill-down or chat

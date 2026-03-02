@@ -150,6 +150,7 @@ ${sectionInstructions}
 - Navigation MUST include entries with id "agentic-workforce" and "cfo-view" — these are rendered by the template engine
 - 8-10 agentic workforce agents customized to the role
 - 3 CFO scenarios: one "pricing" (sliders: priceChange, elasticity, growthRate), one "headcount" (sliders: newHires, rampTime, quota), one "expansion" (sliders: tam, penetration, investment)
+- meta.logoUrl MUST be set to the company logo URL from the branding data below. This is REQUIRED, not optional. If no logo URL is available, leave it as an empty string.
 - All text must be specific to ${companyName || 'the company'} and the ${jobTitle || 'role'}
 - Branding colors derived from provided branding data using Material You tonal palette principles
 - Chart datasets: use contextual colors derived from branding, not random colors

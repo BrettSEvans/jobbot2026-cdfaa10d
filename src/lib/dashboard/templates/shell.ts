@@ -49,6 +49,7 @@ export function getShellHtml(options: ShellOptions): string {
 </head>
 <body>
   <div id="sidebar">
+    <div id="sidebar-logo"></div>
     <div id="sidebar-header"></div>
     <nav id="sidebar-nav"></nav>
   </div>

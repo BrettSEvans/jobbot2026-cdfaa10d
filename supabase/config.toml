@@ -32,3 +32,6 @@ verify_jwt = false
 
 [functions.generate-architecture-diagram]
 verify_jwt = false
+
+[functions.generate-roadmap]
+verify_jwt = false

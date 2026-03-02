@@ -96,12 +96,14 @@ export async function streamDashboardGeneration({
 // --- Stream dashboard refinement ---
 export async function streamDashboardRefinement({
   currentHtml,
+  currentDashboardData,
   userMessage,
   chatHistory,
   onDelta,
   onDone,
 }: {
   currentHtml: string;
+  currentDashboardData?: any;
   userMessage: string;
   chatHistory?: Array<{ role: string; content: string }>;
   onDelta: (text: string) => void;
@@ -115,7 +117,7 @@ export async function streamDashboardRefinement({
         'Content-Type': 'application/json',
         Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
       },
-      body: JSON.stringify({ currentHtml, userMessage, chatHistory }),
+      body: JSON.stringify({ currentHtml, currentDashboardData, userMessage, chatHistory }),
     }
   );
 

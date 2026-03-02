@@ -19,36 +19,59 @@ function getContextLabel(pathname: string): string {
   return "this page";
 }
 
-const responses: Record<string, string[]> = {
-  applications: [
-    "I can see your applications list. Want me to help you compare companies or prioritize which roles to focus on?",
-    "Looking at your applications — I can help summarize status across all your active jobs or draft outreach messages.",
-    "Need help filtering or sorting your applications? I can also suggest next steps for any stalled ones.",
-  ],
-  new: [
-    "You're starting a new application — paste the job URL and I'll help extract key requirements and tailor your materials.",
-    "I can help you research the company while you fill this out. Just ask!",
-  ],
-  detail: [
-    "I'm looking at this application's dashboard. I can help refine the cover letter, suggest talking points, or analyze the company further.",
-    "Want me to highlight the most important qualifications for this role, or help you prepare interview questions?",
-  ],
-  templates: [
-    "You're in the templates library. I can help you create a new template or suggest which one fits a particular role best.",
-    "Templates are great for speeding up applications. Want tips on making them more versatile?",
-  ],
-  default: [
-    "I'm your AI assistant — I can help with job applications, cover letters, company research, and interview prep. What do you need?",
-  ],
-};
+function pickResponse(pathname: string, userMsg: string): string {
+  const q = userMsg.toLowerCase();
+  const ctx = getContextLabel(pathname);
 
-function pickResponse(pathname: string): string {
+  // Keyword-aware mock responses
+  if (q.includes("competitor") || q.includes("market")) {
+    return `Great question about competitors! On your ${ctx}, I'd normally pull market intelligence from the analysis we ran. Key areas to explore: market share trends, pricing comparisons, and product differentiation. Want me to dig into any of those?`;
+  }
+  if (q.includes("chart") || q.includes("graph") || q.includes("visual")) {
+    return `For the ${ctx}, I can help adjust chart types — bar charts work well for comparisons, line charts for trends over time, and doughnut charts for composition breakdowns. What data would you like to visualize differently?`;
+  }
+  if (q.includes("cover letter") || q.includes("letter")) {
+    return `Looking at your ${ctx} — I can help refine the cover letter's tone, emphasize specific qualifications, or restructure it for a different format (e.g., more concise for email, or more detailed for formal applications). What would you like to adjust?`;
+  }
+  if (q.includes("color") || q.includes("brand") || q.includes("theme") || q.includes("design")) {
+    return `On the ${ctx}, I can help adjust the branding — colors, fonts, and layout. The dashboard uses the company's brand colors by default. Would you like to change the primary palette, adjust contrast, or try a different font pairing?`;
+  }
+  if (q.includes("export") || q.includes("download") || q.includes("share")) {
+    return `From your ${ctx}, you can download the dashboard as a ZIP (with separate HTML, CSS, and JS files) or as a single HTML file. You can also copy the HTML to clipboard. Would you like help with any of these?`;
+  }
+  if (q.includes("interview") || q.includes("prepare")) {
+    return `Based on the ${ctx}, here are some preparation tips: Research the company's recent initiatives, prepare STAR-format answers for behavioral questions, and have specific metrics ready from your past work. Want me to generate practice questions for this role?`;
+  }
+
+  // Fallback context-aware responses
+  const fallbacks: Record<string, string[]> = {
+    applications: [
+      "I can see your applications list. Want me to help compare companies, prioritize roles, or suggest which applications need attention?",
+      "Looking at your applications — I can help summarize progress, identify stalled applications, or draft follow-up messages.",
+    ],
+    new: [
+      "You're starting a new application! Paste the job URL and I'll extract key requirements, identify the company's priorities, and tailor your materials automatically.",
+      "I can help you research the company while you fill this out — just ask about their products, culture, or competitors!",
+    ],
+    detail: [
+      "I'm looking at this dashboard. I can help refine any section — adjust charts, update metrics, modify the cover letter, or add new data visualizations. What needs work?",
+      "Want me to highlight key qualifications for this role, suggest talking points for the interview, or refine the dashboard's layout?",
+    ],
+    templates: [
+      "You're in the templates library. I can help you create a new template from scratch or suggest which existing one best fits a particular role or department.",
+      "Templates speed up applications significantly. Want tips on making them more versatile across different companies?",
+    ],
+    default: [
+      "I'm your AI assistant — I can help with job applications, cover letters, company research, dashboard customization, and interview prep. What do you need?",
+    ],
+  };
+
   let pool: string[];
-  if (pathname === "/" || pathname === "/applications") pool = responses.applications;
-  else if (pathname === "/applications/new") pool = responses.new;
-  else if (pathname.startsWith("/applications/")) pool = responses.detail;
-  else if (pathname === "/templates") pool = responses.templates;
-  else pool = responses.default;
+  if (pathname === "/" || pathname === "/applications") pool = fallbacks.applications;
+  else if (pathname === "/applications/new") pool = fallbacks.new;
+  else if (pathname.startsWith("/applications/")) pool = fallbacks.detail;
+  else if (pathname === "/templates") pool = fallbacks.templates;
+  else pool = fallbacks.default;
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
@@ -92,10 +115,11 @@ export default function AiChat({ isOpen, onClose }: AiChatProps) {
     setInput("");
     setMessages((prev) => [...prev, { role: "user", content: text }]);
     setIsThinking(true);
+    const currentPath = pathname;
     setTimeout(() => {
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: pickResponse(pathname) },
+        { role: "assistant", content: pickResponse(currentPath, text) },
       ]);
       setIsThinking(false);
     }, 1500);

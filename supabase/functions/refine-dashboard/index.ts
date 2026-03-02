@@ -11,11 +11,11 @@ serve(async (req) => {
   }
 
   try {
-    const { currentHtml, userMessage, chatHistory } = await req.json();
+    const { currentDashboardData, currentHtml, userMessage, chatHistory } = await req.json();
 
-    if (!currentHtml || !userMessage) {
+    if (!userMessage) {
       return new Response(
-        JSON.stringify({ success: false, error: 'Current HTML and user message are required' }),
+        JSON.stringify({ success: false, error: 'User message is required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -28,9 +28,33 @@ serve(async (req) => {
       );
     }
 
-    const systemPrompt = `You are an expert front-end developer helping refine a standalone HTML Business Intelligence Dashboard. The user will provide the current HTML file and a modification request.
+    // Use JSON-based refinement if we have structured data, otherwise fall back to HTML
+    const useJsonMode = !!currentDashboardData;
 
-DESIGN SYSTEM: The dashboard uses Google Material Design 3 (Material You) as its base design system combined with the company's brand colors. Maintain this Material Design 3 foundation (elevation, typography scale, shape system, tonal color palette, component patterns) when making modifications.
+    const systemPrompt = useJsonMode
+      ? `You are an expert business intelligence data architect. You are refining a dashboard's structured JSON data based on user feedback.
+
+OUTPUT: ONLY valid JSON. No markdown fences, no explanation. Start with { and end with }.
+
+The JSON follows this schema:
+{
+  "meta": { "companyName", "jobTitle", "department", "logoUrl?" },
+  "branding": { "primary", "onPrimary", "primaryContainer", "onPrimaryContainer", "secondary", "onSecondary", "surface", "onSurface", "surfaceVariant", "outline", "error", "fontHeading", "fontBody" },
+  "navigation": [{ "id", "label", "icon" }],
+  "sections": [{ "id", "title", "description", "metrics": [{ "label", "value", "change", "trend" }], "charts": [{ "id", "title", "type", "data": { "labels", "datasets" } }], "tables": [{ "id", "title", "columns", "generateRows" }] }],
+  "agenticWorkforce": [{ "name", "coreFunctionality", "interfacingTeams" }],
+  "cfoScenarios": [{ "id", "title", "description", "type", "sliders", "baseline", "quarters", "chartType" }]
+}
+
+RULES:
+- Return the COMPLETE modified JSON object with the user's requested changes applied
+- Keep all existing data unless explicitly asked to change it
+- Maintain valid JSON structure at all times
+- Apply changes precisely as requested
+- Chart types: bar|line|doughnut|pie|radar|scatter|horizontalBar|area
+- Table generateRows fields: personName|company|date|futureDate|currency|status|region|product|percent|integer|email|pick
+- Ensure navigation includes "agentic-workforce" and "cfo-view" entries`
+      : `You are an expert front-end developer helping refine a standalone HTML Business Intelligence Dashboard.
 
 RULES:
 - Output the COMPLETE modified HTML file, starting with <!DOCTYPE html> and ending with </html>
@@ -38,27 +62,25 @@ RULES:
 - Maintain the self-contained nature (all CSS/JS embedded)
 - Preserve Chart.js charts and interactive elements
 - Apply the requested changes precisely
-- The sidebar MUST have clearly labeled, visible text links for each section. Each link must be clickable and toggle visibility of the corresponding section in the main content area. Highlight the active section. No empty or placeholder hotspots.
-- CHARTING: Use the BEST chart type for each dataset (line for trends, bar for comparisons, doughnut for composition, radar for scoring, scatter for correlations). Each chart canvas in a container with height:380px; max-height:380px; position:relative. Use Chart.js options { responsive: true, maintainAspectRatio: false }. Give charts breathing room with 16px+ padding. Use gradient fills, rounded bars, subtle grids, readable font sizes (12-14px labels, 16-18px titles). 2-3 well-sized charts per section, NOT cramped tiny charts.
-- DRILL-DOWN: Clicking a chart segment/bar/point opens a modal with filtered data table + detailed breakdown chart + summary stats. Clicking a table row opens a styled popup card showing ALL fields with labels, related data, branding-matched styling, rounded corners, shadow, close button, and CSS transitions (fade + scale) with overlay.
-- DATA VARIATION: Every section must have unique description text, metric labels, and card copy. Do NOT reuse placeholder descriptions. Mock data must have realistic distribution with outliers, trends, and variance.
-- Tables in containers with max-height:450px; overflow-y:auto. Main content area height:100vh; overflow-y:auto.
 - Do NOT add explanations — output ONLY the HTML`;
 
     const messages: Array<{role: string; content: string}> = [
       { role: 'system', content: systemPrompt },
     ];
 
-    // Add chat history for context
     if (chatHistory?.length) {
       for (const msg of chatHistory.slice(-6)) {
         messages.push({ role: msg.role, content: msg.content });
       }
     }
 
+    const currentContent = useJsonMode
+      ? JSON.stringify(currentDashboardData, null, 2)
+      : currentHtml;
+
     messages.push({
       role: 'user',
-      content: `Here is the current HTML dashboard:\n\n${currentHtml}\n\n---\n\nPlease make this modification: ${userMessage}`
+      content: `Here is the current dashboard ${useJsonMode ? 'JSON data' : 'HTML'}:\n\n${currentContent}\n\n---\n\nPlease make this modification: ${userMessage}`
     });
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {

@@ -167,6 +167,7 @@ const NewApplication = () => {
       setDashboardHtml("");
 
       let accumulated = "";
+      let parsedData: any = null;
       await streamDashboardGeneration({
         jobDescription: markdown,
         branding: brandingData,
@@ -179,7 +180,8 @@ const NewApplication = () => {
         templateHtml: selectedTemplate?.dashboard_html,
         onDelta: (text) => {
           accumulated += text;
-          setDashboardHtml(accumulated);
+          // Don't show raw JSON — just update byte counter via loadingMsg
+          setLoadingMsg(`Generating branded dashboard... (${Math.round(accumulated.length / 1024)}KB)`);
         },
         onDone: () => {
           // Try parsing as JSON (new format) and assembling with templates
@@ -187,6 +189,7 @@ const NewApplication = () => {
           if (parsed) {
             const html = assembleDashboardHtml(parsed);
             setDashboardHtml(html);
+            parsedData = parsed;
             accumulated = html;
           } else {
             // Fallback: treat as raw HTML (backward compat)
@@ -213,6 +216,7 @@ const NewApplication = () => {
         cover_letter: finalCoverLetter,
         branding: brandingData,
         dashboard_html: accumulated,
+        dashboard_data: parsedData || undefined,
         competitors: competitorsLocal,
         customers: customersLocal,
         products: productsLocal,
@@ -397,11 +401,12 @@ const NewApplication = () => {
             <CardContent className="py-10 space-y-6">
               <GenerationProgressBar currentStage={pipelineStage} />
               <p className="text-sm text-muted-foreground text-center">{loadingMsg}</p>
-              {dashboardHtml && (
-                <p className="text-xs text-muted-foreground text-center">
-                  {Math.round(dashboardHtml.length / 1024)}KB generated...
+              <div className="flex items-center justify-center gap-3 mt-2">
+                <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                <p className="text-xs text-muted-foreground">
+                  Assembling dashboard... This may take 30–60 seconds.
                 </p>
-              )}
+              </div>
             </CardContent>
           </Card>
         )}
@@ -467,6 +472,7 @@ function DashboardPreview({
 
     try {
       const { streamDashboardRefinement } = await import("@/lib/api/jobApplication");
+      const { parseLlmJsonOutput: parseJson, assembleDashboardHtml: assembleHtml } = await import("@/lib/dashboard/assembler");
       let accumulated = "";
       await streamDashboardRefinement({
         currentHtml: currentHtml,
@@ -474,17 +480,25 @@ function DashboardPreview({
         chatHistory: newHistory,
         onDelta: (text) => { accumulated += text; },
         onDone: () => {
-          let clean = accumulated;
-          const htmlStart = clean.indexOf("<!DOCTYPE html>");
-          const htmlStartAlt = clean.indexOf("<!doctype html>");
-          const start = htmlStart !== -1 ? htmlStart : htmlStartAlt;
-          if (start > 0) clean = clean.slice(start);
-          const htmlEnd = clean.lastIndexOf("</html>");
-          if (htmlEnd !== -1) clean = clean.slice(0, htmlEnd + 7);
-
-          setCurrentHtml(clean);
-          setChatHistory((prev) => [...prev, { role: "assistant", content: "✅ Dashboard updated! Check the preview." }]);
-          onSave(clean);
+          // Try JSON-based refinement first
+          const parsed = parseJson(accumulated);
+          if (parsed) {
+            const assembledHtml = assembleHtml(parsed);
+            setCurrentHtml(assembledHtml);
+            setChatHistory((prev) => [...prev, { role: "assistant", content: "✅ Dashboard updated! Check the preview." }]);
+            onSave(assembledHtml);
+          } else {
+            let clean = accumulated;
+            const htmlStart = clean.indexOf("<!DOCTYPE html>");
+            const htmlStartAlt = clean.indexOf("<!doctype html>");
+            const start = htmlStart !== -1 ? htmlStart : htmlStartAlt;
+            if (start > 0) clean = clean.slice(start);
+            const htmlEnd = clean.lastIndexOf("</html>");
+            if (htmlEnd !== -1) clean = clean.slice(0, htmlEnd + 7);
+            setCurrentHtml(clean);
+            setChatHistory((prev) => [...prev, { role: "assistant", content: "✅ Dashboard updated! Check the preview." }]);
+            onSave(clean);
+          }
         },
       });
     } catch (err: any) {

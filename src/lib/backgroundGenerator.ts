@@ -258,12 +258,14 @@ class BackgroundGenerationManager {
   async startRefinement({
     applicationId,
     currentHtml,
+    currentDashboardData,
     userMessage,
     chatHistory,
     jobUrl,
   }: {
     applicationId: string;
     currentHtml: string;
+    currentDashboardData?: any;
     userMessage: string;
     chatHistory: Array<{ role: string; content: string }>;
     jobUrl: string;
@@ -276,12 +278,13 @@ class BackgroundGenerationManager {
     this.jobs.set(applicationId, job);
     this.notify();
 
-    this.runRefinement(applicationId, currentHtml, userMessage, chatHistory, jobUrl);
+    this.runRefinement(applicationId, currentHtml, currentDashboardData, userMessage, chatHistory, jobUrl);
   }
 
   private async runRefinement(
     appId: string,
     currentHtml: string,
+    currentDashboardData: any | undefined,
     userMessage: string,
     chatHistory: Array<{ role: string; content: string }>,
     jobUrl: string,
@@ -292,6 +295,7 @@ class BackgroundGenerationManager {
       let accumulated = "";
       await streamDashboardRefinement({
         currentHtml,
+        currentDashboardData,
         userMessage,
         chatHistory,
         onDelta: (text) => { accumulated += text; },

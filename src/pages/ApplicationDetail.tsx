@@ -213,7 +213,18 @@ const ApplicationDetail = () => {
         },
       });
       const savePayload: Record<string, any> = { dashboard_html: accumulated };
-      if (dashboardData) savePayload.dashboard_data = dashboardData;
+      // Use the freshly parsed data, not the stale state
+      const parsedForSave = parseLlmJsonOutput(accumulated) || null;
+      if (parsedForSave) {
+        const html = assembleDashboardHtml(parsedForSave);
+        setDashboardHtml(html);
+        setDashboardData(parsedForSave);
+        savePayload.dashboard_html = html;
+        savePayload.dashboard_data = parsedForSave;
+        accumulated = html;
+      } else if (dashboardData) {
+        savePayload.dashboard_data = dashboardData;
+      }
       await saveField(savePayload);
       // Save as revision
       try {
@@ -260,6 +271,7 @@ const ApplicationDetail = () => {
       await backgroundGenerator.startRefinement({
         applicationId: id!,
         currentHtml: dashboardHtml,
+        currentDashboardData: dashboardData || undefined,
         userMessage: msg,
         chatHistory: newHistory,
         jobUrl: app.job_url,

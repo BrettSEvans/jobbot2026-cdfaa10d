@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.search-company-icon]
 verify_jwt = false
+
+[functions.generate-executive-report]
+verify_jwt = false

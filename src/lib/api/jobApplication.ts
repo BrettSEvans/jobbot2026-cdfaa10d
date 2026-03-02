@@ -1,5 +1,23 @@
 import { supabase } from '@/integrations/supabase/client';
 
+// --- Search for company icon (three-tier fallback) ---
+export async function searchCompanyIcon(companyName?: string, companyUrl?: string): Promise<{ iconUrl: string | null; source: string | null }> {
+  if (!companyName && !companyUrl) return { iconUrl: null, source: null };
+  try {
+    const { data, error } = await supabase.functions.invoke('search-company-icon', {
+      body: { companyName, companyUrl },
+    });
+    if (error) {
+      console.warn('search-company-icon error:', error.message);
+      return { iconUrl: null, source: null };
+    }
+    return { iconUrl: data?.iconUrl || null, source: data?.source || null };
+  } catch (e) {
+    console.warn('search-company-icon failed:', e);
+    return { iconUrl: null, source: null };
+  }
+}
+
 // --- Scrape company branding ---
 export async function scrapeCompanyBranding(url: string, retries = 3) {
   for (let attempt = 1; attempt <= retries; attempt++) {

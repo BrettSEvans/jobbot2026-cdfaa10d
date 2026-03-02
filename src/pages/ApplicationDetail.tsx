@@ -13,6 +13,7 @@ import {
   streamDashboardGeneration,
 } from "@/lib/api/jobApplication";
 import { streamTailoredLetter } from "@/lib/api/coverLetter";
+import { streamExecutiveReport } from "@/lib/api/executiveReport";
 import {
   ArrowLeft,
   Copy,
@@ -27,6 +28,7 @@ import {
   RefreshCw,
   Download,
   FolderArchive,
+  ClipboardList,
 } from "lucide-react";
 import SaveAsTemplate from "@/components/SaveAsTemplate";
 import DashboardRevisions from "@/components/DashboardRevisions";
@@ -71,6 +73,11 @@ const ApplicationDetail = () => {
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const [previewCoverLetter, setPreviewCoverLetter] = useState<string | null>(null);
   const [coverLetterRevisionTrigger, setCoverLetterRevisionTrigger] = useState(0);
+
+  // Executive Report
+  const [executiveReportHtml, setExecutiveReportHtml] = useState("");
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const bgJob = useBackgroundJob(id);
   const isBgGenerating = bgJob && !["complete", "error"].includes(bgJob.status);
@@ -123,6 +130,7 @@ const ApplicationDetail = () => {
       
       setDashboardHtml(html);
       setDashboardData(parsedDashData);
+      setExecutiveReportHtml((data as any).executive_report_html || "");
       setChatHistory(Array.isArray(data.chat_history) ? data.chat_history as Array<{ role: string; content: string }> : []);
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
@@ -256,6 +264,48 @@ const ApplicationDetail = () => {
     }
   };
 
+  // Generate executive report
+  const handleGenerateReport = async () => {
+    if (!jobDescription.trim()) {
+      toast({ title: "No job description", description: "A job description is needed to generate a report.", variant: "destructive" });
+      return;
+    }
+    setIsGeneratingReport(true);
+    setExecutiveReportHtml("");
+    try {
+      let accumulated = "";
+      await streamExecutiveReport({
+        jobDescription,
+        companyName,
+        jobTitle,
+        competitors: app?.competitors || [],
+        customers: app?.customers || [],
+        products: app?.products || [],
+        department: "",
+        branding: app?.branding,
+        onDelta: (text) => {
+          accumulated += text;
+          // Show streaming preview
+          setExecutiveReportHtml(accumulated);
+        },
+        onDone: () => {},
+      });
+      // Clean HTML
+      let clean = accumulated.trim();
+      clean = clean.replace(/^```(?:html)?\s*\n?/i, "").replace(/\n?```\s*$/i, "").trim();
+      const htmlStart = clean.indexOf("<!DOCTYPE html>") !== -1 ? clean.indexOf("<!DOCTYPE html>") : clean.indexOf("<!doctype html>");
+      if (htmlStart > 0) clean = clean.slice(htmlStart);
+      const htmlEnd = clean.lastIndexOf("</html>");
+      if (htmlEnd !== -1) clean = clean.slice(0, htmlEnd + 7);
+      setExecutiveReportHtml(clean);
+      await saveField({ executive_report_html: clean });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setIsGeneratingReport(false);
+    }
+  };
+
   // ZIP download for JSON-based dashboards
   const handleDownloadZip = async () => {
     if (!dashboardData) return;
@@ -351,6 +401,7 @@ const ApplicationDetail = () => {
           <TabsList className="w-full justify-start">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="cover-letter">Cover Letter</TabsTrigger>
+            <TabsTrigger value="executive-report">Executive Report</TabsTrigger>
             <TabsTrigger value="job-description">Job Description</TabsTrigger>
             <TabsTrigger value="details">Details</TabsTrigger>
           </TabsList>
@@ -585,6 +636,68 @@ const ApplicationDetail = () => {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Executive Report Tab */}
+          <TabsContent value="executive-report" className="space-y-4">
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" size="sm" onClick={handleGenerateReport} disabled={isGeneratingReport}>
+                {isGeneratingReport ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                {executiveReportHtml ? "Regenerate" : "Generate"} Report
+              </Button>
+              {executiveReportHtml && (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleCopy(executiveReportHtml, "Executive report HTML")}
+                  >
+                    <Copy className="mr-2 h-4 w-4" /> Copy HTML
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const blob = new Blob([executiveReportHtml], { type: "text/html" });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = `${(companyName || "executive-report").replace(/\s+/g, "-").toLowerCase()}-executive-report.html`;
+                      document.body.appendChild(a);
+                      a.click();
+                      document.body.removeChild(a);
+                      URL.revokeObjectURL(url);
+                      toast({ title: "Downloaded", description: "Executive report HTML file saved." });
+                    }}
+                  >
+                    <Download className="mr-2 h-4 w-4" /> Download HTML
+                  </Button>
+                </>
+              )}
+            </div>
+
+            {executiveReportHtml ? (
+              <Card className="overflow-hidden">
+                <div className="w-full" style={{ height: "70vh" }}>
+                  <iframe
+                    srcDoc={executiveReportHtml}
+                    className="w-full h-full border-0"
+                    sandbox="allow-scripts"
+                    title="Executive Report Preview"
+                  />
+                </div>
+              </Card>
+            ) : (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <ClipboardList className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground mb-4">No executive report generated yet.</p>
+                  <Button onClick={handleGenerateReport} disabled={isGeneratingReport}>
+                    <Sparkles className="mr-2 h-4 w-4" /> Generate Executive Report
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           {/* Job Description Tab */}

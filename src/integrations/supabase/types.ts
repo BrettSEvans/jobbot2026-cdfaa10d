@@ -134,6 +134,7 @@ export type Database = {
           customers: Json | null
           dashboard_data: Json | null
           dashboard_html: string | null
+          executive_report_html: string | null
           generation_error: string | null
           generation_status: string
           id: string
@@ -156,6 +157,7 @@ export type Database = {
           customers?: Json | null
           dashboard_data?: Json | null
           dashboard_html?: string | null
+          executive_report_html?: string | null
           generation_error?: string | null
           generation_status?: string
           id?: string
@@ -178,6 +180,7 @@ export type Database = {
           customers?: Json | null
           dashboard_data?: Json | null
           dashboard_html?: string | null
+          executive_report_html?: string | null
           generation_error?: string | null
           generation_status?: string
           id?: string

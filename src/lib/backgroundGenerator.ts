@@ -12,11 +12,12 @@ import {
   searchCompanyIcon,
 } from "@/lib/api/jobApplication";
 import { scrapeJob, streamTailoredLetter } from "@/lib/api/coverLetter";
+import { streamExecutiveReport } from "@/lib/api/executiveReport";
 import { parseLlmJsonOutput, assembleDashboardHtml } from "@/lib/dashboard/assembler";
 
 export type GenerationJob = {
   applicationId: string;
-  status: "pending" | "scraping" | "analyzing" | "cover-letter" | "dashboard" | "complete" | "error";
+  status: "pending" | "scraping" | "analyzing" | "cover-letter" | "dashboard" | "executive-report" | "complete" | "error";
   progress: string;
   error?: string;
 };
@@ -247,12 +248,44 @@ class BackgroundGenerationManager {
         if (htmlEnd !== -1) dashboardHtml = dashboardHtml.slice(0, htmlEnd + 7);
       }
 
-      // 6. Save final result
+      // 6. Generate executive status report
+      this.updateJob(appId, { status: "executive-report", progress: "Generating executive report..." });
+      let execReportHtml = "";
+      try {
+        let accumulated = "";
+        await streamExecutiveReport({
+          jobDescription: markdown,
+          companyName,
+          jobTitle,
+          competitors,
+          customers,
+          products,
+          department,
+          branding: brandingData,
+          onDelta: (text) => { accumulated += text; },
+          onDone: () => {},
+        });
+        // Clean HTML from potential markdown fences
+        let clean = accumulated.trim();
+        clean = clean.replace(/^```(?:html)?\s*\n?/i, "").replace(/\n?```\s*$/i, "").trim();
+        const htmlStart = clean.indexOf("<!DOCTYPE html>") !== -1
+          ? clean.indexOf("<!DOCTYPE html>")
+          : clean.indexOf("<!doctype html>");
+        if (htmlStart > 0) clean = clean.slice(htmlStart);
+        const htmlEnd = clean.lastIndexOf("</html>");
+        if (htmlEnd !== -1) clean = clean.slice(0, htmlEnd + 7);
+        execReportHtml = clean;
+      } catch (e) {
+        console.warn("Executive report generation failed:", e);
+      }
+
+      // 7. Save final result
       await saveJobApplication({
         id: appId,
         job_url: jobUrl,
         dashboard_html: dashboardHtml,
         dashboard_data: dashboardData,
+        executive_report_html: execReportHtml || undefined,
         status: "complete",
         generation_status: "complete",
       } as any);

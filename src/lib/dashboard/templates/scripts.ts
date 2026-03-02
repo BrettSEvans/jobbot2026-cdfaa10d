@@ -737,37 +737,82 @@ export function getScriptsJs(): string {
     }
   }
 
+  function getActiveSectionData(context) {
+    var data = context.dashboardData;
+    var sectionLabel = context.activeSection;
+    if (!data || !data.sections) return null;
+    // Match by label via navigation
+    var navItem = (data.navigation || []).find(function(n) { return n.label === sectionLabel; });
+    if (!navItem) return null;
+    return data.sections.find(function(s) { return s.id === navItem.id; }) || null;
+  }
+
   function getAIResponse(userMsg, context) {
     var q = userMsg.toLowerCase();
     var section = context.activeSection;
     var company = context.companyName;
-    var role = context.jobTitle;
+    var data = context.dashboardData;
+    var sd = getActiveSectionData(context);
 
+    // Section-specific counts
+    var metricCount = sd && sd.metrics ? sd.metrics.length : 0;
+    var chartCount = sd && sd.charts ? sd.charts.length : 0;
+    var tableCount = sd && sd.tables ? sd.tables.length : 0;
+    var firstMetric = metricCount > 0 ? sd.metrics[0].label + ' (' + sd.metrics[0].value + ')' : '';
+    var firstChart = chartCount > 0 ? sd.charts[0].title : '';
+
+    // CFO section detection
+    var isCFO = section.toLowerCase().indexOf('cfo') !== -1 || section.toLowerCase().indexOf('scenario') !== -1;
+    var isAgentic = section.toLowerCase().indexOf('agentic') !== -1 || section.toLowerCase().indexOf('workforce') !== -1;
+
+    // Keyword-triggered responses
     if (q.includes('competitor') || q.includes('market')) {
-      return 'Great question! Looking at ' + company + '\\'s competitive landscape from the ' + section + ' view, I can highlight market share trends, pricing comparisons, and product differentiation. Want me to dig into any of those?';
+      return 'Looking at the ' + section + ' view for ' + company + ', I can highlight competitive positioning, market share trends, and pricing dynamics shown in the data. Which aspect interests you?';
     }
     if (q.includes('chart') || q.includes('graph') || q.includes('visual')) {
-      return 'In the ' + section + ' section, I can help adjust chart types \\u2014 bar charts for comparisons, line charts for trends, doughnut charts for composition. What data would you like to visualize differently?';
+      var chartInfo = firstChart ? ' The \\u201C' + firstChart + '\\u201D chart is a good starting point.' : '';
+      return 'The ' + section + ' section has ' + chartCount + ' chart(s).' + chartInfo + ' I can suggest alternative chart types or highlight key data patterns. What would you like to explore?';
     }
-    if (q.includes('cover letter') || q.includes('letter')) {
-      return 'I can help refine the cover letter for your ' + role + ' application at ' + company + '. Want to adjust tone, emphasize qualifications, or restructure it?';
+    if (q.includes('metric') || q.includes('kpi') || q.includes('number')) {
+      var metricInfo = firstMetric ? ' For example, ' + firstMetric + '.' : '';
+      return 'There are ' + metricCount + ' KPIs in ' + section + '.' + metricInfo + ' Want me to break down what\\u2019s driving any of these trends?';
+    }
+    if (q.includes('table') || q.includes('data') || q.includes('record')) {
+      return 'The ' + section + ' section includes ' + tableCount + ' data table(s). You can click any row for a drill-down view. Want me to highlight notable patterns in the records?';
     }
     if (q.includes('color') || q.includes('brand') || q.includes('theme') || q.includes('design')) {
-      return 'This dashboard uses ' + company + '\\'s brand colors. I can adjust the primary palette, contrast, or font pairing. What would you like to change?';
+      return 'This dashboard uses ' + company + '\\u2019s brand palette. I can suggest adjustments to the color scheme, contrast, or typography. What would you like to change?';
     }
     if (q.includes('export') || q.includes('download') || q.includes('share')) {
-      return 'You can download this dashboard as a ZIP or single HTML file from the application detail page. Want help with exporting?';
+      return 'You can download this dashboard as a ZIP or single HTML file from the main application page. The exported file is fully self-contained.';
     }
-    if (q.includes('interview') || q.includes('prepare')) {
-      return 'Based on the ' + role + ' role at ' + company + ', I\\'d suggest researching their recent initiatives, preparing STAR-format answers, and having specific metrics ready. Want me to generate practice questions?';
+    if (q.includes('slider') || q.includes('scenario') || q.includes('what-if') || q.includes('forecast')) {
+      var scenarioNames = data.cfoScenarios ? data.cfoScenarios.map(function(s) { return s.title; }).join(', ') : 'pricing, headcount, expansion';
+      return 'The CFO scenarios let you model different outcomes: ' + scenarioNames + '. Adjust the sliders to see projected revenue impact across quarters. Which scenario would you like to explore?';
+    }
+    if (q.includes('agent') || q.includes('workforce') || q.includes('ai')) {
+      var agentCount = data.agenticWorkforce ? data.agenticWorkforce.length : 0;
+      return 'The Agentic Workforce section outlines ' + agentCount + ' planned AI agents designed to augment ' + company + '\\u2019s teams. Want to discuss implementation priorities or team interfaces?';
     }
 
-    var responses = [
-      'I\\'m looking at the ' + section + ' section of your ' + company + ' dashboard. I can help refine metrics, adjust charts, or dig into the data. What needs work?',
-      'For your ' + role + ' application at ' + company + ', I can help with any section \\u2014 charts, tables, metrics, or narrative. What would you like to adjust?',
-      'Want me to highlight key qualifications for the ' + role + ' role, suggest interview talking points, or refine the ' + section + ' layout?'
+    // Section-specific fallbacks
+    if (isCFO) {
+      var scenarioList = data.cfoScenarios ? data.cfoScenarios.map(function(s) { return s.title; }).join(', ') : 'multiple scenarios';
+      return 'You\\u2019re viewing the CFO What-If Scenarios: ' + scenarioList + '. Try adjusting the sliders to model revenue impact. Which scenario would you like to dig into?';
+    }
+    if (isAgentic) {
+      var agentFirst = data.agenticWorkforce && data.agenticWorkforce.length > 0 ? data.agenticWorkforce[0].name : 'the first agent';
+      return 'The Agentic Workforce roadmap shows planned AI agents for ' + company + '. ' + agentFirst + ' is one example. Want to explore how these agents would interface with specific teams?';
+    }
+
+    // Generic dashboard-focused fallbacks
+    var fallbacks = [
+      'I\\u2019m analyzing the ' + section + ' section \\u2014 ' + metricCount + ' metrics, ' + chartCount + ' charts, ' + tableCount + ' table(s). What catches your eye?',
+      'The ' + section + ' view for ' + company + ' shows some interesting patterns.' + (firstMetric ? ' ' + firstMetric + ' stands out.' : '') + ' Want me to break anything down?',
+      'I can help interpret the data in ' + section + ' \\u2014 trends in the KPIs, chart patterns, or notable records. What would you like to explore?',
+      'Looking at ' + section + ' for ' + company + '.' + (firstChart ? ' The \\u201C' + firstChart + '\\u201D visualization has some notable data points.' : '') + ' What would you like to dig into?'
     ];
-    return responses[Math.floor(Math.random() * responses.length)];
+    return fallbacks[Math.floor(Math.random() * fallbacks.length)];
   }
 
 })();

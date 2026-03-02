@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -11,13 +10,10 @@ import Templates from "./pages/Templates";
 import NotFound from "./pages/NotFound";
 import BackgroundJobsBanner from "./components/BackgroundJobsBanner";
 import AppHeader from "./components/AppHeader";
-import AiChat from "./components/AiChat";
 
 const queryClient = new QueryClient();
 
 const App = () => {
-  const [aiChatOpen, setAiChatOpen] = useState(false);
-
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
@@ -25,11 +21,7 @@ const App = () => {
         <Sonner />
         <BackgroundJobsBanner />
         <BrowserRouter>
-          <AppHeader
-            aiChatOpen={aiChatOpen}
-            onAiChatToggle={() => setAiChatOpen((o) => !o)}
-          />
-          <AiChat isOpen={aiChatOpen} onClose={() => setAiChatOpen(false)} />
+          <AppHeader />
           <Routes>
             <Route path="/" element={<Applications />} />
             <Route path="/applications" element={<Navigate to="/" replace />} />

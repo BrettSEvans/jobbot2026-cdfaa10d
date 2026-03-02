@@ -604,13 +604,135 @@ export function getScriptsJs(): string {
       document.getElementById('sidebar').classList.toggle('collapsed');
     });
 
-    // Escape key closes drill-down
+    // Escape key closes drill-down or chat
     document.addEventListener('keydown', function(e) {
-      if (e.key === 'Escape') closeDrillDown();
+      if (e.key === 'Escape') {
+        closeDrillDown();
+        var panel = document.getElementById('ai-chat-panel');
+        if (panel && !panel.classList.contains('ai-chat-hidden')) {
+          panel.classList.add('ai-chat-hidden');
+        }
+      }
     });
 
     showToast('Dashboard loaded successfully');
+
+    // === AI CHAT WIDGET ===
+    initAiChat(data);
   });
+
+  function initAiChat(data) {
+    var fab = document.getElementById('ai-chat-fab');
+    var panel = document.getElementById('ai-chat-panel');
+    var closeBtn = document.getElementById('ai-chat-close');
+    var input = document.getElementById('ai-chat-input');
+    var sendBtn = document.getElementById('ai-chat-send');
+    var messagesEl = document.getElementById('ai-chat-messages');
+    var messages = [];
+    var isThinking = false;
+
+    var companyName = (data.meta && data.meta.companyName) || 'this company';
+    var jobTitle = (data.meta && data.meta.jobTitle) || 'this role';
+
+    function getActiveSection() {
+      var active = document.querySelector('.nav-link.active');
+      return active ? active.textContent.trim() : 'Overview';
+    }
+
+    fab.addEventListener('click', function() {
+      panel.classList.toggle('ai-chat-hidden');
+      if (!panel.classList.contains('ai-chat-hidden')) {
+        input.focus();
+      }
+    });
+
+    closeBtn.addEventListener('click', function() {
+      panel.classList.add('ai-chat-hidden');
+    });
+
+    input.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') send();
+    });
+
+    sendBtn.addEventListener('click', send);
+
+    function send() {
+      var text = input.value.trim();
+      if (!text || isThinking) return;
+      input.value = '';
+      addMessage('user', text);
+      isThinking = true;
+      showTyping();
+
+      var section = getActiveSection();
+      setTimeout(function() {
+        removeTyping();
+        addMessage('assistant', getAIResponse(text, { companyName: companyName, jobTitle: jobTitle, activeSection: section, dashboardData: data }));
+        isThinking = false;
+      }, 1500);
+    }
+
+    function addMessage(role, content) {
+      // Remove placeholder
+      var ph = messagesEl.querySelector('.ai-chat-placeholder');
+      if (ph) ph.remove();
+
+      messages.push({ role: role, content: content });
+      var div = document.createElement('div');
+      div.className = 'ai-chat-msg ' + role;
+      div.textContent = content;
+      messagesEl.appendChild(div);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    function showTyping() {
+      var dots = document.createElement('div');
+      dots.className = 'ai-chat-typing';
+      dots.id = 'ai-chat-typing';
+      dots.innerHTML = '<span></span><span></span><span></span>';
+      messagesEl.appendChild(dots);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    function removeTyping() {
+      var t = document.getElementById('ai-chat-typing');
+      if (t) t.remove();
+    }
+  }
+
+  function getAIResponse(userMsg, context) {
+    var q = userMsg.toLowerCase();
+    var section = context.activeSection;
+    var company = context.companyName;
+    var role = context.jobTitle;
+
+    if (q.includes('competitor') || q.includes('market')) {
+      return 'Great question! Looking at ' + company + '\\'s competitive landscape from the ' + section + ' view, I can highlight market share trends, pricing comparisons, and product differentiation. Want me to dig into any of those?';
+    }
+    if (q.includes('chart') || q.includes('graph') || q.includes('visual')) {
+      return 'In the ' + section + ' section, I can help adjust chart types \\u2014 bar charts for comparisons, line charts for trends, doughnut charts for composition. What data would you like to visualize differently?';
+    }
+    if (q.includes('cover letter') || q.includes('letter')) {
+      return 'I can help refine the cover letter for your ' + role + ' application at ' + company + '. Want to adjust tone, emphasize qualifications, or restructure it?';
+    }
+    if (q.includes('color') || q.includes('brand') || q.includes('theme') || q.includes('design')) {
+      return 'This dashboard uses ' + company + '\\'s brand colors. I can adjust the primary palette, contrast, or font pairing. What would you like to change?';
+    }
+    if (q.includes('export') || q.includes('download') || q.includes('share')) {
+      return 'You can download this dashboard as a ZIP or single HTML file from the application detail page. Want help with exporting?';
+    }
+    if (q.includes('interview') || q.includes('prepare')) {
+      return 'Based on the ' + role + ' role at ' + company + ', I\\'d suggest researching their recent initiatives, preparing STAR-format answers, and having specific metrics ready. Want me to generate practice questions?';
+    }
+
+    var responses = [
+      'I\\'m looking at the ' + section + ' section of your ' + company + ' dashboard. I can help refine metrics, adjust charts, or dig into the data. What needs work?',
+      'For your ' + role + ' application at ' + company + ', I can help with any section \\u2014 charts, tables, metrics, or narrative. What would you like to adjust?',
+      'Want me to highlight key qualifications for the ' + role + ' role, suggest interview talking points, or refine the ' + section + ' layout?'
+    ];
+    return responses[Math.floor(Math.random() * responses.length)];
+  }
+
 })();
 `;
 }

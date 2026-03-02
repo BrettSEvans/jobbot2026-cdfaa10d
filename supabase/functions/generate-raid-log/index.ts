@@ -32,6 +32,9 @@ serve(async (req) => {
     const primaryColor = brandColors.primary || '#1a365d';
     const accentColor = brandColors.secondary || brandColors.accent || '#2563eb';
 
+    const now = new Date();
+    const currentDate = now.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
     const systemPrompt = `You are a meticulous, forward-thinking Technical Program Manager. Your superpower is anticipating bottlenecks, documenting dependencies across complex engineering pods, and maintaining flawless operational rigor.
 
 You must create a realistic, robust RAID Log (Risks, Assumptions, Issues, Dependencies) for a complex, cross-functional initiative that aligns directly with ${companyName || 'the company'}'s current goals and the specific technical challenges in the job description.
@@ -55,7 +58,7 @@ REQUIRED STRUCTURE:
    - **Assumptions** (3-4 entries)
    - **Issues** (2-3 entries)
    - **Dependencies** (3-4 entries)
-3. **Columns for each entry**: ID, Description, Impact (High/Med/Low with color-coded badges), Owner (realistic role titles), Status (Open/Mitigated/Closed with badges), Mitigation Strategy
+3. **Columns for each entry**: ID, Description, Impact (High/Med/Low with color-coded badges), Owner (realistic role titles), Status (Open/Mitigated/Closed with badges), Mitigation Strategy, Updated
 
 STYLE REQUIREMENTS:
 - Clean sans-serif font stack (system-ui, -apple-system, sans-serif)
@@ -72,6 +75,14 @@ CONTENT REQUIREMENTS:
 - Include realistic API limits, cloud migration dependencies, security compliance items
 - Owners should be realistic role titles (VP Engineering, Staff SRE, Security Lead, etc.)
 - Mitigation strategies should be specific and actionable
+
+DATE REALISM (CRITICAL):
+- Today's date is ${currentDate}.
+- Every entry MUST include an "Updated" column.
+- Each "Updated" date must fall within the 14 calendar days PRIOR to today.
+- Vary the dates naturally across entries — do NOT use the same date for all rows.
+- Use a human-readable format (e.g., "Feb 27, 2026").
+- More urgent items (High impact, Open status) should have more recent Updated dates.
 
 TONE: Analytical, precise, and proactive.
 

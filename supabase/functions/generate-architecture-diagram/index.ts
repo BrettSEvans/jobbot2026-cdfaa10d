@@ -33,6 +33,9 @@ serve(async (req) => {
     const accentColor = brandColors.secondary || brandColors.accent || '#3b82f6';
     const bgDark = brandColors.background || '#0f172a';
 
+    const now = new Date();
+    const currentDate = now.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
     const systemPrompt = `You are a Staff Technical Program Manager with a deep software architecture background. You translate complex system interactions, data flows, and microservice dependencies into clear visual diagrams.
 
 You must create a realistic System / Process Architecture Diagram for a core system interaction relevant to the ${jobTitle || 'engineering'} role at ${companyName || 'the company'}.
@@ -70,7 +73,14 @@ DIAGRAM REQUIREMENTS:
    - A clear label (service name)
    - A brief tech annotation below (e.g., "PostgreSQL", "Kafka", "React SPA", "Redis Cache", "gRPC")
 5. Group related nodes into labeled sections/swim lanes (e.g., "Client Layer", "API Gateway", "Backend Services", "Data Layer")
-6. Include a title header with project name and a legend explaining node types and arrow colors
+6. Include a title header with project name, a "Last Updated: ${currentDate}" subtitle, and a legend explaining node types and arrow colors
+
+SVG ARROW ANCHORING RULES (CRITICAL):
+1. Every arrow must start and end at the vertical center of its respective node div.
+2. The horizontal anchor point must be at the edge (left or right border) of the node — never the center or an arbitrary point.
+3. Choose the shortest path: if the source node is to the right of the target, start at source's left edge and end at target's right edge. If source is to the left, start at source's right edge and end at target's left edge.
+4. Arrows must never float in empty space or overlap node interiors — they connect edge-to-edge.
+5. Use SVG line or path elements with marker-end arrowheads. Calculate coordinates based on actual node positions using CSS layout.
 
 SVG ARROW TECHNIQUE:
 - Define arrowhead markers in an SVG defs block

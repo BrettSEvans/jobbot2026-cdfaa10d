@@ -50,9 +50,11 @@ COMPANY CONTEXT:
 - Customers: ${(customers || []).join(', ') || 'N/A'}
 
 TIMELINE CONTEXT:
+- Today's date is ${now.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}.
 - Start date: ${startDate}
 - Starting quarter: Q${currentQuarter} ${currentYear}
 - Span: 3 quarters (Q${currentQuarter} ${currentYear} through Q${((currentQuarter + 1) % 4) + 1} ${currentQuarter >= 3 ? currentYear + 1 : currentYear})
+- All dates in the roadmap must be realistic relative to today. Do NOT use placeholder dates from a different year.
 
 CRITICAL INSTRUCTIONS FOR DEPARTMENT SELECTION:
 - Analyze the job title and description to determine the correct upstream and downstream departments.

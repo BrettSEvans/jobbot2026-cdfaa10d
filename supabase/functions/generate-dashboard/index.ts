@@ -5,7 +5,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
-function buildSystemPrompt(branding: any, competitors: string[], customers: string[], products: string[], department: string, companyName: string, jobTitle: string): string {
+function buildSystemPrompt(branding: any, competitors: string[], customers: string[], products: string[], department: string, companyName: string, jobTitle: string, researchedSections?: any[]): string {
   const brandingContext = branding ? `
 Company Branding (derive Material You tonal palette from these colors):
 - Primary Colors: ${JSON.stringify(branding.colors || {})}
@@ -19,6 +19,31 @@ Use the dominant extracted colors as the seed for the Material You tonal palette
   const competitorContext = competitors?.length ? `\nKey Competitors: ${competitors.join(', ')}` : '';
   const customerContext = customers?.length ? `\nTarget Customers: ${customers.join(', ')}` : '';
   const productContext = products?.length ? `\nCompany Products: ${products.join(', ')}` : '';
+
+  // If we have researched sections, use them as the blueprint
+  const sectionInstructions = researchedSections?.length
+    ? `
+SECTION BLUEPRINT (from Research Agent):
+A research agent has already determined the optimal dashboard sections for this role. Use the following section specifications as your blueprint. Generate the full dashboard JSON following the schema below, but use THESE sections instead of inventing your own. Fill in realistic data for each metric, chart, and table based on the specifications.
+
+Always append the 'agentic-workforce' and 'cfo-view' navigation entries and their corresponding data (agenticWorkforce array and cfoScenarios array) regardless of what the research agent returned.
+
+Research Agent Output:
+${JSON.stringify(researchedSections, null, 2)}
+
+For each researched section:
+- Use the provided id, label, icon, and description exactly
+- Generate metrics with realistic values matching the valueFormat hints
+- Generate chart data matching the chart specs (type, axes, datasets)
+- Generate table schemas matching the column definitions and use generateRows with the provided field types
+- Each table must have generateRows count >= 500
+`
+    : `
+SECTION REQUIREMENTS:
+- 6-8 sections covering: Overview, Pipeline/Revenue, Competitors, Customers, Products, Analytics, plus always include "agentic-workforce" and "cfo-view" in navigation
+- Each section: unique description, 3-5 metrics, 2-3 charts (VARY chart types), 1 table with generateRows count >= 500
+- Include at least ONE horizontalBar chart (Gantt-style) with time-based labels
+`;
 
   return `You are a business intelligence data architect. Generate a structured JSON object for a dashboard.
 
@@ -121,10 +146,8 @@ JSON SCHEMA (follow EXACTLY):
 }
 
 CRITICAL REQUIREMENTS:
-- 6-8 sections covering: Overview, Pipeline/Revenue, Competitors, Customers, Products, Analytics, plus always include "agentic-workforce" and "cfo-view" in navigation
+${sectionInstructions}
 - Navigation MUST include entries with id "agentic-workforce" and "cfo-view" — these are rendered by the template engine
-- Each section: unique description, 3-5 metrics, 2-3 charts (VARY chart types), 1 table with generateRows count >= 500
-- Include at least ONE horizontalBar chart (Gantt-style) with time-based labels
 - 8-10 agentic workforce agents customized to the role
 - 3 CFO scenarios: one "pricing" (sliders: priceChange, elasticity, growthRate), one "headcount" (sliders: newHires, rampTime, quota), one "expansion" (sliders: tam, penetration, investment)
 - All text must be specific to ${companyName || 'the company'} and the ${jobTitle || 'role'}
@@ -143,7 +166,7 @@ serve(async (req) => {
   }
 
   try {
-    const { jobDescription, branding, companyName, jobTitle, competitors, customers, products, department, templateHtml } = await req.json();
+    const { jobDescription, branding, companyName, jobTitle, competitors, customers, products, department, templateHtml, researchedSections } = await req.json();
 
     if (!jobDescription) {
       return new Response(
@@ -160,7 +183,7 @@ serve(async (req) => {
       );
     }
 
-    const systemPrompt = buildSystemPrompt(branding, competitors, customers, products, department || 'GTM', companyName || 'Unknown', jobTitle || 'Unknown');
+    const systemPrompt = buildSystemPrompt(branding, competitors, customers, products, department || 'GTM', companyName || 'Unknown', jobTitle || 'Unknown', researchedSections);
 
     const templateContext = templateHtml ? `\n\nREFERENCE TEMPLATE (use as structural guide for section layout, chart types, and data patterns — but generate NEW data for the new company): Provided separately.` : '';
 

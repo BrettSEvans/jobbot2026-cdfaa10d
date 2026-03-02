@@ -141,6 +141,7 @@ export type Database = {
           job_title: string | null
           job_url: string
           products: Json | null
+          research_reasoning: string | null
           status: string
           updated_at: string
         }
@@ -162,6 +163,7 @@ export type Database = {
           job_title?: string | null
           job_url: string
           products?: Json | null
+          research_reasoning?: string | null
           status?: string
           updated_at?: string
         }
@@ -183,6 +185,7 @@ export type Database = {
           job_title?: string | null
           job_url?: string
           products?: Json | null
+          research_reasoning?: string | null
           status?: string
           updated_at?: string
         }

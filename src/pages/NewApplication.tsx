@@ -11,6 +11,7 @@ import {
   streamDashboardGeneration,
   saveJobApplication,
 } from "@/lib/api/jobApplication";
+import { researchCompany } from "@/lib/api/researchCompany";
 import { scrapeJob, streamTailoredLetter } from "@/lib/api/coverLetter";
 import { parseLlmJsonOutput, assembleDashboardHtml } from "@/lib/dashboard/assembler";
 import {
@@ -146,6 +147,26 @@ const NewApplication = () => {
         console.warn("Analysis failed, continuing:", e);
       }
 
+      // Research company — determine optimal dashboard sections
+      setPipelineStage("research");
+      setLoadingMsg(`Researching ${companyNameLocal || 'company'}...`);
+      let researchedSections: any[] | undefined;
+      let researchReasoning = "";
+      try {
+        const research = await researchCompany({
+          jobUrl: jobUrl || undefined,
+          companyUrl: companyUrl || undefined,
+          jobTitle: jobTitleLocal,
+          companyName: companyNameLocal,
+          department: departmentLocal,
+          jobDescription: markdown,
+        });
+        researchedSections = research.sections;
+        researchReasoning = research.reasoning || "";
+      } catch (e) {
+        console.warn("Research failed, continuing with default sections:", e);
+      }
+
       // Generate cover letter
       setPipelineStage("cover-letter");
       setLoadingMsg("Generating tailored cover letter...");
@@ -178,6 +199,7 @@ const NewApplication = () => {
         products: productsLocal,
         department: departmentLocal,
         templateHtml: selectedTemplate?.dashboard_html,
+        researchedSections,
         onDelta: (text) => {
           accumulated += text;
           // Don't show raw JSON — just update byte counter via loadingMsg
@@ -221,6 +243,7 @@ const NewApplication = () => {
         customers: customersLocal,
         products: productsLocal,
         status: "complete",
+        research_reasoning: researchReasoning || undefined,
       });
       setApplicationId(saved.id);
 

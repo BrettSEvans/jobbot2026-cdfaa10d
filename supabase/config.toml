@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.refine-dashboard]
 verify_jwt = false
+
+[functions.research-company]
+verify_jwt = false

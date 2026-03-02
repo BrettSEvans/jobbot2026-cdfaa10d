@@ -20,9 +20,12 @@ import { parseLlmJsonOutput, assembleDashboardHtml } from "@/lib/dashboard/assem
 
 export type GenerationJob = {
   applicationId: string;
-  status: "pending" | "scraping" | "analyzing" | "cover-letter" | "dashboard" | "executive-report" | "raid-log" | "architecture-diagram" | "roadmap" | "complete" | "error";
+  status: "pending" | "scraping" | "analyzing" | "cover-letter" | "dashboard" | "generating-assets" | "executive-report" | "raid-log" | "architecture-diagram" | "roadmap" | "complete" | "error";
   progress: string;
   error?: string;
+  /** Tracks how many of the 4 parallel assets have finished (used by UI) */
+  parallelCompleted?: number;
+  parallelTotal?: number;
 };
 
 type Listener = () => void;
@@ -251,137 +254,137 @@ class BackgroundGenerationManager {
         if (htmlEnd !== -1) dashboardHtml = dashboardHtml.slice(0, htmlEnd + 7);
       }
 
-      // 6. Generate executive status report
-      this.updateJob(appId, { status: "executive-report", progress: "Generating executive report..." });
-      let execReportHtml = "";
-      try {
-        let accumulated = "";
-        await streamExecutiveReport({
-          jobDescription: markdown,
-          companyName,
-          jobTitle,
-          competitors,
-          customers,
-          products,
-          department,
-          branding: brandingData,
-          onDelta: (text) => { accumulated += text; },
-          onDone: () => {},
-        });
-        // Clean HTML from potential markdown fences
-        let clean = accumulated.trim();
-        clean = clean.replace(/^```(?:html)?\s*\n?/i, "").replace(/\n?```\s*$/i, "").trim();
-        const htmlStart = clean.indexOf("<!DOCTYPE html>") !== -1
-          ? clean.indexOf("<!DOCTYPE html>")
-          : clean.indexOf("<!doctype html>");
-        if (htmlStart > 0) clean = clean.slice(htmlStart);
-        const htmlEnd = clean.lastIndexOf("</html>");
-        if (htmlEnd !== -1) clean = clean.slice(0, htmlEnd + 7);
-        execReportHtml = clean;
-      } catch (e) {
-        console.warn("Executive report generation failed:", e);
-      }
+      // 6-9. Generate assets IN PARALLEL
+      this.updateJob(appId, {
+        status: "generating-assets",
+        progress: "Generating additional assets... (0/4 completed)",
+        parallelCompleted: 0,
+        parallelTotal: 4,
+      });
 
-      // 7. Generate RAID Log
-      this.updateJob(appId, { status: "raid-log", progress: "Generating RAID log..." });
-      let raidLogHtml = "";
-      try {
-        let raidAccumulated = "";
-        await streamRaidLog({
-          jobDescription: markdown,
-          companyName,
-          jobTitle,
-          competitors,
-          customers,
-          products,
-          department,
-          branding: brandingData,
-          onDelta: (text) => { raidAccumulated += text; },
-          onDone: () => {},
+      let parallelDone = 0;
+      const bumpCount = () => {
+        parallelDone++;
+        this.updateJob(appId, {
+          progress: `Generating additional assets... (${parallelDone}/4 completed)`,
+          parallelCompleted: parallelDone,
         });
-        let cleanRaid = raidAccumulated.trim();
-        cleanRaid = cleanRaid.replace(/^```(?:html)?\s*\n?/i, "").replace(/\n?```\s*$/i, "").trim();
-        const raidHtmlStart = cleanRaid.indexOf("<!DOCTYPE html>") !== -1
-          ? cleanRaid.indexOf("<!DOCTYPE html>")
-          : cleanRaid.indexOf("<!doctype html>");
-        if (raidHtmlStart > 0) cleanRaid = cleanRaid.slice(raidHtmlStart);
-        const raidHtmlEnd = cleanRaid.lastIndexOf("</html>");
-        if (raidHtmlEnd !== -1) cleanRaid = cleanRaid.slice(0, raidHtmlEnd + 7);
-        raidLogHtml = cleanRaid;
-      } catch (e) {
-        console.warn("RAID log generation failed:", e);
-      }
+      };
 
-      // 8. Generate Architecture Diagram
-      this.updateJob(appId, { status: "architecture-diagram", progress: "Generating architecture diagram..." });
-      let archDiagramHtml = "";
-      try {
-        let archAccumulated = "";
-        await streamArchitectureDiagram({
-          jobDescription: markdown,
-          companyName,
-          jobTitle,
-          competitors,
-          customers,
-          products,
-          department,
-          branding: brandingData,
-          onDelta: (text) => { archAccumulated += text; },
-          onDone: () => {},
-        });
-        let cleanArch = archAccumulated.trim();
-        cleanArch = cleanArch.replace(/^```(?:html)?\s*\n?/i, "").replace(/\n?```\s*$/i, "").trim();
-        const archHtmlStart = cleanArch.indexOf("<!DOCTYPE html>") !== -1
-          ? cleanArch.indexOf("<!DOCTYPE html>")
-          : cleanArch.indexOf("<!doctype html>");
-        if (archHtmlStart > 0) cleanArch = cleanArch.slice(archHtmlStart);
-        const archHtmlEnd = cleanArch.lastIndexOf("</html>");
-        if (archHtmlEnd !== -1) cleanArch = cleanArch.slice(0, archHtmlEnd + 7);
-        archDiagramHtml = cleanArch;
-      } catch (e) {
-        console.warn("Architecture diagram generation failed:", e);
-      }
+      const generateExecReport = async (): Promise<string | null> => {
+        try {
+          let accumulated = "";
+          await streamExecutiveReport({
+            jobDescription: markdown, companyName, jobTitle, competitors, customers, products, department, branding: brandingData,
+            onDelta: (text) => { accumulated += text; },
+            onDone: () => {},
+          });
+          let clean = accumulated.trim();
+          clean = clean.replace(/^```(?:html)?\s*\n?/i, "").replace(/\n?```\s*$/i, "").trim();
+          const htmlStart = clean.indexOf("<!DOCTYPE html>") !== -1 ? clean.indexOf("<!DOCTYPE html>") : clean.indexOf("<!doctype html>");
+          if (htmlStart > 0) clean = clean.slice(htmlStart);
+          const htmlEnd = clean.lastIndexOf("</html>");
+          if (htmlEnd !== -1) clean = clean.slice(0, htmlEnd + 7);
+          return clean;
+        } catch (e) {
+          console.warn("Executive report generation failed:", e);
+          return null;
+        } finally {
+          bumpCount();
+        }
+      };
 
-      // 9. Generate Cross-Functional Roadmap
-      this.updateJob(appId, { status: "roadmap", progress: "Generating cross-functional roadmap..." });
-      let roadmapHtml = "";
-      try {
-        let roadmapAccumulated = "";
-        await streamRoadmap({
-          jobDescription: markdown,
-          companyName,
-          jobTitle,
-          competitors,
-          customers,
-          products,
-          department,
-          branding: brandingData,
-          onDelta: (text) => { roadmapAccumulated += text; },
-          onDone: () => {},
-        });
-        let cleanRoadmap = roadmapAccumulated.trim();
-        cleanRoadmap = cleanRoadmap.replace(/^```(?:html)?\s*\n?/i, "").replace(/\n?```\s*$/i, "").trim();
-        const rmHtmlStart = cleanRoadmap.indexOf("<!DOCTYPE html>") !== -1
-          ? cleanRoadmap.indexOf("<!DOCTYPE html>")
-          : cleanRoadmap.indexOf("<!doctype html>");
-        if (rmHtmlStart > 0) cleanRoadmap = cleanRoadmap.slice(rmHtmlStart);
-        const rmHtmlEnd = cleanRoadmap.lastIndexOf("</html>");
-        if (rmHtmlEnd !== -1) cleanRoadmap = cleanRoadmap.slice(0, rmHtmlEnd + 7);
-        roadmapHtml = cleanRoadmap;
-      } catch (e) {
-        console.warn("Roadmap generation failed:", e);
-      }
+      const generateRaidLog = async (): Promise<string | null> => {
+        try {
+          let accumulated = "";
+          await streamRaidLog({
+            jobDescription: markdown, companyName, jobTitle, competitors, customers, products, department, branding: brandingData,
+            onDelta: (text) => { accumulated += text; },
+            onDone: () => {},
+          });
+          let clean = accumulated.trim();
+          clean = clean.replace(/^```(?:html)?\s*\n?/i, "").replace(/\n?```\s*$/i, "").trim();
+          const htmlStart = clean.indexOf("<!DOCTYPE html>") !== -1 ? clean.indexOf("<!DOCTYPE html>") : clean.indexOf("<!doctype html>");
+          if (htmlStart > 0) clean = clean.slice(htmlStart);
+          const htmlEnd = clean.lastIndexOf("</html>");
+          if (htmlEnd !== -1) clean = clean.slice(0, htmlEnd + 7);
+          return clean;
+        } catch (e) {
+          console.warn("RAID log generation failed:", e);
+          return null;
+        } finally {
+          bumpCount();
+        }
+      };
 
-      // 10. Save final result
+      const generateArchDiagram = async (): Promise<string | null> => {
+        try {
+          let accumulated = "";
+          await streamArchitectureDiagram({
+            jobDescription: markdown, companyName, jobTitle, competitors, customers, products, department, branding: brandingData,
+            onDelta: (text) => { accumulated += text; },
+            onDone: () => {},
+          });
+          let clean = accumulated.trim();
+          clean = clean.replace(/^```(?:html)?\s*\n?/i, "").replace(/\n?```\s*$/i, "").trim();
+          const htmlStart = clean.indexOf("<!DOCTYPE html>") !== -1 ? clean.indexOf("<!DOCTYPE html>") : clean.indexOf("<!doctype html>");
+          if (htmlStart > 0) clean = clean.slice(htmlStart);
+          const htmlEnd = clean.lastIndexOf("</html>");
+          if (htmlEnd !== -1) clean = clean.slice(0, htmlEnd + 7);
+          return clean;
+        } catch (e) {
+          console.warn("Architecture diagram generation failed:", e);
+          return null;
+        } finally {
+          bumpCount();
+        }
+      };
+
+      const generateRoadmap = async (): Promise<string | null> => {
+        try {
+          let accumulated = "";
+          await streamRoadmap({
+            jobDescription: markdown, companyName, jobTitle, competitors, customers, products, department, branding: brandingData,
+            onDelta: (text) => { accumulated += text; },
+            onDone: () => {},
+          });
+          let clean = accumulated.trim();
+          clean = clean.replace(/^```(?:html)?\s*\n?/i, "").replace(/\n?```\s*$/i, "").trim();
+          const htmlStart = clean.indexOf("<!DOCTYPE html>") !== -1 ? clean.indexOf("<!DOCTYPE html>") : clean.indexOf("<!doctype html>");
+          if (htmlStart > 0) clean = clean.slice(htmlStart);
+          const htmlEnd = clean.lastIndexOf("</html>");
+          if (htmlEnd !== -1) clean = clean.slice(0, htmlEnd + 7);
+          return clean;
+        } catch (e) {
+          console.warn("Roadmap generation failed:", e);
+          return null;
+        } finally {
+          bumpCount();
+        }
+      };
+
+      const [execResult, raidResult, archResult, roadmapResult] = await Promise.allSettled([
+        generateExecReport(),
+        generateRaidLog(),
+        generateArchDiagram(),
+        generateRoadmap(),
+      ]);
+
+      const execReportHtml = execResult.status === "fulfilled" ? execResult.value : null;
+      const raidLogHtml = raidResult.status === "fulfilled" ? raidResult.value : null;
+      const archDiagramHtml = archResult.status === "fulfilled" ? archResult.value : null;
+      const roadmapHtml = roadmapResult.status === "fulfilled" ? roadmapResult.value : null;
+
+      // 10. Single consolidated save
       await saveJobApplication({
         id: appId,
         job_url: jobUrl,
         dashboard_html: dashboardHtml,
         dashboard_data: dashboardData,
-        executive_report_html: execReportHtml || undefined,
-        raid_log_html: raidLogHtml || undefined,
-        architecture_diagram_html: archDiagramHtml || undefined,
-        roadmap_html: roadmapHtml || undefined,
+        ...(execReportHtml ? { executive_report_html: execReportHtml } : {}),
+        ...(raidLogHtml ? { raid_log_html: raidLogHtml } : {}),
+        ...(archDiagramHtml ? { architecture_diagram_html: archDiagramHtml } : {}),
+        ...(roadmapHtml ? { roadmap_html: roadmapHtml } : {}),
         status: "complete",
         generation_status: "complete",
       } as any);

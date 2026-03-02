@@ -131,6 +131,16 @@ ${jobDescription || 'No description provided.'}`;
     clean = clean.slice(firstBrace, lastBrace + 1);
     // Remove trailing commas
     clean = clean.replace(/,\s*([}\]])/g, '$1');
+    // Remove single-line comments (// ...)
+    clean = clean.replace(/\/\/[^\n]*/g, '');
+    // Remove multi-line comments
+    clean = clean.replace(/\/\*[\s\S]*?\*\//g, '');
+    // Fix unquoted keys: word followed by colon
+    clean = clean.replace(/(\{|,)\s*([a-zA-Z_]\w*)\s*:/g, '$1 "$2":');
+    // Remove control characters except whitespace
+    clean = clean.replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g, '');
+    // Log for debugging
+    console.log('Sanitized JSON (first 500 chars):', clean.slice(0, 500));
 
     try {
       const parsed = JSON.parse(clean);

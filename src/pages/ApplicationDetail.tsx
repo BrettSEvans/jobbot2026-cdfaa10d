@@ -15,6 +15,7 @@ import {
 import { streamTailoredLetter } from "@/lib/api/coverLetter";
 import { streamExecutiveReport } from "@/lib/api/executiveReport";
 import { streamRaidLog } from "@/lib/api/raidLog";
+import { streamArchitectureDiagram } from "@/lib/api/architectureDiagram";
 import {
   ArrowLeft,
   Copy,
@@ -31,6 +32,7 @@ import {
   FolderArchive,
   ClipboardList,
   Shield,
+  Network,
 } from "lucide-react";
 import SaveAsTemplate from "@/components/SaveAsTemplate";
 import DashboardRevisions from "@/components/DashboardRevisions";
@@ -83,6 +85,10 @@ const ApplicationDetail = () => {
   // RAID Log
   const [raidLogHtml, setRaidLogHtml] = useState("");
   const [isGeneratingRaidLog, setIsGeneratingRaidLog] = useState(false);
+
+  // Architecture Diagram
+  const [archDiagramHtml, setArchDiagramHtml] = useState("");
+  const [isGeneratingArchDiagram, setIsGeneratingArchDiagram] = useState(false);
 
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const bgJob = useBackgroundJob(id);
@@ -138,6 +144,7 @@ const ApplicationDetail = () => {
       setDashboardData(parsedDashData);
       setExecutiveReportHtml((data as any).executive_report_html || "");
       setRaidLogHtml((data as any).raid_log_html || "");
+      setArchDiagramHtml((data as any).architecture_diagram_html || "");
       setChatHistory(Array.isArray(data.chat_history) ? data.chat_history as Array<{ role: string; content: string }> : []);
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
@@ -353,6 +360,46 @@ const ApplicationDetail = () => {
     }
   };
 
+  // Generate architecture diagram
+  const handleGenerateArchDiagram = async () => {
+    if (!jobDescription.trim()) {
+      toast({ title: "No job description", description: "A job description is needed to generate an architecture diagram.", variant: "destructive" });
+      return;
+    }
+    setIsGeneratingArchDiagram(true);
+    setArchDiagramHtml("");
+    try {
+      let accumulated = "";
+      await streamArchitectureDiagram({
+        jobDescription,
+        companyName,
+        jobTitle,
+        competitors: app?.competitors || [],
+        customers: app?.customers || [],
+        products: app?.products || [],
+        department: "",
+        branding: app?.branding,
+        onDelta: (text) => {
+          accumulated += text;
+          setArchDiagramHtml(accumulated);
+        },
+        onDone: () => {},
+      });
+      let clean = accumulated.trim();
+      clean = clean.replace(/^```(?:html)?\s*\n?/i, "").replace(/\n?```\s*$/i, "").trim();
+      const htmlStart = clean.indexOf("<!DOCTYPE html>") !== -1 ? clean.indexOf("<!DOCTYPE html>") : clean.indexOf("<!doctype html>");
+      if (htmlStart > 0) clean = clean.slice(htmlStart);
+      const htmlEnd = clean.lastIndexOf("</html>");
+      if (htmlEnd !== -1) clean = clean.slice(0, htmlEnd + 7);
+      setArchDiagramHtml(clean);
+      await saveField({ architecture_diagram_html: clean });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setIsGeneratingArchDiagram(false);
+    }
+  };
+
   // ZIP download for JSON-based dashboards
   const handleDownloadZip = async () => {
     if (!dashboardData) return;
@@ -450,6 +497,7 @@ const ApplicationDetail = () => {
             <TabsTrigger value="cover-letter">Cover Letter</TabsTrigger>
             <TabsTrigger value="executive-report">Executive Report</TabsTrigger>
             <TabsTrigger value="raid-log">RAID Log</TabsTrigger>
+            <TabsTrigger value="architecture">Architecture</TabsTrigger>
             <TabsTrigger value="job-description">Job Description</TabsTrigger>
             <TabsTrigger value="details">Details</TabsTrigger>
           </TabsList>
@@ -804,6 +852,68 @@ const ApplicationDetail = () => {
                   <p className="text-muted-foreground mb-4">No RAID log generated yet.</p>
                   <Button onClick={handleGenerateRaidLog} disabled={isGeneratingRaidLog}>
                     <Sparkles className="mr-2 h-4 w-4" /> Generate RAID Log
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          {/* Architecture Diagram Tab */}
+          <TabsContent value="architecture" className="space-y-4">
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" size="sm" onClick={handleGenerateArchDiagram} disabled={isGeneratingArchDiagram}>
+                {isGeneratingArchDiagram ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                {archDiagramHtml ? "Regenerate" : "Generate"} Diagram
+              </Button>
+              {archDiagramHtml && (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleCopy(archDiagramHtml, "Architecture diagram HTML")}
+                  >
+                    <Copy className="mr-2 h-4 w-4" /> Copy HTML
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const blob = new Blob([archDiagramHtml], { type: "text/html" });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = `${(companyName || "architecture").replace(/\s+/g, "-").toLowerCase()}-architecture-diagram.html`;
+                      document.body.appendChild(a);
+                      a.click();
+                      document.body.removeChild(a);
+                      URL.revokeObjectURL(url);
+                      toast({ title: "Downloaded", description: "Architecture diagram HTML file saved." });
+                    }}
+                  >
+                    <Download className="mr-2 h-4 w-4" /> Download HTML
+                  </Button>
+                </>
+              )}
+            </div>
+
+            {archDiagramHtml ? (
+              <Card className="overflow-hidden">
+                <div className="w-full" style={{ height: "70vh" }}>
+                  <iframe
+                    srcDoc={archDiagramHtml}
+                    className="w-full h-full border-0"
+                    sandbox="allow-scripts"
+                    title="Architecture Diagram Preview"
+                  />
+                </div>
+              </Card>
+            ) : (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <Network className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground mb-4">No architecture diagram generated yet.</p>
+                  <Button onClick={handleGenerateArchDiagram} disabled={isGeneratingArchDiagram}>
+                    <Sparkles className="mr-2 h-4 w-4" /> Generate Architecture Diagram
                   </Button>
                 </CardContent>
               </Card>

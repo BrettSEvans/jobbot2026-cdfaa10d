@@ -124,6 +124,7 @@ export type Database = {
       }
       job_applications: {
         Row: {
+          architecture_diagram_html: string | null
           branding: Json | null
           chat_history: Json | null
           company_name: string | null
@@ -148,6 +149,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          architecture_diagram_html?: string | null
           branding?: Json | null
           chat_history?: Json | null
           company_name?: string | null
@@ -172,6 +174,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          architecture_diagram_html?: string | null
           branding?: Json | null
           chat_history?: Json | null
           company_name?: string | null

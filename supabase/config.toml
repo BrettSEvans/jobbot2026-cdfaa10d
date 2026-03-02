@@ -29,3 +29,6 @@ verify_jwt = false
 
 [functions.generate-raid-log]
 verify_jwt = false
+
+[functions.generate-architecture-diagram]
+verify_jwt = false

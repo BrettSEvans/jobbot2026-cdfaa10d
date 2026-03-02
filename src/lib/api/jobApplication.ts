@@ -171,6 +171,7 @@ export async function saveJobApplication(app: {
   research_reasoning?: string;
   executive_report_html?: string;
   raid_log_html?: string;
+  architecture_diagram_html?: string;
 }) {
   if (app.id) {
     const { data, error } = await supabase

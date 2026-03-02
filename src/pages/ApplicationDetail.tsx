@@ -103,8 +103,26 @@ const ApplicationDetail = () => {
       setCompanyUrl(data.company_url || "");
       setCompanyName(data.company_name || "");
       setJobTitle(data.job_title || "");
-      setDashboardHtml(data.dashboard_html || "");
-      setDashboardData(data.dashboard_data as unknown as DashboardData | null);
+      
+      // Handle dashboard HTML — if it's raw JSON, assemble it
+      let html = data.dashboard_html || "";
+      let parsedDashData = data.dashboard_data as unknown as DashboardData | null;
+      
+      if (html && !html.trimStart().startsWith("<!") && !html.trimStart().startsWith("<html")) {
+        // Looks like raw JSON, try to parse and assemble
+        const parsed = parseLlmJsonOutput(html);
+        if (parsed) {
+          parsedDashData = parsed;
+          html = assembleDashboardHtml(parsed);
+          // Persist the fix so it doesn't happen again
+          try {
+            await saveJobApplication({ id: appId, job_url: data.job_url, dashboard_html: html, dashboard_data: parsed });
+          } catch { /* non-critical */ }
+        }
+      }
+      
+      setDashboardHtml(html);
+      setDashboardData(parsedDashData);
       setChatHistory(Array.isArray(data.chat_history) ? data.chat_history as Array<{ role: string; content: string }> : []);
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });

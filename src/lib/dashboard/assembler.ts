@@ -58,6 +58,18 @@ export function parseLlmJsonOutput(raw: string): DashboardData | null {
     return null;
   }
   clean = clean.slice(firstBrace, lastBrace + 1);
+  
+  // Sanitize common LLM mistakes: JS expressions in JSON
+  // new Date("...").getTime() → timestamp number
+  clean = clean.replace(/new\s+Date\s*\(\s*["']([^"']*)["']\s*\)\.getTime\s*\(\s*\)/g, (_, dateStr) => {
+    try { return String(new Date(dateStr).getTime()); } catch { return '0'; }
+  });
+  // new Date("...") → string
+  clean = clean.replace(/new\s+Date\s*\(\s*["']([^"']*)["']\s*\)/g, '"$1"');
+  clean = clean.replace(/new\s+Date\s*\(\s*\)/g, '"2025-01-01"');
+  // Remove trailing commas before } or ]
+  clean = clean.replace(/,\s*([}\]])/g, '$1');
+  
   try {
     const parsed = JSON.parse(clean) as DashboardData;
     // Validate minimum required fields

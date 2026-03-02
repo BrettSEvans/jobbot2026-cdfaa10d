@@ -14,6 +14,7 @@ import {
 } from "@/lib/api/jobApplication";
 import { streamTailoredLetter } from "@/lib/api/coverLetter";
 import { streamExecutiveReport } from "@/lib/api/executiveReport";
+import { streamRaidLog } from "@/lib/api/raidLog";
 import {
   ArrowLeft,
   Copy,
@@ -29,6 +30,7 @@ import {
   Download,
   FolderArchive,
   ClipboardList,
+  Shield,
 } from "lucide-react";
 import SaveAsTemplate from "@/components/SaveAsTemplate";
 import DashboardRevisions from "@/components/DashboardRevisions";
@@ -77,6 +79,10 @@ const ApplicationDetail = () => {
   // Executive Report
   const [executiveReportHtml, setExecutiveReportHtml] = useState("");
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+
+  // RAID Log
+  const [raidLogHtml, setRaidLogHtml] = useState("");
+  const [isGeneratingRaidLog, setIsGeneratingRaidLog] = useState(false);
 
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const bgJob = useBackgroundJob(id);
@@ -131,6 +137,7 @@ const ApplicationDetail = () => {
       setDashboardHtml(html);
       setDashboardData(parsedDashData);
       setExecutiveReportHtml((data as any).executive_report_html || "");
+      setRaidLogHtml((data as any).raid_log_html || "");
       setChatHistory(Array.isArray(data.chat_history) ? data.chat_history as Array<{ role: string; content: string }> : []);
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
@@ -306,6 +313,46 @@ const ApplicationDetail = () => {
     }
   };
 
+  // Generate RAID log
+  const handleGenerateRaidLog = async () => {
+    if (!jobDescription.trim()) {
+      toast({ title: "No job description", description: "A job description is needed to generate a RAID log.", variant: "destructive" });
+      return;
+    }
+    setIsGeneratingRaidLog(true);
+    setRaidLogHtml("");
+    try {
+      let accumulated = "";
+      await streamRaidLog({
+        jobDescription,
+        companyName,
+        jobTitle,
+        competitors: app?.competitors || [],
+        customers: app?.customers || [],
+        products: app?.products || [],
+        department: "",
+        branding: app?.branding,
+        onDelta: (text) => {
+          accumulated += text;
+          setRaidLogHtml(accumulated);
+        },
+        onDone: () => {},
+      });
+      let clean = accumulated.trim();
+      clean = clean.replace(/^```(?:html)?\s*\n?/i, "").replace(/\n?```\s*$/i, "").trim();
+      const htmlStart = clean.indexOf("<!DOCTYPE html>") !== -1 ? clean.indexOf("<!DOCTYPE html>") : clean.indexOf("<!doctype html>");
+      if (htmlStart > 0) clean = clean.slice(htmlStart);
+      const htmlEnd = clean.lastIndexOf("</html>");
+      if (htmlEnd !== -1) clean = clean.slice(0, htmlEnd + 7);
+      setRaidLogHtml(clean);
+      await saveField({ raid_log_html: clean });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setIsGeneratingRaidLog(false);
+    }
+  };
+
   // ZIP download for JSON-based dashboards
   const handleDownloadZip = async () => {
     if (!dashboardData) return;
@@ -402,6 +449,7 @@ const ApplicationDetail = () => {
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="cover-letter">Cover Letter</TabsTrigger>
             <TabsTrigger value="executive-report">Executive Report</TabsTrigger>
+            <TabsTrigger value="raid-log">RAID Log</TabsTrigger>
             <TabsTrigger value="job-description">Job Description</TabsTrigger>
             <TabsTrigger value="details">Details</TabsTrigger>
           </TabsList>
@@ -694,6 +742,68 @@ const ApplicationDetail = () => {
                   <p className="text-muted-foreground mb-4">No executive report generated yet.</p>
                   <Button onClick={handleGenerateReport} disabled={isGeneratingReport}>
                     <Sparkles className="mr-2 h-4 w-4" /> Generate Executive Report
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          {/* RAID Log Tab */}
+          <TabsContent value="raid-log" className="space-y-4">
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" size="sm" onClick={handleGenerateRaidLog} disabled={isGeneratingRaidLog}>
+                {isGeneratingRaidLog ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                {raidLogHtml ? "Regenerate" : "Generate"} RAID Log
+              </Button>
+              {raidLogHtml && (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleCopy(raidLogHtml, "RAID log HTML")}
+                  >
+                    <Copy className="mr-2 h-4 w-4" /> Copy HTML
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const blob = new Blob([raidLogHtml], { type: "text/html" });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = `${(companyName || "raid-log").replace(/\s+/g, "-").toLowerCase()}-raid-log.html`;
+                      document.body.appendChild(a);
+                      a.click();
+                      document.body.removeChild(a);
+                      URL.revokeObjectURL(url);
+                      toast({ title: "Downloaded", description: "RAID log HTML file saved." });
+                    }}
+                  >
+                    <Download className="mr-2 h-4 w-4" /> Download HTML
+                  </Button>
+                </>
+              )}
+            </div>
+
+            {raidLogHtml ? (
+              <Card className="overflow-hidden">
+                <div className="w-full" style={{ height: "70vh" }}>
+                  <iframe
+                    srcDoc={raidLogHtml}
+                    className="w-full h-full border-0"
+                    sandbox="allow-scripts"
+                    title="RAID Log Preview"
+                  />
+                </div>
+              </Card>
+            ) : (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <Shield className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground mb-4">No RAID log generated yet.</p>
+                  <Button onClick={handleGenerateRaidLog} disabled={isGeneratingRaidLog}>
+                    <Sparkles className="mr-2 h-4 w-4" /> Generate RAID Log
                   </Button>
                 </CardContent>
               </Card>

@@ -13,11 +13,12 @@ import {
 } from "@/lib/api/jobApplication";
 import { scrapeJob, streamTailoredLetter } from "@/lib/api/coverLetter";
 import { streamExecutiveReport } from "@/lib/api/executiveReport";
+import { streamRaidLog } from "@/lib/api/raidLog";
 import { parseLlmJsonOutput, assembleDashboardHtml } from "@/lib/dashboard/assembler";
 
 export type GenerationJob = {
   applicationId: string;
-  status: "pending" | "scraping" | "analyzing" | "cover-letter" | "dashboard" | "executive-report" | "complete" | "error";
+  status: "pending" | "scraping" | "analyzing" | "cover-letter" | "dashboard" | "executive-report" | "raid-log" | "complete" | "error";
   progress: string;
   error?: string;
 };
@@ -279,13 +280,44 @@ class BackgroundGenerationManager {
         console.warn("Executive report generation failed:", e);
       }
 
-      // 7. Save final result
+      // 7. Generate RAID Log
+      this.updateJob(appId, { status: "raid-log", progress: "Generating RAID log..." });
+      let raidLogHtml = "";
+      try {
+        let raidAccumulated = "";
+        await streamRaidLog({
+          jobDescription: markdown,
+          companyName,
+          jobTitle,
+          competitors,
+          customers,
+          products,
+          department,
+          branding: brandingData,
+          onDelta: (text) => { raidAccumulated += text; },
+          onDone: () => {},
+        });
+        let cleanRaid = raidAccumulated.trim();
+        cleanRaid = cleanRaid.replace(/^```(?:html)?\s*\n?/i, "").replace(/\n?```\s*$/i, "").trim();
+        const raidHtmlStart = cleanRaid.indexOf("<!DOCTYPE html>") !== -1
+          ? cleanRaid.indexOf("<!DOCTYPE html>")
+          : cleanRaid.indexOf("<!doctype html>");
+        if (raidHtmlStart > 0) cleanRaid = cleanRaid.slice(raidHtmlStart);
+        const raidHtmlEnd = cleanRaid.lastIndexOf("</html>");
+        if (raidHtmlEnd !== -1) cleanRaid = cleanRaid.slice(0, raidHtmlEnd + 7);
+        raidLogHtml = cleanRaid;
+      } catch (e) {
+        console.warn("RAID log generation failed:", e);
+      }
+
+      // 8. Save final result
       await saveJobApplication({
         id: appId,
         job_url: jobUrl,
         dashboard_html: dashboardHtml,
         dashboard_data: dashboardData,
         executive_report_html: execReportHtml || undefined,
+        raid_log_html: raidLogHtml || undefined,
         status: "complete",
         generation_status: "complete",
       } as any);

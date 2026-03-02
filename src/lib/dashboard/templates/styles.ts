@@ -48,26 +48,83 @@ body {
   border-right: 1px solid var(--md-outline-variant);
   display: flex;
   flex-direction: column;
-  transition: width 0.3s ease, min-width 0.3s ease, padding 0.3s ease;
+  transition: width 0.2s ease, min-width 0.2s ease;
   overflow: hidden;
   z-index: 100;
 }
 
 #sidebar.collapsed {
-  width: 0;
-  min-width: 0;
-  padding: 0;
-  border-right: none;
+  width: 64px;
+  min-width: 64px;
+}
+
+/* === SIDEBAR LOGO === */
+#sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px;
+  border-bottom: 1px solid var(--md-outline-variant);
+  min-height: 60px;
+  overflow: hidden;
+}
+
+#sidebar-logo img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+#sidebar-logo .logo-letter {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background: var(--md-primary);
+  color: var(--md-on-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+#sidebar-logo .logo-name {
+  font-family: var(--font-heading);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--md-on-surface);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: opacity 0.2s ease;
+}
+
+#sidebar.collapsed #sidebar-logo {
+  justify-content: center;
+  padding: 16px 0;
+}
+
+#sidebar.collapsed #sidebar-logo .logo-name {
+  display: none;
+}
+
+#sidebar.collapsed #sidebar-logo img,
+#sidebar.collapsed #sidebar-logo .logo-letter {
+  width: 28px;
+  height: 28px;
+  font-size: 14px;
 }
 
 #sidebar-header {
-  padding: 20px 16px;
-  border-bottom: 1px solid var(--md-outline-variant);
+  padding: 16px 16px 8px;
 }
 
 #sidebar-header h2 {
   font-family: var(--font-heading);
-  font-size: 18px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--md-on-surface);
   white-space: nowrap;
@@ -75,17 +132,25 @@ body {
 }
 
 #sidebar-header p {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--md-outline);
-  margin-top: 4px;
+  margin-top: 2px;
   white-space: nowrap;
   overflow: hidden;
+}
+
+#sidebar.collapsed #sidebar-header {
+  display: none;
 }
 
 #sidebar-nav {
   flex: 1;
   overflow-y: auto;
   padding: 8px;
+}
+
+#sidebar.collapsed #sidebar-nav {
+  padding: 4px;
 }
 
 .nav-link {
@@ -103,6 +168,17 @@ body {
   white-space: nowrap;
   overflow: hidden;
   margin-bottom: 2px;
+  position: relative;
+}
+
+#sidebar.collapsed .nav-link {
+  justify-content: center;
+  padding: 12px;
+  border-radius: var(--radius-md);
+}
+
+#sidebar.collapsed .nav-link .nav-label {
+  display: none;
 }
 
 .nav-link:hover { background: var(--md-surface-container-highest); }
@@ -113,9 +189,55 @@ body {
   font-weight: 600;
 }
 
+.nav-link.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 6px;
+  bottom: 6px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--md-primary);
+}
+
+#sidebar.collapsed .nav-link.active::before {
+  top: auto;
+  bottom: 2px;
+  left: 25%;
+  right: 25%;
+  width: auto;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+}
+
 .nav-link .material-icons-outlined {
   font-size: 20px;
   flex-shrink: 0;
+}
+
+/* Tooltip for collapsed sidebar */
+#sidebar.collapsed .nav-link {
+  position: relative;
+}
+#sidebar.collapsed .nav-link::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: calc(100% + 8px);
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--md-on-surface);
+  color: var(--md-surface);
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+  z-index: 999;
+}
+#sidebar.collapsed .nav-link:hover::after {
+  opacity: 1;
 }
 
 /* === MAIN WRAPPER === */
@@ -530,7 +652,15 @@ input[type="range"]::-webkit-slider-thumb {
     box-shadow: 4px 0 16px rgba(0,0,0,0.15);
   }
 
-  #sidebar.collapsed { width: 0; }
+  #sidebar.collapsed {
+    width: 0;
+    min-width: 0;
+  }
+
+  #sidebar.collapsed #sidebar-logo,
+  #sidebar.collapsed #sidebar-nav {
+    display: none;
+  }
 
   .metrics-grid {
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));

@@ -8,6 +8,7 @@ export interface DashboardData {
   branding: DashboardBranding;
   navigation: NavItem[];
   sections: DashboardSection[];
+  roadmap?: RoadmapData;
   agenticWorkforce: AgenticAgent[];
   cfoScenarios: CFOScenario[];
 }
@@ -117,6 +118,45 @@ export interface FieldGenerator {
   min?: number;
   max?: number;
   maxDays?: number;
+}
+
+export interface RoadmapData {
+  title: string;
+  startDate: string;
+  quarters: string[];
+  months: string[];
+  swimlanes: RoadmapSwimlane[];
+  dependencies: RoadmapDependency[];
+  legend: RoadmapLegendItem[];
+}
+
+export interface RoadmapSwimlane {
+  id: string;
+  department: string;
+  color: string;
+  items: RoadmapItem[];
+}
+
+export interface RoadmapItem {
+  id: string;
+  label: string;
+  startMonth: number;
+  duration: number;
+  type: "feature" | "infrastructure" | "milestone";
+  isCriticalPath?: boolean;
+  tooltip?: string;
+}
+
+export interface RoadmapDependency {
+  fromItem: string;
+  toItem: string;
+  label?: string;
+}
+
+export interface RoadmapLegendItem {
+  type: string;
+  label: string;
+  color: string;
 }
 
 export interface AgenticAgent {

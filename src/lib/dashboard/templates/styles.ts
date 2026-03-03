@@ -519,6 +519,250 @@ tbody tr:hover { background: var(--md-surface-container-high); }
   color: var(--md-on-surface);
 }
 
+/* === ROADMAP (GANTT) === */
+.roadmap-container {
+  background: var(--md-surface-container);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  overflow-x: auto;
+  margin-bottom: 24px;
+}
+
+.roadmap-header {
+  margin-bottom: 0;
+}
+
+.roadmap-quarter-row {
+  display: grid;
+  grid-template-columns: 160px repeat(3, 1fr);
+  border-bottom: 1px solid var(--md-outline-variant);
+}
+
+.roadmap-quarter-cell {
+  text-align: center;
+  font-family: var(--font-heading);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--md-on-surface);
+  padding: 8px 0;
+  border-left: 1px solid var(--md-outline-variant);
+}
+
+.roadmap-month-row {
+  display: grid;
+  grid-template-columns: 160px repeat(9, 1fr);
+  border-bottom: 2px solid var(--md-outline-variant);
+}
+
+.roadmap-month-row .roadmap-dept-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--md-outline);
+}
+
+.roadmap-month-cell {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--md-outline);
+  padding: 6px 0;
+  border-left: 1px solid var(--md-outline-variant);
+}
+
+.roadmap-swimlanes {
+  position: relative;
+}
+
+.roadmap-swimlane-row {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  min-height: 56px;
+  border-bottom: 1px solid var(--md-outline-variant);
+  align-items: center;
+}
+
+.roadmap-swimlane-row:last-child {
+  border-bottom: none;
+}
+
+.roadmap-dept-label {
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--md-on-surface);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.roadmap-dept-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.roadmap-timeline {
+  position: relative;
+  height: 100%;
+  min-height: 48px;
+}
+
+.roadmap-grid-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--md-outline-variant);
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.roadmap-today-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--md-error);
+  opacity: 0.7;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.roadmap-today-line::after {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: -3px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--md-error);
+}
+
+.roadmap-bar {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 26px;
+  border-radius: 13px;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  transition: filter 0.15s, transform 0.15s;
+  z-index: 2;
+}
+
+.roadmap-bar:hover {
+  filter: brightness(1.15);
+  transform: translateY(-50%) scale(1.03);
+  z-index: 10;
+}
+
+.roadmap-bar.critical {
+  height: 30px;
+  border-radius: 15px;
+  font-weight: 700;
+  border: 2px solid rgba(255,255,255,0.4);
+}
+
+.roadmap-milestone {
+  position: absolute;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  transform: translateY(-50%) rotate(45deg);
+  background: transparent;
+  border: 3px solid;
+  cursor: pointer;
+  z-index: 3;
+  transition: transform 0.15s;
+}
+
+.roadmap-milestone:hover {
+  transform: translateY(-50%) rotate(45deg) scale(1.3);
+  z-index: 10;
+}
+
+.roadmap-dep-svg {
+  position: absolute;
+  top: 0;
+  left: 160px;
+  pointer-events: none;
+  z-index: 4;
+  overflow: visible;
+}
+
+.roadmap-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 16px 0 4px;
+  border-top: 1px solid var(--md-outline-variant);
+  margin-top: 12px;
+}
+
+.roadmap-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--md-outline);
+}
+
+.roadmap-legend-swatch {
+  width: 16px;
+  height: 10px;
+  border-radius: 5px;
+  flex-shrink: 0;
+}
+
+.roadmap-legend-swatch.milestone {
+  width: 10px;
+  height: 10px;
+  border-radius: 0;
+  transform: rotate(45deg);
+  border: 2px solid;
+  background: transparent;
+}
+
+.roadmap-legend-swatch.today-swatch {
+  width: 16px;
+  height: 3px;
+  border-radius: 0;
+  background: var(--md-error);
+  border: none;
+}
+
+@media (max-width: 768px) {
+  .roadmap-quarter-row {
+    grid-template-columns: 100px repeat(3, 1fr);
+  }
+  .roadmap-month-row {
+    grid-template-columns: 100px repeat(9, 1fr);
+  }
+  .roadmap-swimlane-row {
+    grid-template-columns: 100px 1fr;
+  }
+  .roadmap-dept-label {
+    font-size: 11px;
+    padding: 6px 8px;
+  }
+  .roadmap-dep-svg {
+    left: 100px;
+  }
+}
+
 /* === AGENTIC WORKFORCE === */
 .coming-soon-banner {
   background: var(--md-primary-container);

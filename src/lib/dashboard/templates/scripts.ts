@@ -375,6 +375,190 @@ export function getScriptsJs(): string {
     setTimeout(function() { overlay.classList.add('hidden'); overlay.innerHTML = ''; }, 300);
   }
 
+  // === ROADMAP (GANTT) ===
+  function renderRoadmap(roadmap, sectionEl) {
+    var totalMonths = roadmap.months.length || 9;
+    var container = el('div', { className: 'roadmap-container' });
+
+    // --- Timeline header ---
+    var headerGrid = el('div', { className: 'roadmap-header' });
+    // Quarter row
+    var quarterRow = el('div', { className: 'roadmap-quarter-row' });
+    quarterRow.appendChild(el('div', { className: 'roadmap-dept-label' })); // spacer
+    var quarters = roadmap.quarters || [];
+    quarters.forEach(function(q) {
+      var qCell = el('div', { className: 'roadmap-quarter-cell' }, q);
+      quarterRow.appendChild(qCell);
+    });
+    headerGrid.appendChild(quarterRow);
+
+    // Month row
+    var monthRow = el('div', { className: 'roadmap-month-row' });
+    monthRow.appendChild(el('div', { className: 'roadmap-dept-label' }, 'Department'));
+    roadmap.months.forEach(function(m) {
+      monthRow.appendChild(el('div', { className: 'roadmap-month-cell' }, m));
+    });
+    headerGrid.appendChild(monthRow);
+    container.appendChild(headerGrid);
+
+    // --- Today line position ---
+    var todayOffset = 0; // first month = current month = 0
+    var todayPct = ((todayOffset + 0.5) / totalMonths) * 100;
+
+    // --- Swimlanes ---
+    var allItems = {}; // id -> { el, swimlaneIdx, startMonth, duration }
+    var swimlanesEl = el('div', { className: 'roadmap-swimlanes' });
+
+    roadmap.swimlanes.forEach(function(lane, laneIdx) {
+      var row = el('div', { className: 'roadmap-swimlane-row' });
+      var label = el('div', { className: 'roadmap-dept-label' });
+      var dot = el('span', { className: 'roadmap-dept-dot' });
+      dot.style.backgroundColor = lane.color;
+      label.appendChild(dot);
+      label.appendChild(document.createTextNode(lane.department));
+      row.appendChild(label);
+
+      var timeline = el('div', { className: 'roadmap-timeline' });
+      // Grid lines
+      for (var g = 0; g < totalMonths; g++) {
+        var gridLine = el('div', { className: 'roadmap-grid-line' });
+        gridLine.style.left = ((g / totalMonths) * 100) + '%';
+        timeline.appendChild(gridLine);
+      }
+
+      // Today line
+      var todayLine = el('div', { className: 'roadmap-today-line' });
+      todayLine.style.left = todayPct + '%';
+      timeline.appendChild(todayLine);
+
+      // Items
+      (lane.items || []).forEach(function(item) {
+        var leftPct = (item.startMonth / totalMonths) * 100;
+        var widthPct = Math.max((item.duration || 0.3) / totalMonths * 100, 1.5);
+
+        if (item.type === 'milestone' || item.duration === 0) {
+          // Diamond milestone
+          var diamond = el('div', { className: 'roadmap-milestone' });
+          diamond.style.left = leftPct + '%';
+          diamond.style.borderColor = lane.color;
+          diamond.setAttribute('data-tooltip', item.tooltip || item.label);
+          diamond.title = item.label + (item.tooltip ? '\\n' + item.tooltip : '');
+          timeline.appendChild(diamond);
+          allItems[item.id] = { el: diamond, laneIdx: laneIdx, startMonth: item.startMonth, duration: 0 };
+        } else {
+          var bar = el('div', { className: 'roadmap-bar' + (item.isCriticalPath ? ' critical' : '') });
+          bar.style.left = leftPct + '%';
+          bar.style.width = widthPct + '%';
+          bar.style.backgroundColor = item.isCriticalPath ? '' : lane.color;
+          if (item.isCriticalPath) {
+            bar.style.background = 'linear-gradient(90deg, ' + lane.color + ', ' + lane.color + 'cc)';
+            bar.style.boxShadow = '0 0 8px ' + lane.color + '66';
+          }
+          bar.textContent = item.label;
+          bar.title = item.label + (item.tooltip ? '\\n' + item.tooltip : '');
+          timeline.appendChild(bar);
+          allItems[item.id] = { el: bar, laneIdx: laneIdx, startMonth: item.startMonth, duration: item.duration };
+        }
+      });
+
+      row.appendChild(timeline);
+      swimlanesEl.appendChild(row);
+    });
+
+    container.appendChild(swimlanesEl);
+
+    // --- Dependency arrows (SVG overlay) ---
+    if (roadmap.dependencies && roadmap.dependencies.length) {
+      // Defer SVG drawing until DOM is laid out
+      setTimeout(function() {
+        var svgNS = 'http://www.w3.org/2000/svg';
+        var svg = document.createElementNS(svgNS, 'svg');
+        svg.setAttribute('class', 'roadmap-dep-svg');
+        var rect = swimlanesEl.getBoundingClientRect();
+        svg.setAttribute('width', String(rect.width));
+        svg.setAttribute('height', String(rect.height));
+        svg.style.width = rect.width + 'px';
+        svg.style.height = rect.height + 'px';
+
+        // Arrowhead marker
+        var defs = document.createElementNS(svgNS, 'defs');
+        var marker = document.createElementNS(svgNS, 'marker');
+        marker.setAttribute('id', 'roadmap-arrow');
+        marker.setAttribute('viewBox', '0 0 10 10');
+        marker.setAttribute('refX', '10');
+        marker.setAttribute('refY', '5');
+        marker.setAttribute('markerWidth', '6');
+        marker.setAttribute('markerHeight', '6');
+        marker.setAttribute('orient', 'auto');
+        var arrowPath = document.createElementNS(svgNS, 'path');
+        arrowPath.setAttribute('d', 'M 0 0 L 10 5 L 0 10 z');
+        arrowPath.setAttribute('fill', 'var(--md-outline, #79747E)');
+        marker.appendChild(arrowPath);
+        defs.appendChild(marker);
+        svg.appendChild(defs);
+
+        roadmap.dependencies.forEach(function(dep) {
+          var from = allItems[dep.fromItem];
+          var to = allItems[dep.toItem];
+          if (!from || !to || !from.el || !to.el) return;
+
+          var fromRect = from.el.getBoundingClientRect();
+          var toRect = to.el.getBoundingClientRect();
+          var baseRect = swimlanesEl.getBoundingClientRect();
+
+          var x1 = fromRect.right - baseRect.left;
+          var y1 = fromRect.top + fromRect.height / 2 - baseRect.top;
+          var x2 = toRect.left - baseRect.left;
+          var y2 = toRect.top + toRect.height / 2 - baseRect.top;
+
+          var line = document.createElementNS(svgNS, 'line');
+          line.setAttribute('x1', String(x1));
+          line.setAttribute('y1', String(y1));
+          line.setAttribute('x2', String(x2));
+          line.setAttribute('y2', String(y2));
+          line.setAttribute('stroke', 'var(--md-outline, #79747E)');
+          line.setAttribute('stroke-width', '1.5');
+          line.setAttribute('stroke-dasharray', '6,3');
+          line.setAttribute('marker-end', 'url(#roadmap-arrow)');
+          svg.appendChild(line);
+        });
+
+        swimlanesEl.style.position = 'relative';
+        swimlanesEl.appendChild(svg);
+      }, 200);
+    }
+
+    // --- Legend ---
+    if (roadmap.legend && roadmap.legend.length) {
+      var legendRow = el('div', { className: 'roadmap-legend' });
+      roadmap.legend.forEach(function(item) {
+        var entry = el('div', { className: 'roadmap-legend-item' });
+        var swatch = el('span', { className: 'roadmap-legend-swatch' });
+        if (item.type === 'milestone') {
+          swatch.className = 'roadmap-legend-swatch milestone';
+          swatch.style.borderColor = item.color;
+        } else if (item.type === 'critical') {
+          swatch.style.backgroundColor = item.color;
+          swatch.style.boxShadow = '0 0 6px ' + item.color + '66';
+        } else {
+          swatch.style.backgroundColor = item.color;
+        }
+        entry.appendChild(swatch);
+        entry.appendChild(document.createTextNode(item.label));
+        legendRow.appendChild(entry);
+      });
+      // Today legend
+      var todayEntry = el('div', { className: 'roadmap-legend-item' });
+      var todaySwatch = el('span', { className: 'roadmap-legend-swatch today-swatch' });
+      todayEntry.appendChild(todaySwatch);
+      todayEntry.appendChild(document.createTextNode('Today'));
+      legendRow.appendChild(todayEntry);
+      container.appendChild(legendRow);
+    }
+
+    sectionEl.appendChild(container);
+  }
+
   // === AGENTIC WORKFORCE ===
   function renderAgenticWorkforce(agents, sectionEl) {
     if (!agents || !agents.length) return;
@@ -582,6 +766,18 @@ export function getScriptsJs(): string {
         });
       }
     });
+
+    // Roadmap
+    if (data.roadmap && data.roadmap.swimlanes && data.roadmap.swimlanes.length) {
+      var rmSection = document.getElementById('section-roadmap');
+      if (rmSection) {
+        var rmHeader = el('div', { className: 'section-header' });
+        rmHeader.appendChild(el('h2', {}, data.roadmap.title || 'Cross-Functional Roadmap'));
+        rmHeader.appendChild(el('p', {}, 'Strategic delivery timeline across departments. Hover over bars for details.'));
+        rmSection.appendChild(rmHeader);
+        renderRoadmap(data.roadmap, rmSection);
+      }
+    }
 
     // Agentic Workforce
     if (data.agenticWorkforce && data.agenticWorkforce.length) {

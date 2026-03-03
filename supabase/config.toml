@@ -35,3 +35,15 @@ verify_jwt = false
 
 [functions.generate-roadmap]
 verify_jwt = false
+
+[functions.refine-executive-report]
+verify_jwt = false
+
+[functions.refine-raid-log]
+verify_jwt = false
+
+[functions.refine-architecture-diagram]
+verify_jwt = false
+
+[functions.refine-roadmap]
+verify_jwt = false

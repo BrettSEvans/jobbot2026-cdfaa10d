@@ -14,6 +14,41 @@ export type Database = {
   }
   public: {
     Tables: {
+      architecture_diagram_revisions: {
+        Row: {
+          application_id: string
+          created_at: string
+          html: string
+          id: string
+          label: string | null
+          revision_number: number
+        }
+        Insert: {
+          application_id: string
+          created_at?: string
+          html: string
+          id?: string
+          label?: string | null
+          revision_number?: number
+        }
+        Update: {
+          application_id?: string
+          created_at?: string
+          html?: string
+          id?: string
+          label?: string | null
+          revision_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "architecture_diagram_revisions_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "job_applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cover_letter_revisions: {
         Row: {
           application_id: string
@@ -86,6 +121,7 @@ export type Database = {
       }
       dashboard_templates: {
         Row: {
+          asset_type: string
           created_at: string
           dashboard_html: string
           department: string
@@ -95,6 +131,7 @@ export type Database = {
           source_application_id: string | null
         }
         Insert: {
+          asset_type?: string
           created_at?: string
           dashboard_html: string
           department?: string
@@ -104,6 +141,7 @@ export type Database = {
           source_application_id?: string | null
         }
         Update: {
+          asset_type?: string
           created_at?: string
           dashboard_html?: string
           department?: string
@@ -116,6 +154,41 @@ export type Database = {
           {
             foreignKeyName: "dashboard_templates_source_application_id_fkey"
             columns: ["source_application_id"]
+            isOneToOne: false
+            referencedRelation: "job_applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      executive_report_revisions: {
+        Row: {
+          application_id: string
+          created_at: string
+          html: string
+          id: string
+          label: string | null
+          revision_number: number
+        }
+        Insert: {
+          application_id: string
+          created_at?: string
+          html: string
+          id?: string
+          label?: string | null
+          revision_number?: number
+        }
+        Update: {
+          application_id?: string
+          created_at?: string
+          html?: string
+          id?: string
+          label?: string | null
+          revision_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "executive_report_revisions_application_id_fkey"
+            columns: ["application_id"]
             isOneToOne: false
             referencedRelation: "job_applications"
             referencedColumns: ["id"]
@@ -202,6 +275,76 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      raid_log_revisions: {
+        Row: {
+          application_id: string
+          created_at: string
+          html: string
+          id: string
+          label: string | null
+          revision_number: number
+        }
+        Insert: {
+          application_id: string
+          created_at?: string
+          html: string
+          id?: string
+          label?: string | null
+          revision_number?: number
+        }
+        Update: {
+          application_id?: string
+          created_at?: string
+          html?: string
+          id?: string
+          label?: string | null
+          revision_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "raid_log_revisions_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "job_applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      roadmap_revisions: {
+        Row: {
+          application_id: string
+          created_at: string
+          html: string
+          id: string
+          label: string | null
+          revision_number: number
+        }
+        Insert: {
+          application_id: string
+          created_at?: string
+          html: string
+          id?: string
+          label?: string | null
+          revision_number?: number
+        }
+        Update: {
+          application_id?: string
+          created_at?: string
+          html?: string
+          id?: string
+          label?: string | null
+          revision_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "roadmap_revisions_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "job_applications"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

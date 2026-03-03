@@ -6,9 +6,18 @@ import { saveTemplate } from "@/lib/api/templates";
 import { useToast } from "@/hooks/use-toast";
 import { LayoutTemplate, Loader2 } from "lucide-react";
 
+const ASSET_TYPE_LABELS: Record<string, string> = {
+  dashboard: "Dashboard",
+  "executive-report": "Executive Report",
+  "raid-log": "RAID Log",
+  "architecture-diagram": "Architecture Diagram",
+  roadmap: "Roadmap",
+};
+
 interface SaveAsTemplateProps {
   dashboardHtml: string;
   applicationId?: string;
+  assetType?: string;
   defaultLabel?: string;
   defaultJobFunction?: string;
   defaultDepartment?: string;
@@ -17,6 +26,7 @@ interface SaveAsTemplateProps {
 export default function SaveAsTemplate({
   dashboardHtml,
   applicationId,
+  assetType = "dashboard",
   defaultLabel = "",
   defaultJobFunction = "",
   defaultDepartment = "",
@@ -28,6 +38,8 @@ export default function SaveAsTemplate({
   const [department, setDepartment] = useState(defaultDepartment);
   const [saving, setSaving] = useState(false);
 
+  const typeLabel = ASSET_TYPE_LABELS[assetType] || "Asset";
+
   const handleSave = async () => {
     if (!label.trim()) return;
     setSaving(true);
@@ -37,6 +49,7 @@ export default function SaveAsTemplate({
         job_function: jobFunction.trim(),
         department: department.trim(),
         dashboard_html: dashboardHtml,
+        asset_type: assetType,
         source_application_id: applicationId,
       });
       toast({ title: "Template saved!", description: `"${label}" is now available as a template.` });
@@ -57,12 +70,12 @@ export default function SaveAsTemplate({
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Save Dashboard as Template</DialogTitle>
+          <DialogTitle>Save {typeLabel} as Template</DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
           <div>
             <label className="text-sm font-medium text-muted-foreground">Template Name *</label>
-            <Input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="e.g. Enterprise SaaS Sales Dashboard" />
+            <Input value={label} onChange={(e) => setLabel(e.target.value)} placeholder={`e.g. Enterprise SaaS ${typeLabel}`} />
           </div>
           <div>
             <label className="text-sm font-medium text-muted-foreground">Job Function</label>

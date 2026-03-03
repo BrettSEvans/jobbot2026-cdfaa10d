@@ -6,6 +6,7 @@ export interface DashboardTemplate {
   job_function: string;
   department: string;
   dashboard_html: string;
+  asset_type: string;
   source_application_id: string | null;
   created_at: string;
 }
@@ -13,6 +14,7 @@ export interface DashboardTemplate {
 export async function getTemplates(filters?: {
   job_function?: string;
   department?: string;
+  asset_type?: string;
 }): Promise<DashboardTemplate[]> {
   let query = supabase
     .from("dashboard_templates" as any)
@@ -25,6 +27,9 @@ export async function getTemplates(filters?: {
   if (filters?.department) {
     query = query.ilike("department", `%${filters.department}%`);
   }
+  if (filters?.asset_type) {
+    query = query.eq("asset_type", filters.asset_type);
+  }
 
   const { data, error } = await query;
   if (error) throw new Error(error.message);
@@ -36,11 +41,15 @@ export async function saveTemplate(template: {
   job_function: string;
   department: string;
   dashboard_html: string;
+  asset_type?: string;
   source_application_id?: string;
 }): Promise<DashboardTemplate> {
   const { data, error } = await supabase
     .from("dashboard_templates" as any)
-    .insert(template)
+    .insert({
+      ...template,
+      asset_type: template.asset_type || "dashboard",
+    })
     .select()
     .single();
   if (error) throw new Error(error.message);

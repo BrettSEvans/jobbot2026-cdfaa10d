@@ -17,6 +17,7 @@ import { streamExecutiveReport } from "@/lib/api/executiveReport";
 import { streamRaidLog } from "@/lib/api/raidLog";
 import { streamArchitectureDiagram } from "@/lib/api/architectureDiagram";
 import { streamRoadmap } from "@/lib/api/roadmap";
+import { streamRefineAsset, type RefinableAssetType } from "@/lib/api/refineAsset";
 import {
   ArrowLeft,
   Copy,
@@ -39,9 +40,14 @@ import {
 import SaveAsTemplate from "@/components/SaveAsTemplate";
 import DashboardRevisions from "@/components/DashboardRevisions";
 import CoverLetterRevisions from "@/components/CoverLetterRevisions";
+import AssetRevisions from "@/components/AssetRevisions";
 import { backgroundGenerator } from "@/lib/backgroundGenerator";
 import { saveDashboardRevision } from "@/lib/api/dashboardRevisions";
 import { saveCoverLetterRevision } from "@/lib/api/coverLetterRevisions";
+import { saveExecutiveReportRevision } from "@/lib/api/executiveReportRevisions";
+import { saveRaidLogRevision } from "@/lib/api/raidLogRevisions";
+import { saveArchitectureDiagramRevision } from "@/lib/api/architectureDiagramRevisions";
+import { saveRoadmapRevision } from "@/lib/api/roadmapRevisions";
 import { useBackgroundJob } from "@/hooks/useBackgroundJob";
 import { parseLlmJsonOutput, assembleDashboardHtml, getDashboardZipFiles } from "@/lib/dashboard/assembler";
 import type { DashboardData } from "@/lib/dashboard/schema";
@@ -83,18 +89,38 @@ const ApplicationDetail = () => {
   // Executive Report
   const [executiveReportHtml, setExecutiveReportHtml] = useState("");
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const [reportChatOpen, setReportChatOpen] = useState(false);
+  const [reportChatInput, setReportChatInput] = useState("");
+  const [isRefiningReport, setIsRefiningReport] = useState(false);
+  const [previewReportHtml, setPreviewReportHtml] = useState<string | null>(null);
+  const [reportRevisionTrigger, setReportRevisionTrigger] = useState(0);
 
   // RAID Log
   const [raidLogHtml, setRaidLogHtml] = useState("");
   const [isGeneratingRaidLog, setIsGeneratingRaidLog] = useState(false);
+  const [raidChatOpen, setRaidChatOpen] = useState(false);
+  const [raidChatInput, setRaidChatInput] = useState("");
+  const [isRefiningRaid, setIsRefiningRaid] = useState(false);
+  const [previewRaidHtml, setPreviewRaidHtml] = useState<string | null>(null);
+  const [raidRevisionTrigger, setRaidRevisionTrigger] = useState(0);
 
   // Architecture Diagram
   const [archDiagramHtml, setArchDiagramHtml] = useState("");
   const [isGeneratingArchDiagram, setIsGeneratingArchDiagram] = useState(false);
+  const [archChatOpen, setArchChatOpen] = useState(false);
+  const [archChatInput, setArchChatInput] = useState("");
+  const [isRefiningArch, setIsRefiningArch] = useState(false);
+  const [previewArchHtml, setPreviewArchHtml] = useState<string | null>(null);
+  const [archRevisionTrigger, setArchRevisionTrigger] = useState(0);
 
   // Roadmap
   const [roadmapHtml, setRoadmapHtml] = useState("");
   const [isGeneratingRoadmap, setIsGeneratingRoadmap] = useState(false);
+  const [roadmapChatOpen, setRoadmapChatOpen] = useState(false);
+  const [roadmapChatInput, setRoadmapChatInput] = useState("");
+  const [isRefiningRoadmap, setIsRefiningRoadmap] = useState(false);
+  const [previewRoadmapHtml, setPreviewRoadmapHtml] = useState<string | null>(null);
+  const [roadmapRevisionTrigger, setRoadmapRevisionTrigger] = useState(0);
 
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const bgJob = useBackgroundJob(id);
@@ -109,7 +135,6 @@ const ApplicationDetail = () => {
 
   useEffect(() => {
     if (id) loadApplication(id);
-    // Poll for background generation updates
     const interval = setInterval(() => {
       if (id) loadApplication(id);
     }, 10000);
@@ -120,7 +145,6 @@ const ApplicationDetail = () => {
     try {
       const data = await getJobApplication(appId);
       setApp(data);
-      // Don't overwrite cover letter while user is editing
       if (!editingCoverLetter) {
         setCoverLetter(data.cover_letter || "");
       }
@@ -129,17 +153,14 @@ const ApplicationDetail = () => {
       setCompanyName(data.company_name || "");
       setJobTitle(data.job_title || "");
       
-      // Handle dashboard HTML — if it's raw JSON, assemble it
       let html = data.dashboard_html || "";
       let parsedDashData = data.dashboard_data as unknown as DashboardData | null;
       
       if (html && !html.trimStart().startsWith("<!") && !html.trimStart().startsWith("<html")) {
-        // Looks like raw JSON, try to parse and assemble
         const parsed = parseLlmJsonOutput(html);
         if (parsed) {
           parsedDashData = parsed;
           html = assembleDashboardHtml(parsed);
-          // Persist the fix so it doesn't happen again
           try {
             await saveJobApplication({ id: appId, job_url: data.job_url, dashboard_html: html, dashboard_data: parsed });
           } catch { /* non-critical */ }
@@ -179,13 +200,23 @@ const ApplicationDetail = () => {
     toast({ title: "Copied!", description: `${label} copied to clipboard.` });
   };
 
+  // Helper: clean streamed HTML
+  const cleanHtml = (raw: string): string => {
+    let clean = raw.trim();
+    clean = clean.replace(/^```(?:html)?\s*\n?/i, "").replace(/\n?```\s*$/i, "").trim();
+    const htmlStart = clean.indexOf("<!DOCTYPE html>") !== -1 ? clean.indexOf("<!DOCTYPE html>") : clean.indexOf("<!doctype html>");
+    if (htmlStart > 0) clean = clean.slice(htmlStart);
+    const htmlEnd = clean.lastIndexOf("</html>");
+    if (htmlEnd !== -1) clean = clean.slice(0, htmlEnd + 7);
+    return clean;
+  };
+
   // Regenerate cover letter
   const handleRegenerateCoverLetter = async () => {
     if (!jobDescription.trim()) {
       toast({ title: "No job description", description: "A job description is needed to generate a cover letter.", variant: "destructive" });
       return;
     }
-    // Save current version as revision before regenerating
     if (coverLetter.trim() && id) {
       try {
         await saveCoverLetterRevision(id, coverLetter, "Before regeneration");
@@ -205,7 +236,6 @@ const ApplicationDetail = () => {
         onDone: () => {},
       });
       await saveField({ cover_letter: accumulated });
-      // Save new version as revision
       try {
         await saveCoverLetterRevision(id!, accumulated, "Regenerated");
         setCoverLetterRevisionTrigger((t) => t + 1);
@@ -233,12 +263,8 @@ const ApplicationDetail = () => {
         competitors: app?.competitors || [],
         customers: app?.customers || [],
         products: app?.products || [],
-        onDelta: (text) => {
-          accumulated += text;
-          // Show a "generating..." placeholder instead of streaming partial JSON
-        },
+        onDelta: (text) => { accumulated += text; },
         onDone: () => {
-          // Try parsing as JSON (new format)
           const parsed = parseLlmJsonOutput(accumulated);
           if (parsed) {
             const html = assembleDashboardHtml(parsed);
@@ -246,7 +272,6 @@ const ApplicationDetail = () => {
             setDashboardData(parsed);
             accumulated = html;
           } else {
-            // Fallback: treat as raw HTML (backward compat)
             let clean = accumulated;
             const htmlStart = clean.indexOf("<!DOCTYPE html>");
             const htmlStartAlt = clean.indexOf("<!doctype html>");
@@ -260,7 +285,6 @@ const ApplicationDetail = () => {
         },
       });
       const savePayload: Record<string, any> = { dashboard_html: accumulated };
-      // Use the freshly parsed data, not the stale state
       const parsedForSave = parseLlmJsonOutput(accumulated) || null;
       if (parsedForSave) {
         const html = assembleDashboardHtml(parsedForSave);
@@ -273,7 +297,6 @@ const ApplicationDetail = () => {
         savePayload.dashboard_data = dashboardData;
       }
       await saveField(savePayload);
-      // Save as revision
       try {
         await saveDashboardRevision(id!, accumulated, "Regenerated");
         setRevisionTrigger((t) => t + 1);
@@ -285,41 +308,37 @@ const ApplicationDetail = () => {
     }
   };
 
-  // Generate executive report
+  // Generate executive report (with revision tracking)
   const handleGenerateReport = async () => {
     if (!jobDescription.trim()) {
       toast({ title: "No job description", description: "A job description is needed to generate a report.", variant: "destructive" });
       return;
+    }
+    // Save current as revision before regenerating
+    if (executiveReportHtml.trim() && id) {
+      try {
+        await saveExecutiveReportRevision(id, executiveReportHtml, "Before regeneration");
+        setReportRevisionTrigger((t) => t + 1);
+      } catch { /* non-critical */ }
     }
     setIsGeneratingReport(true);
     setExecutiveReportHtml("");
     try {
       let accumulated = "";
       await streamExecutiveReport({
-        jobDescription,
-        companyName,
-        jobTitle,
-        competitors: app?.competitors || [],
-        customers: app?.customers || [],
-        products: app?.products || [],
-        department: "",
-        branding: app?.branding,
-        onDelta: (text) => {
-          accumulated += text;
-          // Show streaming preview
-          setExecutiveReportHtml(accumulated);
-        },
+        jobDescription, companyName, jobTitle,
+        competitors: app?.competitors || [], customers: app?.customers || [],
+        products: app?.products || [], department: "", branding: app?.branding,
+        onDelta: (text) => { accumulated += text; setExecutiveReportHtml(accumulated); },
         onDone: () => {},
       });
-      // Clean HTML
-      let clean = accumulated.trim();
-      clean = clean.replace(/^```(?:html)?\s*\n?/i, "").replace(/\n?```\s*$/i, "").trim();
-      const htmlStart = clean.indexOf("<!DOCTYPE html>") !== -1 ? clean.indexOf("<!DOCTYPE html>") : clean.indexOf("<!doctype html>");
-      if (htmlStart > 0) clean = clean.slice(htmlStart);
-      const htmlEnd = clean.lastIndexOf("</html>");
-      if (htmlEnd !== -1) clean = clean.slice(0, htmlEnd + 7);
+      const clean = cleanHtml(accumulated);
       setExecutiveReportHtml(clean);
       await saveField({ executive_report_html: clean });
+      try {
+        await saveExecutiveReportRevision(id!, clean, "Regenerated");
+        setReportRevisionTrigger((t) => t + 1);
+      } catch { /* non-critical */ }
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
@@ -327,39 +346,36 @@ const ApplicationDetail = () => {
     }
   };
 
-  // Generate RAID log
+  // Generate RAID log (with revision tracking)
   const handleGenerateRaidLog = async () => {
     if (!jobDescription.trim()) {
       toast({ title: "No job description", description: "A job description is needed to generate a RAID log.", variant: "destructive" });
       return;
+    }
+    if (raidLogHtml.trim() && id) {
+      try {
+        await saveRaidLogRevision(id, raidLogHtml, "Before regeneration");
+        setRaidRevisionTrigger((t) => t + 1);
+      } catch { /* non-critical */ }
     }
     setIsGeneratingRaidLog(true);
     setRaidLogHtml("");
     try {
       let accumulated = "";
       await streamRaidLog({
-        jobDescription,
-        companyName,
-        jobTitle,
-        competitors: app?.competitors || [],
-        customers: app?.customers || [],
-        products: app?.products || [],
-        department: "",
-        branding: app?.branding,
-        onDelta: (text) => {
-          accumulated += text;
-          setRaidLogHtml(accumulated);
-        },
+        jobDescription, companyName, jobTitle,
+        competitors: app?.competitors || [], customers: app?.customers || [],
+        products: app?.products || [], department: "", branding: app?.branding,
+        onDelta: (text) => { accumulated += text; setRaidLogHtml(accumulated); },
         onDone: () => {},
       });
-      let clean = accumulated.trim();
-      clean = clean.replace(/^```(?:html)?\s*\n?/i, "").replace(/\n?```\s*$/i, "").trim();
-      const htmlStart = clean.indexOf("<!DOCTYPE html>") !== -1 ? clean.indexOf("<!DOCTYPE html>") : clean.indexOf("<!doctype html>");
-      if (htmlStart > 0) clean = clean.slice(htmlStart);
-      const htmlEnd = clean.lastIndexOf("</html>");
-      if (htmlEnd !== -1) clean = clean.slice(0, htmlEnd + 7);
+      const clean = cleanHtml(accumulated);
       setRaidLogHtml(clean);
       await saveField({ raid_log_html: clean });
+      try {
+        await saveRaidLogRevision(id!, clean, "Regenerated");
+        setRaidRevisionTrigger((t) => t + 1);
+      } catch { /* non-critical */ }
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
@@ -367,39 +383,36 @@ const ApplicationDetail = () => {
     }
   };
 
-  // Generate architecture diagram
+  // Generate architecture diagram (with revision tracking)
   const handleGenerateArchDiagram = async () => {
     if (!jobDescription.trim()) {
       toast({ title: "No job description", description: "A job description is needed to generate an architecture diagram.", variant: "destructive" });
       return;
+    }
+    if (archDiagramHtml.trim() && id) {
+      try {
+        await saveArchitectureDiagramRevision(id, archDiagramHtml, "Before regeneration");
+        setArchRevisionTrigger((t) => t + 1);
+      } catch { /* non-critical */ }
     }
     setIsGeneratingArchDiagram(true);
     setArchDiagramHtml("");
     try {
       let accumulated = "";
       await streamArchitectureDiagram({
-        jobDescription,
-        companyName,
-        jobTitle,
-        competitors: app?.competitors || [],
-        customers: app?.customers || [],
-        products: app?.products || [],
-        department: "",
-        branding: app?.branding,
-        onDelta: (text) => {
-          accumulated += text;
-          setArchDiagramHtml(accumulated);
-        },
+        jobDescription, companyName, jobTitle,
+        competitors: app?.competitors || [], customers: app?.customers || [],
+        products: app?.products || [], department: "", branding: app?.branding,
+        onDelta: (text) => { accumulated += text; setArchDiagramHtml(accumulated); },
         onDone: () => {},
       });
-      let clean = accumulated.trim();
-      clean = clean.replace(/^```(?:html)?\s*\n?/i, "").replace(/\n?```\s*$/i, "").trim();
-      const htmlStart = clean.indexOf("<!DOCTYPE html>") !== -1 ? clean.indexOf("<!DOCTYPE html>") : clean.indexOf("<!doctype html>");
-      if (htmlStart > 0) clean = clean.slice(htmlStart);
-      const htmlEnd = clean.lastIndexOf("</html>");
-      if (htmlEnd !== -1) clean = clean.slice(0, htmlEnd + 7);
+      const clean = cleanHtml(accumulated);
       setArchDiagramHtml(clean);
       await saveField({ architecture_diagram_html: clean });
+      try {
+        await saveArchitectureDiagramRevision(id!, clean, "Regenerated");
+        setArchRevisionTrigger((t) => t + 1);
+      } catch { /* non-critical */ }
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
@@ -407,43 +420,98 @@ const ApplicationDetail = () => {
     }
   };
 
-  // Generate roadmap
+  // Generate roadmap (with revision tracking)
   const handleGenerateRoadmap = async () => {
     if (!jobDescription.trim()) {
       toast({ title: "No job description", description: "A job description is needed to generate a roadmap.", variant: "destructive" });
       return;
+    }
+    if (roadmapHtml.trim() && id) {
+      try {
+        await saveRoadmapRevision(id, roadmapHtml, "Before regeneration");
+        setRoadmapRevisionTrigger((t) => t + 1);
+      } catch { /* non-critical */ }
     }
     setIsGeneratingRoadmap(true);
     setRoadmapHtml("");
     try {
       let accumulated = "";
       await streamRoadmap({
-        jobDescription,
-        companyName,
-        jobTitle,
-        competitors: app?.competitors || [],
-        customers: app?.customers || [],
-        products: app?.products || [],
-        department: "",
-        branding: app?.branding,
-        onDelta: (text) => {
-          accumulated += text;
-          setRoadmapHtml(accumulated);
-        },
+        jobDescription, companyName, jobTitle,
+        competitors: app?.competitors || [], customers: app?.customers || [],
+        products: app?.products || [], department: "", branding: app?.branding,
+        onDelta: (text) => { accumulated += text; setRoadmapHtml(accumulated); },
         onDone: () => {},
       });
-      let clean = accumulated.trim();
-      clean = clean.replace(/^```(?:html)?\s*\n?/i, "").replace(/\n?```\s*$/i, "").trim();
-      const htmlStart = clean.indexOf("<!DOCTYPE html>") !== -1 ? clean.indexOf("<!DOCTYPE html>") : clean.indexOf("<!doctype html>");
-      if (htmlStart > 0) clean = clean.slice(htmlStart);
-      const htmlEnd = clean.lastIndexOf("</html>");
-      if (htmlEnd !== -1) clean = clean.slice(0, htmlEnd + 7);
+      const clean = cleanHtml(accumulated);
       setRoadmapHtml(clean);
       await saveField({ roadmap_html: clean });
+      try {
+        await saveRoadmapRevision(id!, clean, "Regenerated");
+        setRoadmapRevisionTrigger((t) => t + 1);
+      } catch { /* non-critical */ }
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
       setIsGeneratingRoadmap(false);
+    }
+  };
+
+  // Generic asset refinement handler
+  const handleRefineAsset = async (
+    assetType: RefinableAssetType,
+    currentHtml: string,
+    userMessage: string,
+    setHtml: (html: string) => void,
+    dbField: string,
+    saveRevisionFn: (appId: string, html: string, label: string) => Promise<any>,
+    setRevTrigger: React.Dispatch<React.SetStateAction<number>>,
+    setRefining: (v: boolean) => void,
+    setChatInput: (v: string) => void,
+  ) => {
+    if (!userMessage.trim()) return;
+    setChatInput("");
+    setRefining(true);
+    try {
+      // Save pre-refinement as revision
+      if (currentHtml.trim() && id) {
+        try {
+          await saveRevisionFn(id, currentHtml, `Before: ${userMessage.slice(0, 50)}`);
+          setRevTrigger((t) => t + 1);
+        } catch { /* non-critical */ }
+      }
+
+      let accumulated = "";
+      await streamRefineAsset({
+        assetType,
+        currentHtml,
+        userMessage,
+        jobDescription,
+        companyName,
+        jobTitle,
+        branding: app?.branding,
+        onDelta: (text) => {
+          accumulated += text;
+          setHtml(accumulated);
+        },
+        onDone: () => {},
+      });
+
+      const clean = cleanHtml(accumulated);
+      setHtml(clean);
+      await saveField({ [dbField]: clean });
+
+      // Save post-refinement as revision
+      try {
+        await saveRevisionFn(id!, clean, `Refined: ${userMessage.slice(0, 50)}`);
+        setRevTrigger((t) => t + 1);
+      } catch { /* non-critical */ }
+
+      toast({ title: "Refined!", description: `${assetType} updated successfully.` });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setRefining(false);
     }
   };
 
@@ -467,7 +535,7 @@ const ApplicationDetail = () => {
     toast({ title: "Downloaded", description: "Dashboard ZIP with separate files saved." });
   };
 
-  // AI refine chat — runs in background so it persists across navigation
+  // AI refine chat for dashboard
   const handleSendChat = async () => {
     if (!chatInput.trim() || isRefining) return;
     const msg = chatInput.trim();
@@ -485,7 +553,6 @@ const ApplicationDetail = () => {
         chatHistory: newHistory,
         jobUrl: app.job_url,
       });
-      // Save pre-refinement as revision
       try {
         await saveDashboardRevision(id!, dashboardHtml, `Before: ${msg.slice(0, 50)}`);
         setRevisionTrigger((t) => t + 1);
@@ -497,6 +564,69 @@ const ApplicationDetail = () => {
     } finally {
       setIsRefining(false);
     }
+  };
+
+  // Reusable inline refine chat UI
+  const RefineChat = ({
+    isOpen,
+    onToggle,
+    chatInput: input,
+    setChatInput: setInput,
+    isRefining: refining,
+    onSend,
+    placeholder,
+  }: {
+    isOpen: boolean;
+    onToggle: () => void;
+    chatInput: string;
+    setChatInput: (v: string) => void;
+    isRefining: boolean;
+    onSend: () => void;
+    placeholder: string;
+  }) => {
+    if (!isOpen) return null;
+    return (
+      <Card>
+        <CardContent className="pt-4 space-y-3">
+          {refining && (
+            <div className="text-sm p-2 rounded bg-muted flex items-center gap-2">
+              <Loader2 className="h-3 w-3 animate-spin" /> Refining...
+            </div>
+          )}
+          <div className="flex gap-2">
+            <Textarea
+              placeholder={placeholder}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              rows={2}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  onSend();
+                }
+              }}
+            />
+            <Button onClick={onSend} disabled={!input.trim() || refining} className="self-end">
+              Send
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
+  // Download HTML helper
+  const handleDownloadHtml = (html: string, filename: string) => {
+    const blob = new Blob([html], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast({ title: "Downloaded", description: "HTML file saved." });
   };
 
   if (loading) {
@@ -575,6 +705,7 @@ const ApplicationDetail = () => {
                   <SaveAsTemplate
                     dashboardHtml={dashboardHtml}
                     applicationId={id}
+                    assetType="dashboard"
                     defaultLabel={`${companyName} ${jobTitle} Dashboard`.trim()}
                     defaultJobFunction={jobTitle}
                     defaultDepartment=""
@@ -587,18 +718,7 @@ const ApplicationDetail = () => {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => {
-                        const blob = new Blob([dashboardHtml], { type: "text/html" });
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement("a");
-                        a.href = url;
-                        a.download = `${(companyName || "dashboard").replace(/\s+/g, "-").toLowerCase()}-dashboard.html`;
-                        document.body.appendChild(a);
-                        a.click();
-                        document.body.removeChild(a);
-                        URL.revokeObjectURL(url);
-                        toast({ title: "Downloaded", description: "Dashboard HTML file saved." });
-                      }}
+                      onClick={() => handleDownloadHtml(dashboardHtml, `${(companyName || "dashboard").replace(/\s+/g, "-").toLowerCase()}-dashboard.html`)}
                     >
                       <Download className="mr-2 h-4 w-4" /> Download HTML
                     </Button>
@@ -716,7 +836,6 @@ const ApplicationDetail = () => {
               </Button>
             </div>
 
-            {/* Cover Letter Revision History */}
             {id && coverLetter && (
               <CoverLetterRevisions
                 applicationId={id}
@@ -785,50 +904,64 @@ const ApplicationDetail = () => {
           {/* Executive Report Tab */}
           <TabsContent value="executive-report" className="space-y-4">
             <div className="flex flex-wrap gap-2">
+              <Button variant="outline" size="sm" onClick={() => setReportChatOpen(!reportChatOpen)}>
+                <Edit3 className="mr-2 h-4 w-4" /> {reportChatOpen ? "Hide Chat" : "Refine with AI"}
+              </Button>
               <Button variant="outline" size="sm" onClick={handleGenerateReport} disabled={isGeneratingReport}>
-                {isGeneratingReport ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                {isGeneratingReport ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
                 {executiveReportHtml ? "Regenerate" : "Generate"} Report
               </Button>
               {executiveReportHtml && (
                 <>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleCopy(executiveReportHtml, "Executive report HTML")}
-                  >
+                  <Button variant="outline" size="sm" onClick={() => handleCopy(executiveReportHtml, "Executive report HTML")}>
                     <Copy className="mr-2 h-4 w-4" /> Copy HTML
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      const blob = new Blob([executiveReportHtml], { type: "text/html" });
-                      const url = URL.createObjectURL(blob);
-                      const a = document.createElement("a");
-                      a.href = url;
-                      a.download = `${(companyName || "executive-report").replace(/\s+/g, "-").toLowerCase()}-executive-report.html`;
-                      document.body.appendChild(a);
-                      a.click();
-                      document.body.removeChild(a);
-                      URL.revokeObjectURL(url);
-                      toast({ title: "Downloaded", description: "Executive report HTML file saved." });
-                    }}
-                  >
+                  <SaveAsTemplate
+                    dashboardHtml={executiveReportHtml}
+                    applicationId={id}
+                    assetType="executive-report"
+                    defaultLabel={`${companyName} ${jobTitle} Executive Report`.trim()}
+                    defaultJobFunction={jobTitle}
+                    defaultDepartment=""
+                  />
+                  <Button variant="outline" size="sm" onClick={() => handleDownloadHtml(executiveReportHtml, `${(companyName || "executive-report").replace(/\s+/g, "-").toLowerCase()}-executive-report.html`)}>
                     <Download className="mr-2 h-4 w-4" /> Download HTML
                   </Button>
                 </>
               )}
             </div>
 
-            {executiveReportHtml ? (
+            <RefineChat
+              isOpen={reportChatOpen}
+              onToggle={() => setReportChatOpen(!reportChatOpen)}
+              chatInput={reportChatInput}
+              setChatInput={setReportChatInput}
+              isRefining={isRefiningReport}
+              onSend={() => handleRefineAsset("executive-report", executiveReportHtml, reportChatInput, setExecutiveReportHtml, "executive_report_html", saveExecutiveReportRevision, setReportRevisionTrigger, setIsRefiningReport, setReportChatInput)}
+              placeholder='e.g. "Add a risk mitigation section" or "Change the status to yellow"'
+            />
+
+            {id && executiveReportHtml && (
+              <AssetRevisions
+                applicationId={id}
+                assetType="executive-report"
+                currentHtml={executiveReportHtml}
+                onPreviewRevision={(html) => setPreviewReportHtml(html === executiveReportHtml ? null : html)}
+                refreshTrigger={reportRevisionTrigger}
+              />
+            )}
+
+            {previewReportHtml && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Badge variant="secondary">Previewing older version</Badge>
+                <Button variant="ghost" size="sm" onClick={() => setPreviewReportHtml(null)}>Back to current</Button>
+              </div>
+            )}
+
+            {(previewReportHtml || executiveReportHtml) ? (
               <Card className="overflow-hidden">
                 <div className="w-full" style={{ height: "70vh" }}>
-                  <iframe
-                    srcDoc={executiveReportHtml}
-                    className="w-full h-full border-0"
-                    sandbox="allow-scripts"
-                    title="Executive Report Preview"
-                  />
+                  <iframe srcDoc={previewReportHtml || executiveReportHtml} className="w-full h-full border-0" sandbox="allow-scripts" title="Executive Report Preview" />
                 </div>
               </Card>
             ) : (
@@ -847,50 +980,64 @@ const ApplicationDetail = () => {
           {/* RAID Log Tab */}
           <TabsContent value="raid-log" className="space-y-4">
             <div className="flex flex-wrap gap-2">
+              <Button variant="outline" size="sm" onClick={() => setRaidChatOpen(!raidChatOpen)}>
+                <Edit3 className="mr-2 h-4 w-4" /> {raidChatOpen ? "Hide Chat" : "Refine with AI"}
+              </Button>
               <Button variant="outline" size="sm" onClick={handleGenerateRaidLog} disabled={isGeneratingRaidLog}>
-                {isGeneratingRaidLog ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                {isGeneratingRaidLog ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
                 {raidLogHtml ? "Regenerate" : "Generate"} RAID Log
               </Button>
               {raidLogHtml && (
                 <>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleCopy(raidLogHtml, "RAID log HTML")}
-                  >
+                  <Button variant="outline" size="sm" onClick={() => handleCopy(raidLogHtml, "RAID log HTML")}>
                     <Copy className="mr-2 h-4 w-4" /> Copy HTML
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      const blob = new Blob([raidLogHtml], { type: "text/html" });
-                      const url = URL.createObjectURL(blob);
-                      const a = document.createElement("a");
-                      a.href = url;
-                      a.download = `${(companyName || "raid-log").replace(/\s+/g, "-").toLowerCase()}-raid-log.html`;
-                      document.body.appendChild(a);
-                      a.click();
-                      document.body.removeChild(a);
-                      URL.revokeObjectURL(url);
-                      toast({ title: "Downloaded", description: "RAID log HTML file saved." });
-                    }}
-                  >
+                  <SaveAsTemplate
+                    dashboardHtml={raidLogHtml}
+                    applicationId={id}
+                    assetType="raid-log"
+                    defaultLabel={`${companyName} ${jobTitle} RAID Log`.trim()}
+                    defaultJobFunction={jobTitle}
+                    defaultDepartment=""
+                  />
+                  <Button variant="outline" size="sm" onClick={() => handleDownloadHtml(raidLogHtml, `${(companyName || "raid-log").replace(/\s+/g, "-").toLowerCase()}-raid-log.html`)}>
                     <Download className="mr-2 h-4 w-4" /> Download HTML
                   </Button>
                 </>
               )}
             </div>
 
-            {raidLogHtml ? (
+            <RefineChat
+              isOpen={raidChatOpen}
+              onToggle={() => setRaidChatOpen(!raidChatOpen)}
+              chatInput={raidChatInput}
+              setChatInput={setRaidChatInput}
+              isRefining={isRefiningRaid}
+              onSend={() => handleRefineAsset("raid-log", raidLogHtml, raidChatInput, setRaidLogHtml, "raid_log_html", saveRaidLogRevision, setRaidRevisionTrigger, setIsRefiningRaid, setRaidChatInput)}
+              placeholder='e.g. "Add a new risk about vendor lock-in" or "Change migration risk to high"'
+            />
+
+            {id && raidLogHtml && (
+              <AssetRevisions
+                applicationId={id}
+                assetType="raid-log"
+                currentHtml={raidLogHtml}
+                onPreviewRevision={(html) => setPreviewRaidHtml(html === raidLogHtml ? null : html)}
+                refreshTrigger={raidRevisionTrigger}
+              />
+            )}
+
+            {previewRaidHtml && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Badge variant="secondary">Previewing older version</Badge>
+                <Button variant="ghost" size="sm" onClick={() => setPreviewRaidHtml(null)}>Back to current</Button>
+              </div>
+            )}
+
+            {(previewRaidHtml || raidLogHtml) ? (
               <Card className="overflow-hidden">
                 <div className="w-full" style={{ height: "70vh" }}>
-                  <iframe
-                    srcDoc={raidLogHtml}
-                    className="w-full h-full border-0"
-                    sandbox="allow-scripts"
-                    title="RAID Log Preview"
-                  />
+                  <iframe srcDoc={previewRaidHtml || raidLogHtml} className="w-full h-full border-0" sandbox="allow-scripts" title="RAID Log Preview" />
                 </div>
               </Card>
             ) : (
@@ -909,50 +1056,64 @@ const ApplicationDetail = () => {
           {/* Architecture Diagram Tab */}
           <TabsContent value="architecture" className="space-y-4">
             <div className="flex flex-wrap gap-2">
+              <Button variant="outline" size="sm" onClick={() => setArchChatOpen(!archChatOpen)}>
+                <Edit3 className="mr-2 h-4 w-4" /> {archChatOpen ? "Hide Chat" : "Refine with AI"}
+              </Button>
               <Button variant="outline" size="sm" onClick={handleGenerateArchDiagram} disabled={isGeneratingArchDiagram}>
-                {isGeneratingArchDiagram ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                {isGeneratingArchDiagram ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
                 {archDiagramHtml ? "Regenerate" : "Generate"} Diagram
               </Button>
               {archDiagramHtml && (
                 <>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleCopy(archDiagramHtml, "Architecture diagram HTML")}
-                  >
+                  <Button variant="outline" size="sm" onClick={() => handleCopy(archDiagramHtml, "Architecture diagram HTML")}>
                     <Copy className="mr-2 h-4 w-4" /> Copy HTML
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      const blob = new Blob([archDiagramHtml], { type: "text/html" });
-                      const url = URL.createObjectURL(blob);
-                      const a = document.createElement("a");
-                      a.href = url;
-                      a.download = `${(companyName || "architecture").replace(/\s+/g, "-").toLowerCase()}-architecture-diagram.html`;
-                      document.body.appendChild(a);
-                      a.click();
-                      document.body.removeChild(a);
-                      URL.revokeObjectURL(url);
-                      toast({ title: "Downloaded", description: "Architecture diagram HTML file saved." });
-                    }}
-                  >
+                  <SaveAsTemplate
+                    dashboardHtml={archDiagramHtml}
+                    applicationId={id}
+                    assetType="architecture-diagram"
+                    defaultLabel={`${companyName} ${jobTitle} Architecture Diagram`.trim()}
+                    defaultJobFunction={jobTitle}
+                    defaultDepartment=""
+                  />
+                  <Button variant="outline" size="sm" onClick={() => handleDownloadHtml(archDiagramHtml, `${(companyName || "architecture").replace(/\s+/g, "-").toLowerCase()}-architecture-diagram.html`)}>
                     <Download className="mr-2 h-4 w-4" /> Download HTML
                   </Button>
                 </>
               )}
             </div>
 
-            {archDiagramHtml ? (
+            <RefineChat
+              isOpen={archChatOpen}
+              onToggle={() => setArchChatOpen(!archChatOpen)}
+              chatInput={archChatInput}
+              setChatInput={setArchChatInput}
+              isRefining={isRefiningArch}
+              onSend={() => handleRefineAsset("architecture-diagram", archDiagramHtml, archChatInput, setArchDiagramHtml, "architecture_diagram_html", saveArchitectureDiagramRevision, setArchRevisionTrigger, setIsRefiningArch, setArchChatInput)}
+              placeholder='e.g. "Add a caching layer" or "Show the message queue connections"'
+            />
+
+            {id && archDiagramHtml && (
+              <AssetRevisions
+                applicationId={id}
+                assetType="architecture-diagram"
+                currentHtml={archDiagramHtml}
+                onPreviewRevision={(html) => setPreviewArchHtml(html === archDiagramHtml ? null : html)}
+                refreshTrigger={archRevisionTrigger}
+              />
+            )}
+
+            {previewArchHtml && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Badge variant="secondary">Previewing older version</Badge>
+                <Button variant="ghost" size="sm" onClick={() => setPreviewArchHtml(null)}>Back to current</Button>
+              </div>
+            )}
+
+            {(previewArchHtml || archDiagramHtml) ? (
               <Card className="overflow-hidden">
                 <div className="w-full" style={{ height: "70vh" }}>
-                  <iframe
-                    srcDoc={archDiagramHtml}
-                    className="w-full h-full border-0"
-                    sandbox="allow-scripts"
-                    title="Architecture Diagram Preview"
-                  />
+                  <iframe srcDoc={previewArchHtml || archDiagramHtml} className="w-full h-full border-0" sandbox="allow-scripts" title="Architecture Diagram Preview" />
                 </div>
               </Card>
             ) : (
@@ -971,50 +1132,64 @@ const ApplicationDetail = () => {
           {/* Roadmap Tab */}
           <TabsContent value="roadmap" className="space-y-4">
             <div className="flex flex-wrap gap-2">
+              <Button variant="outline" size="sm" onClick={() => setRoadmapChatOpen(!roadmapChatOpen)}>
+                <Edit3 className="mr-2 h-4 w-4" /> {roadmapChatOpen ? "Hide Chat" : "Refine with AI"}
+              </Button>
               <Button variant="outline" size="sm" onClick={handleGenerateRoadmap} disabled={isGeneratingRoadmap}>
-                {isGeneratingRoadmap ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                {isGeneratingRoadmap ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
                 {roadmapHtml ? "Regenerate" : "Generate"} Roadmap
               </Button>
               {roadmapHtml && (
                 <>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleCopy(roadmapHtml, "Roadmap HTML")}
-                  >
+                  <Button variant="outline" size="sm" onClick={() => handleCopy(roadmapHtml, "Roadmap HTML")}>
                     <Copy className="mr-2 h-4 w-4" /> Copy HTML
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      const blob = new Blob([roadmapHtml], { type: "text/html" });
-                      const url = URL.createObjectURL(blob);
-                      const a = document.createElement("a");
-                      a.href = url;
-                      a.download = `${(companyName || "roadmap").replace(/\s+/g, "-").toLowerCase()}-roadmap.html`;
-                      document.body.appendChild(a);
-                      a.click();
-                      document.body.removeChild(a);
-                      URL.revokeObjectURL(url);
-                      toast({ title: "Downloaded", description: "Roadmap HTML file saved." });
-                    }}
-                  >
+                  <SaveAsTemplate
+                    dashboardHtml={roadmapHtml}
+                    applicationId={id}
+                    assetType="roadmap"
+                    defaultLabel={`${companyName} ${jobTitle} Roadmap`.trim()}
+                    defaultJobFunction={jobTitle}
+                    defaultDepartment=""
+                  />
+                  <Button variant="outline" size="sm" onClick={() => handleDownloadHtml(roadmapHtml, `${(companyName || "roadmap").replace(/\s+/g, "-").toLowerCase()}-roadmap.html`)}>
                     <Download className="mr-2 h-4 w-4" /> Download HTML
                   </Button>
                 </>
               )}
             </div>
 
-            {roadmapHtml ? (
+            <RefineChat
+              isOpen={roadmapChatOpen}
+              onToggle={() => setRoadmapChatOpen(!roadmapChatOpen)}
+              chatInput={roadmapChatInput}
+              setChatInput={setRoadmapChatInput}
+              isRefining={isRefiningRoadmap}
+              onSend={() => handleRefineAsset("roadmap", roadmapHtml, roadmapChatInput, setRoadmapHtml, "roadmap_html", saveRoadmapRevision, setRoadmapRevisionTrigger, setIsRefiningRoadmap, setRoadmapChatInput)}
+              placeholder='e.g. "Extend the timeline to 4 quarters" or "Add a security team swimlane"'
+            />
+
+            {id && roadmapHtml && (
+              <AssetRevisions
+                applicationId={id}
+                assetType="roadmap"
+                currentHtml={roadmapHtml}
+                onPreviewRevision={(html) => setPreviewRoadmapHtml(html === roadmapHtml ? null : html)}
+                refreshTrigger={roadmapRevisionTrigger}
+              />
+            )}
+
+            {previewRoadmapHtml && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Badge variant="secondary">Previewing older version</Badge>
+                <Button variant="ghost" size="sm" onClick={() => setPreviewRoadmapHtml(null)}>Back to current</Button>
+              </div>
+            )}
+
+            {(previewRoadmapHtml || roadmapHtml) ? (
               <Card className="overflow-hidden">
                 <div className="w-full" style={{ height: "70vh" }}>
-                  <iframe
-                    srcDoc={roadmapHtml}
-                    className="w-full h-full border-0"
-                    sandbox="allow-scripts"
-                    title="Roadmap Preview"
-                  />
+                  <iframe srcDoc={previewRoadmapHtml || roadmapHtml} className="w-full h-full border-0" sandbox="allow-scripts" title="Roadmap Preview" />
                 </div>
               </Card>
             ) : (
@@ -1155,7 +1330,6 @@ const ApplicationDetail = () => {
               </CardContent>
             </Card>
 
-            {/* Analysis data */}
             <Card>
               <CardHeader>
                 <CardTitle>Market Intelligence</CardTitle>

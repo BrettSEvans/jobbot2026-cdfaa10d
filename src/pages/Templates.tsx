@@ -15,6 +15,23 @@ import {
   ArrowLeft,
 } from "lucide-react";
 
+const ASSET_TYPE_OPTIONS = [
+  { value: "", label: "All Types" },
+  { value: "dashboard", label: "Dashboard" },
+  { value: "executive-report", label: "Executive Report" },
+  { value: "raid-log", label: "RAID Log" },
+  { value: "architecture-diagram", label: "Architecture Diagram" },
+  { value: "roadmap", label: "Roadmap" },
+];
+
+const ASSET_TYPE_LABELS: Record<string, string> = {
+  dashboard: "Dashboard",
+  "executive-report": "Executive Report",
+  "raid-log": "RAID Log",
+  "architecture-diagram": "Architecture Diagram",
+  roadmap: "Roadmap",
+};
+
 const Templates = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -22,6 +39,7 @@ const Templates = () => {
   const [loading, setLoading] = useState(true);
   const [searchFunction, setSearchFunction] = useState("");
   const [searchDepartment, setSearchDepartment] = useState("");
+  const [filterAssetType, setFilterAssetType] = useState("");
   const [previewId, setPreviewId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -34,6 +52,7 @@ const Templates = () => {
       const data = await getTemplates({
         job_function: searchFunction || undefined,
         department: searchDepartment || undefined,
+        asset_type: filterAssetType || undefined,
       });
       setTemplates(data);
     } catch (err: any) {
@@ -46,7 +65,7 @@ const Templates = () => {
   useEffect(() => {
     const timeout = setTimeout(loadTemplates, 300);
     return () => clearTimeout(timeout);
-  }, [searchFunction, searchDepartment]);
+  }, [searchFunction, searchDepartment, filterAssetType]);
 
   const handleDelete = async (id: string) => {
     try {
@@ -67,15 +86,15 @@ const Templates = () => {
               <ArrowLeft className="h-4 w-4 mr-1" /> Back
             </Button>
             <div>
-              <h1 className="text-2xl font-bold tracking-tight">Dashboard Templates</h1>
+              <h1 className="text-2xl font-bold tracking-tight">Asset Templates</h1>
               <p className="text-muted-foreground text-sm">Saved templates for reuse across applications</p>
             </div>
           </div>
         </div>
 
         {/* Filters */}
-        <div className="flex gap-2">
-          <div className="relative flex-1">
+        <div className="flex gap-2 flex-wrap">
+          <div className="relative flex-1 min-w-[180px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Filter by job function..."
@@ -84,7 +103,7 @@ const Templates = () => {
               className="pl-9"
             />
           </div>
-          <div className="relative flex-1">
+          <div className="relative flex-1 min-w-[180px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Filter by department..."
@@ -92,6 +111,19 @@ const Templates = () => {
               onChange={(e) => setSearchDepartment(e.target.value)}
               className="pl-9"
             />
+          </div>
+          <div className="flex gap-1 flex-wrap">
+            {ASSET_TYPE_OPTIONS.map((opt) => (
+              <Button
+                key={opt.value}
+                size="sm"
+                variant={filterAssetType === opt.value ? "default" : "outline"}
+                onClick={() => setFilterAssetType(opt.value)}
+                className="text-xs"
+              >
+                {opt.label}
+              </Button>
+            ))}
           </div>
         </div>
 
@@ -105,7 +137,7 @@ const Templates = () => {
               <LayoutTemplate className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-lg font-medium mb-2">No templates yet</h3>
               <p className="text-muted-foreground mb-4">
-                Generate a dashboard and save it as a template to get started.
+                Generate an asset and save it as a template to get started.
               </p>
             </CardContent>
           </Card>
@@ -118,6 +150,9 @@ const Templates = () => {
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold truncate">{t.label}</h3>
                       <div className="flex flex-wrap gap-1 mt-1">
+                        <Badge variant="default" className="text-xs">
+                          {ASSET_TYPE_LABELS[t.asset_type] || t.asset_type}
+                        </Badge>
                         {t.job_function && (
                           <Badge variant="outline" className="text-xs">{t.job_function}</Badge>
                         )}

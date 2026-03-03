@@ -151,6 +151,7 @@ Deno.serve(async (req) => {
         url: formattedUrl,
         formats: ['branding', 'markdown', 'links', 'html'],
         onlyMainContent: false,
+        timeout: 60000,
       }),
     });
 

@@ -29,8 +29,20 @@ serve(async (req) => {
     }
 
     const brandColors = branding?.colors || {};
-    const primaryColor = brandColors.primary || '#1a365d';
-    const accentColor = brandColors.secondary || brandColors.accent || '#2563eb';
+    const brandFonts = branding?.fonts || branding?.typography?.fontFamilies || {};
+    const primaryColor = brandColors.primary || brandColors['dominant-1'] || '#1a365d';
+    const secondaryColor = brandColors.secondary || brandColors['dominant-2'] || '#2563eb';
+    const accentColor = brandColors.accent || brandColors['dominant-3'] || secondaryColor;
+    const bgColor = brandColors.background || brandColors['dominant-4'] || '#ffffff';
+    const textColor = brandColors.textPrimary || brandColors['dominant-5'] || '#1a1a1a';
+    const textSecondary = brandColors.textSecondary || '#555555';
+    const primaryFont = brandFonts.primary || brandFonts.heading || (branding?.fonts?.[0]?.family) || '';
+    const bodyFont = brandFonts.body || brandFonts.primary || (branding?.fonts?.[1]?.family || branding?.fonts?.[0]?.family) || '';
+
+    // Build a palette string from ALL available extracted colors for the AI to use
+    const allColorEntries = Object.entries(brandColors).filter(([, v]) => v && typeof v === 'string');
+    const extractedColors = branding?.extractedColors ? Object.entries(branding.extractedColors) : [];
+    const fullPalette = [...allColorEntries, ...extractedColors].map(([k, v]) => `  ${k}: ${v}`).join('\n');
 
     const now = new Date();
     const currentDate = now.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
@@ -46,9 +58,32 @@ COMPANY CONTEXT:
 - Competitors: ${(competitors || []).join(', ') || 'N/A'}
 - Customers: ${(customers || []).join(', ') || 'N/A'}
 
-OUTPUT FORMAT: Clean, self-contained HTML with modern inline CSS styling. Use these brand colors where appropriate:
-- Primary: ${primaryColor}
-- Accent: ${accentColor}
+BRANDING (CRITICAL — follow precisely):
+The report MUST look like an internal document produced by ${companyName || 'the company'}. Apply these brand colors and fonts aggressively throughout the entire document:
+
+Primary brand color: ${primaryColor}
+Secondary brand color: ${secondaryColor}
+Accent color: ${accentColor}
+Background: ${bgColor}
+Text primary: ${textColor}
+Text secondary: ${textSecondary}
+${primaryFont ? `Heading font: "${primaryFont}"` : ''}
+${bodyFont ? `Body font: "${bodyFont}"` : ''}
+
+Full extracted color palette:
+${fullPalette || '  (none available — use the primary/secondary/accent above)'}
+
+BRANDING APPLICATION RULES:
+1. **Header bar**: Use the PRIMARY brand color as a solid background for the top header/banner. Text on it should be white or a contrasting light color. The header should feel bold and unmistakably branded.
+2. **Section headers / subheadings**: Use the primary or secondary brand color for section heading text or as a left-border accent.
+3. **Table header rows**: Use the primary brand color as background with white text.
+4. **Alternating row shading**: Use a very light tint of the primary brand color (e.g. primary at 5-10% opacity) for alternating table rows.
+5. **Card/block backgrounds**: Use light tints of the brand colors for content cards, callout boxes, and summary blocks — NOT plain white or gray.
+6. **Status pill backgrounds**: Use tinted brand colors for status indicators where appropriate (green/yellow/red for RAG, but style the pill shape using brand radius/fonts).
+7. **Borders and dividers**: Use the secondary or accent brand color for horizontal rules, card borders, and table borders.
+8. **Fonts**: If brand fonts are provided, use them via Google Fonts @import or as the first choice in font-family stacks. Fall back to system-ui, sans-serif.
+9. **Overall page background**: If the brand has a dark color scheme, consider a subtle dark background. Otherwise, use white or a very subtle tint of the brand palette.
+10. The document should be IMMEDIATELY recognizable as a ${companyName || 'company'}-branded artifact — not a generic template with one accent color.
 
 DATE REALISM (CRITICAL):
 - Today's date is ${currentDate}. Use this as the report date / "As of" date.
@@ -65,11 +100,10 @@ REQUIRED SECTIONS:
 
 STYLE REQUIREMENTS:
 - Professional, clean layout with subtle borders and spacing
-- Status indicators: Green (#22c55e), Yellow (#eab308), Red (#ef4444)
-- Use a clean sans-serif font stack (system-ui, -apple-system, sans-serif)
+- Status indicators: Green (#22c55e), Yellow (#eab308), Red (#ef4444) — but styled to fit brand aesthetic
 - Responsive layout that looks good at any width
 - Print-friendly (single page)
-- Include a subtle header bar with the company name and project title
+- Include a bold header bar with the company name and project title using brand colors
 
 TONE: Crisp, authoritative, objective. Focused on business impact and technical velocity. No fluff.
 

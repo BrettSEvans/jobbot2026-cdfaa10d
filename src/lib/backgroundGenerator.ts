@@ -12,6 +12,7 @@ import {
   searchCompanyIcon,
 } from "@/lib/api/jobApplication";
 import { scrapeJob, streamTailoredLetter } from "@/lib/api/coverLetter";
+import { getProfileContextForPrompt } from "@/lib/api/profile";
 import { streamExecutiveReport } from "@/lib/api/executiveReport";
 import { streamRaidLog } from "@/lib/api/raidLog";
 import { streamArchitectureDiagram } from "@/lib/api/architectureDiagram";
@@ -124,6 +125,9 @@ class BackgroundGenerationManager {
     useManualInput?: boolean
   ) {
     try {
+      // 0. Load user profile context for AI personalization
+      const profileContext = await getProfileContextForPrompt();
+
       // 1. Scrape job
       let markdown = manualDescription || "";
       if (!useManualInput && jobUrl) {
@@ -204,6 +208,7 @@ class BackgroundGenerationManager {
       let coverLetter = "";
       await streamTailoredLetter({
         jobDescription: markdown,
+        profileContext,
         onDelta: (text) => { coverLetter += text; },
         onDone: () => {},
       });
@@ -276,7 +281,7 @@ class BackgroundGenerationManager {
         try {
           let accumulated = "";
           await streamExecutiveReport({
-            jobDescription: markdown, companyName, jobTitle, competitors, customers, products, department, branding: brandingData,
+            jobDescription: markdown, companyName, jobTitle, competitors, customers, products, department, branding: brandingData, profileContext,
             onDelta: (text) => { accumulated += text; },
             onDone: () => {},
           });

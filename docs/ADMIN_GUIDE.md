@@ -1,7 +1,7 @@
 # JobBot Admin Panel — User Guide & Enhancement Roadmap
 
 > **Last updated:** 2026-03-04  
-> **Version:** 2.0  
+> **Version:** 3.0  
 > **Maintainer:** Update this guide whenever Admin Panel code changes.
 
 ---
@@ -76,288 +76,358 @@ Controls the AI system prompts used to generate tailored resumes.
 
 ---
 
-## Part II — Critique of Original v1.0 Gaps & Recommendations
-
-### What v1.0 Got Right
-- Correctly identified the lack of user visibility, block/unblock, and bulk operations as the top gaps.
-- AI agent proposals were directionally sound (anomaly detection, content safety, onboarding).
-- Security architecture is solid — server-side RLS, `SECURITY DEFINER`, no client-side role trust.
-
-### What v1.0 Missed or Got Wrong
-
-| Issue | Critique |
-|-------|----------|
-| **No audit trail** | The v1.0 plan mentioned block history but failed to identify that *all* admin actions (style edits, admin grants/revokes) lack audit logging. Best practice: every mutation by an admin should be logged with `admin_id`, `action`, `target`, `timestamp`, and `metadata`. |
-| **No confirmation dialogs** | Deleting a prompt style or removing an admin is a single click with no confirmation. This is a data-loss risk. Industry standard: destructive actions require explicit confirmation (type-to-confirm for high-impact). |
-| **No soft-delete for styles** | Deletion is permanent. Best practice: soft-delete with `deleted_at` timestamp, matching the pattern already used for `job_applications`. |
-| **Block/unblock was under-specified** | v1.0 proposed `blocked_at` on profiles, but didn't address: (a) how RLS would enforce the block during active sessions, (b) whether blocking revokes existing JWT tokens, (c) notification to the user about *why* they were blocked. |
-| **Content moderation was vague** | "Flagged content queue" was listed without specifying *what* triggers flags, *who* reviews, or *what actions* are available. Without clear taxonomy (spam, abuse, quality) and resolution states (pending, dismissed, actioned), it's not actionable. |
-| **AI agents lacked feasibility assessment** | All 6 agents were proposed without considering: (a) which can be built with existing infrastructure (edge functions + cron), (b) which require external services (email sending, push notifications), (c) cost implications of running AI evaluation on every generation. |
-| **No rate limiting** | The biggest operational gap. There's no per-user generation throttle. An abusive user can trigger unlimited edge function calls. This should be P0, not buried in an AI agent proposal. |
-| **No data export** | GDPR/CCPA compliance requires data portability. No mention of user data export capability. |
-| **Missing role granularity** | The `app_role` enum is `admin | user`. There's no `moderator` or `viewer` role for delegated access (e.g., a support agent who can view but not modify). |
-| **No admin dashboard landing** | The admin page jumps straight into management. Best practice: a summary dashboard showing key metrics at a glance before diving into management sections. |
-
----
-
-## Part III — Prioritized Enhancement Roadmap
+## Part II — Consolidated Update Plan
 
 ### Priority Framework
 
-| Priority | Criteria | Timeline |
-|----------|----------|----------|
-| **P0 — Critical** | Security risk, data loss risk, or blocks core admin workflow | Sprint 1 (1-2 weeks) |
-| **P1 — High** | Major usability gap; required for managing >10 users | Sprint 2 (2-4 weeks) |
-| **P2 — Medium** | Operational efficiency; nice-to-have for <50 users | Sprint 3 (4-8 weeks) |
-| **P3 — Low** | Scale features; valuable at 100+ users | Backlog |
+| Priority | Criteria | Timeline | Risk if Skipped |
+|----------|----------|----------|-----------------|
+| **P0 — Critical** | Security risk, data loss, or blocks core admin workflow | Sprint 1 (1–2 weeks) | Data loss, abuse, no accountability |
+| **P1 — High** | Major usability gap; required for managing >10 users | Sprint 2 (2–4 weeks) | Admin cannot manage users at all |
+| **P2 — Medium** | Operational efficiency; nice-to-have for <50 users | Sprint 3 (4–8 weeks) | Manual workarounds, limited insight |
+| **P3 — Low** | Scale features; valuable at 100+ users | Backlog | Deferred with no immediate impact |
 
 ---
 
-### P0 — Critical (Sprint 1)
+### P0 — Critical Infrastructure (Sprint 1)
+
+These items address **active data-loss risk, abuse vectors, and zero accountability** in the current admin.
 
 #### P0.1 — Destructive Action Confirmations
-**Gap:** Delete style and remove admin are single-click with no undo.  
-**Change:**
-- Add `AlertDialog` confirmation before deleting prompt styles (with style name displayed).
-- Add `AlertDialog` before removing admin access (with user ID displayed).
-- Consider type-to-confirm for style deletion (type the slug to confirm).
 
-**Scope:** `src/pages/Admin.tsx` — wrap `handleDeleteStyle` and `handleRemoveAdmin` in confirmation dialogs.
+| Attribute | Detail |
+|-----------|--------|
+| **Gap** | Delete style and remove admin are single-click, no undo |
+| **Risk** | Accidental deletion of production prompt styles wipes generation capability |
+| **Solution** | `AlertDialog` with style name / admin ID displayed; type-to-confirm for style deletion (type the slug) |
+| **Scope** | `src/pages/Admin.tsx` only — wrap `handleDeleteStyle` and `handleRemoveAdmin` |
+| **Effort** | ~2 hours |
+| **Dependencies** | None |
 
 #### P0.2 — Rate Limiting Infrastructure
-**Gap:** No per-user generation throttle. A single user can exhaust AI credits.  
-**Change:**
-- Create `generation_usage` table: `user_id`, `asset_type`, `created_at`.
-- Insert a row on each generation start (in `backgroundGenerator.ts`).
-- Add a check in each edge function: reject if user exceeded daily/hourly limit.
-- Admin panel: configurable limits per asset type.
 
-**DB:** New `generation_usage` table + RLS.  
-**Backend:** Rate check in edge functions.  
-**Admin UI:** Rate limit configuration card.
+| Attribute | Detail |
+|-----------|--------|
+| **Gap** | No per-user generation throttle; a single user can exhaust all AI credits |
+| **Risk** | Cost blowout, denial of service to other users |
+| **DB Changes** | New `generation_usage` table: `id`, `user_id`, `asset_type` (text), `edge_function` (text), `created_at` (timestamptz, default now()) |
+| **RLS** | Users can INSERT own rows; admins can SELECT all |
+| **Backend** | Each edge function checks count for `user_id` in last hour/day before proceeding; configurable limits stored in `admin_settings` table or hardcoded initially |
+| **Admin UI** | "Rate Limits" card on Settings tab showing current limits and top consumers |
+| **Effort** | ~1 day |
+| **Dependencies** | None |
 
 #### P0.3 — Admin Audit Log
-**Gap:** No record of who did what in the admin panel.  
-**Change:**
-- Create `admin_audit_log` table: `id`, `admin_id`, `action` (enum: `create_style`, `update_style`, `delete_style`, `grant_admin`, `revoke_admin`, `block_user`, `unblock_user`), `target_id`, `metadata` (jsonb), `created_at`.
-- Log every admin mutation server-side (via RLS trigger or in the API layer).
-- Display recent audit entries in a collapsible section on the admin page.
 
-**DB:** New `admin_audit_log` table.  
-**Admin UI:** Audit log viewer card.
+| Attribute | Detail |
+|-----------|--------|
+| **Gap** | Zero record of who did what — no accountability |
+| **Risk** | Cannot investigate incidents, no compliance trail |
+| **DB Changes** | New `admin_audit_log` table: `id` (uuid), `admin_id` (uuid), `action` (text — one of: `create_style`, `update_style`, `delete_style`, `restore_style`, `grant_admin`, `revoke_admin`, `block_user`, `unblock_user`, `update_rate_limit`, `export_user_data`), `target_id` (text), `metadata` (jsonb), `created_at` (timestamptz) |
+| **RLS** | Admins can INSERT and SELECT; no UPDATE or DELETE (immutable log) |
+| **Implementation** | Log in API layer (`adminPrompts.ts`) after each mutation; display last 50 entries in collapsible card |
+| **Admin UI** | "Recent Activity" feed on Home tab with action icons, timestamps, and target descriptions |
+| **Effort** | ~4 hours |
+| **Dependencies** | None |
 
-#### P0.4 — Soft-Delete for Prompt Styles  
-**Gap:** Deletion is permanent and irreversible.  
-**Change:**
-- Add `deleted_at timestamptz NULL` to `resume_prompt_styles`.
-- Update RLS: exclude soft-deleted rows from user SELECT.
-- Admin can see deleted styles in a "Trash" section and restore them.
-- Hard delete only after 30 days or explicit "purge."
+#### P0.4 — Soft-Delete for Prompt Styles
 
-**DB:** Migration to add column + update RLS.  
-**Admin UI:** Trash/restore UI.
+| Attribute | Detail |
+|-----------|--------|
+| **Gap** | Deletion is permanent; mirrors the `job_applications` soft-delete pattern already in use |
+| **Risk** | Accidental loss of carefully crafted prompt engineering work |
+| **DB Changes** | Add `deleted_at timestamptz NULL` to `resume_prompt_styles`; update "Anyone can read active styles" RLS to also exclude `deleted_at IS NOT NULL` |
+| **Admin UI** | "Trash" section below active styles; restore button; hard-delete after 30 days |
+| **Effort** | ~3 hours |
+| **Dependencies** | P0.3 (log restore/delete actions) |
 
 ---
 
-### P1 — High (Sprint 2)
+### P1 — User Management & Visibility (Sprint 2)
+
+These items transform the admin from a **prompt editor** into a **user management console**.
 
 #### P1.1 — User Directory with Search
-**Gap:** Admin has zero visibility into who uses the app.  
-**Change:**
-- Create an admin-only edge function `admin-list-users` that queries `profiles` joined with `job_applications` count, with search/filter/pagination.
-- New "Users" card on admin page with:
-  - Searchable table (name, email fragment, signup date, app count, last active).
-  - Click-through to user detail (profile + application list).
-- Email-based admin lookup: the "Add Admin" input accepts email → calls the edge function to resolve UUID.
 
-**Backend:** `admin-list-users` edge function (uses service role key).  
-**Admin UI:** Users table with search, pagination, detail drawer.
+| Attribute | Detail |
+|-----------|--------|
+| **Gap** | Admin has zero visibility into who uses the app, what they do, or when they were last active |
+| **Solution** | Edge function `admin-list-users` using service role key |
+| **Query** | JOIN `auth.users` (email, created_at, last_sign_in_at) with `profiles` (display_name, first_name, last_name) and aggregate `job_applications` count; support `?search=`, `?page=`, `?per_page=`, `?sort_by=`, `?blocked=` params |
+| **Admin UI** | Searchable, sortable table with columns: Name, Email, Signup Date, Last Active, Applications, Status (active/blocked) |
+| **Email-based admin lookup** | "Add Admin" input now accepts email → calls edge function to resolve UUID → then inserts role |
+| **Effort** | ~1 day |
+| **Dependencies** | None |
 
 #### P1.2 — User Block / Unblock System
-**Gap:** No way to suspend abusive or problematic users.  
-**Change:**
-- Add to `profiles`: `blocked_at timestamptz NULL`, `blocked_reason text NULL`, `blocked_by uuid NULL`.
-- Update all data-access RLS policies to include `AND NOT EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND blocked_at IS NOT NULL)`.
-- Alternatively: use a `blocked_users` table checked via a `SECURITY DEFINER` function `is_blocked(uuid)` for cleaner separation.
-- Admin UI: Block button on user row → dialog with reason field → sets block.  
-- Admin UI: Unblock button → clears block fields.
-- Blocked user experience: on next request, receives a clear error message explaining the block (not a generic 403).
 
-**DB:** `blocked_users` table or profile columns + RLS updates.  
-**Admin UI:** Block/unblock actions on user rows.  
-**Frontend:** Blocked-user error handling in API layer.
+| Attribute | Detail |
+|-----------|--------|
+| **Gap** | No way to suspend abusive, fraudulent, or test accounts |
+| **Architecture decision** | Separate `blocked_users` table (not profile columns) — cleaner separation, easier audit, no profile schema pollution |
+| **DB Changes** | New `blocked_users` table: `id`, `user_id` (unique), `reason` (text), `blocked_by` (uuid), `created_at`; SECURITY DEFINER function `is_blocked(uuid) RETURNS boolean` |
+| **RLS enforcement** | Add `AND NOT public.is_blocked(auth.uid())` to all data-mutation policies on `job_applications` and edge function auth checks |
+| **Blocked UX** | Blocked users see a clear, non-generic message: "Your account has been suspended. Contact support for details." — not a raw 403 |
+| **Admin UI** | Block button on user row → dialog with required reason field → confirm. Unblock button → removes row. Both logged to audit log |
+| **Session handling** | Blocking doesn't revoke JWT; block is enforced on next DB/edge request. Document this limitation. |
+| **Effort** | ~1 day |
+| **Dependencies** | P1.1 (user directory), P0.3 (audit log) |
 
 #### P1.3 — Bulk User Operations
-**Gap:** All admin actions are one-at-a-time.  
-**Change:**
-- Add checkbox selection to the Users table.
-- Bulk actions dropdown: Block Selected, Unblock Selected, Export Selected.
-- Server-side batch processing via edge function (not N individual requests).
 
-**Admin UI:** Selection state + bulk action bar.  
-**Backend:** Batch edge function endpoint.
+| Attribute | Detail |
+|-----------|--------|
+| **Gap** | Managing 20+ users one-by-one is untenable |
+| **Solution** | Checkbox selection on user table + bulk action bar |
+| **Actions** | Block Selected (with shared reason), Unblock Selected, Export Selected |
+| **Backend** | Single edge function `admin-bulk-action` accepting `{ action, user_ids[], metadata }` — processes atomically in a transaction |
+| **Admin UI** | Floating action bar appears when ≥1 user selected; shows count and action buttons |
+| **Effort** | ~4 hours |
+| **Dependencies** | P1.1, P1.2 |
 
-#### P1.4 — Admin Dashboard Summary
-**Gap:** Admin page has no overview — you must drill into each section.  
-**Change:**
-- Add a summary card at the top of `/admin` showing:
-  - Total users / new this week
-  - Total applications / generated this week
-  - Active prompt styles count
-  - Recent errors count (last 24h)
-  - Any blocked users count
-- Data fetched via a single admin-summary edge function.
+#### P1.4 — Admin Dashboard Home Tab
 
-**Backend:** `admin-summary` edge function.  
-**Admin UI:** Summary card with key metrics.
+| Attribute | Detail |
+|-----------|--------|
+| **Gap** | Admin page has no overview; jumps straight into management |
+| **Solution** | Summary metrics card as the landing tab |
+| **Metrics** | Total users / new this week; Total applications / generated this week; Active prompt styles; Recent errors (last 24h); Blocked users count |
+| **Backend** | Edge function `admin-summary` using service role key, returns all metrics in one call |
+| **Admin UI** | Grid of metric cards with icons, values, and week-over-week delta badges |
+| **Effort** | ~4 hours |
+| **Dependencies** | P0.2 (generation_usage for accurate generation counts) |
 
----
+#### P1.5 — Tabbed Admin Layout
 
-### P2 — Medium (Sprint 3)
-
-#### P2.1 — Usage Analytics Dashboard
-**Change:**
-- Charts (using existing `recharts` dependency) showing:
-  - Daily generation volume by asset type (line chart).
-  - Top 10 users by generation count (bar chart).
-  - Error rate trend (area chart).
-  - Prompt style popularity (pie chart).
-- Data sourced from `generation_usage` table (from P0.2) + `job_applications`.
-- Date range picker for filtering.
-
-**Admin UI:** New "Analytics" tab/section with charts.
-
-#### P2.2 — Role Granularity (Moderator Role)
-**Change:**
-- Add `'moderator'` to `app_role` enum.
-- Moderators can: view users, view generated content, block/unblock users.
-- Moderators cannot: manage prompt styles, manage other admins.
-- Update `has_role()` and RLS policies accordingly.
-
-**DB:** Enum update + RLS policy updates.  
-**Admin UI:** Role selector when granting access.
-
-#### P2.3 — Data Export (GDPR/CCPA)
-**Change:**
-- Admin can trigger a full data export for any user (profile + all applications + all generated assets).
-- Export as ZIP containing JSON files.
-- Audit-logged.
-
-**Backend:** `admin-export-user-data` edge function.  
-**Admin UI:** "Export Data" button on user detail view.
-
-#### P2.4 — Notification System Foundation
-**Change:**
-- Create `notifications` table: `id`, `user_id`, `type`, `title`, `body`, `read_at`, `created_at`.
-- In-app notification bell for users.
-- Admin can send notifications to individual users or broadcast to all.
-- Foundation for AI agent notifications (P3).
-
-**DB:** `notifications` table + RLS.  
-**UI:** Notification bell component + admin send UI.
-
----
-
-### P3 — Low / Backlog (Future)
-
-#### P3.1 — AI Agent: Usage Anomaly Detector
-**Feasibility:** ✅ Buildable with existing infra.  
-- Scheduled edge function (use `pg_cron` or external cron hitting the function).
-- Queries `generation_usage` for outliers (>3σ from mean daily usage).
-- Inserts alert into `admin_notifications` table.
-- Admin sees alerts on dashboard (P1.4).
-
-**Cost:** Minimal (SQL query, no AI calls).
-
-#### P3.2 — AI Agent: Prompt Quality Evaluator
-**Feasibility:** ⚠️ Requires AI calls = cost per evaluation.  
-- On prompt style save, queue a synthetic test generation.
-- Use Lovable AI (`gemini-2.5-flash`) to score output on: completeness, formatting, personalization, length.
-- Store scores in `prompt_style_evaluations` table.
-- Show score badge next to each style in admin.
-
-**Cost:** ~1 AI call per style edit. Acceptable.
-
-#### P3.3 — AI Agent: Support Triage Bot
-**Feasibility:** ⚠️ Requires chat widget infrastructure.  
-- In-app chat widget for users to report issues.
-- AI agent (via Lovable AI) attempts to diagnose from error logs + generation history.
-- Auto-resolves common issues (retry failed generation, explain rate limit).
-- Escalates to admin with full context packet.
-
-**Cost:** 1 AI call per support request. Moderate at scale.
-
-#### P3.4 — AI Agent: Onboarding Monitor
-**Feasibility:** ❌ Requires email sending capability (not currently available).  
-- Defer until email integration is added.
-- In-app nudge notifications (via P2.4) could substitute.
-
-#### P3.5 — AI Agent: Content Safety Scanner
-**Feasibility:** ⚠️ High cost if run on every generation.  
-- Better approach: run only when flagged by heuristic rules (keyword lists, length anomalies).
-- Use `gemini-2.5-flash-lite` for classification (cheapest model).
-- Queue for human review rather than auto-blocking (reduce false positives).
-
-#### P3.6 — AI Agent: Stale Account Cleanup
-**Feasibility:** ✅ Simple SQL query.  
-- Weekly scheduled function.
-- Generates report (not auto-deletes).
-- Admin reviews and decides.
-
-**Cost:** Minimal.
-
----
-
-## Part IV — Implementation Architecture Notes
-
-### Database Tables Needed (cumulative)
-
-| Table | Priority | Purpose |
-|-------|----------|---------|
-| `generation_usage` | P0 | Rate limiting + analytics source |
-| `admin_audit_log` | P0 | Audit trail for all admin actions |
-| `blocked_users` | P1 | User block/unblock with reason + history |
-| `notifications` | P2 | In-app notification system |
-| `prompt_style_evaluations` | P3 | AI quality scores for prompt styles |
-
-### Edge Functions Needed (cumulative)
-
-| Function | Priority | Purpose |
-|----------|----------|---------|
-| `admin-list-users` | P1 | Paginated user directory with search |
-| `admin-summary` | P1 | Dashboard metrics aggregation |
-| `admin-export-user-data` | P2 | GDPR data export |
-| `admin-anomaly-scan` | P3 | Scheduled usage anomaly detection |
-| `admin-evaluate-prompt` | P3 | AI-powered prompt quality scoring |
-
-### Admin Page UI Architecture
-
-Current: Single scrollable page with 2 cards.  
-Proposed: Tabbed layout within `/admin`:
+| Attribute | Detail |
+|-----------|--------|
+| **Gap** | Single scrolling page doesn't scale; Admin.tsx is already 350+ lines |
+| **Solution** | Refactor Admin.tsx into tabbed layout with extracted components |
+| **Tabs** | Home (P1.4), Users (P1.1-P1.3), Prompts (existing + P0.4), Audit (P0.3), Settings (P0.2 + admin management) |
+| **Architecture** | `src/components/admin/AdminHome.tsx`, `AdminUsers.tsx`, `AdminPrompts.tsx`, `AdminAudit.tsx`, `AdminSettings.tsx` |
+| **Effort** | ~3 hours (refactor, no new features) |
+| **Dependencies** | Should be done first in Sprint 2 to provide structure for all P1 features |
 
 ```
 ┌──────────────────────────────────────────────────┐
-│  Admin Panel                                      │
-├──────┬──────────┬─────────┬──────────┬───────────┤
-│ Home │  Users   │ Prompts │ Analytics│  Settings │
-├──────┴──────────┴─────────┴──────────┴───────────┤
+│  ← Back   Admin Panel                             │
+├──────┬──────────┬─────────┬────────┬──────────────┤
+│ Home │  Users   │ Prompts │ Audit  │  Settings    │
+├──────┴──────────┴─────────┴────────┴──────────────┤
 │                                                    │
-│  [Tab content area]                                │
+│  [Active tab content]                              │
 │                                                    │
 └──────────────────────────────────────────────────┘
 ```
 
-- **Home:** Summary metrics (P1.4) + recent audit log (P0.3) + active alerts (P3.1)
-- **Users:** User directory (P1.1) + block/unblock (P1.2) + bulk actions (P1.3)
-- **Prompts:** Current styles management (existing) + quality scores (P3.2)
-- **Analytics:** Usage charts (P2.1)
-- **Settings:** Rate limits (P0.2) + role management (existing + P2.2) + notification broadcast (P2.4)
+---
+
+### P2 — Analytics & Governance (Sprint 3)
+
+#### P2.1 — Usage Analytics Dashboard
+
+| Attribute | Detail |
+|-----------|--------|
+| **Solution** | Charts (using existing `recharts`) on an Analytics sub-tab |
+| **Charts** | Daily generation volume by asset type (line); Top 10 users by generation count (bar); Error rate trend (area); Prompt style popularity (pie) |
+| **Data source** | `generation_usage` (P0.2) + `job_applications` |
+| **Controls** | Date range picker, asset type filter |
+| **Effort** | ~1 day |
+
+#### P2.2 — Role Granularity (Moderator)
+
+| Attribute | Detail |
+|-----------|--------|
+| **Solution** | Add `'moderator'` to `app_role` enum |
+| **Permissions** | Moderators can: view users, view content, block/unblock. Cannot: manage styles, manage admins, change settings |
+| **DB Changes** | `ALTER TYPE app_role ADD VALUE 'moderator'`; new RLS policies per capability |
+| **Admin UI** | Role dropdown when granting access (admin / moderator) |
+| **Effort** | ~4 hours |
+
+#### P2.3 — GDPR/CCPA Data Export
+
+| Attribute | Detail |
+|-----------|--------|
+| **Solution** | Edge function `admin-export-user-data` → ZIP of JSON files |
+| **Contents** | Profile, all applications (with all revision assets), style preferences |
+| **Admin UI** | "Export Data" button on user detail; audit-logged |
+| **Effort** | ~4 hours |
+
+#### P2.4 — In-App Notification System
+
+| Attribute | Detail |
+|-----------|--------|
+| **DB Changes** | New `notifications` table: `id`, `user_id`, `type` (text), `title`, `body`, `read_at`, `created_at` |
+| **RLS** | Users can SELECT/UPDATE own; admins can INSERT for any user |
+| **User UI** | Bell icon in AppHeader; dropdown with unread count |
+| **Admin UI** | "Send Notification" to individual user or broadcast |
+| **Foundation for** | AI agent alerts (P3), block reason notifications, system announcements |
+| **Effort** | ~1 day |
+
+#### P2.5 — Generation Error Queue
+
+| Attribute | Detail |
+|-----------|--------|
+| **Gap** | Admin cannot see which users are stuck with generation errors |
+| **Solution** | Query `job_applications` where `generation_status = 'error'`, grouped by user |
+| **Admin UI** | "Stuck Generations" card on Home tab with: user, application, error message, timestamp, "Reset Status" action button |
+| **Effort** | ~3 hours |
+
+---
+
+### P3 — AI Agents & Scale (Backlog)
+
+#### P3.1 — Usage Anomaly Detector Agent
+
+| Attribute | Detail |
+|-----------|--------|
+| **Feasibility** | ✅ No AI calls needed — pure SQL |
+| **How** | Scheduled edge function (pg_cron weekly) queries `generation_usage` for outliers (>3σ from user mean) |
+| **Output** | Inserts alert row into `notifications` for admins |
+| **Cost** | Negligible |
+
+#### P3.2 — Prompt Quality Evaluator Agent
+
+| Attribute | Detail |
+|-----------|--------|
+| **Feasibility** | ⚠️ 1 AI call per style edit |
+| **How** | On prompt style save, queue synthetic test with `gemini-2.5-flash`; score on completeness, formatting, personalization |
+| **Output** | Store in `prompt_style_evaluations` table; badge on admin style card |
+| **Cost** | Low (~1 call per edit) |
+
+#### P3.3 — Support Triage Bot
+
+| Attribute | Detail |
+|-----------|--------|
+| **Feasibility** | ⚠️ Requires chat widget |
+| **How** | In-app chat → AI diagnoses from error logs + generation history → auto-resolves common issues or escalates |
+| **Cost** | 1 AI call per request |
+
+#### P3.4 — Onboarding Monitor
+
+| Attribute | Detail |
+|-----------|--------|
+| **Feasibility** | ❌ Requires email (not available) |
+| **Workaround** | Use P2.4 notification system for in-app nudges instead |
+
+#### P3.5 — Content Safety Scanner
+
+| Attribute | Detail |
+|-----------|--------|
+| **Feasibility** | ⚠️ Cost-sensitive at scale |
+| **How** | Heuristic pre-filter (keyword + length anomaly) → `gemini-2.5-flash-lite` classification → queue for human review |
+| **Cost** | Variable; only runs on flagged content |
+
+#### P3.6 — Stale Account Cleanup
+
+| Attribute | Detail |
+|-----------|--------|
+| **Feasibility** | ✅ Simple SQL |
+| **How** | Weekly scheduled function generates report of users with no activity in 90+ days; admin reviews before any action |
+| **Cost** | Negligible |
+
+---
+
+## Part III — Database Schema Summary
+
+### New Tables Required
+
+| Table | Priority | Columns | RLS |
+|-------|----------|---------|-----|
+| `generation_usage` | P0.2 | `id`, `user_id`, `asset_type`, `edge_function`, `created_at` | Users INSERT own; admins SELECT all |
+| `admin_audit_log` | P0.3 | `id`, `admin_id`, `action`, `target_id`, `metadata`, `created_at` | Admins INSERT + SELECT; no UPDATE/DELETE |
+| `blocked_users` | P1.2 | `id`, `user_id` (unique), `reason`, `blocked_by`, `created_at` | Admins CRUD; `is_blocked()` SECURITY DEFINER |
+| `notifications` | P2.4 | `id`, `user_id`, `type`, `title`, `body`, `read_at`, `created_at` | Users read/update own; admins insert any |
+| `prompt_style_evaluations` | P3.2 | `id`, `style_id`, `scores` (jsonb), `created_at` | Admins only |
+
+### Schema Modifications
+
+| Table | Priority | Change |
+|-------|----------|--------|
+| `resume_prompt_styles` | P0.4 | Add `deleted_at timestamptz NULL`; update RLS |
+| `app_role` enum | P2.2 | Add `'moderator'` value |
+
+### New Edge Functions
+
+| Function | Priority | Auth | Purpose |
+|----------|----------|------|---------|
+| `admin-list-users` | P1.1 | Service role + admin check | Paginated user directory |
+| `admin-summary` | P1.4 | Service role + admin check | Dashboard metrics |
+| `admin-bulk-action` | P1.3 | Service role + admin check | Batch block/unblock/export |
+| `admin-export-user-data` | P2.3 | Service role + admin check | GDPR ZIP export |
+| `admin-anomaly-scan` | P3.1 | Service role (cron) | Scheduled anomaly detection |
+| `admin-evaluate-prompt` | P3.2 | Service role + admin check | AI prompt quality scoring |
+
+### New SECURITY DEFINER Functions
+
+| Function | Priority | Purpose |
+|----------|----------|---------|
+| `is_blocked(uuid)` | P1.2 | Check if user is blocked; used in RLS policies |
+
+---
+
+## Part IV — Component Architecture
+
+### Current State
+- `src/pages/Admin.tsx` — 352 lines, single file, 2 cards
+
+### Target State (after P1.5)
+
+```
+src/pages/Admin.tsx                    — Shell with tabs, auth gate
+src/components/admin/AdminHome.tsx     — Summary metrics + recent activity
+src/components/admin/AdminUsers.tsx    — User directory + block/unblock + bulk
+src/components/admin/AdminPrompts.tsx  — Prompt styles CRUD + trash/restore
+src/components/admin/AdminAudit.tsx    — Full audit log viewer with filters
+src/components/admin/AdminSettings.tsx — Rate limits + role management
+src/lib/api/adminPrompts.ts           — Existing API (extended with audit logging)
+src/lib/api/adminUsers.ts             — New: user directory, block/unblock, bulk ops
+src/lib/api/adminAudit.ts             — New: audit log queries
+src/hooks/useAdminRole.ts             — Existing (extended for moderator)
+```
+
+---
+
+## Part V — Implementation Order (Recommended)
+
+This sequence minimizes rework and respects dependencies:
+
+```
+Sprint 1 (P0):
+  1. P0.1 — AlertDialog confirmations        (no deps, immediate safety win)
+  2. P0.3 — Audit log table + logging         (foundational for all future actions)
+  3. P0.4 — Soft-delete for styles            (logs restore/delete to audit)
+  4. P0.2 — Rate limiting table + checks      (independent, parallel track)
+
+Sprint 2 (P1):
+  5. P1.5 — Tabbed layout refactor            (structural foundation for all P1 UI)
+  6. P1.1 — User directory edge function + UI (unlocks all user management)
+  7. P1.4 — Dashboard home tab                (uses generation_usage from P0.2)
+  8. P1.2 — Block/unblock system              (requires P1.1 user list)
+  9. P1.3 — Bulk operations                   (requires P1.1 + P1.2)
+
+Sprint 3 (P2):
+  10. P2.5 — Error queue                      (quick win, no new tables)
+  11. P2.1 — Analytics charts                 (uses P0.2 data)
+  12. P2.4 — Notification system              (foundation for P3 agents)
+  13. P2.2 — Moderator role                   (enum + RLS updates)
+  14. P2.3 — GDPR export                      (uses P1.1 user data)
+
+Backlog (P3):
+  15. P3.1 — Anomaly detector                 (after P0.2 + P2.4)
+  16. P3.6 — Stale account cleanup            (simple, low risk)
+  17. P3.2 — Prompt quality evaluator          (after P2.4)
+  18. P3.5 — Content safety scanner            (after P2.4)
+  19. P3.3 — Support triage bot               (largest effort)
+  20. P3.4 — Onboarding monitor               (blocked on email)
+```
 
 ---
 
 ## Changelog
 
-| Date | Version | Change | Author |
-|------|---------|--------|--------|
-| 2026-03-04 | 1.0 | Initial guide with current features, gaps, and AI agent proposals | System |
-| 2026-03-04 | 2.0 | Complete rewrite: critiqued v1.0 gaps, added prioritized roadmap (P0–P3), feasibility-assessed AI agents, defined DB/edge function architecture | System |
+| Date | Version | Change |
+|------|---------|--------|
+| 2026-03-04 | 1.0 | Initial guide with current features, gaps, and AI agent proposals |
+| 2026-03-04 | 2.0 | Critiqued v1.0; added prioritized roadmap (P0–P3); feasibility-assessed AI agents |
+| 2026-03-04 | 3.0 | Consolidated all updates into single categorized plan; added dependency graph, component architecture, implementation order, and detailed table/function specs |

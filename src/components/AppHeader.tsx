@@ -60,7 +60,7 @@ export default function AppHeader({ onSignOut, userEmail }: AppHeaderProps) {
           <Button variant="ghost" size="sm" onClick={toggle} title="Toggle theme" className="h-8 w-8 p-0">
             {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </Button>
-          <Button variant="ghost" size="sm" onClick={onSignOut} title="Sign out" className="h-8 w-8 p-0">
+          <Button variant="ghost" size="sm" onClick={() => guardedNavigate(onSignOut)} title="Sign out" className="h-8 w-8 p-0">
             <LogOut className="h-4 w-4" />
           </Button>
         </div>

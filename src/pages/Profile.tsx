@@ -42,6 +42,7 @@ export default function Profile() {
 
   // Current values
   const [firstName, setFirstName] = useState("");
+  const [middleName, setMiddleName] = useState("");
   const [lastName, setLastName] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [resumeText, setResumeText] = useState("");
@@ -55,6 +56,7 @@ export default function Profile() {
   // Saved values (snapshot from last load/save)
   const [saved, setSaved] = useState({
     firstName: "",
+    middleName: "",
     lastName: "",
     displayName: "",
     resumeText: "",
@@ -66,11 +68,11 @@ export default function Profile() {
 
   // Compute dirty state per card
   const dirty = useMemo(() => ({
-    identity: firstName !== saved.firstName || lastName !== saved.lastName || displayName !== saved.displayName || yearsExperience !== saved.yearsExperience,
+    identity: firstName !== saved.firstName || middleName !== saved.middleName || lastName !== saved.lastName || displayName !== saved.displayName || yearsExperience !== saved.yearsExperience,
     resume: resumeText !== saved.resumeText,
     skills: JSON.stringify(skills) !== JSON.stringify(saved.skills) || JSON.stringify(industries) !== JSON.stringify(saved.industries) || newSkill.trim() !== "" || newIndustry.trim() !== "",
     tone: preferredTone !== saved.preferredTone,
-  }), [displayName, resumeText, yearsExperience, preferredTone, industries, skills, saved, newSkill, newIndustry]);
+  }), [displayName, resumeText, yearsExperience, preferredTone, industries, skills, saved, newSkill, newIndustry, middleName]);
 
   const hasUnsavedChanges = dirty.identity || dirty.resume || dirty.skills || dirty.tone;
 
@@ -100,6 +102,7 @@ export default function Profile() {
       if (p) {
         const vals = {
           firstName: p.first_name || "",
+          middleName: p.middle_name || "",
           lastName: p.last_name || "",
           displayName: p.display_name || "",
           resumeText: p.resume_text || "",
@@ -109,6 +112,7 @@ export default function Profile() {
           skills: p.key_skills || [],
         };
         setFirstName(vals.firstName);
+        setMiddleName(vals.middleName);
         setLastName(vals.lastName);
         setDisplayName(vals.displayName);
         setResumeText(vals.resumeText);
@@ -130,6 +134,7 @@ export default function Profile() {
     try {
       await updateProfile({
         first_name: firstName || null,
+        middle_name: middleName || null,
         last_name: lastName || null,
         display_name: displayName || null,
         resume_text: resumeText || null,
@@ -139,7 +144,7 @@ export default function Profile() {
         preferred_tone: preferredTone,
       });
       setSaved({
-        firstName, lastName, displayName, resumeText, yearsExperience, preferredTone,
+        firstName, middleName, lastName, displayName, resumeText, yearsExperience, preferredTone,
         industries: [...industries], skills: [...skills],
       });
       toast({ title: "Profile saved", description: "Your preferences will personalize future AI outputs." });
@@ -148,7 +153,7 @@ export default function Profile() {
     } finally {
       setSaving(false);
     }
-  }, [firstName, lastName, displayName, resumeText, yearsExperience, preferredTone, industries, skills, toast]);
+  }, [firstName, middleName, lastName, displayName, resumeText, yearsExperience, preferredTone, industries, skills, toast]);
 
   const handleCardSave = async (cardName: string) => {
     setSavingCard(cardName);
@@ -259,6 +264,10 @@ export default function Profile() {
                 <Label htmlFor="lastName">Last Name <span className="text-destructive">*</span></Label>
                 <Input id="lastName" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Last name" />
               </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="middleName">Middle Name <span className="text-muted-foreground text-xs">(optional)</span></Label>
+              <Input id="middleName" value={middleName} onChange={(e) => setMiddleName(e.target.value)} placeholder="Middle name" />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="displayName">Display Name <span className="text-muted-foreground text-xs">(optional)</span></Label>

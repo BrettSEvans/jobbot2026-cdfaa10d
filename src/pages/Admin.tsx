@@ -28,6 +28,9 @@ import {
 } from "@/lib/api/adminPrompts";
 import { supabase } from "@/integrations/supabase/client";
 
+// Protected founder admin — cannot be removed via UI
+const PROTECTED_ADMIN_ID = "f8182de6-de8e-4c12-9009-88fb5c4e66b8";
+
 // ---------- Guide Content (from docs/ADMIN_GUIDE.md) ----------
 
 function AdminGuideTab() {

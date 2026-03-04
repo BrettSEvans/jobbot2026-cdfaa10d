@@ -17,6 +17,7 @@ import { streamRaidLog } from "@/lib/api/raidLog";
 import { streamArchitectureDiagram } from "@/lib/api/architectureDiagram";
 import { streamRoadmap } from "@/lib/api/roadmap";
 import { parseLlmJsonOutput, assembleDashboardHtml } from "@/lib/dashboard/assembler";
+import { cleanHtml } from "@/lib/cleanHtml";
 
 export type GenerationJob = {
   applicationId: string;
@@ -279,13 +280,7 @@ class BackgroundGenerationManager {
             onDelta: (text) => { accumulated += text; },
             onDone: () => {},
           });
-          let clean = accumulated.trim();
-          clean = clean.replace(/^```(?:html)?\s*\n?/i, "").replace(/\n?```\s*$/i, "").trim();
-          const htmlStart = clean.indexOf("<!DOCTYPE html>") !== -1 ? clean.indexOf("<!DOCTYPE html>") : clean.indexOf("<!doctype html>");
-          if (htmlStart > 0) clean = clean.slice(htmlStart);
-          const htmlEnd = clean.lastIndexOf("</html>");
-          if (htmlEnd !== -1) clean = clean.slice(0, htmlEnd + 7);
-          return clean;
+          return cleanHtml(accumulated);
         } catch (e) {
           console.warn("Executive report generation failed:", e);
           return null;
@@ -302,13 +297,7 @@ class BackgroundGenerationManager {
             onDelta: (text) => { accumulated += text; },
             onDone: () => {},
           });
-          let clean = accumulated.trim();
-          clean = clean.replace(/^```(?:html)?\s*\n?/i, "").replace(/\n?```\s*$/i, "").trim();
-          const htmlStart = clean.indexOf("<!DOCTYPE html>") !== -1 ? clean.indexOf("<!DOCTYPE html>") : clean.indexOf("<!doctype html>");
-          if (htmlStart > 0) clean = clean.slice(htmlStart);
-          const htmlEnd = clean.lastIndexOf("</html>");
-          if (htmlEnd !== -1) clean = clean.slice(0, htmlEnd + 7);
-          return clean;
+          return cleanHtml(accumulated);
         } catch (e) {
           console.warn("RAID log generation failed:", e);
           return null;
@@ -325,13 +314,7 @@ class BackgroundGenerationManager {
             onDelta: (text) => { accumulated += text; },
             onDone: () => {},
           });
-          let clean = accumulated.trim();
-          clean = clean.replace(/^```(?:html)?\s*\n?/i, "").replace(/\n?```\s*$/i, "").trim();
-          const htmlStart = clean.indexOf("<!DOCTYPE html>") !== -1 ? clean.indexOf("<!DOCTYPE html>") : clean.indexOf("<!doctype html>");
-          if (htmlStart > 0) clean = clean.slice(htmlStart);
-          const htmlEnd = clean.lastIndexOf("</html>");
-          if (htmlEnd !== -1) clean = clean.slice(0, htmlEnd + 7);
-          return clean;
+          return cleanHtml(accumulated);
         } catch (e) {
           console.warn("Architecture diagram generation failed:", e);
           return null;
@@ -348,13 +331,7 @@ class BackgroundGenerationManager {
             onDelta: (text) => { accumulated += text; },
             onDone: () => {},
           });
-          let clean = accumulated.trim();
-          clean = clean.replace(/^```(?:html)?\s*\n?/i, "").replace(/\n?```\s*$/i, "").trim();
-          const htmlStart = clean.indexOf("<!DOCTYPE html>") !== -1 ? clean.indexOf("<!DOCTYPE html>") : clean.indexOf("<!doctype html>");
-          if (htmlStart > 0) clean = clean.slice(htmlStart);
-          const htmlEnd = clean.lastIndexOf("</html>");
-          if (htmlEnd !== -1) clean = clean.slice(0, htmlEnd + 7);
-          return clean;
+          return cleanHtml(accumulated);
         } catch (e) {
           console.warn("Roadmap generation failed:", e);
           return null;
@@ -401,7 +378,7 @@ class BackgroundGenerationManager {
           generation_status: "error",
           generation_error: err.message,
         } as any);
-      } catch {}
+      } catch (saveErr) { console.warn("Failed to save error status:", saveErr); }
     }
   }
 

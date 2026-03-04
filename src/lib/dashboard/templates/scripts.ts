@@ -269,10 +269,33 @@ export function getScriptsJs(): string {
     }
 
     if (type === 'bar' || type === 'line') {
+      // Detect if chart data looks like currency (title contains $, Revenue, Cost, Spend, ARR, MRR, Budget, etc.)
+      var titleLower = (config.title || '').toLowerCase();
+      var isCurrencyChart = /revenue|cost|spend|arr|mrr|budget|profit|margin|deal|salary|investment|savings|\\$|pricing|forecast|financial|valuation/.test(titleLower);
+      // Also check dataset labels
+      if (!isCurrencyChart) {
+        config.data.datasets.forEach(function(ds) {
+          if (/revenue|cost|spend|arr|mrr|budget|profit|\\$/.test((ds.label || '').toLowerCase())) isCurrencyChart = true;
+        });
+      }
       opts.scales = {
         x: { grid: { color: 'rgba(0,0,0,0.06)' }, ticks: { font: { size: 11 } } },
-        y: { grid: { color: 'rgba(0,0,0,0.06)' }, ticks: { font: { size: 11 } } }
+        y: {
+          grid: { color: 'rgba(0,0,0,0.06)' },
+          ticks: {
+            font: { size: 11 },
+            callback: isCurrencyChart ? function(value) { return formatCurrency(value); } : undefined
+          }
+        }
       };
+      if (isCurrencyChart) {
+        opts.plugins.tooltip = {
+          backgroundColor: 'rgba(0,0,0,0.8)', padding: 12, cornerRadius: 8,
+          callbacks: {
+            label: function(ctx) { return ctx.dataset.label + ': ' + formatCurrency(ctx.parsed.y); }
+          }
+        };
+      }
     }
 
     config.data.datasets.forEach(function(ds) {

@@ -37,6 +37,8 @@ export default function Profile() {
   const [uploading, setUploading] = useState(false);
 
   // Current values
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [resumeText, setResumeText] = useState("");
   const [yearsExperience, setYearsExperience] = useState("");
@@ -48,6 +50,8 @@ export default function Profile() {
 
   // Saved values (snapshot from last load/save)
   const [saved, setSaved] = useState({
+    firstName: "",
+    lastName: "",
     displayName: "",
     resumeText: "",
     yearsExperience: "",
@@ -58,7 +62,7 @@ export default function Profile() {
 
   // Compute dirty state per card
   const dirty = useMemo(() => ({
-    identity: displayName !== saved.displayName || yearsExperience !== saved.yearsExperience,
+    identity: firstName !== saved.firstName || lastName !== saved.lastName || displayName !== saved.displayName || yearsExperience !== saved.yearsExperience,
     resume: resumeText !== saved.resumeText,
     skills: JSON.stringify(skills) !== JSON.stringify(saved.skills) || JSON.stringify(industries) !== JSON.stringify(saved.industries) || newSkill.trim() !== "" || newIndustry.trim() !== "",
     tone: preferredTone !== saved.preferredTone,
@@ -91,6 +95,8 @@ export default function Profile() {
       const p = await getProfile();
       if (p) {
         const vals = {
+          firstName: p.first_name || "",
+          lastName: p.last_name || "",
           displayName: p.display_name || "",
           resumeText: p.resume_text || "",
           yearsExperience: p.years_experience || "",
@@ -98,6 +104,8 @@ export default function Profile() {
           industries: p.target_industries || [],
           skills: p.key_skills || [],
         };
+        setFirstName(vals.firstName);
+        setLastName(vals.lastName);
         setDisplayName(vals.displayName);
         setResumeText(vals.resumeText);
         setYearsExperience(vals.yearsExperience);
@@ -117,6 +125,8 @@ export default function Profile() {
     setSaving(true);
     try {
       await updateProfile({
+        first_name: firstName || null,
+        last_name: lastName || null,
         display_name: displayName || null,
         resume_text: resumeText || null,
         years_experience: yearsExperience || null,
@@ -125,7 +135,7 @@ export default function Profile() {
         preferred_tone: preferredTone,
       });
       setSaved({
-        displayName, resumeText, yearsExperience, preferredTone,
+        firstName, lastName, displayName, resumeText, yearsExperience, preferredTone,
         industries: [...industries], skills: [...skills],
       });
       toast({ title: "Profile saved", description: "Your preferences will personalize future AI outputs." });
@@ -134,7 +144,7 @@ export default function Profile() {
     } finally {
       setSaving(false);
     }
-  }, [displayName, resumeText, yearsExperience, preferredTone, industries, skills, toast]);
+  }, [firstName, lastName, displayName, resumeText, yearsExperience, preferredTone, industries, skills, toast]);
 
   const handleCardSave = async (cardName: string) => {
     setSavingCard(cardName);
@@ -236,9 +246,19 @@ export default function Profile() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="firstName">First Name <span className="text-destructive">*</span></Label>
+                <Input id="firstName" value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="First name" />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="lastName">Last Name <span className="text-destructive">*</span></Label>
+                <Input id="lastName" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Last name" />
+              </div>
+            </div>
             <div className="space-y-1.5">
-              <Label htmlFor="displayName">Display Name</Label>
-              <Input id="displayName" value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Your full name" />
+              <Label htmlFor="displayName">Display Name <span className="text-muted-foreground text-xs">(optional)</span></Label>
+              <Input id="displayName" value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="How you'd like to be referred to" />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="experience">Experience Level</Label>

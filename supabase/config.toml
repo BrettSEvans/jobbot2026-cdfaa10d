@@ -56,3 +56,12 @@ verify_jwt = false
 
 [functions.refine-resume]
 verify_jwt = false
+
+[functions.propose-assets]
+verify_jwt = false
+
+[functions.generate-dynamic-asset]
+verify_jwt = false
+
+[functions.refine-dynamic-asset]
+verify_jwt = false

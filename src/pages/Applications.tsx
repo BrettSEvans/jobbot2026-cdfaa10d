@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -70,16 +70,17 @@ const Applications = () => {
   const [sortKey, setSortKey] = useState<SortKey>("created_at");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [activeView, setActiveView] = useState<"active" | "trash">("active");
-  const previewRef = useRef<HTMLDivElement>(null);
+  const [isClosing, setIsClosing] = useState(false);
 
   const activeJobCount = useActiveJobCount();
 
-  // Auto-scroll to preview when it appears
-  useEffect(() => {
-    if (previewId && previewRef.current) {
-      previewRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-  }, [previewId]);
+  const handleClosePreview = () => {
+    setIsClosing(true);
+    setTimeout(() => {
+      setPreviewId(null);
+      setIsClosing(false);
+    }, 300);
+  };
 
   useEffect(() => {
     loadApplications();
@@ -300,7 +301,7 @@ const Applications = () => {
                 </Card>
               ) : (
                 <>
-                  <div className="rounded-md border">
+                  <div className="relative overflow-hidden rounded-md border min-h-[400px]">
                     <Table>
                       <TableHeader>
                         <TableRow>
@@ -360,7 +361,12 @@ const Applications = () => {
                                       variant="ghost"
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        setPreviewId(previewId === app.id ? null : app.id);
+                                        if (previewId === app.id) {
+                                          handleClosePreview();
+                                        } else {
+                                          setIsClosing(false);
+                                          setPreviewId(app.id);
+                                        }
                                       }}
                                       title="Preview"
                                     >
@@ -398,26 +404,34 @@ const Applications = () => {
                         ))}
                       </TableBody>
                     </Table>
-                  </div>
 
-                  {previewApp?.dashboard_html && (
-                    <Card ref={previewRef} className="overflow-hidden">
-                      <div className="p-2 bg-muted flex items-center justify-between">
-                        <span className="text-sm font-medium px-2">
-                          Preview: {previewApp.company_name} — {previewApp.job_title}
-                        </span>
-                        <Button size="sm" variant="ghost" onClick={() => setPreviewId(null)}>Close</Button>
+                    {/* Slide-in preview panel */}
+                    {previewApp?.dashboard_html && (
+                      <div
+                        className={`absolute inset-0 z-10 bg-background flex flex-col w-full md:w-[70%] md:left-auto md:right-0 md:border-l ${
+                          isClosing ? "animate-slide-out-right" : "animate-slide-in-right"
+                        }`}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/50 shrink-0">
+                          <span className="text-sm font-medium text-muted-foreground truncate">
+                            {previewApp.company_name} — {previewApp.job_title}
+                          </span>
+                          <Button size="sm" variant="ghost" onClick={handleClosePreview}>
+                            ✕ Close
+                          </Button>
+                        </div>
+                        <div className="flex-1 min-h-0">
+                          <iframe
+                            srcDoc={previewApp.dashboard_html}
+                            className="w-full h-full border-0"
+                            sandbox="allow-scripts"
+                            title="Dashboard Preview"
+                          />
+                        </div>
                       </div>
-                      <div style={{ height: "60vh" }}>
-                        <iframe
-                          srcDoc={previewApp.dashboard_html}
-                          className="w-full h-full border-0"
-                          sandbox="allow-scripts"
-                          title="Dashboard Preview"
-                        />
-                      </div>
-                    </Card>
-                  )}
+                    )}
+                  </div>
                 </>
               )}
             </TabsContent>

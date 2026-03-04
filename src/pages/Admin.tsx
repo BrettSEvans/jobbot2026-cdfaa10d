@@ -544,12 +544,15 @@ export default function Admin() {
         </div>
 
         <Tabs defaultValue="prompts">
-          <TabsList className="w-full grid grid-cols-4">
+          <TabsList className="w-full grid grid-cols-5">
             <TabsTrigger value="prompts" className="flex items-center gap-1.5">
               <FileText className="h-3.5 w-3.5" /> Prompts
             </TabsTrigger>
             <TabsTrigger value="users" className="flex items-center gap-1.5">
               <Users className="h-3.5 w-3.5" /> Users
+            </TabsTrigger>
+            <TabsTrigger value="limits" className="flex items-center gap-1.5">
+              <Gauge className="h-3.5 w-3.5" /> Limits
             </TabsTrigger>
             <TabsTrigger value="audit" className="flex items-center gap-1.5">
               <ScrollText className="h-3.5 w-3.5" /> Audit

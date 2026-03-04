@@ -739,6 +739,11 @@ export default function Admin() {
             </Card>
           </TabsContent>
 
+          {/* Limits Tab */}
+          <TabsContent value="limits">
+            <AdminRateLimitsTab />
+          </TabsContent>
+
           {/* Audit Tab */}
           <TabsContent value="audit">
             <AdminAuditTab />

@@ -92,7 +92,7 @@ export async function processSSEStream(
         const parsed = JSON.parse(json);
         const content = parsed.choices?.[0]?.delta?.content as string | undefined;
         if (content) onDelta(content);
-      } catch { /* ignore trailing incomplete chunk */ }
+      } catch (e) { console.warn("Failed to parse trailing SSE chunk:", e); }
     }
   }
 

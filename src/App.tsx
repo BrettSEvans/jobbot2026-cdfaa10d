@@ -15,12 +15,14 @@ import ResetPassword from "./pages/ResetPassword";
 import PendingApproval from "./pages/PendingApproval";
 import BackgroundJobsBanner from "./components/BackgroundJobsBanner";
 import AppHeader from "./components/AppHeader";
+import HelpButton from "./components/HelpButton";
 import { useAuth } from "./hooks/useAuth";
 import { NavigationGuardProvider } from "./hooks/useNavigationGuard";
 import { ImpersonationProvider } from "./contexts/ImpersonationContext";
 import { Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import "@/lib/helpEntries"; // register all help topics
 
 const queryClient = new QueryClient();
 

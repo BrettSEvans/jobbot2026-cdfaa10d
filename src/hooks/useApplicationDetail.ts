@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import {
   getJobApplication,
@@ -93,7 +94,7 @@ export function useApplicationDetail(id: string | undefined): ApplicationState {
           html = assembleDashboardHtml(parsed);
           try {
             await saveJobApplication({ id: appId, job_url: data.job_url, dashboard_html: html, dashboard_data: parsed });
-          } catch { /* non-critical */ }
+          } catch (e) { console.warn("Non-critical: failed to save migrated dashboard:", e); }
         }
       }
 
@@ -119,10 +120,27 @@ export function useApplicationDetail(id: string | undefined): ApplicationState {
 
   useEffect(() => {
     if (id) loadApplication(id);
-    const interval = setInterval(() => {
-      if (id) loadApplication(id);
-    }, 10000);
-    return () => clearInterval(interval);
+
+    // Subscribe to realtime changes instead of polling
+    const channel = supabase
+      .channel(`app-${id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'job_applications',
+          filter: `id=eq.${id}`,
+        },
+        () => {
+          if (id) loadApplication(id);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [id]);
 
   const saveField = async (fields: Record<string, any>) => {

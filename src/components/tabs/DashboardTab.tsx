@@ -86,7 +86,7 @@ export default function DashboardTab({ appId, state }: DashboardTabProps) {
       try {
         await saveDashboardRevision(appId, accumulated, "Regenerated");
         setRevisionTrigger((t) => t + 1);
-      } catch { /* non-critical */ }
+      } catch (e) { console.warn("Failed to save dashboard revision:", e); }
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
@@ -113,7 +113,7 @@ export default function DashboardTab({ appId, state }: DashboardTabProps) {
       try {
         await saveDashboardRevision(appId, dashboardHtml, `Before: ${msg.slice(0, 50)}`);
         setRevisionTrigger((t) => t + 1);
-      } catch { /* non-critical */ }
+      } catch (e) { console.warn("Failed to save dashboard revision:", e); }
       toast({ title: "Refining", description: "Dashboard refinement started in background." });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });

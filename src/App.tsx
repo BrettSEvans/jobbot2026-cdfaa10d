@@ -7,6 +7,7 @@ import Applications from "./pages/Applications";
 import NewApplication from "./pages/NewApplication";
 import ApplicationDetail from "./pages/ApplicationDetail";
 import Templates from "./pages/Templates";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
@@ -41,6 +42,7 @@ function AuthenticatedApp() {
             <Route path="/applications/new" element={<><AppHeader onSignOut={signOut} userEmail={user.email} /><NewApplication /></>} />
             <Route path="/applications/:id" element={<><AppHeader onSignOut={signOut} userEmail={user.email} /><ApplicationDetail /></>} />
             <Route path="/templates" element={<><AppHeader onSignOut={signOut} userEmail={user.email} /><Templates /></>} />
+            <Route path="/profile" element={<><AppHeader onSignOut={signOut} userEmail={user.email} /><Profile /></>} />
             <Route path="*" element={<NotFound />} />
           </>
         )}

@@ -1,7 +1,7 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { LogOut, Moon, Sun, Zap } from "lucide-react";
+import { LogOut, Moon, Sun, Zap, UserCircle } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
 
 interface AppHeaderProps {
@@ -17,6 +17,7 @@ export default function AppHeader({ onSignOut, userEmail }: AppHeaderProps) {
   const links = [
     { to: "/", label: "Applications", match: (p: string) => p === "/" || p === "/applications" },
     { to: "/templates", label: "Templates", match: (p: string) => p === "/templates" },
+    { to: "/profile", label: "Profile", match: (p: string) => p === "/profile" },
   ];
 
   return (

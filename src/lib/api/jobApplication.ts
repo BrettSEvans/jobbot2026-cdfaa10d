@@ -198,6 +198,35 @@ export async function getJobApplication(id: string) {
 }
 
 export async function deleteJobApplication(id: string) {
+  // Soft-delete: set deleted_at timestamp
+  const { data: { user } } = await supabase.auth.getUser();
+  const { error } = await supabase
+    .from('job_applications')
+    .update({ deleted_at: new Date().toISOString(), deleted_by: user?.id || null } as any)
+    .eq('id', id);
+  if (error) throw new Error(error.message);
+}
+
+export async function getDeletedJobApplications() {
+  // RLS policy "Users can view own deleted applications" handles filtering
+  const { data, error } = await (supabase as any)
+    .from('job_applications')
+    .select('*')
+    .not('deleted_at', 'is', null)
+    .order('deleted_at', { ascending: false });
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+export async function restoreJobApplication(id: string) {
+  const { error } = await supabase
+    .from('job_applications')
+    .update({ deleted_at: null, deleted_by: null } as any)
+    .eq('id', id);
+  if (error) throw new Error(error.message);
+}
+
+export async function permanentlyDeleteJobApplication(id: string) {
   const { error } = await supabase
     .from('job_applications')
     .delete()

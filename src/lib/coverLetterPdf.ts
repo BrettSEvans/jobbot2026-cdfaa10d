@@ -26,51 +26,56 @@ export function downloadCoverLetterPdf(
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
-<title>Cover Letter – ${companyName} – ${jobTitle}</title>
+<title>Cover Letter</title>
 <style>
   @page {
     size: letter;
-    margin: 1in 1.15in;
+    margin: 0.75in 1in;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    height: 100%;
+    overflow: hidden;
+  }
   body {
     font-family: Georgia, "Times New Roman", serif;
-    font-size: 11.5pt;
-    line-height: 1.55;
+    font-size: 10.5pt;
+    line-height: 1.45;
     color: #1a1a1a;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
+    max-height: 100vh;
   }
   .header {
-    margin-bottom: 28pt;
+    margin-bottom: 20pt;
     border-bottom: 1.5pt solid #2a2a2a;
-    padding-bottom: 14pt;
+    padding-bottom: 10pt;
   }
   .header .name {
-    font-size: 18pt;
+    font-size: 16pt;
     font-weight: 700;
     letter-spacing: 0.5pt;
     color: #111;
   }
   .header .date {
-    margin-top: 6pt;
-    font-size: 10pt;
+    margin-top: 4pt;
+    font-size: 9.5pt;
     color: #555;
   }
   .recipient {
-    margin-bottom: 20pt;
-    font-size: 10.5pt;
+    margin-bottom: 16pt;
+    font-size: 10pt;
     color: #333;
   }
   .body p {
-    margin-bottom: 10pt;
+    margin-bottom: 8pt;
     text-align: justify;
   }
   .signature {
-    margin-top: 32pt;
+    margin-top: 24pt;
   }
   .signature .closing {
-    margin-bottom: 28pt;
+    margin-bottom: 22pt;
   }
   .signature .sig-name {
     font-weight: 700;

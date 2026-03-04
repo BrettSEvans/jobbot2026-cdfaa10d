@@ -25,6 +25,12 @@ export function downloadHtmlAsPdf(
   const printStyles = `<style media="print">
     @page { size: auto; margin: 0.5in; }
     body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  </style>
+  <style>
+    @media print {
+      @page { margin: 0.5in; }
+      html::after, html::before { display: none !important; }
+    }
   </style>`;
   
   // Insert print styles before </head> or at the start

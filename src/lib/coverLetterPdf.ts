@@ -46,6 +46,12 @@ export function downloadCoverLetterPdf(
     print-color-adjust: exact;
     max-height: 100vh;
   }
+  @media print {
+    @page {
+      size: letter;
+      margin: 0.75in 1in;
+    }
+  }
   .header {
     margin-bottom: 20pt;
     border-bottom: 1.5pt solid #2a2a2a;

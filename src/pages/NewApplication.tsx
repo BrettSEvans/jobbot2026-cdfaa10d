@@ -534,6 +534,20 @@ function DashboardPreview({
 
   return (
     <div className="space-y-4">
+      {/* Primary CTA */}
+      {applicationId && (
+        <div className="flex items-center gap-3 p-4 rounded-lg bg-accent/50 border border-accent">
+          <Sparkles className="h-5 w-5 text-primary flex-shrink-0" />
+          <div className="flex-1">
+            <p className="text-sm font-medium">Your application is ready!</p>
+            <p className="text-sm text-muted-foreground">Dashboard, cover letter, and 4 additional reports have been generated.</p>
+          </div>
+          <Button onClick={() => navigate(`/applications/${applicationId}`)}>
+            View Full Application <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
+      )}
+
       <div className="flex flex-wrap gap-2">
         <Button onClick={onCopy} variant="outline">
           <Copy className="mr-2 h-4 w-4" /> Copy HTML

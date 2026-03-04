@@ -30,7 +30,7 @@ export function downloadCoverLetterPdf(
 <style>
   @page {
     size: letter;
-    margin: 0.75in 1in;
+    margin: 0;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body {
@@ -45,6 +45,7 @@ export function downloadCoverLetterPdf(
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
     max-height: 100vh;
+    padding: 0.75in 1in;
   }
   .header {
     margin-bottom: 20pt;

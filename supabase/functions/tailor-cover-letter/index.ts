@@ -69,7 +69,9 @@ CRITICAL Rules:
 - Keep the letter to approximately one page (400-500 words)
 - Maintain a professional but enthusiastic tone
 - If profile/resume context is provided, use real experiences — do NOT invent new ones
-- Output ONLY the cover letter text, no explanations or metadata
+- NEVER use placeholder text like [Your Name], [Your Phone Number], [Your Email], [Your Address], [City, State], etc. If the candidate's name is provided in the profile, use it. If contact details are not available, simply omit them entirely rather than inserting brackets or placeholder text.
+- Sign the letter with the candidate's real name from the profile context. If no name is available, end with "Sincerely," and no name line.
+- Output ONLY the cover letter text in clean markdown format, no explanations or metadata
 ${profileContext ? `\nCandidate background:\n${profileContext}` : ''}
 ${styleContext ? `\n${styleContext}` : ''}
 ${customInstructions ? `\nAdditional instructions: ${customInstructions}` : ''}

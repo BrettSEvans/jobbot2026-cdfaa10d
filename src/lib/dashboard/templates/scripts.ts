@@ -269,10 +269,33 @@ export function getScriptsJs(): string {
     }
 
     if (type === 'bar' || type === 'line') {
+      // Detect if chart data looks like currency (title contains $, Revenue, Cost, Spend, ARR, MRR, Budget, etc.)
+      var titleLower = (config.title || '').toLowerCase();
+      var isCurrencyChart = /revenue|cost|spend|arr|mrr|budget|profit|margin|deal|salary|investment|savings|\\$|pricing|forecast|financial|valuation/.test(titleLower);
+      // Also check dataset labels
+      if (!isCurrencyChart) {
+        config.data.datasets.forEach(function(ds) {
+          if (/revenue|cost|spend|arr|mrr|budget|profit|\\$/.test((ds.label || '').toLowerCase())) isCurrencyChart = true;
+        });
+      }
       opts.scales = {
         x: { grid: { color: 'rgba(0,0,0,0.06)' }, ticks: { font: { size: 11 } } },
-        y: { grid: { color: 'rgba(0,0,0,0.06)' }, ticks: { font: { size: 11 } } }
+        y: {
+          grid: { color: 'rgba(0,0,0,0.06)' },
+          ticks: {
+            font: { size: 11 },
+            callback: isCurrencyChart ? function(value) { return formatCurrency(value); } : undefined
+          }
+        }
       };
+      if (isCurrencyChart) {
+        opts.plugins.tooltip = {
+          backgroundColor: 'rgba(0,0,0,0.8)', padding: 12, cornerRadius: 8,
+          callbacks: {
+            label: function(ctx) { return ctx.dataset.label + ': ' + formatCurrency(ctx.parsed.y); }
+          }
+        };
+      }
     }
 
     config.data.datasets.forEach(function(ds) {
@@ -593,6 +616,21 @@ export function getScriptsJs(): string {
     sectionEl.appendChild(card);
   }
 
+  // === SLIDER VALUE FORMATTER ===
+  function formatSliderValue(val, unit) {
+    if (unit === '$') return '$' + Number(val).toLocaleString('en-US');
+    if (unit === '%') return val + '%';
+    return val + (unit || '');
+  }
+
+  // === CURRENCY FORMATTER FOR CHART AXES ===
+  function formatCurrency(val) {
+    if (Math.abs(val) >= 1000000000) return '$' + (val / 1000000000).toFixed(1) + 'B';
+    if (Math.abs(val) >= 1000000) return '$' + (val / 1000000).toFixed(1) + 'M';
+    if (Math.abs(val) >= 1000) return '$' + (val / 1000).toFixed(0) + 'K';
+    return '$' + val.toLocaleString('en-US');
+  }
+
   // === CFO SCENARIOS ===
   function renderCFOScenarios(scenarios, sectionEl) {
     if (!scenarios || !scenarios.length) return;
@@ -611,7 +649,7 @@ export function getScriptsJs(): string {
         var group = el('div', { className: 'slider-group' });
         var labelDiv = el('div', { className: 'slider-label' });
         labelDiv.appendChild(el('span', {}, slider.label));
-        var valueSpan = el('span', {}, slider['default'] + slider.unit);
+        var valueSpan = el('span', {}, formatSliderValue(slider['default'], slider.unit));
         labelDiv.appendChild(valueSpan);
         group.appendChild(labelDiv);
 
@@ -624,7 +662,7 @@ export function getScriptsJs(): string {
 
         input.addEventListener('input', function() {
           sliderValues[slider.id] = parseFloat(this.value);
-          valueSpan.textContent = this.value + slider.unit;
+          valueSpan.textContent = formatSliderValue(this.value, slider.unit);
           updateCFOChart(scenario, sliderValues, chartRef);
         });
 
@@ -661,10 +699,23 @@ export function getScriptsJs(): string {
             responsive: true,
             maintainAspectRatio: false,
             scales: {
-              y: { beginAtZero: false, grid: { color: 'rgba(0,0,0,0.06)' } },
+              y: {
+                beginAtZero: false,
+                grid: { color: 'rgba(0,0,0,0.06)' },
+                ticks: {
+                  callback: function(value) { return formatCurrency(value); }
+                }
+              },
               x: { grid: { color: 'rgba(0,0,0,0.06)' } }
             },
-            plugins: { legend: { display: true, position: 'bottom' } }
+            plugins: {
+              legend: { display: true, position: 'bottom' },
+              tooltip: {
+                callbacks: {
+                  label: function(ctx) { return ctx.dataset.label + ': ' + formatCurrency(ctx.parsed.y); }
+                }
+              }
+            }
           }
         });
       }

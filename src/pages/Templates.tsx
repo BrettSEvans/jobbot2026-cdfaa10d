@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -247,20 +248,29 @@ const Templates = () => {
                       </p>
                     </div>
                     <div className="flex gap-1 flex-shrink-0">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => setPreviewId(previewId === t.id ? null : t.id)}
-                        title="Preview"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button size="sm" variant="ghost" title="Delete">
-                            <Trash2 className="h-4 w-4 text-destructive" />
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setPreviewId(previewId === t.id ? null : t.id)}
+                          >
+                            <Eye className="h-4 w-4" />
                           </Button>
-                        </AlertDialogTrigger>
+                        </TooltipTrigger>
+                        <TooltipContent>Preview template</TooltipContent>
+                      </Tooltip>
+                      <AlertDialog>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <AlertDialogTrigger asChild>
+                              <Button size="sm" variant="ghost">
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </AlertDialogTrigger>
+                          </TooltipTrigger>
+                          <TooltipContent>Delete template</TooltipContent>
+                        </Tooltip>
                         <AlertDialogContent>
                           <AlertDialogHeader>
                             <AlertDialogTitle>Delete template?</AlertDialogTitle>

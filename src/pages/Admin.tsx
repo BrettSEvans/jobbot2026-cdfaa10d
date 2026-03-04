@@ -823,8 +823,11 @@ export default function Admin() {
           </div>
         </div>
 
-        <Tabs defaultValue="prompts">
-          <TabsList className="w-full grid grid-cols-6">
+        <Tabs defaultValue="approvals">
+          <TabsList className="w-full grid grid-cols-7">
+            <TabsTrigger value="approvals" className="flex items-center gap-1.5">
+              <UserCheck className="h-3.5 w-3.5" /> Approvals
+            </TabsTrigger>
             <TabsTrigger value="prompts" className="flex items-center gap-1.5">
               <FileText className="h-3.5 w-3.5" /> Prompts
             </TabsTrigger>
@@ -844,6 +847,11 @@ export default function Admin() {
               <BookOpen className="h-3.5 w-3.5" /> Guide
             </TabsTrigger>
           </TabsList>
+
+          {/* Approvals Tab */}
+          <TabsContent value="approvals">
+            <ApprovalQueue />
+          </TabsContent>
 
           {/* Generation Guide Tab */}
           <TabsContent value="gen-guide">

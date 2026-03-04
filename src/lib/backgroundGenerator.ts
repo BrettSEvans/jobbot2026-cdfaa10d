@@ -122,10 +122,12 @@ class BackgroundGenerationManager {
       progress: "Starting...",
     };
     this.jobs.set(appId, job);
+    const abortController = new AbortController();
+    this.abortControllers.set(appId, abortController);
     this.notify();
 
     // Run in background (don't await at call site)
-    this.runPipeline(appId, jobUrl, companyUrl, jobDescription, useManualInput);
+    this.runPipeline(appId, jobUrl, companyUrl, jobDescription, useManualInput, abortController.signal);
 
     return appId;
   }

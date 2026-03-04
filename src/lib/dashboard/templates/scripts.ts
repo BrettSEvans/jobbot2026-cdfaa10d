@@ -593,6 +593,21 @@ export function getScriptsJs(): string {
     sectionEl.appendChild(card);
   }
 
+  // === SLIDER VALUE FORMATTER ===
+  function formatSliderValue(val, unit) {
+    if (unit === '$') return '$' + Number(val).toLocaleString('en-US');
+    if (unit === '%') return val + '%';
+    return val + (unit || '');
+  }
+
+  // === CURRENCY FORMATTER FOR CHART AXES ===
+  function formatCurrency(val) {
+    if (Math.abs(val) >= 1000000000) return '$' + (val / 1000000000).toFixed(1) + 'B';
+    if (Math.abs(val) >= 1000000) return '$' + (val / 1000000).toFixed(1) + 'M';
+    if (Math.abs(val) >= 1000) return '$' + (val / 1000).toFixed(0) + 'K';
+    return '$' + val.toLocaleString('en-US');
+  }
+
   // === CFO SCENARIOS ===
   function renderCFOScenarios(scenarios, sectionEl) {
     if (!scenarios || !scenarios.length) return;
@@ -661,10 +676,23 @@ export function getScriptsJs(): string {
             responsive: true,
             maintainAspectRatio: false,
             scales: {
-              y: { beginAtZero: false, grid: { color: 'rgba(0,0,0,0.06)' } },
+              y: {
+                beginAtZero: false,
+                grid: { color: 'rgba(0,0,0,0.06)' },
+                ticks: {
+                  callback: function(value) { return formatCurrency(value); }
+                }
+              },
               x: { grid: { color: 'rgba(0,0,0,0.06)' } }
             },
-            plugins: { legend: { display: true, position: 'bottom' } }
+            plugins: {
+              legend: { display: true, position: 'bottom' },
+              tooltip: {
+                callbacks: {
+                  label: function(ctx) { return ctx.dataset.label + ': ' + formatCurrency(ctx.parsed.y); }
+                }
+              }
+            }
           }
         });
       }

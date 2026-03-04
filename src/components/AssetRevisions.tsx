@@ -13,13 +13,12 @@ import { getArchitectureDiagramRevisions } from "@/lib/api/architectureDiagramRe
 import { getRoadmapRevisions } from "@/lib/api/roadmapRevisions";
 import { getResumeRevisions } from "@/lib/api/resumeRevisions";
 
-export type AssetType = "executive-report" | "raid-log" | "architecture-diagram" | "architecture" | "roadmap" | "resume";
+export type AssetType = "executive-report" | "raid-log" | "architecture-diagram" | "roadmap" | "resume";
 
 const ASSET_LABELS: Record<AssetType, string> = {
   "executive-report": "Executive Report",
   "raid-log": "RAID Log",
   "architecture-diagram": "Architecture Diagram",
-  "architecture": "Architecture Diagram",
   "roadmap": "Roadmap",
   "resume": "Resume",
 };
@@ -28,7 +27,6 @@ const fetcherMap: Record<AssetType, (appId: string) => Promise<any[]>> = {
   "executive-report": getExecutiveReportRevisions,
   "raid-log": getRaidLogRevisions,
   "architecture-diagram": getArchitectureDiagramRevisions,
-  "architecture": getArchitectureDiagramRevisions,
   "roadmap": getRoadmapRevisions,
   "resume": getResumeRevisions,
 };

@@ -36,7 +36,7 @@ type ActiveView =
   | "resume"
   | "executive-report"
   | "raid-log"
-  | "architecture"
+  | "architecture-diagram"
   | "roadmap";
 
 const ApplicationDetail = () => {
@@ -96,7 +96,7 @@ const ApplicationDetail = () => {
       hasContent: !!state.raidLogHtml,
     },
     {
-      id: "architecture" as const,
+      id: "architecture-diagram" as const,
       label: "Architecture",
       icon: Network,
       dbField: "architecture_diagram_html" as const,

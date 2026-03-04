@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { LogOut, Moon, Sun, Zap, UserCircle } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
+import { useNavigationGuard } from "@/hooks/useNavigationGuard";
 
 interface AppHeaderProps {
   onSignOut: () => void;
@@ -13,6 +14,7 @@ export default function AppHeader({ onSignOut, userEmail }: AppHeaderProps) {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const { theme, toggle } = useTheme();
+  const { guardedNavigate } = useNavigationGuard();
 
   const links = [
     { to: "/", label: "Applications", match: (p: string) => p === "/" || p === "/applications" },
@@ -26,7 +28,7 @@ export default function AppHeader({ onSignOut, userEmail }: AppHeaderProps) {
         {/* Logo + Nav */}
         <div className="flex items-center gap-4">
           <button
-            onClick={() => navigate("/")}
+            onClick={() => guardedNavigate(() => navigate("/"))}
             className="flex items-center gap-1.5 font-heading text-base font-bold tracking-tight text-primary hover:opacity-80 transition-opacity"
           >
             <Zap className="h-5 w-5 fill-primary text-primary" />
@@ -36,7 +38,7 @@ export default function AppHeader({ onSignOut, userEmail }: AppHeaderProps) {
             {links.map((l) => (
               <button
                 key={l.to}
-                onClick={() => navigate(l.to)}
+                onClick={() => guardedNavigate(() => navigate(l.to))}
                 className={cn(
                   "px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
                   l.match(pathname)

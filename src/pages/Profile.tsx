@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { useNavigationGuard } from "@/hooks/useNavigationGuard";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -69,36 +70,12 @@ export default function Profile() {
     loadProfile();
   }, []);
 
-  // Browser beforeunload + link click guard
+  // Sync dirty state to navigation guard context
+  const { setHasUnsavedChanges } = useNavigationGuard();
   useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (hasUnsavedChanges) {
-        e.preventDefault();
-        e.returnValue = "";
-      }
-    };
-
-    // Intercept clicks on internal navigation links
-    const handleClick = (e: MouseEvent) => {
-      if (!hasUnsavedChanges) return;
-      const anchor = (e.target as HTMLElement).closest("a[href]");
-      if (!anchor) return;
-      const href = anchor.getAttribute("href");
-      if (!href || href.startsWith("http") || href.startsWith("#")) return;
-      // Internal link — confirm before navigating
-      if (!window.confirm("You have unsaved profile changes. Leave without saving?")) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
-    };
-
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    document.addEventListener("click", handleClick, true);
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-      document.removeEventListener("click", handleClick, true);
-    };
-  }, [hasUnsavedChanges]);
+    setHasUnsavedChanges(hasUnsavedChanges);
+    return () => setHasUnsavedChanges(false);
+  }, [hasUnsavedChanges, setHasUnsavedChanges]);
 
   const loadProfile = async () => {
     try {

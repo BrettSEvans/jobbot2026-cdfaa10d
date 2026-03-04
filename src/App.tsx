@@ -14,6 +14,7 @@ import ResetPassword from "./pages/ResetPassword";
 import BackgroundJobsBanner from "./components/BackgroundJobsBanner";
 import AppHeader from "./components/AppHeader";
 import { useAuth } from "./hooks/useAuth";
+import { NavigationGuardProvider } from "./hooks/useNavigationGuard";
 import { Loader2 } from "lucide-react";
 
 const queryClient = new QueryClient();
@@ -31,22 +32,24 @@ function AuthenticatedApp() {
 
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/reset-password" element={<ResetPassword />} />
-        {!user ? (
-          <Route path="*" element={<Auth />} />
-        ) : (
-          <>
-            <Route path="/" element={<><AppHeader onSignOut={signOut} userEmail={user.email} /><Applications /></>} />
-            <Route path="/applications" element={<Navigate to="/" replace />} />
-            <Route path="/applications/new" element={<><AppHeader onSignOut={signOut} userEmail={user.email} /><NewApplication /></>} />
-            <Route path="/applications/:id" element={<><AppHeader onSignOut={signOut} userEmail={user.email} /><ApplicationDetail /></>} />
-            <Route path="/templates" element={<><AppHeader onSignOut={signOut} userEmail={user.email} /><Templates /></>} />
-            <Route path="/profile" element={<><AppHeader onSignOut={signOut} userEmail={user.email} /><Profile /></>} />
-            <Route path="*" element={<NotFound />} />
-          </>
-        )}
-      </Routes>
+      <NavigationGuardProvider>
+        <Routes>
+          <Route path="/reset-password" element={<ResetPassword />} />
+          {!user ? (
+            <Route path="*" element={<Auth />} />
+          ) : (
+            <>
+              <Route path="/" element={<><AppHeader onSignOut={signOut} userEmail={user.email} /><Applications /></>} />
+              <Route path="/applications" element={<Navigate to="/" replace />} />
+              <Route path="/applications/new" element={<><AppHeader onSignOut={signOut} userEmail={user.email} /><NewApplication /></>} />
+              <Route path="/applications/:id" element={<><AppHeader onSignOut={signOut} userEmail={user.email} /><ApplicationDetail /></>} />
+              <Route path="/templates" element={<><AppHeader onSignOut={signOut} userEmail={user.email} /><Templates /></>} />
+              <Route path="/profile" element={<><AppHeader onSignOut={signOut} userEmail={user.email} /><Profile /></>} />
+              <Route path="*" element={<NotFound />} />
+            </>
+          )}
+        </Routes>
+      </NavigationGuardProvider>
     </BrowserRouter>
   );
 }

@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { getJobApplications, deleteJobApplication } from "@/lib/api/jobApplication";
@@ -206,6 +207,7 @@ const Applications = () => {
                     <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("updated_at")}>
                       <div className="flex items-center">Updated <SortIcon col="updated_at" /></div>
                     </TableHead>
+                    <TableHead>Assets</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -228,6 +230,9 @@ const Applications = () => {
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {new Date(app.updated_at).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        <AssetDots app={app} />
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-1 justify-end" onClick={(e) => e.stopPropagation()}>

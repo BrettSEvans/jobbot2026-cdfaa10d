@@ -59,19 +59,18 @@ serve(async (req) => {
       );
     }
 
-    const systemPrompt = `You are an expert cover letter writer. You will be given a base cover letter template and a job description. Your task is to create a tailored cover letter that matches the job.
+    const systemPrompt = `You are an expert cover letter writer. Your task is to create a compelling, tailored cover letter for a specific job posting.
 
 CRITICAL Rules:
-- You MUST replace EVERY instance of "Gusto" with the actual company name from the job posting. The base letter uses "Gusto" as a placeholder — it is NOT the target company unless the job posting is literally for Gusto.
-- You MUST replace the role title ("Head of GTM Process & Tooling") with the actual role title from the job posting.
-- You MUST replace the greeting ("To the Gusto GTM Team") with an appropriate greeting for the target company and team.
-- Adjust 2-3 talking points to align with the job's key requirements
-- Keep the core narrative, tone, and experience intact
-- Maintain the same general structure and length
-- Keep the letter professional but enthusiastic
-- Do NOT invent new experiences — only reframe existing ones
-- Output ONLY the tailored cover letter text, no explanations or metadata
-${profileContext ? `\n${profileContext}` : ''}
+- Write a professional, enthusiastic cover letter tailored to the specific company and role from the job posting
+- Use the correct company name and role title from the job description
+- Address the letter to the appropriate team (e.g., "Dear [Company] Hiring Team")
+- Highlight 2-3 talking points that align with the job's key requirements
+- Keep the letter to approximately one page (400-500 words)
+- Maintain a professional but enthusiastic tone
+- If profile/resume context is provided, use real experiences — do NOT invent new ones
+- Output ONLY the cover letter text, no explanations or metadata
+${profileContext ? `\nCandidate background:\n${profileContext}` : ''}
 ${styleContext ? `\n${styleContext}` : ''}
 ${customInstructions ? `\nAdditional instructions: ${customInstructions}` : ''}`;
 
@@ -87,7 +86,7 @@ ${customInstructions ? `\nAdditional instructions: ${customInstructions}` : ''}`
           { role: 'system', content: systemPrompt },
           {
             role: 'user',
-            content: `Here is my base cover letter:\n\n${BASE_COVER_LETTER}\n\n---\n\nHere is the job posting I'm applying to:\n\n${jobDescription}`
+            content: `Write a tailored cover letter for the following job posting:\n\n${jobDescription}`
           },
         ],
         stream: true,

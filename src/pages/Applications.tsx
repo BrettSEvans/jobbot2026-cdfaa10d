@@ -421,12 +421,18 @@ const Applications = () => {
                             ✕ Close
                           </Button>
                         </div>
-                        <div className="flex-1 min-h-0">
+                        <div className="flex-1 min-h-0 overflow-hidden">
                           <iframe
                             srcDoc={previewApp.dashboard_html}
-                            className="w-full h-full border-0"
+                            className="border-0"
                             sandbox="allow-scripts"
                             title="Dashboard Preview"
+                            style={{
+                              width: "200%",
+                              height: "200%",
+                              transform: "scale(0.5)",
+                              transformOrigin: "top left",
+                            }}
                           />
                         </div>
                       </div>

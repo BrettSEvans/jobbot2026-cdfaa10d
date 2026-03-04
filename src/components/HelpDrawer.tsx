@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import {
   Sheet,
@@ -104,6 +104,15 @@ export default function HelpDrawer({ open, onOpenChange }: HelpDrawerProps) {
     [contextual]
   );
 
+  // Auto-expand first contextual topic when drawer opens
+  useEffect(() => {
+    if (open && contextual.length > 0) {
+      setExpandedSlugs([contextual[0].slug]);
+    } else if (open) {
+      setExpandedSlugs([]);
+    }
+  }, [open, contextual]);
+
   const results = useMemo(() => {
     if (!query.trim()) return getAllHelp();
     return searchHelp(query);
@@ -114,11 +123,16 @@ export default function HelpDrawer({ open, onOpenChange }: HelpDrawerProps) {
     [results, contextualSlugs]
   );
 
+  const displayedResults = query.trim() ? results : otherResults;
+
+  const sectionLabel = query.trim()
+    ? `Search results (${results.length})`
+    : "All Help Topics";
+
   const handleNavigate = (slug: string) => {
     setExpandedSlugs((prev) =>
       prev.includes(slug) ? prev : [...prev, slug]
     );
-    // Scroll into view after a tick
     setTimeout(() => {
       document
         .querySelector(`[data-help-slug="${slug}"]`)
@@ -128,50 +142,61 @@ export default function HelpDrawer({ open, onOpenChange }: HelpDrawerProps) {
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-md overflow-y-auto" side="right">
-        <SheetHeader className="mb-4">
-          <SheetTitle className="font-heading">Help & Documentation</SheetTitle>
-        </SheetHeader>
+      <SheetContent
+        className="w-full sm:max-w-md flex flex-col p-0"
+        side="right"
+      >
+        {/* ── STICKY HEADER ZONE ── */}
+        <div className="flex-shrink-0 p-6 pb-0 space-y-4">
+          <SheetHeader>
+            <SheetTitle className="font-heading">Help & Documentation</SheetTitle>
+          </SheetHeader>
 
-        {/* Search */}
-        <div className="relative mb-4">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search help topics..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            className="pl-9"
-          />
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search help topics..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground pb-2 border-b border-border">
+            {!query.trim() && contextual.length > 0
+              ? "Relevant to this page"
+              : sectionLabel}
+          </h3>
         </div>
 
-        {/* Contextual section */}
-        {!query.trim() && contextual.length > 0 && (
-          <div className="mb-6">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
-              Relevant to this page
-            </h3>
-            <Accordion
-              type="multiple"
-              value={expandedSlugs}
-              onValueChange={setExpandedSlugs}
-            >
-              {contextual.map((entry) => (
-                <div key={entry.slug} data-help-slug={entry.slug}>
-                  <HelpEntry entry={entry} onNavigate={handleNavigate} />
-                </div>
-              ))}
-            </Accordion>
-          </div>
-        )}
+        {/* ── SCROLLABLE BODY ── */}
+        <div className="flex-1 overflow-y-auto min-h-0 px-6 pb-6">
+          {/* Contextual section */}
+          {!query.trim() && contextual.length > 0 && (
+            <div className="mb-6 bg-accent/50 rounded-lg p-3 -mx-1">
+              <Accordion
+                type="multiple"
+                value={expandedSlugs}
+                onValueChange={setExpandedSlugs}
+              >
+                {contextual.map((entry) => (
+                  <div key={entry.slug} data-help-slug={entry.slug}>
+                    <HelpEntry entry={entry} onNavigate={handleNavigate} />
+                  </div>
+                ))}
+              </Accordion>
+            </div>
+          )}
 
-        {/* All / Search Results */}
-        <div>
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
-            {query.trim()
-              ? `Search results (${results.length})`
-              : "All Help Topics"}
-          </h3>
-          {(query.trim() ? results : otherResults).length === 0 ? (
+          {/* Divider + label for remaining topics when contextual is shown */}
+          {!query.trim() && contextual.length > 0 && (
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+              All Help Topics ({otherResults.length})
+            </h3>
+          )}
+
+          {/* Main list */}
+          {displayedResults.length === 0 ? (
             <p className="text-sm text-muted-foreground py-4">
               No matching help topics found.
             </p>
@@ -181,7 +206,7 @@ export default function HelpDrawer({ open, onOpenChange }: HelpDrawerProps) {
               value={expandedSlugs}
               onValueChange={setExpandedSlugs}
             >
-              {(query.trim() ? results : otherResults).map((entry) => (
+              {displayedResults.map((entry) => (
                 <div key={entry.slug} data-help-slug={entry.slug}>
                   <HelpEntry entry={entry} onNavigate={handleNavigate} />
                 </div>

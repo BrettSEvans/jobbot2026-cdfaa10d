@@ -16,6 +16,10 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
+  Sparkles,
+  Zap,
+  FileCheck,
+  BarChart3,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -26,6 +30,17 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { backgroundGenerator } from "@/lib/backgroundGenerator";
 import { useActiveJobCount } from "@/hooks/useBackgroundJob";
 
@@ -66,8 +81,7 @@ const Applications = () => {
     }
   };
 
-  const handleDelete = async (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleDelete = async (id: string) => {
     try {
       await deleteJobApplication(id);
       setApplications((prev) => prev.filter((a) => a.id !== id));
@@ -137,14 +151,38 @@ const Applications = () => {
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
         ) : applications.length === 0 ? (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-medium mb-2">No applications yet</h3>
-              <p className="text-muted-foreground mb-4">Create your first job application to get started.</p>
-              <Button onClick={() => navigate("/applications/new")}>
-                <Plus className="mr-2 h-4 w-4" /> New Application
-              </Button>
+          <Card className="border-dashed">
+            <CardContent className="py-16 text-center space-y-6">
+              <div className="flex justify-center gap-4 text-muted-foreground">
+                <BarChart3 className="h-10 w-10" />
+                <FileCheck className="h-10 w-10" />
+                <Sparkles className="h-10 w-10" />
+              </div>
+              <div>
+                <h3 className="text-lg font-heading font-semibold mb-2">Welcome to JobBot</h3>
+                <p className="text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
+                  Paste a job URL and we'll generate a <strong>branded dashboard</strong>, <strong>tailored cover letter</strong>, and <strong>6 executive reports</strong> — all customized to the company's branding.
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                <Button onClick={() => navigate("/applications/new")} size="lg">
+                  <Zap className="mr-2 h-4 w-4" /> Create Your First Application
+                </Button>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-lg mx-auto text-left">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium">1. Paste a job URL</p>
+                  <p className="text-sm text-muted-foreground">Or paste the description directly</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm font-medium">2. AI analyzes & builds</p>
+                  <p className="text-sm text-muted-foreground">Scrapes branding, competitors, market data</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm font-medium">3. Refine with AI chat</p>
+                  <p className="text-sm text-muted-foreground">Iterate on any asset with conversational AI</p>
+                </div>
+              </div>
             </CardContent>
           </Card>
         ) : (
@@ -216,8 +254,27 @@ const Applications = () => {
                               </Button>
                             </>
                           )}
-                          <Button size="sm" variant="ghost" onClick={(e) => handleDelete(app.id, e)} title="Delete">
-                            <Trash2 className="h-4 w-4 text-destructive" />
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button size="sm" variant="ghost" title="Delete">
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete application?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This will permanently delete the application for <strong>{app.company_name || "this company"}</strong> and all its generated assets. This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDelete(app.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                           </Button>
                         </div>
                       </TableCell>

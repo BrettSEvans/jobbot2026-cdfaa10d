@@ -15,6 +15,7 @@ import { saveDashboardRevision } from "@/lib/api/dashboardRevisions";
 import { parseLlmJsonOutput, assembleDashboardHtml, getDashboardZipFiles } from "@/lib/dashboard/assembler";
 import type { DashboardData } from "@/lib/dashboard/schema";
 import type { ApplicationState } from "@/hooks/useApplicationDetail";
+import { useAssetJob } from "@/hooks/useBackgroundJob";
 import JSZip from "jszip";
 
 interface DashboardTabProps {
@@ -33,65 +34,65 @@ export default function DashboardTab({ appId, state }: DashboardTabProps) {
   const [chatOpen, setChatOpen] = useState(false);
   const [chatInput, setChatInput] = useState("");
   const [isRefining, setIsRefining] = useState(false);
-  const [isRegenerating, setIsRegenerating] = useState(false);
   const [revisionTrigger, setRevisionTrigger] = useState(0);
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
+  const assetJob = useAssetJob(appId, "dashboard");
+  const isAssetJobActive = !!(assetJob && !["complete", "error"].includes(assetJob.status));
+
   const handleRegenerateDashboard = async () => {
     if (!jobDescription.trim()) return;
-    setIsRegenerating(true);
-    setDashboardHtml("");
-    setDashboardData(null);
-    try {
-      let accumulated = "";
-      await streamDashboardGeneration({
-        jobDescription, branding: app?.branding, companyName, jobTitle,
-        competitors: (app?.competitors as string[]) || [], customers: (app?.customers as string[]) || [],
-        products: (app?.products as string[]) || [],
-        onDelta: (text) => { accumulated += text; },
-        onDone: () => {
-          const parsed = parseLlmJsonOutput(accumulated);
-          if (parsed) {
-            const html = assembleDashboardHtml(parsed);
-            setDashboardHtml(html);
-            setDashboardData(parsed);
-            accumulated = html;
-          } else {
-            let clean = accumulated;
-            const htmlStart = clean.indexOf("<!DOCTYPE html>");
-            const htmlStartAlt = clean.indexOf("<!doctype html>");
-            const start = htmlStart !== -1 ? htmlStart : htmlStartAlt;
-            if (start > 0) clean = clean.slice(start);
-            const htmlEnd = clean.lastIndexOf("</html>");
-            if (htmlEnd !== -1) clean = clean.slice(0, htmlEnd + 7);
-            setDashboardHtml(clean);
-            accumulated = clean;
-          }
-        },
-      });
-      const savePayload: Record<string, any> = { dashboard_html: accumulated };
-      const parsedForSave = parseLlmJsonOutput(accumulated) || null;
-      if (parsedForSave) {
-        const html = assembleDashboardHtml(parsedForSave);
-        setDashboardHtml(html);
-        setDashboardData(parsedForSave);
-        savePayload.dashboard_html = html;
-        savePayload.dashboard_data = parsedForSave;
-        accumulated = html;
-      } else if (dashboardData) {
-        savePayload.dashboard_data = dashboardData;
-      }
-      await saveField(savePayload);
+
+    // Save current as revision before regenerating
+    if (dashboardHtml.trim()) {
       try {
-        await saveDashboardRevision(appId, accumulated, "Regenerated");
+        await saveDashboardRevision(appId, dashboardHtml, "Before regeneration");
         setRevisionTrigger((t) => t + 1);
       } catch (e) { console.warn("Failed to save dashboard revision:", e); }
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
-    } finally {
-      setIsRegenerating(false);
     }
+
+    // Start as background job
+    await backgroundGenerator.startAssetJob({
+      applicationId: appId,
+      assetType: "dashboard",
+      label: "Regenerating dashboard",
+      dbField: "dashboard_html",
+      runFn: async () => {
+        let accumulated = "";
+        await streamDashboardGeneration({
+          jobDescription,
+          branding: app?.branding,
+          companyName,
+          jobTitle,
+          competitors: (app?.competitors as string[]) || [],
+          customers: (app?.customers as string[]) || [],
+          products: (app?.products as string[]) || [],
+          onDelta: (text) => { accumulated += text; },
+          onDone: () => {},
+        });
+
+        const parsed = parseLlmJsonOutput(accumulated);
+        if (parsed) {
+          const html = assembleDashboardHtml(parsed);
+          return { html, extraFields: { dashboard_data: parsed } };
+        }
+
+        // Fallback: raw HTML cleanup
+        let clean = accumulated;
+        const htmlStart = clean.indexOf("<!DOCTYPE html>");
+        const htmlStartAlt = clean.indexOf("<!doctype html>");
+        const start = htmlStart !== -1 ? htmlStart : htmlStartAlt;
+        if (start > 0) clean = clean.slice(start);
+        const htmlEnd = clean.lastIndexOf("</html>");
+        if (htmlEnd !== -1) clean = clean.slice(0, htmlEnd + 7);
+        return { html: clean };
+      },
+      saveRevisionFn: saveDashboardRevision,
+      revisionLabel: "Regenerated",
+    });
+
+    toast({ title: "Regenerating", description: "Dashboard regeneration started in background." });
   };
 
   const handleSendChat = async () => {
@@ -158,8 +159,8 @@ export default function DashboardTab({ appId, state }: DashboardTabProps) {
         <Button variant="outline" size="sm" onClick={() => setChatOpen(!chatOpen)}>
           <Edit3 className="mr-2 h-4 w-4" /> {chatOpen ? "Hide Chat" : "Refine with AI"}
         </Button>
-        <Button variant="outline" size="sm" onClick={handleRegenerateDashboard} disabled={isRegenerating}>
-          {isRegenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+        <Button variant="outline" size="sm" onClick={handleRegenerateDashboard} disabled={isAssetJobActive}>
+          {isAssetJobActive ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
           Regenerate
         </Button>
         {dashboardHtml && (
@@ -236,11 +237,13 @@ export default function DashboardTab({ appId, state }: DashboardTabProps) {
             <iframe ref={iframeRef} srcDoc={previewHtml || dashboardHtml} className="w-full h-full border-0" sandbox="allow-scripts" title="Dashboard Preview" />
           </div>
         </Card>
-      ) : isBgGenerating ? (
+      ) : (isBgGenerating || isAssetJobActive) ? (
         <Card>
           <CardContent className="py-12 text-center space-y-3">
             <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
-            <p className="text-muted-foreground font-medium">{bgJob?.progress || "Generating dashboard..."}</p>
+            <p className="text-muted-foreground font-medium">
+              {assetJob?.progress || bgJob?.progress || "Generating dashboard..."}
+            </p>
             <p className="text-xs text-muted-foreground">You can navigate away — generation continues in the background.</p>
           </CardContent>
         </Card>
@@ -248,7 +251,7 @@ export default function DashboardTab({ appId, state }: DashboardTabProps) {
         <Card>
           <CardContent className="py-12 text-center">
             <p className="text-muted-foreground mb-4">No dashboard generated yet.</p>
-            <Button onClick={handleRegenerateDashboard} disabled={isRegenerating}>
+            <Button onClick={handleRegenerateDashboard} disabled={isAssetJobActive}>
               <Sparkles className="mr-2 h-4 w-4" /> Generate Dashboard
             </Button>
           </CardContent>

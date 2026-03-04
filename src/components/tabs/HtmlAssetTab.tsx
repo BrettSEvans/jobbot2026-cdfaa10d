@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Edit3, Copy, RefreshCw, Loader2, Download, Sparkles,
+  Edit3, Copy, RefreshCw, Loader2, Download, Sparkles, FileDown,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import SaveAsTemplate from "@/components/SaveAsTemplate";
@@ -17,6 +17,7 @@ import AssetRevisions from "@/components/AssetRevisions";
 import { streamRefineAsset, type RefinableAssetType } from "@/lib/api/refineAsset";
 import { extractStyleSignalsFromMessage } from "@/lib/api/stylePreferences";
 import { cleanHtml } from "@/lib/cleanHtml";
+import { downloadHtmlAsPdf, buildPdfFilename } from "@/lib/htmlToPdf";
 import type { ApplicationState } from "@/hooks/useApplicationDetail";
 
 interface HtmlAssetTabProps {
@@ -119,16 +120,10 @@ export default function HtmlAssetTab({
     }
   };
 
-  const handleDownloadHtml = () => {
-    const blob = new Blob([html], { type: "text/html" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${(companyName || assetType).replace(/\s+/g, "-").toLowerCase()}-${assetType}.html`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+  const handleDownloadPdf = () => {
+    const filename = buildPdfFilename(assetType, companyName, jobTitle);
+    downloadHtmlAsPdf(html, filename);
+    toast({ title: "PDF export", description: "Print dialog opened — save as PDF." });
   };
 
   return (
@@ -151,8 +146,8 @@ export default function HtmlAssetTab({
               defaultLabel={`${companyName} ${jobTitle} ${label}`.trim()}
               defaultJobFunction={jobTitle} defaultDepartment=""
             />
-            <Button variant="outline" size="sm" onClick={handleDownloadHtml}>
-              <Download className="mr-2 h-4 w-4" /> Download HTML
+            <Button variant="outline" size="sm" onClick={handleDownloadPdf}>
+              <FileDown className="mr-2 h-4 w-4" /> Download PDF
             </Button>
           </>
         )}

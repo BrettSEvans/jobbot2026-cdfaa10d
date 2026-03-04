@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
-import { Download, History, Eye } from "lucide-react";
+import { FileDown, History, Eye } from "lucide-react";
+import { downloadHtmlAsPdf } from "@/lib/htmlToPdf";
 
 import { getExecutiveReportRevisions } from "@/lib/api/executiveReportRevisions";
 import { getRaidLogRevisions } from "@/lib/api/raidLogRevisions";
@@ -65,16 +66,9 @@ export default function AssetRevisions({
   };
 
   const handleDownload = (html: string, label: string, revisionNumber: number) => {
-    const blob = new Blob([html], { type: "text/html" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${assetType}-v${revisionNumber}-${label.replace(/\s+/g, "-").toLowerCase()}.html`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    toast({ title: "Downloaded", description: `Version ${revisionNumber} downloaded.` });
+    const filename = `${assetType}-v${revisionNumber}-${label.replace(/\s+/g, "-").toLowerCase()}.pdf`;
+    downloadHtmlAsPdf(html, filename);
+    toast({ title: "PDF export", description: `Version ${revisionNumber} — save as PDF from the print dialog.` });
   };
 
   const handlePreview = (revision: any) => {
@@ -135,9 +129,9 @@ export default function AssetRevisions({
                     size="icon"
                     className="h-7 w-7"
                     onClick={() => handleDownload(rev.html, rev.label, rev.revision_number)}
-                    title="Download HTML"
+                    title="Download PDF"
                   >
-                    <Download className="h-3.5 w-3.5" />
+                    <FileDown className="h-3.5 w-3.5" />
                   </Button>
                 </div>
               </div>

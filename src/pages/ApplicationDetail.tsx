@@ -11,17 +11,19 @@ import {
 } from "@/components/ui/sheet";
 import {
   ArrowLeft, Loader2, ClipboardList, Shield, Network, Map,
-  Info, FileText, LayoutDashboard, Mail,
+  Info, FileText, LayoutDashboard, Mail, FileUser,
 } from "lucide-react";
 import { useApplicationDetail } from "@/hooks/useApplicationDetail";
 import { streamExecutiveReport } from "@/lib/api/executiveReport";
 import { streamRaidLog } from "@/lib/api/raidLog";
 import { streamArchitectureDiagram } from "@/lib/api/architectureDiagram";
 import { streamRoadmap } from "@/lib/api/roadmap";
+import { streamResumeGeneration } from "@/lib/api/resume";
 import { saveExecutiveReportRevision } from "@/lib/api/executiveReportRevisions";
 import { saveRaidLogRevision } from "@/lib/api/raidLogRevisions";
 import { saveArchitectureDiagramRevision } from "@/lib/api/architectureDiagramRevisions";
 import { saveRoadmapRevision } from "@/lib/api/roadmapRevisions";
+import { saveResumeRevision } from "@/lib/api/resumeRevisions";
 import DashboardTab from "@/components/tabs/DashboardTab";
 import CoverLetterTab from "@/components/tabs/CoverLetterTab";
 import HtmlAssetTab from "@/components/tabs/HtmlAssetTab";
@@ -31,6 +33,7 @@ import DetailsTab from "@/components/tabs/DetailsTab";
 type ActiveView =
   | "dashboard"
   | "cover-letter"
+  | "resume"
   | "executive-report"
   | "raid-log"
   | "architecture"
@@ -64,6 +67,7 @@ const ApplicationDetail = () => {
   const primaryTabs = [
     { id: "dashboard" as const, label: "Dashboard", icon: LayoutDashboard },
     { id: "cover-letter" as const, label: "Cover Letter", icon: Mail },
+    { id: "resume" as const, label: "Resume", icon: FileUser },
   ];
 
   const advancedAssets = [
@@ -117,7 +121,7 @@ const ApplicationDetail = () => {
     },
   ];
 
-  const isPrimary = activeView === "dashboard" || activeView === "cover-letter";
+  const isPrimary = activeView === "dashboard" || activeView === "cover-letter" || activeView === "resume";
 
   return (
     <div className="min-h-screen bg-background">
@@ -213,6 +217,21 @@ const ApplicationDetail = () => {
           )}
           {activeView === "cover-letter" && (
             <CoverLetterTab appId={id!} state={state} />
+          )}
+          {activeView === "resume" && (
+            <HtmlAssetTab
+              appId={id!}
+              state={state}
+              assetType="resume"
+              label="Resume"
+              dbField="resume_html"
+              html={state.resumeHtml}
+              setHtml={state.setResumeHtml}
+              generateFn={streamResumeGeneration}
+              saveRevisionFn={saveResumeRevision}
+              emptyIcon={FileUser}
+              refinePlaceholder='e.g. "Make it more concise" or "Emphasize leadership experience"'
+            />
           )}
           {advancedAssets.map((a) =>
             activeView === a.id ? (

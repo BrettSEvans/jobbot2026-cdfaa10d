@@ -11,14 +11,16 @@ import { getExecutiveReportRevisions } from "@/lib/api/executiveReportRevisions"
 import { getRaidLogRevisions } from "@/lib/api/raidLogRevisions";
 import { getArchitectureDiagramRevisions } from "@/lib/api/architectureDiagramRevisions";
 import { getRoadmapRevisions } from "@/lib/api/roadmapRevisions";
+import { getResumeRevisions } from "@/lib/api/resumeRevisions";
 
-export type AssetType = "executive-report" | "raid-log" | "architecture-diagram" | "roadmap";
+export type AssetType = "executive-report" | "raid-log" | "architecture-diagram" | "roadmap" | "resume";
 
 const ASSET_LABELS: Record<AssetType, string> = {
   "executive-report": "Executive Report",
   "raid-log": "RAID Log",
   "architecture-diagram": "Architecture Diagram",
   "roadmap": "Roadmap",
+  "resume": "Resume",
 };
 
 const fetcherMap: Record<AssetType, (appId: string) => Promise<any[]>> = {
@@ -26,6 +28,7 @@ const fetcherMap: Record<AssetType, (appId: string) => Promise<any[]>> = {
   "raid-log": getRaidLogRevisions,
   "architecture-diagram": getArchitectureDiagramRevisions,
   "roadmap": getRoadmapRevisions,
+  "resume": getResumeRevisions,
 };
 
 interface AssetRevisionsProps {

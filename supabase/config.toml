@@ -50,3 +50,9 @@ verify_jwt = false
 
 [functions.extract-style-signals]
 verify_jwt = false
+
+[functions.generate-resume]
+verify_jwt = false
+
+[functions.refine-resume]
+verify_jwt = false

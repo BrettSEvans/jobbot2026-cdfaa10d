@@ -12,9 +12,10 @@ const ASSET_FUNCTION_MAP: Record<string, string> = {
   'raid-log': 'refine-raid-log',
   'architecture-diagram': 'refine-architecture-diagram',
   'roadmap': 'refine-roadmap',
+  'resume': 'refine-resume',
 };
 
-export type RefinableAssetType = 'executive-report' | 'raid-log' | 'architecture-diagram' | 'roadmap';
+export type RefinableAssetType = 'executive-report' | 'raid-log' | 'architecture-diagram' | 'roadmap' | 'resume';
 
 export async function streamRefineAsset({
   assetType,

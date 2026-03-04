@@ -220,6 +220,8 @@ export type Database = {
           products: Json | null
           raid_log_html: string | null
           research_reasoning: string | null
+          resume_html: string | null
+          resume_style_id: string | null
           roadmap_html: string | null
           status: string
           updated_at: string
@@ -249,6 +251,8 @@ export type Database = {
           products?: Json | null
           raid_log_html?: string | null
           research_reasoning?: string | null
+          resume_html?: string | null
+          resume_style_id?: string | null
           roadmap_html?: string | null
           status?: string
           updated_at?: string
@@ -278,6 +282,8 @@ export type Database = {
           products?: Json | null
           raid_log_html?: string | null
           research_reasoning?: string | null
+          resume_html?: string | null
+          resume_style_id?: string | null
           roadmap_html?: string | null
           status?: string
           updated_at?: string
@@ -365,6 +371,80 @@ export type Database = {
           },
         ]
       }
+      resume_prompt_styles: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          label: string
+          slug: string
+          sort_order: number
+          system_prompt: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          label: string
+          slug: string
+          sort_order?: number
+          system_prompt: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          label?: string
+          slug?: string
+          sort_order?: number
+          system_prompt?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      resume_revisions: {
+        Row: {
+          application_id: string
+          created_at: string
+          html: string
+          id: string
+          label: string | null
+          revision_number: number
+        }
+        Insert: {
+          application_id: string
+          created_at?: string
+          html: string
+          id?: string
+          label?: string | null
+          revision_number?: number
+        }
+        Update: {
+          application_id?: string
+          created_at?: string
+          html?: string
+          id?: string
+          label?: string | null
+          revision_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "resume_revisions_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "job_applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       roadmap_revisions: {
         Row: {
           application_id: string
@@ -399,6 +479,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
       }
       user_style_preferences: {
         Row: {
@@ -441,10 +539,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -571,6 +675,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "user"],
+    },
   },
 } as const

@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,6 +15,7 @@ import { researchCompany } from "@/lib/api/researchCompany";
 import { scrapeJob, streamTailoredLetter } from "@/lib/api/coverLetter";
 import { parseLlmJsonOutput, assembleDashboardHtml } from "@/lib/dashboard/assembler";
 import { extractStyleSignalsFromMessage } from "@/lib/api/stylePreferences";
+import { getActiveResumeStyles } from "@/lib/api/resume";
 import {
   Loader2,
   Globe,
@@ -28,9 +29,12 @@ import {
   Copy,
   Layers,
   Download,
+  FileUser,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import BatchJobInput from "@/components/BatchJobInput";
 import TemplateSelector from "@/components/TemplateSelector";
 import SaveAsTemplate from "@/components/SaveAsTemplate";
@@ -73,9 +77,21 @@ const NewApplication = () => {
   // Template
   const [selectedTemplate, setSelectedTemplate] = useState<DashboardTemplate | null>(null);
 
+  // Resume style
+  const [resumeStyles, setResumeStyles] = useState<Array<{ id: string; label: string; description: string | null }>>([]);
+  const [selectedResumeStyleId, setSelectedResumeStyleId] = useState<string>("");
+
   // Editable fields
   const [editingField, setEditingField] = useState<string | null>(null);
   const [tempEdit, setTempEdit] = useState("");
+
+  // Load resume styles on mount
+  useEffect(() => {
+    getActiveResumeStyles().then((styles) => {
+      setResumeStyles(styles);
+      if (styles.length > 0) setSelectedResumeStyleId(styles[0].id);
+    }).catch(console.warn);
+  }, []);
 
   const isValidUrl = (str: string) => {
     try {
@@ -248,7 +264,8 @@ const NewApplication = () => {
         products: productsLocal,
         status: "complete",
         research_reasoning: researchReasoning || undefined,
-      });
+        ...(selectedResumeStyleId ? { resume_style_id: selectedResumeStyleId } : {}),
+      } as any);
       setApplicationId(saved.id);
 
       setStep("preview");
@@ -392,6 +409,38 @@ const NewApplication = () => {
                   </p>
                 </CardContent>
               </Card>
+
+              {resumeStyles.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <FileUser className="h-5 w-5" /> Resume Style
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Select value={selectedResumeStyleId} onValueChange={setSelectedResumeStyleId}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a resume style" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {resumeStyles.map((style) => (
+                          <SelectItem key={style.id} value={style.id}>
+                            <div>
+                              <span>{style.label}</span>
+                              {style.description && (
+                                <span className="text-xs text-muted-foreground ml-2">— {style.description}</span>
+                              )}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Controls the AI-generated resume style and format
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
 
               <Button
                 onClick={handleAnalyze}

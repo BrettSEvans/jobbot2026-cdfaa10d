@@ -47,7 +47,6 @@ export async function clearAllStylePreferences(): Promise<void> {
 
 /**
  * Format style preferences for injection into AI prompts.
- * Returns empty string if no preferences exist or all are low confidence.
  */
 export async function getStyleContextForPrompt(): Promise<string> {
   try {
@@ -72,36 +71,22 @@ function capitalize(s: string): string {
 }
 
 /**
- * Process an AI response to extract and store style signals.
- * Returns the cleaned response with style_signals block removed.
+ * Analyze a user's refinement message to extract and store style signals.
+ * Fire-and-forget — does not block the refinement flow.
  */
-export async function processStyleSignals(aiResponse: string): Promise<{
-  cleanedResponse: string;
-  signals: Array<{ category: string; preference: string }>;
-}> {
-  try {
-    const resp = await fetch(
-      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/extract-style-signals`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({ ai_response: aiResponse }),
-      }
-    );
+export function extractStyleSignalsFromMessage(userMessage: string): void {
+  if (!userMessage || userMessage.length < 10) return;
 
-    if (!resp.ok) {
-      return { cleanedResponse: aiResponse, signals: [] };
+  // Fire and forget — don't await
+  fetch(
+    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/extract-style-signals`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+      },
+      body: JSON.stringify({ user_message: userMessage }),
     }
-
-    const data = await resp.json();
-    return {
-      cleanedResponse: data.cleaned_response || aiResponse,
-      signals: data.signals || [],
-    };
-  } catch {
-    return { cleanedResponse: aiResponse, signals: [] };
-  }
+  ).catch(() => { /* non-critical */ });
 }

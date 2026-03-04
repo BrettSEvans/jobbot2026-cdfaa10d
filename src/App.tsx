@@ -14,6 +14,7 @@ import ResetPassword from "./pages/ResetPassword";
 import BackgroundJobsBanner from "./components/BackgroundJobsBanner";
 import AppHeader from "./components/AppHeader";
 import { useAuth } from "./hooks/useAuth";
+import { NavigationGuardProvider } from "./hooks/useNavigationGuard";
 import { Loader2 } from "lucide-react";
 
 const queryClient = new QueryClient();

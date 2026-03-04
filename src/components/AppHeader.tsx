@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { LogOut, Moon, Sun, Zap, UserCircle } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
+import { useNavigationGuard } from "@/hooks/useNavigationGuard";
 
 interface AppHeaderProps {
   onSignOut: () => void;

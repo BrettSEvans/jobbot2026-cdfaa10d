@@ -230,7 +230,7 @@ ${customerContext}
 ${productContext}`;
 }
 
-const RATE_LIMITS = { perHour: 20, perDay: 100 };
+const DEFAULT_LIMITS = { perHour: 20, perDay: 100 };
 async function checkRateLimit(req: Request, assetType: string, edgeFunction: string): Promise<Response | null> {
   try {
     const authHeader = req.headers.get('Authorization');
@@ -240,10 +240,16 @@ async function checkRateLimit(req: Request, assetType: string, edgeFunction: str
     const userId = data?.claims?.sub;
     if (!userId) return null;
     const svc = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+    const { data: override } = await svc.from('rate_limit_overrides').select('is_unlimited, per_hour, per_day').eq('user_id', userId).maybeSingle();
+    if (override?.is_unlimited) {
+      await svc.from('generation_usage').insert({ user_id: userId, asset_type: assetType, edge_function: edgeFunction });
+      return null;
+    }
+    const limits = { perHour: override?.per_hour ?? DEFAULT_LIMITS.perHour, perDay: override?.per_day ?? DEFAULT_LIMITS.perDay };
     const now = Date.now();
     const { count: hourCount } = await svc.from('generation_usage').select('*', { count: 'exact', head: true }).eq('user_id', userId).gte('created_at', new Date(now - 3600_000).toISOString());
     const { count: dayCount } = await svc.from('generation_usage').select('*', { count: 'exact', head: true }).eq('user_id', userId).gte('created_at', new Date(now - 86400_000).toISOString());
-    if ((hourCount ?? 0) >= RATE_LIMITS.perHour || (dayCount ?? 0) >= RATE_LIMITS.perDay) {
+    if ((hourCount ?? 0) >= limits.perHour || (dayCount ?? 0) >= limits.perDay) {
       return new Response(JSON.stringify({ error: 'Rate limit exceeded. Please try again later.', retry_after_seconds: 60 }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
     await svc.from('generation_usage').insert({ user_id: userId, asset_type: assetType, edge_function: edgeFunction });

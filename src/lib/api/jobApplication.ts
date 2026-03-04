@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { streamFromEdgeFunction, processSSEStream } from './streamUtils';
+import { getStyleContextForPrompt } from './stylePreferences';
 
 // --- Search for company icon (three-tier fallback) ---
 export async function searchCompanyIcon(companyName?: string, companyUrl?: string): Promise<{ iconUrl: string | null; source: string | null }> {

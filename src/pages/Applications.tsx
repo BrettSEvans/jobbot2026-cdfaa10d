@@ -56,11 +56,12 @@ import { backgroundGenerator } from "@/lib/backgroundGenerator";
 import { useActiveJobCount } from "@/hooks/useBackgroundJob";
 import BatchModePrompt from "@/components/BatchModePrompt";
 import ImpersonationNotice from "@/components/ImpersonationNotice";
-
+import { useImpersonation } from "@/contexts/ImpersonationContext";
 type SortKey = "company_name" | "job_title" | "status" | "created_at" | "updated_at";
 type SortDir = "asc" | "desc";
 
 const Applications = () => {
+  const { activePersona, isImpersonating } = useImpersonation();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [applications, setApplications] = useState<JobApplication[]>([]);
@@ -85,7 +86,7 @@ const Applications = () => {
 
   useEffect(() => {
     loadApplications();
-  }, []);
+  }, [isImpersonating, activePersona?.id]);
 
   useEffect(() => {
     const unsub = backgroundGenerator.subscribe(() => {
@@ -96,7 +97,8 @@ const Applications = () => {
 
   const loadApplications = async () => {
     try {
-      const data = await getJobApplications();
+      const personaId = isImpersonating && activePersona?.isTestUser ? activePersona.id : null;
+      const data = await getJobApplications(personaId);
       setApplications(data);
     } catch (err: unknown) {
       toast({ title: "Error", description: err instanceof Error ? err.message : "Unknown error", variant: "destructive" });

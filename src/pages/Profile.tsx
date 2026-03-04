@@ -1,15 +1,26 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Upload, X, Plus, FileText, User, Briefcase, Sparkles } from "lucide-react";
+import { Loader2, Upload, X, Plus, FileText, User, Briefcase, Sparkles, Save } from "lucide-react";
 import { getProfile, updateProfile, uploadResumePdf, type UserProfile } from "@/lib/api/profile";
 import StylePreferencesCard from "@/components/StylePreferencesCard";
+import { useBlocker } from "react-router-dom";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const TONE_OPTIONS = [
   { value: "professional", label: "Professional" },
@@ -27,13 +38,23 @@ const EXPERIENCE_OPTIONS = [
   { value: "executive", label: "Executive (15+ years)" },
 ];
 
+// Track which cards have unsaved changes
+type DirtyCards = {
+  identity: boolean;
+  resume: boolean;
+  skills: boolean;
+  tone: boolean;
+};
+
 export default function Profile() {
   const { toast } = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [savingCard, setSavingCard] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
 
+  // Current values
   const [displayName, setDisplayName] = useState("");
   const [resumeText, setResumeText] = useState("");
   const [yearsExperience, setYearsExperience] = useState("");
@@ -43,20 +64,67 @@ export default function Profile() {
   const [newIndustry, setNewIndustry] = useState("");
   const [newSkill, setNewSkill] = useState("");
 
+  // Saved values (snapshot from last load/save)
+  const [saved, setSaved] = useState({
+    displayName: "",
+    resumeText: "",
+    yearsExperience: "",
+    preferredTone: "professional",
+    industries: [] as string[],
+    skills: [] as string[],
+  });
+
+  // Compute dirty state per card
+  const dirty: DirtyCards = useMemo(() => ({
+    identity: displayName !== saved.displayName || yearsExperience !== saved.yearsExperience,
+    resume: resumeText !== saved.resumeText,
+    skills: JSON.stringify(skills) !== JSON.stringify(saved.skills) || JSON.stringify(industries) !== JSON.stringify(saved.industries),
+    tone: preferredTone !== saved.preferredTone,
+  }), [displayName, resumeText, yearsExperience, preferredTone, industries, skills, saved]);
+
+  const hasUnsavedChanges = dirty.identity || dirty.resume || dirty.skills || dirty.tone;
+
+  // Navigation blocker
+  const blocker = useBlocker(
+    ({ currentLocation, nextLocation }) =>
+      hasUnsavedChanges && currentLocation.pathname !== nextLocation.pathname
+  );
+
   useEffect(() => {
     loadProfile();
   }, []);
+
+  // Browser beforeunload guard
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [hasUnsavedChanges]);
 
   const loadProfile = async () => {
     try {
       const p = await getProfile();
       if (p) {
-        setDisplayName(p.display_name || "");
-        setResumeText(p.resume_text || "");
-        setYearsExperience(p.years_experience || "");
-        setPreferredTone(p.preferred_tone || "professional");
-        setIndustries(p.target_industries || []);
-        setSkills(p.key_skills || []);
+        const vals = {
+          displayName: p.display_name || "",
+          resumeText: p.resume_text || "",
+          yearsExperience: p.years_experience || "",
+          preferredTone: p.preferred_tone || "professional",
+          industries: p.target_industries || [],
+          skills: p.key_skills || [],
+        };
+        setDisplayName(vals.displayName);
+        setResumeText(vals.resumeText);
+        setYearsExperience(vals.yearsExperience);
+        setPreferredTone(vals.preferredTone);
+        setIndustries(vals.industries);
+        setSkills(vals.skills);
+        setSaved(vals);
       }
     } catch (err: any) {
       toast({ title: "Error loading profile", description: err.message, variant: "destructive" });
@@ -65,7 +133,7 @@ export default function Profile() {
     }
   };
 
-  const handleSave = async () => {
+  const doSave = useCallback(async () => {
     setSaving(true);
     try {
       await updateProfile({
@@ -76,12 +144,22 @@ export default function Profile() {
         key_skills: skills,
         preferred_tone: preferredTone,
       });
+      setSaved({
+        displayName, resumeText, yearsExperience, preferredTone,
+        industries: [...industries], skills: [...skills],
+      });
       toast({ title: "Profile saved", description: "Your preferences will personalize future AI outputs." });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
       setSaving(false);
     }
+  }, [displayName, resumeText, yearsExperience, preferredTone, industries, skills, toast]);
+
+  const handleCardSave = async (cardName: string) => {
+    setSavingCard(cardName);
+    await doSave();
+    setSavingCard(null);
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -99,9 +177,6 @@ export default function Profile() {
     setUploading(true);
     try {
       await uploadResumePdf(file);
-
-      // Read PDF as text (basic extraction via edge function could be added later)
-      // For now, prompt user to paste key content
       toast({
         title: "Resume uploaded!",
         description: "PDF saved. For best results, also paste key highlights from your resume in the text box below.",
@@ -126,6 +201,27 @@ export default function Profile() {
     setList(list.filter((_, i) => i !== idx));
   };
 
+  const cardBorderClass = (isDirty: boolean) =>
+    isDirty ? "ring-2 ring-primary/50 border-primary/50" : "";
+
+  const SaveCardButton = ({ cardName, isDirty }: { cardName: string; isDirty: boolean }) => (
+    <CardFooter className="pt-3 pb-4 flex justify-end">
+      <Button
+        size="sm"
+        onClick={() => handleCardSave(cardName)}
+        disabled={!isDirty || saving || savingCard !== null}
+        variant={isDirty ? "default" : "outline"}
+      >
+        {savingCard === cardName ? (
+          <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+        ) : (
+          <Save className="mr-2 h-3.5 w-3.5" />
+        )}
+        {isDirty ? "Save Changes" : "Saved"}
+      </Button>
+    </CardFooter>
+  );
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -145,10 +241,11 @@ export default function Profile() {
         </div>
 
         {/* Identity */}
-        <Card>
+        <Card className={`transition-all ${cardBorderClass(dirty.identity)}`}>
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <User className="h-4 w-4 text-primary" /> Identity
+              {dirty.identity && <Badge variant="secondary" className="text-xs bg-primary/10 text-primary">Unsaved</Badge>}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -170,13 +267,15 @@ export default function Profile() {
               </Select>
             </div>
           </CardContent>
+          <SaveCardButton cardName="identity" isDirty={dirty.identity} />
         </Card>
 
         {/* Resume */}
-        <Card>
+        <Card className={`transition-all ${cardBorderClass(dirty.resume)}`}>
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <FileText className="h-4 w-4 text-primary" /> Resume / Background
+              {dirty.resume && <Badge variant="secondary" className="text-xs bg-primary/10 text-primary">Unsaved</Badge>}
             </CardTitle>
             <CardDescription>Upload a PDF or paste key highlights — this context personalizes your AI outputs.</CardDescription>
           </CardHeader>
@@ -200,13 +299,15 @@ export default function Profile() {
               />
             </div>
           </CardContent>
+          <SaveCardButton cardName="resume" isDirty={dirty.resume} />
         </Card>
 
         {/* Skills & Industries */}
-        <Card>
+        <Card className={`transition-all ${cardBorderClass(dirty.skills)}`}>
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <Briefcase className="h-4 w-4 text-primary" /> Skills & Target Industries
+              {dirty.skills && <Badge variant="secondary" className="text-xs bg-primary/10 text-primary">Unsaved</Badge>}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -264,13 +365,15 @@ export default function Profile() {
               </div>
             </div>
           </CardContent>
+          <SaveCardButton cardName="skills" isDirty={dirty.skills} />
         </Card>
 
         {/* Tone */}
-        <Card>
+        <Card className={`transition-all ${cardBorderClass(dirty.tone)}`}>
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-primary" /> Writing Preferences
+              {dirty.tone && <Badge variant="secondary" className="text-xs bg-primary/10 text-primary">Unsaved</Badge>}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -289,18 +392,48 @@ export default function Profile() {
               <p className="text-xs text-muted-foreground">Controls the writing style of cover letters and executive reports.</p>
             </div>
           </CardContent>
+          <SaveCardButton cardName="tone" isDirty={dirty.tone} />
         </Card>
 
         {/* AI Style Memory */}
         <StylePreferencesCard />
 
-        <div className="flex justify-end">
-          <Button onClick={handleSave} disabled={saving} size="lg">
-            {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Save Profile
-          </Button>
-        </div>
+        {/* Global save */}
+        {hasUnsavedChanges && (
+          <div className="flex justify-end">
+            <Button onClick={doSave} disabled={saving} size="lg">
+              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Save All Changes
+            </Button>
+          </div>
+        )}
       </div>
+
+      {/* Navigation guard dialog */}
+      <AlertDialog open={blocker.state === "blocked"}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Unsaved changes</AlertDialogTitle>
+            <AlertDialogDescription>
+              You have unsaved changes on your profile. Would you like to save before leaving?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => blocker.proceed?.()}>
+              Discard & Leave
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                await doSave();
+                blocker.proceed?.();
+              }}
+            >
+              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Save & Leave
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

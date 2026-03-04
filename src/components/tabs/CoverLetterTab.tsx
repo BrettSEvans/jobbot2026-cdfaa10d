@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +9,7 @@ import CoverLetterRevisions from "@/components/CoverLetterRevisions";
 import { streamTailoredLetter } from "@/lib/api/coverLetter";
 import { saveCoverLetterRevision } from "@/lib/api/coverLetterRevisions";
 import { downloadCoverLetterPdf } from "@/lib/coverLetterPdf";
+import { getProfile } from "@/lib/api/profile";
 import type { ApplicationState } from "@/hooks/useApplicationDetail";
 
 interface CoverLetterTabProps {
@@ -26,6 +27,16 @@ export default function CoverLetterTab({ appId, state }: CoverLetterTabProps) {
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [revisionTrigger, setRevisionTrigger] = useState(0);
   const [previewCoverLetter, setPreviewCoverLetter] = useState<string | null>(null);
+  const [applicantName, setApplicantName] = useState<string | undefined>();
+
+  useEffect(() => {
+    getProfile().then((p) => {
+      if (p) {
+        const full = [p.first_name, p.last_name].filter(Boolean).join(" ");
+        setApplicantName(full || p.display_name || undefined);
+      }
+    }).catch(() => {});
+  }, []);
 
   const handleRegenerateCoverLetter = async () => {
     if (!jobDescription.trim()) {
@@ -75,6 +86,7 @@ export default function CoverLetterTab({ appId, state }: CoverLetterTabProps) {
                   coverLetter,
                   app?.company_name || "Company",
                   app?.job_title || "Position",
+                  applicantName,
                 )
               }
             >

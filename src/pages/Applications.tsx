@@ -70,8 +70,16 @@ const Applications = () => {
   const [sortKey, setSortKey] = useState<SortKey>("created_at");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [activeView, setActiveView] = useState<"active" | "trash">("active");
+  const previewRef = useRef<HTMLDivElement>(null);
 
   const activeJobCount = useActiveJobCount();
+
+  // Auto-scroll to preview when it appears
+  useEffect(() => {
+    if (previewId && previewRef.current) {
+      previewRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [previewId]);
 
   useEffect(() => {
     loadApplications();

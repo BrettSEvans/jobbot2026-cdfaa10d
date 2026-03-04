@@ -291,19 +291,20 @@ class BackgroundGenerationManager {
         if (htmlEnd !== -1) dashboardHtml = dashboardHtml.slice(0, htmlEnd + 7);
       }
 
-      // 6-9. Generate assets IN PARALLEL
+      // 6-9. Generate assets IN PARALLEL (including resume)
+      const totalAssets = 5;
       this.updateJob(appId, {
         status: "generating-assets",
-        progress: "Generating additional assets... (0/4 completed)",
+        progress: `Generating additional assets... (0/${totalAssets} completed)`,
         parallelCompleted: 0,
-        parallelTotal: 4,
+        parallelTotal: totalAssets,
       });
 
       let parallelDone = 0;
       const bumpCount = () => {
         parallelDone++;
         this.updateJob(appId, {
-          progress: `Generating additional assets... (${parallelDone}/4 completed)`,
+          progress: `Generating additional assets... (${parallelDone}/${totalAssets} completed)`,
           parallelCompleted: parallelDone,
         });
       };
@@ -376,17 +377,66 @@ class BackgroundGenerationManager {
         }
       };
 
-      const [execResult, raidResult, archResult, roadmapResult] = await Promise.allSettled([
+      const generateResume = async (): Promise<string | null> => {
+        try {
+          // Fetch the selected resume style's system prompt
+          let systemPrompt: string | undefined;
+          if (resumeStyleId) {
+            try {
+              const style = await getResumeStyle(resumeStyleId);
+              systemPrompt = style.system_prompt;
+            } catch (e) {
+              console.warn("Failed to fetch resume style, using default:", e);
+            }
+          }
+
+          // Get user's baseline resume text from profile
+          const { getProfile } = await import("@/lib/api/profile");
+          let resumeText = "";
+          try {
+            const profile = await getProfile();
+            resumeText = profile?.resume_text || "";
+          } catch (e) {
+            console.warn("Failed to fetch profile for resume:", e);
+          }
+
+          let accumulated = "";
+          await streamResumeGeneration({
+            jobDescription: markdown,
+            resumeText,
+            systemPrompt,
+            companyName,
+            jobTitle,
+            branding: brandingData,
+            competitors,
+            customers,
+            products,
+            profileContext,
+            onDelta: (text) => { accumulated += text; },
+            onDone: () => {},
+          });
+          return cleanHtml(accumulated);
+        } catch (e) {
+          console.warn("Resume generation failed:", e);
+          return null;
+        } finally {
+          bumpCount();
+        }
+      };
+
+      const [execResult, raidResult, archResult, roadmapResult, resumeResult] = await Promise.allSettled([
         generateExecReport(),
         generateRaidLog(),
         generateArchDiagram(),
         generateRoadmap(),
+        generateResume(),
       ]);
 
       const execReportHtml = execResult.status === "fulfilled" ? execResult.value : null;
       const raidLogHtml = raidResult.status === "fulfilled" ? raidResult.value : null;
       const archDiagramHtml = archResult.status === "fulfilled" ? archResult.value : null;
       const roadmapHtml = roadmapResult.status === "fulfilled" ? roadmapResult.value : null;
+      const resumeHtml = resumeResult.status === "fulfilled" ? resumeResult.value : null;
 
       // 10. Single consolidated save
       await saveJobApplication({
@@ -398,6 +448,7 @@ class BackgroundGenerationManager {
         ...(raidLogHtml ? { raid_log_html: raidLogHtml } : {}),
         ...(archDiagramHtml ? { architecture_diagram_html: archDiagramHtml } : {}),
         ...(roadmapHtml ? { roadmap_html: roadmapHtml } : {}),
+        ...(resumeHtml ? { resume_html: resumeHtml } : {}),
         status: "complete",
         generation_status: "complete",
       } as any);

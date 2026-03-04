@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Copy, Edit3, Check, X, Loader2, RefreshCw, Download } from "lucide-react";
+import ReactMarkdown from "react-markdown";
 import CoverLetterRevisions from "@/components/CoverLetterRevisions";
 import { streamTailoredLetter } from "@/lib/api/coverLetter";
 import { saveCoverLetterRevision } from "@/lib/api/coverLetterRevisions";
@@ -133,8 +134,8 @@ export default function CoverLetterTab({ appId, state }: CoverLetterTabProps) {
               </div>
             </div>
           ) : (previewCoverLetter || coverLetter) ? (
-            <div className="whitespace-pre-wrap text-sm leading-relaxed max-h-[60vh] overflow-y-auto">
-              {previewCoverLetter || coverLetter}
+            <div className="prose prose-sm dark:prose-invert max-w-none max-h-[60vh] overflow-y-auto leading-relaxed">
+              <ReactMarkdown>{previewCoverLetter || coverLetter}</ReactMarkdown>
             </div>
           ) : (
             <p className="text-muted-foreground text-center py-8">No cover letter generated yet.</p>

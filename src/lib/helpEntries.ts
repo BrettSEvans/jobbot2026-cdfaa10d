@@ -341,7 +341,7 @@ registerHelp({
   steps: [
     'Go to Admin → Test Users.',
     'Create a test persona with name, resume, and skills.',
-    'Click "Impersonate" to switch to that persona's context.',
+    'Click "Impersonate" to switch to that persona\'s context.',
   ],
   route: '/admin',
   keywords: ['test', 'persona', 'impersonate', 'fake', 'demo'],
@@ -352,7 +352,7 @@ registerHelp({
   slug: 'impersonation',
   title: 'Impersonation Mode',
   summary:
-    'When impersonating a test user, a banner appears at the top of the screen. All generations use the test persona's profile data instead of yours.',
+    'When impersonating a test user, a banner appears at the top of the screen. All generations use the test persona\'s profile data instead of yours.',
   tips: [
     'Click "Switch Back" in the banner to return to your own account.',
     'You cannot sign out while impersonating.',

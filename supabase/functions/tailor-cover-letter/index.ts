@@ -26,7 +26,7 @@ serve(async (req) => {
   }
 
   try {
-    const { jobDescription, customInstructions } = await req.json();
+    const { jobDescription, customInstructions, profileContext } = await req.json();
 
     if (!jobDescription) {
       return new Response(
@@ -43,19 +43,20 @@ serve(async (req) => {
       );
     }
 
-    const systemPrompt = `You are an expert cover letter writer. You will be given Brett Evans' base cover letter and a job description. Your task is to lightly tailor the cover letter to match the job.
+    const systemPrompt = `You are an expert cover letter writer. You will be given a base cover letter template and a job description. Your task is to create a tailored cover letter that matches the job.
 
 CRITICAL Rules:
 - You MUST replace EVERY instance of "Gusto" with the actual company name from the job posting. The base letter uses "Gusto" as a placeholder — it is NOT the target company unless the job posting is literally for Gusto.
 - You MUST replace the role title ("Head of GTM Process & Tooling") with the actual role title from the job posting.
 - You MUST replace the greeting ("To the Gusto GTM Team") with an appropriate greeting for the target company and team.
 - Adjust 2-3 talking points to align with the job's key requirements
-- Keep Brett's core narrative, tone, and experience intact
+- Keep the core narrative, tone, and experience intact
 - Maintain the same general structure and length
 - Keep the letter professional but enthusiastic
 - Do NOT invent new experiences — only reframe existing ones
 - Output ONLY the tailored cover letter text, no explanations or metadata
-${customInstructions ? `\nAdditional instructions from Brett: ${customInstructions}` : ''}`;
+${profileContext ? `\n${profileContext}` : ''}
+${customInstructions ? `\nAdditional instructions: ${customInstructions}` : ''}`;
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',

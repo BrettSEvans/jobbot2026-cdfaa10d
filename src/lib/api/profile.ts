@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 export interface UserProfile {
   id: string;
   first_name: string | null;
+  middle_name: string | null;
   last_name: string | null;
   display_name: string | null;
   avatar_url: string | null;
@@ -28,6 +29,7 @@ export async function getProfile(): Promise<UserProfile | null> {
   return {
     id: data.id,
     first_name: (data as any).first_name ?? null,
+    middle_name: (data as any).middle_name ?? null,
     last_name: (data as any).last_name ?? null,
     display_name: data.display_name,
     avatar_url: data.avatar_url,
@@ -82,7 +84,7 @@ export async function getProfileContextForPrompt(): Promise<string> {
     const parts: string[] = [];
 
     if (profile) {
-      const fullName = [profile.first_name, profile.last_name].filter(Boolean).join(" ") || profile.display_name;
+      const fullName = [profile.first_name, profile.middle_name, profile.last_name].filter(Boolean).join(" ") || profile.display_name;
       if (fullName) parts.push(`Name: ${fullName}`);
       if (profile.years_experience) parts.push(`Experience level: ${profile.years_experience}`);
       if (profile.target_industries?.length) parts.push(`Target industries: ${profile.target_industries.join(", ")}`);

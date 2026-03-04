@@ -42,7 +42,7 @@ serve(async (req) => {
     const rateLimitResponse = await checkRateLimit(req, 'cover-letter', 'tailor-cover-letter');
     if (rateLimitResponse) return rateLimitResponse;
 
-    const { jobDescription, customInstructions, profileContext, styleContext } = await req.json();
+    const { jobDescription, customInstructions, profileContext, styleContext, generationGuide } = await req.json();
 
     if (!jobDescription) {
       return new Response(
@@ -72,7 +72,8 @@ CRITICAL Rules:
 - Output ONLY the cover letter text, no explanations or metadata
 ${profileContext ? `\nCandidate background:\n${profileContext}` : ''}
 ${styleContext ? `\n${styleContext}` : ''}
-${customInstructions ? `\nAdditional instructions: ${customInstructions}` : ''}`;
+${customInstructions ? `\nAdditional instructions: ${customInstructions}` : ''}
+${generationGuide ? `\n${generationGuide}` : ''}`;
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',

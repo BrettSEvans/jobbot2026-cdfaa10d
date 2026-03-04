@@ -39,9 +39,16 @@ export async function streamResumeGeneration({
     try { finalResumeText = await getActiveResumeText(); } catch { /* non-critical */ }
   }
 
+  // Fetch generation guide (failover-safe — never blocks generation)
+  let generationGuide = "";
+  try {
+    const { getGenerationGuideForPrompt } = await import("@/lib/api/systemDocuments");
+    generationGuide = await getGenerationGuideForPrompt();
+  } catch { /* non-critical */ }
+
   await streamFromEdgeFunction({
     functionName: 'generate-resume',
-    body: { jobDescription, resumeText: finalResumeText, systemPrompt, companyName, jobTitle, branding, competitors, customers, products, profileContext },
+    body: { jobDescription, resumeText: finalResumeText, systemPrompt, companyName, jobTitle, branding, competitors, customers, products, profileContext, generationGuide },
     onDelta,
     onDone,
   });

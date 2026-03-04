@@ -28,6 +28,9 @@ import {
 } from "@/lib/api/adminPrompts";
 import { supabase } from "@/integrations/supabase/client";
 
+// Protected founder admin — cannot be removed via UI
+const PROTECTED_ADMIN_ID = "f8182de6-de8e-4c12-9009-88fb5c4e66b8";
+
 // ---------- Guide Content (from docs/ADMIN_GUIDE.md) ----------
 
 function AdminGuideTab() {
@@ -306,6 +309,10 @@ export default function Admin() {
       toast({ title: "Cannot remove yourself", description: "You cannot remove your own admin access.", variant: "destructive" });
       return;
     }
+    if (userId === PROTECTED_ADMIN_ID) {
+      toast({ title: "Protected account", description: "This founder admin account cannot be removed.", variant: "destructive" });
+      return;
+    }
     try {
       await removeAdminRole(userId);
       toast({ title: "Removed", description: "Admin access revoked." });
@@ -439,17 +446,20 @@ export default function Admin() {
                     <div className="flex items-center gap-2">
                       <span className="font-mono text-xs text-muted-foreground">{admin.user_id.slice(0, 8)}...</span>
                       {admin.user_id === currentUserId && <Badge variant="secondary" className="text-xs">You</Badge>}
+                      {admin.user_id === PROTECTED_ADMIN_ID && <Badge variant="default" className="text-xs">Founder</Badge>}
                     </div>
                     <Button
                       variant="ghost" size="sm"
                       onClick={() => {
                         if (admin.user_id === currentUserId) {
                           toast({ title: "Cannot remove yourself", description: "You cannot remove your own admin access.", variant: "destructive" });
+                        } else if (admin.user_id === PROTECTED_ADMIN_ID) {
+                          toast({ title: "Protected account", description: "This founder admin account cannot be removed.", variant: "destructive" });
                         } else {
                           setRemoveAdminTarget(admin.user_id);
                         }
                       }}
-                      disabled={admin.user_id === currentUserId}
+                      disabled={admin.user_id === currentUserId || admin.user_id === PROTECTED_ADMIN_ID}
                       className="text-destructive hover:text-destructive"
                     >
                       <Trash2 className="h-3.5 w-3.5" />

@@ -34,6 +34,7 @@ type Listener = () => void;
 
 class BackgroundGenerationManager {
   private jobs: Map<string, GenerationJob> = new Map();
+  private abortControllers: Map<string, AbortController> = new Map();
   private listeners: Set<Listener> = new Set();
 
   subscribe(listener: Listener) {

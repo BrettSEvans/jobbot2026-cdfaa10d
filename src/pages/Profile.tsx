@@ -421,9 +421,12 @@ export default function Profile() {
         {/* AI Style Memory */}
         <StylePreferencesCard />
 
+        {/* Test User Impersonation (Admin Only) */}
+        {isAdmin && <TestUserManager />}
+
         {/* Admin Panel Link */}
         {isAdmin && (
-          <Card className="border-primary/30">
+          <Card className={`border-primary/30 ${isImpersonating ? "opacity-50 pointer-events-none" : ""}`}>
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
                 <Shield className="h-4 w-4 text-primary" /> Admin Settings
@@ -431,7 +434,7 @@ export default function Profile() {
               <CardDescription>Manage resume prompt styles and admin users.</CardDescription>
             </CardHeader>
             <CardFooter>
-              <Button variant="outline" size="sm" onClick={() => navigate("/admin")}>
+              <Button variant="outline" size="sm" onClick={() => navigate("/admin")} disabled={isImpersonating}>
                 <Shield className="mr-2 h-4 w-4" /> Open Admin Panel
               </Button>
             </CardFooter>

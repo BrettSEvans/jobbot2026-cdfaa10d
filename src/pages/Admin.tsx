@@ -7,13 +7,15 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { useAdminRole } from "@/hooks/useAdminRole";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import {
-  ArrowLeft, Edit3, Plus, Trash2, Loader2, Shield, FileText, Users,
+  ArrowLeft, Edit3, Plus, Trash2, Loader2, Shield, FileText, Users, BookOpen,
 } from "lucide-react";
 import {
   getAllResumeStyles, createResumeStyle, updateResumeStyle, deleteResumeStyle,
@@ -21,6 +23,167 @@ import {
   type ResumePromptStyle,
 } from "@/lib/api/adminPrompts";
 import { supabase } from "@/integrations/supabase/client";
+
+// ---------- Guide Content (from docs/ADMIN_GUIDE.md) ----------
+
+function AdminGuideTab() {
+  return (
+    <ScrollArea className="h-[calc(100vh-220px)]">
+      <div className="prose prose-sm dark:prose-invert max-w-none space-y-6 pr-4">
+
+        <h2>Part I — Current Admin Features</h2>
+
+        <h3>1. Accessing the Admin Panel</h3>
+        <ol>
+          <li>Log in to JobBot with your admin account.</li>
+          <li>Navigate to <strong>Profile</strong> (top-right avatar → Profile).</li>
+          <li>Click <strong>"Admin Settings"</strong> (only visible to users with the <code>admin</code> role).</li>
+          <li>You'll land on <code>/admin</code>.</li>
+        </ol>
+        <p><strong>If you don't see the button:</strong> Your account doesn't have the admin role. Another admin must grant it.</p>
+
+        <h3>2. Resume Prompt Styles Management</h3>
+        <p>Controls the AI system prompts used to generate tailored resumes.</p>
+        <div className="overflow-x-auto">
+          <table>
+            <thead><tr><th>Action</th><th>How</th></tr></thead>
+            <tbody>
+              <tr><td><strong>View all styles</strong></td><td>Listed in the "Prompts" tab, including inactive ones</td></tr>
+              <tr><td><strong>Create a new style</strong></td><td>Click "+ Add New Style" → fill in fields → Save</td></tr>
+              <tr><td><strong>Edit a style</strong></td><td>Click the ✏️ icon → modify fields → Save</td></tr>
+              <tr><td><strong>Delete a style</strong></td><td>Click 🗑️. <strong>⚠️ Permanent — no undo.</strong></td></tr>
+              <tr><td><strong>Deactivate a style</strong></td><td>Edit → toggle Active off → Save</td></tr>
+              <tr><td><strong>Reorder styles</strong></td><td>Edit → change Sort Order. Lower = first.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h4>Fields</h4>
+        <div className="overflow-x-auto">
+          <table>
+            <thead><tr><th>Field</th><th>Required</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr><td>Label</td><td>✅</td><td>Display name (e.g., "Traditional Corporate")</td></tr>
+              <tr><td>Slug</td><td>✅</td><td>Unique URL-safe key (e.g., <code>traditional-corporate</code>)</td></tr>
+              <tr><td>Description</td><td>❌</td><td>Subtitle shown in user dropdown</td></tr>
+              <tr><td>System Prompt</td><td>✅</td><td>Full AI instructions shaping resume output</td></tr>
+              <tr><td>Active</td><td>—</td><td>Visibility toggle for end users</td></tr>
+              <tr><td>Sort Order</td><td>—</td><td>Integer controlling display order (default: 0)</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>3. Admin User Management</h3>
+        <div className="overflow-x-auto">
+          <table>
+            <thead><tr><th>Action</th><th>How</th></tr></thead>
+            <tbody>
+              <tr><td><strong>View current admins</strong></td><td>Listed in the "Users" tab with truncated user IDs</td></tr>
+              <tr><td><strong>Add a new admin</strong></td><td>Paste user UUID → click "Add Admin"</td></tr>
+              <tr><td><strong>Remove an admin</strong></td><td>Click 🗑️. You cannot remove yourself.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>4. Security Architecture</h3>
+        <ul>
+          <li><strong>Server-side enforcement:</strong> <code>has_role()</code> PostgreSQL function (<code>SECURITY DEFINER</code>). Cannot be bypassed from client.</li>
+          <li><strong>RLS policies:</strong> Non-admins cannot modify <code>resume_prompt_styles</code> or <code>user_roles</code>.</li>
+          <li><strong>Frontend gating:</strong> <code>useAdminRole</code> hook is UI-only — enforcement is always at the database layer.</li>
+        </ul>
+
+        <h3>5. Troubleshooting</h3>
+        <div className="overflow-x-auto">
+          <table>
+            <thead><tr><th>Issue</th><th>Solution</th></tr></thead>
+            <tbody>
+              <tr><td>"You don't have admin access"</td><td>UUID not in <code>user_roles</code> with role <code>admin</code>. Ask an existing admin.</td></tr>
+              <tr><td>Style not appearing for users</td><td>Verify <code>is_active = true</code> and save was successful.</td></tr>
+              <tr><td>Can't delete a prompt style</td><td>Confirm login + admin role. Check console for RLS errors.</td></tr>
+              <tr><td>"Add Admin" fails</td><td>UUID must be a valid, existing auth user.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <hr />
+
+        <h2>Part II — Enhancement Roadmap</h2>
+
+        <h3>Priority Framework</h3>
+        <div className="overflow-x-auto">
+          <table>
+            <thead><tr><th>Priority</th><th>Criteria</th><th>Timeline</th></tr></thead>
+            <tbody>
+              <tr><td><strong>P0 — Critical</strong></td><td>Security risk, data loss, or blocks core workflow</td><td>Sprint 1 (1–2 weeks)</td></tr>
+              <tr><td><strong>P1 — High</strong></td><td>Major usability gap; required for managing &gt;10 users</td><td>Sprint 2 (2–4 weeks)</td></tr>
+              <tr><td><strong>P2 — Medium</strong></td><td>Operational efficiency; nice-to-have</td><td>Sprint 3 (4–8 weeks)</td></tr>
+              <tr><td><strong>P3 — Low</strong></td><td>Scale features; valuable at 100+ users</td><td>Backlog</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>P0 — Critical Infrastructure</h3>
+        <ul>
+          <li><strong>P0.1</strong> — Destructive action confirmations (AlertDialog)</li>
+          <li><strong>P0.2</strong> — Rate limiting infrastructure (<code>generation_usage</code> table)</li>
+          <li><strong>P0.3</strong> — Admin audit log</li>
+          <li><strong>P0.4</strong> — Soft-delete for prompt styles</li>
+        </ul>
+
+        <h3>P1 — User Management & Visibility</h3>
+        <ul>
+          <li><strong>P1.1</strong> — User directory with search</li>
+          <li><strong>P1.2</strong> — User block / unblock system</li>
+          <li><strong>P1.3</strong> — Bulk user operations</li>
+          <li><strong>P1.4</strong> — Admin dashboard home tab</li>
+          <li><strong>P1.5</strong> — Tabbed admin layout</li>
+        </ul>
+
+        <h3>P2 — Analytics & Governance</h3>
+        <ul>
+          <li><strong>P2.1</strong> — Usage analytics dashboard</li>
+          <li><strong>P2.2</strong> — Role granularity (moderator)</li>
+          <li><strong>P2.3</strong> — GDPR/CCPA data export</li>
+          <li><strong>P2.4</strong> — In-app notification system</li>
+          <li><strong>P2.5</strong> — Generation error queue</li>
+        </ul>
+
+        <h3>P3 — AI Agents & Scale</h3>
+        <ul>
+          <li><strong>P3.1</strong> — Usage anomaly detector agent</li>
+          <li><strong>P3.2</strong> — Prompt quality evaluator agent</li>
+          <li><strong>P3.3</strong> — Support triage bot</li>
+          <li><strong>P3.4</strong> — Onboarding monitor</li>
+          <li><strong>P3.5</strong> — Content safety scanner</li>
+          <li><strong>P3.6</strong> — Stale account cleanup</li>
+        </ul>
+
+        <hr />
+
+        <h3>Implementation Order</h3>
+        <div className="font-mono text-xs bg-muted p-4 rounded-lg space-y-1">
+          <p className="font-semibold text-foreground">Sprint 1 (P0):</p>
+          <p className="text-muted-foreground pl-4">1. P0.1 — AlertDialog confirmations</p>
+          <p className="text-muted-foreground pl-4">2. P0.3 — Audit log table + logging</p>
+          <p className="text-muted-foreground pl-4">3. P0.4 — Soft-delete for styles</p>
+          <p className="text-muted-foreground pl-4">4. P0.2 — Rate limiting table + checks</p>
+          <p className="font-semibold text-foreground mt-2">Sprint 2 (P1):</p>
+          <p className="text-muted-foreground pl-4">5. P1.5 — Tabbed layout refactor</p>
+          <p className="text-muted-foreground pl-4">6. P1.1 — User directory</p>
+          <p className="text-muted-foreground pl-4">7. P1.4 — Dashboard home tab</p>
+          <p className="text-muted-foreground pl-4">8. P1.2 — Block/unblock system</p>
+          <p className="text-muted-foreground pl-4">9. P1.3 — Bulk operations</p>
+          <p className="font-semibold text-foreground mt-2">Sprint 3 (P2):</p>
+          <p className="text-muted-foreground pl-4">10–14. Error queue, analytics, notifications, moderator role, GDPR export</p>
+        </div>
+
+        <p className="text-xs text-muted-foreground mt-6">Version 3.0 — Last updated 2026-03-04</p>
+      </div>
+    </ScrollArea>
+  );
+}
+
+// ---------- Main Admin Component ----------
 
 export default function Admin() {
   const navigate = useNavigate();
@@ -172,110 +335,143 @@ export default function Admin() {
           </Button>
           <div>
             <h1 className="text-2xl font-bold tracking-tight font-heading">Admin Panel</h1>
-            <p className="text-sm text-muted-foreground">Manage resume prompt styles and admin users</p>
+            <p className="text-sm text-muted-foreground">Manage resume prompt styles, admin users, and view the user guide</p>
           </div>
         </div>
 
-        {/* Resume Prompt Styles */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <FileText className="h-4 w-4 text-primary" /> Resume Prompt Styles
-            </CardTitle>
-            <CardDescription>These prompts control how AI-generated resumes are structured and styled.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {loadingData ? (
-              <div className="flex justify-center py-4"><Loader2 className="h-5 w-5 animate-spin" /></div>
-            ) : (
-              styles.map((style) => (
-                <div
-                  key={style.id}
-                  className="flex items-center justify-between gap-3 p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors"
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-sm">{style.label}</span>
-                      {!style.is_active && <Badge variant="secondary" className="text-xs">Inactive</Badge>}
-                    </div>
-                    {style.description && (
-                      <p className="text-xs text-muted-foreground truncate">{style.description}</p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost" size="sm"
-                      onClick={() => { setEditStyle(style); setEditOpen(true); }}
+        <Tabs defaultValue="prompts">
+          <TabsList className="w-full grid grid-cols-3">
+            <TabsTrigger value="prompts" className="flex items-center gap-1.5">
+              <FileText className="h-3.5 w-3.5" /> Prompts
+            </TabsTrigger>
+            <TabsTrigger value="users" className="flex items-center gap-1.5">
+              <Users className="h-3.5 w-3.5" /> Users
+            </TabsTrigger>
+            <TabsTrigger value="guide" className="flex items-center gap-1.5">
+              <BookOpen className="h-3.5 w-3.5" /> Guide
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Prompts Tab */}
+          <TabsContent value="prompts">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-primary" /> Resume Prompt Styles
+                </CardTitle>
+                <CardDescription>These prompts control how AI-generated resumes are structured and styled.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {loadingData ? (
+                  <div className="flex justify-center py-4"><Loader2 className="h-5 w-5 animate-spin" /></div>
+                ) : (
+                  styles.map((style) => (
+                    <div
+                      key={style.id}
+                      className="flex items-center justify-between gap-3 p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors"
                     >
-                      <Edit3 className="h-3.5 w-3.5" />
-                    </Button>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-sm">{style.label}</span>
+                          {!style.is_active && <Badge variant="secondary" className="text-xs">Inactive</Badge>}
+                        </div>
+                        {style.description && (
+                          <p className="text-xs text-muted-foreground truncate">{style.description}</p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost" size="sm"
+                          onClick={() => { setEditStyle(style); setEditOpen(true); }}
+                        >
+                          <Edit3 className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost" size="sm"
+                          onClick={() => handleDeleteStyle(style.id)}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </CardContent>
+              <CardFooter>
+                <Button
+                  variant="outline" size="sm"
+                  onClick={() => {
+                    setEditStyle({ label: "", slug: "", system_prompt: "", description: "", is_active: true, sort_order: styles.length });
+                    setEditOpen(true);
+                  }}
+                >
+                  <Plus className="mr-2 h-4 w-4" /> Add New Style
+                </Button>
+              </CardFooter>
+            </Card>
+          </TabsContent>
+
+          {/* Users Tab */}
+          <TabsContent value="users">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Users className="h-4 w-4 text-primary" /> Admin Users
+                </CardTitle>
+                <CardDescription>Manage who has access to this admin panel.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {admins.map((admin) => (
+                  <div
+                    key={admin.id}
+                    className="flex items-center justify-between gap-3 p-3 rounded-lg border border-border"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-xs text-muted-foreground">{admin.user_id.slice(0, 8)}...</span>
+                      {admin.user_id === currentUserId && <Badge variant="secondary" className="text-xs">You</Badge>}
+                    </div>
                     <Button
                       variant="ghost" size="sm"
-                      onClick={() => handleDeleteStyle(style.id)}
+                      onClick={() => handleRemoveAdmin(admin.user_id)}
+                      disabled={admin.user_id === currentUserId}
                       className="text-destructive hover:text-destructive"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                   </div>
-                </div>
-              ))
-            )}
-          </CardContent>
-          <CardFooter>
-            <Button
-              variant="outline" size="sm"
-              onClick={() => {
-                setEditStyle({ label: "", slug: "", system_prompt: "", description: "", is_active: true, sort_order: styles.length });
-                setEditOpen(true);
-              }}
-            >
-              <Plus className="mr-2 h-4 w-4" /> Add New Style
-            </Button>
-          </CardFooter>
-        </Card>
-
-        {/* User Management */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <Users className="h-4 w-4 text-primary" /> Admin Users
-            </CardTitle>
-            <CardDescription>Manage who has access to this admin panel.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {admins.map((admin) => (
-              <div
-                key={admin.id}
-                className="flex items-center justify-between gap-3 p-3 rounded-lg border border-border"
-              >
-                <div className="flex items-center gap-2">
-                  <span className="font-mono text-xs text-muted-foreground">{admin.user_id.slice(0, 8)}...</span>
-                  {admin.user_id === currentUserId && <Badge variant="secondary" className="text-xs">You</Badge>}
-                </div>
-                <Button
-                  variant="ghost" size="sm"
-                  onClick={() => handleRemoveAdmin(admin.user_id)}
-                  disabled={admin.user_id === currentUserId}
-                  className="text-destructive hover:text-destructive"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
+                ))}
+              </CardContent>
+              <CardFooter className="flex gap-2">
+                <Input
+                  placeholder="User ID to grant admin access"
+                  value={newAdminId}
+                  onChange={(e) => setNewAdminId(e.target.value)}
+                  className="flex-1"
+                />
+                <Button size="sm" onClick={handleAddAdmin} disabled={!newAdminId.trim() || addingAdmin}>
+                  {addingAdmin ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
+                  Add Admin
                 </Button>
-              </div>
-            ))}
-          </CardContent>
-          <CardFooter className="flex gap-2">
-            <Input
-              placeholder="User ID to grant admin access"
-              value={newAdminId}
-              onChange={(e) => setNewAdminId(e.target.value)}
-              className="flex-1"
-            />
-            <Button size="sm" onClick={handleAddAdmin} disabled={!newAdminId.trim() || addingAdmin}>
-              {addingAdmin ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
-              Add Admin
-            </Button>
-          </CardFooter>
-        </Card>
+              </CardFooter>
+            </Card>
+          </TabsContent>
+
+          {/* Guide Tab */}
+          <TabsContent value="guide">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <BookOpen className="h-4 w-4 text-primary" /> User Guide & Roadmap
+                </CardTitle>
+                <CardDescription>Admin panel documentation and enhancement roadmap.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <AdminGuideTab />
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
 
         {/* Edit Style Dialog */}
         <Dialog open={editOpen} onOpenChange={setEditOpen}>

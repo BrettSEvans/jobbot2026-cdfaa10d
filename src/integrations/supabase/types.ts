@@ -442,9 +442,11 @@ export type Database = {
       }
       profiles: {
         Row: {
+          approval_status: string
           avatar_url: string | null
           created_at: string
           display_name: string | null
+          email: string | null
           first_name: string | null
           id: string
           key_skills: string[] | null
@@ -457,9 +459,11 @@ export type Database = {
           years_experience: string | null
         }
         Insert: {
+          approval_status?: string
           avatar_url?: string | null
           created_at?: string
           display_name?: string | null
+          email?: string | null
           first_name?: string | null
           id: string
           key_skills?: string[] | null
@@ -472,9 +476,11 @@ export type Database = {
           years_experience?: string | null
         }
         Update: {
+          approval_status?: string
           avatar_url?: string | null
           created_at?: string
           display_name?: string | null
+          email?: string | null
           first_name?: string | null
           id?: string
           key_skills?: string[] | null

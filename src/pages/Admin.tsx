@@ -356,7 +356,7 @@ function AdminRateLimitsTab() {
                 <div key={o.id} className="flex items-center justify-between gap-3 p-3 rounded-lg border border-border text-sm">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <span className="font-mono text-xs">{o.user_id.slice(0, 8)}…</span>
+                      <span className="font-mono text-xs break-all">{o.user_id}</span>
                       {o.is_unlimited ? (
                         <Badge className="text-xs bg-emerald-500/15 text-emerald-400 border-emerald-500/30">Unlimited</Badge>
                       ) : (
@@ -452,7 +452,7 @@ function AdminRateLimitsTab() {
               {topUsers.map((u, i) => (
                 <div key={u.user_id} className="flex items-center gap-3 p-2.5 rounded-lg border border-border text-sm">
                   <span className="text-xs font-bold text-muted-foreground w-5 text-right">#{i + 1}</span>
-                  <span className="font-mono text-xs text-foreground flex-1">{u.user_id.slice(0, 8)}…</span>
+                  <span className="font-mono text-xs text-foreground flex-1 break-all">{u.user_id}</span>
                   <div className="flex items-center gap-2">
                     <div className="w-24 h-2 rounded-full bg-muted overflow-hidden">
                       <div className="h-full rounded-full bg-primary" style={{ width: `${Math.min(100, (u.count / 100) * 100)}%` }} />
@@ -513,14 +513,14 @@ function AdminAuditTab() {
               {entries.map((entry) => {
                 const badge = ACTION_BADGE[entry.action] || { label: entry.action, className: 'bg-muted text-muted-foreground' };
                 const meta = entry.metadata as Record<string, unknown>;
-                const targetLabel = (meta?.label as string) || (meta?.slug as string) || (meta?.user_id as string)?.slice(0, 8) || entry.target_id.slice(0, 8);
+                const targetLabel = (meta?.label as string) || (meta?.slug as string) || (meta?.user_id as string) || entry.target_id;
                 return (
                   <div key={entry.id} className="flex items-center gap-3 p-2.5 rounded-lg border border-border text-sm">
                     <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${badge.className}`}>
                       {badge.label}
                     </span>
                     <span className="flex-1 truncate text-foreground">{targetLabel}</span>
-                    <span className="font-mono text-xs text-muted-foreground shrink-0">{entry.admin_id.slice(0, 6)}</span>
+                    <span className="font-mono text-xs text-muted-foreground shrink-0">{entry.admin_id}</span>
                     <span className="text-xs text-muted-foreground shrink-0">
                       {formatDistanceToNow(new Date(entry.created_at), { addSuffix: true })}
                     </span>
@@ -860,7 +860,7 @@ export default function Admin() {
                     className="flex items-center justify-between gap-3 p-3 rounded-lg border border-border"
                   >
                     <div className="flex items-center gap-2">
-                      <span className="font-mono text-xs text-muted-foreground">{admin.user_id.slice(0, 8)}...</span>
+                      <span className="font-mono text-xs text-muted-foreground break-all">{admin.user_id}</span>
                       {admin.user_id === currentUserId && <Badge variant="secondary" className="text-xs">You</Badge>}
                       {admin.user_id === PROTECTED_ADMIN_ID && <Badge variant="default" className="text-xs">Founder</Badge>}
                     </div>
@@ -1066,7 +1066,7 @@ export default function Admin() {
             <AlertDialogHeader>
               <AlertDialogTitle>Remove Admin Access</AlertDialogTitle>
               <AlertDialogDescription>
-                This will revoke admin privileges for user <code className="text-xs bg-muted px-1 py-0.5 rounded">{removeAdminTarget?.slice(0, 8)}...</code>. They will lose access to this panel immediately.
+                This will revoke admin privileges for user <code className="text-xs bg-muted px-1 py-0.5 rounded break-all">{removeAdminTarget}</code>. They will lose access to this panel immediately.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

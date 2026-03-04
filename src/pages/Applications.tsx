@@ -110,7 +110,8 @@ const Applications = () => {
   const loadTrash = async () => {
     setTrashLoading(true);
     try {
-      const data = await getDeletedJobApplications();
+      const personaId = isImpersonating && activePersona?.isTestUser ? activePersona.id : null;
+      const data = await getDeletedJobApplications(personaId);
       setDeletedApps(data || []);
     } catch (err: unknown) {
       toast({ title: "Error", description: err instanceof Error ? err.message : "Unknown error", variant: "destructive" });

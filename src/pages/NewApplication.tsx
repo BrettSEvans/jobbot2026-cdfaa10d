@@ -264,7 +264,8 @@ const NewApplication = () => {
         products: productsLocal,
         status: "complete",
         research_reasoning: researchReasoning || undefined,
-      });
+        ...(selectedResumeStyleId ? { resume_style_id: selectedResumeStyleId } : {}),
+      } as any);
       setApplicationId(saved.id);
 
       setStep("preview");

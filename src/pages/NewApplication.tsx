@@ -14,6 +14,7 @@ import {
 import { researchCompany } from "@/lib/api/researchCompany";
 import { scrapeJob, streamTailoredLetter } from "@/lib/api/coverLetter";
 import { parseLlmJsonOutput, assembleDashboardHtml } from "@/lib/dashboard/assembler";
+import { extractStyleSignalsFromMessage } from "@/lib/api/stylePreferences";
 import {
   Loader2,
   Globe,
@@ -543,6 +544,8 @@ function DashboardPreview({
           }
         },
       });
+      // Extract style signals from the user's message (fire-and-forget)
+      extractStyleSignalsFromMessage(msg);
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
       setChatHistory((prev) => [...prev, { role: "assistant", content: `❌ Error: ${err.message}` }]);

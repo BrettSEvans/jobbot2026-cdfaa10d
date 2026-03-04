@@ -30,22 +30,68 @@ serve(async (req) => {
       });
     }
 
-    const { ai_response } = await req.json();
-    if (!ai_response || typeof ai_response !== 'string') {
+    const { user_message } = await req.json();
+    if (!user_message || typeof user_message !== 'string' || user_message.length < 10) {
       return new Response(JSON.stringify({ signals: [] }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Extract style_signals JSON block from AI response
-    const signalMatch = ai_response.match(/```json\s*\n?\s*\{[\s\S]*?"style_signals"\s*:\s*\[[\s\S]*?\]\s*\}\s*\n?\s*```/);
-    if (!signalMatch) {
-      return new Response(JSON.stringify({ signals: [], cleaned_response: ai_response }), {
+    // Use AI to analyze the user's refinement message for style preferences
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    if (!LOVABLE_API_KEY) {
+      return new Response(JSON.stringify({ signals: [] }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Parse the signals
+    const analysisResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-flash-lite',
+        messages: [
+          {
+            role: 'system',
+            content: `You analyze user refinement messages to extract reusable style preferences.
+
+Given a user's instruction to refine an AI-generated document, extract any generalizable style preferences.
+
+VALID CATEGORIES: tone, length, formatting, emphasis, vocabulary, structure
+
+RULES:
+- Only extract preferences that are REUSABLE across documents (not content-specific changes)
+- "Change the title to X" is NOT a style preference (it's content-specific)
+- "Make it more concise" IS a style preference (tone/length)
+- "Use bullet points instead of paragraphs" IS a style preference (formatting)
+- "Add more data-driven language" IS a style preference (vocabulary)
+- "Keep sections shorter" IS a style preference (length)
+- Assign confidence 0.5-0.8 based on how explicit the preference is
+- Return EMPTY array if no style preferences detected
+
+OUTPUT: ONLY valid JSON array, no markdown fences, no explanation.
+Example: [{"category":"tone","preference":"concise and direct","confidence":0.7,"source_quote":"make it more concise"}]
+Empty: []`
+          },
+          { role: 'user', content: user_message }
+        ],
+        temperature: 0.1,
+      }),
+    });
+
+    if (!analysisResponse.ok) {
+      console.warn('AI analysis failed:', analysisResponse.status);
+      return new Response(JSON.stringify({ signals: [] }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const aiResult = await analysisResponse.json();
+    const content = aiResult.choices?.[0]?.message?.content?.trim() || '[]';
+
     let signals: Array<{
       category: string;
       preference: string;
@@ -54,14 +100,12 @@ serve(async (req) => {
     }> = [];
 
     try {
-      const jsonStr = signalMatch[0]
-        .replace(/^```json\s*\n?/, '')
-        .replace(/\n?\s*```$/, '');
-      const parsed = JSON.parse(jsonStr);
-      signals = parsed.style_signals || [];
-    } catch (e) {
-      console.warn('Failed to parse style signals:', e);
-      return new Response(JSON.stringify({ signals: [], cleaned_response: ai_response }), {
+      const cleaned = content.replace(/^```json\s*\n?/, '').replace(/\n?\s*```$/, '');
+      signals = JSON.parse(cleaned);
+      if (!Array.isArray(signals)) signals = [];
+    } catch {
+      console.warn('Failed to parse AI signals output:', content);
+      return new Response(JSON.stringify({ signals: [] }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -72,9 +116,9 @@ serve(async (req) => {
     for (const signal of signals) {
       if (!VALID_CATEGORIES.includes(signal.category)) continue;
       if (!signal.preference) continue;
-      if (signal.confidence < 0.5) continue; // Skip low confidence signals
+      if (signal.confidence < 0.5) continue;
 
-      // Check if category already exists
+      // Check if category already exists for this user
       const { data: existing } = await supabase
         .from('user_style_preferences')
         .select('*')
@@ -83,7 +127,6 @@ serve(async (req) => {
         .single();
 
       if (existing) {
-        // Same direction → reinforce; contradictory → replace
         const isSameDirection = existing.preference.toLowerCase().includes(signal.preference.toLowerCase().split(' ')[0]);
         
         if (isSameDirection) {
@@ -116,7 +159,6 @@ serve(async (req) => {
           .order('confidence', { ascending: true });
 
         if (allPrefs && allPrefs.length >= 8) {
-          // Remove lowest confidence
           await supabase
             .from('user_style_preferences')
             .delete()
@@ -137,13 +179,7 @@ serve(async (req) => {
       processedSignals.push(signal);
     }
 
-    // Clean the response by removing the style_signals block
-    const cleanedResponse = ai_response.replace(signalMatch[0], '').trim();
-
-    return new Response(JSON.stringify({
-      signals: processedSignals,
-      cleaned_response: cleanedResponse,
-    }), {
+    return new Response(JSON.stringify({ signals: processedSignals }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (e) {

@@ -20,7 +20,7 @@ const TONE_OPTIONS = [
 ];
 
 const EXPERIENCE_OPTIONS = [
-  { value: "", label: "Not set" },
+  { value: "none", label: "Not set" },
   { value: "entry", label: "Entry Level (0-2 years)" },
   { value: "mid", label: "Mid Level (3-5 years)" },
   { value: "senior", label: "Senior (6-10 years)" },

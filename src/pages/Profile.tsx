@@ -37,6 +37,7 @@ export default function Profile() {
   const navigate = useNavigate();
   const fileRef = useRef<HTMLInputElement>(null);
   const { isAdmin } = useAdminRole();
+  const { refreshRoot, isImpersonating } = useImpersonation();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savingCard, setSavingCard] = useState<string | null>(null);

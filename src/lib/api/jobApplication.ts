@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { streamFromEdgeFunction, processSSEStream } from './streamUtils';
+import { getStyleContextForPrompt } from './stylePreferences';
 
 // --- Search for company icon (three-tier fallback) ---
 export async function searchCompanyIcon(companyName?: string, companyUrl?: string): Promise<{ iconUrl: string | null; source: string | null }> {
@@ -118,9 +119,12 @@ export async function streamDashboardRefinement({
   onDelta: (text: string) => void;
   onDone: () => void;
 }) {
+  let styleContext = "";
+  try { styleContext = await getStyleContextForPrompt(); } catch { /* non-critical */ }
+
   await streamFromEdgeFunction({
     functionName: 'refine-dashboard',
-    body: { currentHtml, currentDashboardData, userMessage, chatHistory },
+    body: { currentHtml, currentDashboardData, userMessage, chatHistory, styleContext },
     onDelta,
     onDone,
   });

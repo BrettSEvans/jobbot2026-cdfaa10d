@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { currentDashboardData, currentHtml, userMessage, chatHistory } = await req.json();
+    const { currentDashboardData, currentHtml, userMessage, chatHistory, styleContext } = await req.json();
 
     if (!userMessage) {
       return new Response(
@@ -53,7 +53,8 @@ RULES:
 - Apply changes precisely as requested
 - Chart types: bar|line|doughnut|pie|radar|scatter|horizontalBar|area
 - Table generateRows fields: personName|company|date|futureDate|currency|status|region|product|percent|integer|email|pick
-- Ensure navigation includes "agentic-workforce" and "cfo-view" entries`
+- Ensure navigation includes "agentic-workforce" and "cfo-view" entries
+${styleContext || ''}`
       : `You are an expert front-end developer helping refine a standalone HTML Business Intelligence Dashboard.
 
 RULES:
@@ -62,7 +63,8 @@ RULES:
 - Maintain the self-contained nature (all CSS/JS embedded)
 - Preserve Chart.js charts and interactive elements
 - Apply the requested changes precisely
-- Do NOT add explanations — output ONLY the HTML`;
+- Do NOT add explanations — output ONLY the HTML
+${styleContext || ''}`;
 
     const messages: Array<{role: string; content: string}> = [
       { role: 'system', content: systemPrompt },

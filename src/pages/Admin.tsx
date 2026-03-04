@@ -19,7 +19,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  ArrowLeft, Edit3, Plus, Trash2, Loader2, Shield, FileText, Users, BookOpen, ScrollText, RefreshCw, RotateCcw, ChevronDown,
+  ArrowLeft, Edit3, Plus, Trash2, Loader2, Shield, FileText, Users, BookOpen, ScrollText, RefreshCw, RotateCcw, ChevronDown, Gauge,
 } from "lucide-react";
 import {
   getAllResumeStyles, createResumeStyle, updateResumeStyle, deleteResumeStyle,
@@ -203,6 +203,112 @@ const ACTION_BADGE: Record<string, { label: string; className: string }> = {
   grant_admin: { label: 'Grant', className: 'bg-amber-500/15 text-amber-400 border-amber-500/30' },
   revoke_admin: { label: 'Revoke', className: 'bg-amber-500/15 text-amber-400 border-amber-500/30' },
 };
+
+type TopUser = { user_id: string; count: number; email?: string };
+
+function AdminRateLimitsTab() {
+  const [topUsers, setTopUsers] = useState<TopUser[]>([]);
+  const [totalToday, setTotalToday] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const since = new Date(Date.now() - 86400_000).toISOString();
+      const { data, error } = await supabase
+        .from('generation_usage')
+        .select('user_id, created_at')
+        .gte('created_at', since);
+      if (error) throw error;
+      const rows = data || [];
+      setTotalToday(rows.length);
+      // Aggregate by user
+      const counts: Record<string, number> = {};
+      for (const r of rows) {
+        counts[r.user_id] = (counts[r.user_id] || 0) + 1;
+      }
+      const sorted = Object.entries(counts)
+        .map(([user_id, count]) => ({ user_id, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5);
+      setTopUsers(sorted);
+    } catch (err: any) {
+      toast({ title: 'Error loading usage data', description: err.message, variant: 'destructive' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { load(); }, []);
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Gauge className="h-4 w-4 text-primary" /> Current Rate Limits
+          </CardTitle>
+          <CardDescription>Hardcoded per-user generation limits applied across all edge functions.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="rounded-lg border border-border p-4 text-center">
+              <p className="text-2xl font-bold text-foreground">20</p>
+              <p className="text-xs text-muted-foreground">per hour</p>
+            </div>
+            <div className="rounded-lg border border-border p-4 text-center">
+              <p className="text-2xl font-bold text-foreground">100</p>
+              <p className="text-xs text-muted-foreground">per day</p>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground mt-3">Limits are enforced server-side in each generation edge function. Exceeding returns HTTP 429.</p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Users className="h-4 w-4 text-primary" /> Top Users (Last 24h)
+              </CardTitle>
+              <CardDescription>Total generations today: <strong>{totalToday}</strong></CardDescription>
+            </div>
+            <Button variant="outline" size="sm" onClick={load} disabled={loading}>
+              <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${loading ? 'animate-spin' : ''}`} /> Refresh
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin" /></div>
+          ) : topUsers.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-6">No generations in the last 24 hours.</p>
+          ) : (
+            <div className="space-y-1.5">
+              {topUsers.map((u, i) => (
+                <div key={u.user_id} className="flex items-center gap-3 p-2.5 rounded-lg border border-border text-sm">
+                  <span className="text-xs font-bold text-muted-foreground w-5 text-right">#{i + 1}</span>
+                  <span className="font-mono text-xs text-foreground flex-1">{u.user_id.slice(0, 8)}…</span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-24 h-2 rounded-full bg-muted overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-primary"
+                        style={{ width: `${Math.min(100, (u.count / 100) * 100)}%` }}
+                      />
+                    </div>
+                    <span className="text-xs font-medium w-8 text-right">{u.count}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
 
 function AdminAuditTab() {
   const [entries, setEntries] = useState<AuditLogEntry[]>([]);
@@ -438,12 +544,15 @@ export default function Admin() {
         </div>
 
         <Tabs defaultValue="prompts">
-          <TabsList className="w-full grid grid-cols-4">
+          <TabsList className="w-full grid grid-cols-5">
             <TabsTrigger value="prompts" className="flex items-center gap-1.5">
               <FileText className="h-3.5 w-3.5" /> Prompts
             </TabsTrigger>
             <TabsTrigger value="users" className="flex items-center gap-1.5">
               <Users className="h-3.5 w-3.5" /> Users
+            </TabsTrigger>
+            <TabsTrigger value="limits" className="flex items-center gap-1.5">
+              <Gauge className="h-3.5 w-3.5" /> Limits
             </TabsTrigger>
             <TabsTrigger value="audit" className="flex items-center gap-1.5">
               <ScrollText className="h-3.5 w-3.5" /> Audit
@@ -628,6 +737,11 @@ export default function Admin() {
                 </Button>
               </CardFooter>
             </Card>
+          </TabsContent>
+
+          {/* Limits Tab */}
+          <TabsContent value="limits">
+            <AdminRateLimitsTab />
           </TabsContent>
 
           {/* Audit Tab */}

@@ -190,6 +190,7 @@ export async function getJobApplications(personaId?: string | null) {
   let query = (supabase as any)
     .from('job_applications')
     .select('*')
+    .is('deleted_at', null)
     .order('created_at', { ascending: false });
 
   // Filter by persona: null = admin's own, uuid = specific test user

@@ -301,7 +301,7 @@ const Applications = () => {
                 </Card>
               ) : (
                 <>
-                  <div className="rounded-md border">
+                  <div className="relative overflow-hidden rounded-md border min-h-[400px]">
                     <Table>
                       <TableHeader>
                         <TableRow>

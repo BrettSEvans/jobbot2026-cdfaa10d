@@ -1,8 +1,10 @@
 import { streamFromEdgeFunction } from './streamUtils';
 import { supabase } from '@/integrations/supabase/client';
+import { getProfile } from './profile';
 
 /**
  * Stream-generate a tailored resume HTML.
+ * Auto-fetches user's resume text from profile if not provided.
  */
 export async function streamResumeGeneration({
   jobDescription,
@@ -31,9 +33,18 @@ export async function streamResumeGeneration({
   onDelta: (text: string) => void;
   onDone: () => void;
 }) {
+  // Auto-fetch resume text from profile if not provided
+  let finalResumeText = resumeText;
+  if (!finalResumeText) {
+    try {
+      const profile = await getProfile();
+      finalResumeText = profile?.resume_text || "";
+    } catch { /* non-critical */ }
+  }
+
   await streamFromEdgeFunction({
     functionName: 'generate-resume',
-    body: { jobDescription, resumeText, systemPrompt, companyName, jobTitle, branding, competitors, customers, products, profileContext },
+    body: { jobDescription, resumeText: finalResumeText, systemPrompt, companyName, jobTitle, branding, competitors, customers, products, profileContext },
     onDelta,
     onDone,
   });

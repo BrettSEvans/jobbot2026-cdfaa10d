@@ -1,8 +1,10 @@
 import { streamFromEdgeFunction } from './streamUtils';
+import { getStyleContextForPrompt } from './stylePreferences';
 
 /**
  * Generic streaming refinement for any HTML asset type.
  * Calls the corresponding refine-{assetType} edge function.
+ * Automatically injects user style preferences.
  */
 
 const ASSET_FUNCTION_MAP: Record<string, string> = {
@@ -38,9 +40,15 @@ export async function streamRefineAsset({
   const fnName = ASSET_FUNCTION_MAP[assetType];
   if (!fnName) throw new Error(`Unknown asset type: ${assetType}`);
 
+  // Fetch user style preferences for injection
+  let styleContext = "";
+  try {
+    styleContext = await getStyleContextForPrompt();
+  } catch { /* non-critical */ }
+
   await streamFromEdgeFunction({
     functionName: fnName,
-    body: { currentHtml, userMessage, jobDescription, companyName, jobTitle, branding },
+    body: { currentHtml, userMessage, jobDescription, companyName, jobTitle, branding, styleContext },
     onDelta,
     onDone,
   });

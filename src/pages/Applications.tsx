@@ -275,7 +275,6 @@ const Applications = () => {
                               </AlertDialogFooter>
                             </AlertDialogContent>
                           </AlertDialog>
-                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>

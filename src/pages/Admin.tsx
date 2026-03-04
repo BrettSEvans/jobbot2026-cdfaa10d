@@ -513,14 +513,14 @@ function AdminAuditTab() {
               {entries.map((entry) => {
                 const badge = ACTION_BADGE[entry.action] || { label: entry.action, className: 'bg-muted text-muted-foreground' };
                 const meta = entry.metadata as Record<string, unknown>;
-                const targetLabel = (meta?.label as string) || (meta?.slug as string) || (meta?.user_id as string)?.slice(0, 8) || entry.target_id.slice(0, 8);
+                const targetLabel = (meta?.label as string) || (meta?.slug as string) || (meta?.user_id as string) || entry.target_id;
                 return (
                   <div key={entry.id} className="flex items-center gap-3 p-2.5 rounded-lg border border-border text-sm">
                     <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${badge.className}`}>
                       {badge.label}
                     </span>
                     <span className="flex-1 truncate text-foreground">{targetLabel}</span>
-                    <span className="font-mono text-xs text-muted-foreground shrink-0">{entry.admin_id.slice(0, 6)}</span>
+                    <span className="font-mono text-xs text-muted-foreground shrink-0">{entry.admin_id}</span>
                     <span className="text-xs text-muted-foreground shrink-0">
                       {formatDistanceToNow(new Date(entry.created_at), { addSuffix: true })}
                     </span>
@@ -1066,7 +1066,7 @@ export default function Admin() {
             <AlertDialogHeader>
               <AlertDialogTitle>Remove Admin Access</AlertDialogTitle>
               <AlertDialogDescription>
-                This will revoke admin privileges for user <code className="text-xs bg-muted px-1 py-0.5 rounded">{removeAdminTarget?.slice(0, 8)}...</code>. They will lose access to this panel immediately.
+                This will revoke admin privileges for user <code className="text-xs bg-muted px-1 py-0.5 rounded break-all">{removeAdminTarget}</code>. They will lose access to this panel immediately.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

@@ -8,9 +8,12 @@ import {
 import { parseLlmJsonOutput, assembleDashboardHtml } from "@/lib/dashboard/assembler";
 import type { DashboardData } from "@/lib/dashboard/schema";
 import { useBackgroundJob } from "@/hooks/useBackgroundJob";
+import type { Tables } from "@/integrations/supabase/types";
+
+export type JobApplication = Tables<'job_applications'>;
 
 export interface ApplicationState {
-  app: any;
+  app: JobApplication | null;
   loading: boolean;
   saving: boolean;
   coverLetter: string;
@@ -39,7 +42,7 @@ export interface ApplicationState {
   setArchDiagramHtml: (v: string) => void;
   roadmapHtml: string;
   setRoadmapHtml: (v: string) => void;
-  saveField: (fields: Record<string, any>) => Promise<void>;
+  saveField: (fields: Partial<JobApplication>) => Promise<void>;
   handleCopy: (text: string, label: string) => Promise<void>;
   isBgGenerating: boolean;
   bgJob: ReturnType<typeof useBackgroundJob>;
@@ -49,7 +52,7 @@ export interface ApplicationState {
 export function useApplicationDetail(id: string | undefined): ApplicationState {
   const { toast } = useToast();
 
-  const [app, setApp] = useState<any>(null);
+  const [app, setApp] = useState<JobApplication | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -100,13 +103,13 @@ export function useApplicationDetail(id: string | undefined): ApplicationState {
 
       setDashboardHtml(html);
       setDashboardData(parsedDashData);
-      setExecutiveReportHtml((data as any).executive_report_html || "");
-      setRaidLogHtml((data as any).raid_log_html || "");
-      setArchDiagramHtml((data as any).architecture_diagram_html || "");
-      setRoadmapHtml((data as any).roadmap_html || "");
+      setExecutiveReportHtml(data.executive_report_html || "");
+      setRaidLogHtml(data.raid_log_html || "");
+      setArchDiagramHtml(data.architecture_diagram_html || "");
+      setRoadmapHtml(data.roadmap_html || "");
       setChatHistory(Array.isArray(data.chat_history) ? data.chat_history as Array<{ role: string; content: string }> : []);
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      toast({ title: "Error", description: err instanceof Error ? err.message : "Unknown error", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -143,15 +146,15 @@ export function useApplicationDetail(id: string | undefined): ApplicationState {
     };
   }, [id]);
 
-  const saveField = async (fields: Record<string, any>) => {
+  const saveField = async (fields: Partial<JobApplication>) => {
     if (!id) return;
     setSaving(true);
     try {
-      const updated = await saveJobApplication({ id, job_url: app.job_url, ...fields });
+      const updated = await saveJobApplication({ id, job_url: app!.job_url, ...fields });
       setApp(updated);
       toast({ title: "Saved", description: "Changes saved." });
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      toast({ title: "Error", description: err instanceof Error ? err.message : "Unknown error", variant: "destructive" });
     } finally {
       setSaving(false);
     }

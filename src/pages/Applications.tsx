@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { getJobApplications, deleteJobApplication } from "@/lib/api/jobApplication";
+import type { JobApplication } from "@/hooks/useApplicationDetail";
 import {
   Plus,
   FileText,
@@ -34,7 +35,7 @@ type SortDir = "asc" | "desc";
 const Applications = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [applications, setApplications] = useState<any[]>([]);
+  const [applications, setApplications] = useState<JobApplication[]>([]);
   const [loading, setLoading] = useState(true);
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [sortKey, setSortKey] = useState<SortKey>("created_at");
@@ -58,8 +59,8 @@ const Applications = () => {
     try {
       const data = await getJobApplications();
       setApplications(data);
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      toast({ title: "Error", description: err instanceof Error ? err.message : "Unknown error", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -71,8 +72,8 @@ const Applications = () => {
       await deleteJobApplication(id);
       setApplications((prev) => prev.filter((a) => a.id !== id));
       toast({ title: "Deleted", description: "Application removed." });
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      toast({ title: "Error", description: err instanceof Error ? err.message : "Unknown error", variant: "destructive" });
     }
   };
 

@@ -17,12 +17,13 @@ import { streamExecutiveReport } from "@/lib/api/executiveReport";
 import { streamRaidLog } from "@/lib/api/raidLog";
 import { streamArchitectureDiagram } from "@/lib/api/architectureDiagram";
 import { streamRoadmap } from "@/lib/api/roadmap";
+import { streamResumeGeneration, getResumeStyle } from "@/lib/api/resume";
 import { parseLlmJsonOutput, assembleDashboardHtml } from "@/lib/dashboard/assembler";
 import { cleanHtml } from "@/lib/cleanHtml";
 
 export type GenerationJob = {
   applicationId: string;
-  status: "pending" | "scraping" | "analyzing" | "cover-letter" | "dashboard" | "generating-assets" | "executive-report" | "raid-log" | "architecture-diagram" | "roadmap" | "complete" | "error";
+  status: "pending" | "scraping" | "analyzing" | "cover-letter" | "dashboard" | "generating-assets" | "executive-report" | "raid-log" | "architecture-diagram" | "roadmap" | "resume" | "complete" | "error";
   progress: string;
   error?: string;
   /** Tracks how many of the 4 parallel assets have finished (used by UI) */
@@ -98,12 +99,14 @@ class BackgroundGenerationManager {
     companyUrl,
     jobDescription,
     useManualInput,
+    resumeStyleId,
   }: {
     applicationId?: string;
     jobUrl: string;
     companyUrl?: string;
     jobDescription?: string;
     useManualInput?: boolean;
+    resumeStyleId?: string;
   }): Promise<string> {
     // Create a DB record first if we don't have one
     let appId = applicationId;
@@ -138,7 +141,7 @@ class BackgroundGenerationManager {
     this.notify();
 
     // Run in background (don't await at call site)
-    this.runPipeline(appId, jobUrl, companyUrl, jobDescription, useManualInput, abortController.signal);
+    this.runPipeline(appId, jobUrl, companyUrl, jobDescription, useManualInput, resumeStyleId, abortController.signal);
 
     return appId;
   }
@@ -149,6 +152,7 @@ class BackgroundGenerationManager {
     companyUrl?: string,
     manualDescription?: string,
     useManualInput?: boolean,
+    resumeStyleId?: string,
     signal?: AbortSignal,
   ) {
     try {

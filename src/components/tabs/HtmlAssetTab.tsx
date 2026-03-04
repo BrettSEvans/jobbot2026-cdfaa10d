@@ -140,9 +140,6 @@ export default function HtmlAssetTab({
         </Button>
         {html && (
           <>
-            <Button variant="outline" size="sm" onClick={() => handleCopy(html, `${label} HTML`)}>
-              <Copy className="mr-2 h-4 w-4" /> Copy HTML
-            </Button>
             <SaveAsTemplate
               dashboardHtml={html} applicationId={appId} assetType={assetType}
               defaultLabel={`${companyName} ${jobTitle} ${label}`.trim()}

@@ -222,6 +222,30 @@ export type Database = {
           },
         ]
       }
+      generation_usage: {
+        Row: {
+          asset_type: string
+          created_at: string
+          edge_function: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          asset_type: string
+          created_at?: string
+          edge_function: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          asset_type?: string
+          created_at?: string
+          edge_function?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       job_applications: {
         Row: {
           architecture_diagram_html: string | null

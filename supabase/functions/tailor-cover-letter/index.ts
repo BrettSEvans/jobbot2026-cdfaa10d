@@ -1,24 +1,31 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
-const BASE_COVER_LETTER = `To the Gusto GTM Team,
-
-I am excitedly applying for the Head of GTM Process & Tooling position at Gusto. While my previous background spans sales, operations and program management, my true "geek out" passion, and common thread through my career, lies in building the internal systems, AI-driven tools, and streamlined processes that empower teams to excel. I am particularly excited about Gusto's commitment to making complex business tasks simple and personal—a philosophy I apply to the internal tools I build for my own colleagues.
-
-At Gusto, I envision my role as a bridge between data and execution. I want to work alongside the GTM team and stakeholders to create an evolving ecosystem of automated agents and intelligence tools that help our reps exceed their quotas. I believe we are at a tipping point where AI tools allow us to transition from "knowledge workers" to "judgment workers," and I have already begun prototyping how this looks in a GTM environment.
-
-As a demonstration of my vision for Gusto's GTM path, I have developed a functioning mock-up of a Business Intelligence Dashboard. This dashboard represents the "Intel Officer" approach—arming the team with technical ammunition and competitive counters in real-time. Beyond dashboards, I would work with the team and stakeholders/partners to build "Agentic Staff"—automated workflows that act as a force multiplier for the team.
-
-I realize that even the most advanced AI agents and dashboards are simply "arrows in the quiver". The GTM team members are the ones who actually hit the target. My goal is to provide them with vetted, useful tools that eliminate manual friction, allowing them to focus entirely on the hard work of winning business and helping small businesses thrive.
-
-I am eager to see if my vision for interconnected agents and AI-driven operations integrates with the path the Gusto team has already forged.
-
-Sincerely,
-Brett Evans`;
+const RATE_LIMITS = { perHour: 20, perDay: 100 };
+async function checkRateLimit(req: Request, assetType: string, edgeFunction: string): Promise<Response | null> {
+  try {
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) return null;
+    const anonClient = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!, { global: { headers: { Authorization: authHeader } } });
+    const { data } = await anonClient.auth.getClaims(authHeader.replace('Bearer ', ''));
+    const userId = data?.claims?.sub;
+    if (!userId) return null;
+    const svc = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+    const now = Date.now();
+    const { count: hourCount } = await svc.from('generation_usage').select('*', { count: 'exact', head: true }).eq('user_id', userId).gte('created_at', new Date(now - 3600_000).toISOString());
+    const { count: dayCount } = await svc.from('generation_usage').select('*', { count: 'exact', head: true }).eq('user_id', userId).gte('created_at', new Date(now - 86400_000).toISOString());
+    if ((hourCount ?? 0) >= RATE_LIMITS.perHour || (dayCount ?? 0) >= RATE_LIMITS.perDay) {
+      return new Response(JSON.stringify({ error: 'Rate limit exceeded. Please try again later.', retry_after_seconds: 60 }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+    await svc.from('generation_usage').insert({ user_id: userId, asset_type: assetType, edge_function: edgeFunction });
+  } catch (e) { console.warn('Rate limit check failed, allowing request:', e); }
+  return null;
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -26,6 +33,9 @@ serve(async (req) => {
   }
 
   try {
+    const rateLimitResponse = await checkRateLimit(req, 'cover-letter', 'tailor-cover-letter');
+    if (rateLimitResponse) return rateLimitResponse;
+
     const { jobDescription, customInstructions, profileContext, styleContext } = await req.json();
 
     if (!jobDescription) {

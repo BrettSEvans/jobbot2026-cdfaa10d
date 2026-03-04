@@ -19,8 +19,9 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  ArrowLeft, Edit3, Plus, Trash2, Loader2, Shield, FileText, Users, BookOpen, ScrollText, RefreshCw, RotateCcw, ChevronDown, Gauge, FileCode,
+  ArrowLeft, Edit3, Plus, Trash2, Loader2, Shield, FileText, Users, BookOpen, ScrollText, RefreshCw, RotateCcw, ChevronDown, Gauge, FileCode, UserCheck,
 } from "lucide-react";
+import ApprovalQueue from "@/components/ApprovalQueue";
 import { getSystemDocument, updateSystemDocument } from "@/lib/api/systemDocuments";
 import {
   getAllResumeStyles, createResumeStyle, updateResumeStyle, deleteResumeStyle,

@@ -367,6 +367,8 @@ const Applications = () => {
                                           setIsClosing(false);
                                           setPreviewId(app.id);
                                         }
+                                      }}
+                                      title="Preview"
                                     >
                                       <Eye className="h-4 w-4" />
                                     </Button>

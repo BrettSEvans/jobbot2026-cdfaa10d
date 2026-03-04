@@ -45,14 +45,37 @@ export function getActivePersonaSnapshot(): PersonaProfile | null {
   return _activePersona;
 }
 
+// ── Session persistence helpers ──
+const SESSION_KEY = "jobbot_active_persona";
+
+function persistPersona(persona: PersonaProfile | null) {
+  if (persona?.isTestUser) {
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(persona));
+  } else {
+    sessionStorage.removeItem(SESSION_KEY);
+  }
+}
+
+function restorePersona(): PersonaProfile | null {
+  try {
+    const raw = sessionStorage.getItem(SESSION_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as PersonaProfile;
+    return parsed?.isTestUser ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
 export function ImpersonationProvider({ children }: { children: ReactNode }) {
   const [rootProfile, setRootProfile] = useState<PersonaProfile | null>(null);
-  const [activePersona, setActivePersona] = useState<PersonaProfile | null>(null);
+  const [activePersona, setActivePersona] = useState<PersonaProfile | null>(() => restorePersona());
   const [loading, setLoading] = useState(true);
 
-  // Keep module-level ref in sync
+  // Keep module-level ref + sessionStorage in sync
   useEffect(() => {
     _activePersona = activePersona;
+    persistPersona(activePersona);
   }, [activePersona]);
 
   const loadRoot = useCallback(async () => {

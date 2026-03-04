@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Upload, X, Plus, FileText, User, Briefcase, Sparkles } from "lucide-react";
 import { getProfile, updateProfile, uploadResumePdf, type UserProfile } from "@/lib/api/profile";
+import StylePreferencesCard from "@/components/StylePreferencesCard";
 
 const TONE_OPTIONS = [
   { value: "professional", label: "Professional" },
@@ -289,6 +290,9 @@ export default function Profile() {
             </div>
           </CardContent>
         </Card>
+
+        {/* AI Style Memory */}
+        <StylePreferencesCard />
 
         <div className="flex justify-end">
           <Button onClick={handleSave} disabled={saving} size="lg">

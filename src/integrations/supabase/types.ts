@@ -388,6 +388,42 @@ export type Database = {
           },
         ]
       }
+      user_style_preferences: {
+        Row: {
+          category: string
+          confidence: number
+          created_at: string
+          id: string
+          preference: string
+          source_quote: string | null
+          times_reinforced: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category: string
+          confidence?: number
+          created_at?: string
+          id?: string
+          preference: string
+          source_quote?: string | null
+          times_reinforced?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          confidence?: number
+          created_at?: string
+          id?: string
+          preference?: string
+          source_quote?: string | null
+          times_reinforced?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

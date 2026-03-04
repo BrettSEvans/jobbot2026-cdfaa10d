@@ -47,3 +47,6 @@ verify_jwt = false
 
 [functions.refine-roadmap]
 verify_jwt = false
+
+[functions.extract-style-signals]
+verify_jwt = false

@@ -9,7 +9,7 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
   try {
-    const { currentHtml, userMessage, jobDescription, companyName, jobTitle, branding } = await req.json();
+    const { currentHtml, userMessage, jobDescription, companyName, jobTitle, branding, styleContext } = await req.json();
     if (!userMessage) {
       return new Response(JSON.stringify({ error: 'User message is required' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
@@ -20,13 +20,21 @@ serve(async (req) => {
     }
 
     const systemPrompt = `You are an expert executive communication specialist. You are refining an existing Executive Status Report based on user feedback.
+${styleContext || ''}
 
 RULES:
 - Output the COMPLETE modified HTML file, starting with <!DOCTYPE html> and ending with </html>
 - Keep all existing content unless explicitly asked to change it
 - Maintain the self-contained nature (all CSS embedded inline)
 - Apply the requested changes precisely
-- Do NOT add explanations — output ONLY the HTML`;
+- Do NOT add explanations — output ONLY the HTML
+
+STYLE SIGNAL DETECTION:
+If the user's feedback implies a general style preference (e.g. "make it shorter", "use more bullet points", "less formal"), after the HTML output, add a JSON block:
+\`\`\`json
+{"style_signals":[{"category":"tone|length|formatting|emphasis|vocabulary|structure","preference":"...","confidence":0.7,"source_quote":"user's words"}]}
+\`\`\`
+Only flag preferences that are GENERAL (apply across documents), not task-specific. If none detected, omit this block.`;
 
     const messages = [
       { role: 'system', content: systemPrompt },

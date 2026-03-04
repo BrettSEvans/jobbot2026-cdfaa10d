@@ -39,8 +39,9 @@ export async function proposeAssets({
   const { data, error } = await supabase.functions.invoke('propose-assets', {
     body: { jobDescription, resumeText, companyName, jobTitle, industry },
   });
-  if (error) throw new Error(error.message);
+  // Check data.error first since supabase wraps non-2xx with generic error message
   if (data?.error) throw new Error(data.error);
+  if (error) throw new Error(error.message);
   return data?.suggested_assets || [];
 }
 

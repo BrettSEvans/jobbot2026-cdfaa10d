@@ -409,6 +409,38 @@ const NewApplication = () => {
                 </CardContent>
               </Card>
 
+              {resumeStyles.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <FileUser className="h-5 w-5" /> Resume Style
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Select value={selectedResumeStyleId} onValueChange={setSelectedResumeStyleId}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a resume style" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {resumeStyles.map((style) => (
+                          <SelectItem key={style.id} value={style.id}>
+                            <div>
+                              <span>{style.label}</span>
+                              {style.description && (
+                                <span className="text-xs text-muted-foreground ml-2">— {style.description}</span>
+                              )}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Controls the AI-generated resume style and format
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+
               <Button
                 onClick={handleAnalyze}
                 disabled={useManualInput ? !manualJobDescription.trim() : !jobUrl.trim()}

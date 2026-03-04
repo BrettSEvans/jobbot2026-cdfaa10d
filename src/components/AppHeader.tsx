@@ -58,7 +58,7 @@ export default function AppHeader({ onSignOut }: AppHeaderProps) {
           {/* Logo + Nav */}
           <div className="flex items-center gap-4">
             <button
-61:               onClick={() => guardedNavigate(() => navigate("/"))}
+onClick={() => guardedNavigate(() => navigate("/"))}
               className="flex items-center gap-1.5 font-heading text-base font-bold tracking-tight text-primary hover:opacity-80 transition-opacity"
             >
               <Zap className="h-5 w-5 fill-primary text-primary" />

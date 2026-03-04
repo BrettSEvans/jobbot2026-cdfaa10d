@@ -85,8 +85,10 @@ function AuthenticatedApp() {
               <Route path="/profile" element={<><AppHeader onSignOut={signOut} /><Profile /></>} />
               <Route path="/admin" element={<><AppHeader onSignOut={signOut} /><Admin /></>} />
               <Route path="*" element={<NotFound />} />
+              <Route path="*" element={<><HelpButton /></>} />
             </>
           )}
+          {user && <HelpButton />}
         </Routes>
       </NavigationGuardProvider>
     </BrowserRouter>

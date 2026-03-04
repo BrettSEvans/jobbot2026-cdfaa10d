@@ -34,6 +34,7 @@ type Listener = () => void;
 
 class BackgroundGenerationManager {
   private jobs: Map<string, GenerationJob> = new Map();
+  private abortControllers: Map<string, AbortController> = new Map();
   private listeners: Set<Listener> = new Set();
 
   subscribe(listener: Listener) {
@@ -65,6 +66,18 @@ class BackgroundGenerationManager {
       Object.assign(job, updates);
       this.notify();
     }
+  }
+
+  /**
+   * Cancel an active generation job.
+   */
+  cancelJob(id: string) {
+    const controller = this.abortControllers.get(id);
+    if (controller) {
+      controller.abort(new Error("Cancelled by user"));
+      this.abortControllers.delete(id);
+    }
+    this.updateJob(id, { status: "error", progress: "Cancelled", error: "Generation cancelled by user" });
   }
 
   /**
@@ -109,10 +122,12 @@ class BackgroundGenerationManager {
       progress: "Starting...",
     };
     this.jobs.set(appId, job);
+    const abortController = new AbortController();
+    this.abortControllers.set(appId, abortController);
     this.notify();
 
     // Run in background (don't await at call site)
-    this.runPipeline(appId, jobUrl, companyUrl, jobDescription, useManualInput);
+    this.runPipeline(appId, jobUrl, companyUrl, jobDescription, useManualInput, abortController.signal);
 
     return appId;
   }
@@ -122,7 +137,8 @@ class BackgroundGenerationManager {
     jobUrl: string,
     companyUrl?: string,
     manualDescription?: string,
-    useManualInput?: boolean
+    useManualInput?: boolean,
+    signal?: AbortSignal,
   ) {
     try {
       // 0. Load user profile context for AI personalization
@@ -371,10 +387,17 @@ class BackgroundGenerationManager {
         generation_status: "complete",
       } as any);
 
+      this.abortControllers.delete(appId);
       this.updateJob(appId, { status: "complete", progress: "Done!" });
     } catch (err: any) {
-      console.error("Background generation error:", err);
-      this.updateJob(appId, { status: "error", progress: "Failed", error: err.message });
+      this.abortControllers.delete(appId);
+      const isCancelled = signal?.aborted;
+      if (isCancelled) {
+        // Already handled by cancelJob — just save the status
+      } else {
+        console.error("Background generation error:", err);
+        this.updateJob(appId, { status: "error", progress: "Failed", error: err.message });
+      }
       try {
         await saveJobApplication({
           id: appId,

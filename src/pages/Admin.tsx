@@ -309,6 +309,10 @@ export default function Admin() {
       toast({ title: "Cannot remove yourself", description: "You cannot remove your own admin access.", variant: "destructive" });
       return;
     }
+    if (userId === PROTECTED_ADMIN_ID) {
+      toast({ title: "Protected account", description: "This founder admin account cannot be removed.", variant: "destructive" });
+      return;
+    }
     try {
       await removeAdminRole(userId);
       toast({ title: "Removed", description: "Admin access revoked." });

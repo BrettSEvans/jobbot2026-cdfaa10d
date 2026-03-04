@@ -42,6 +42,8 @@ export interface ApplicationState {
   setArchDiagramHtml: (v: string) => void;
   roadmapHtml: string;
   setRoadmapHtml: (v: string) => void;
+  resumeHtml: string;
+  setResumeHtml: (v: string) => void;
   saveField: (fields: Partial<JobApplication>) => Promise<void>;
   handleCopy: (text: string, label: string) => Promise<void>;
   isBgGenerating: boolean;
@@ -71,6 +73,7 @@ export function useApplicationDetail(id: string | undefined): ApplicationState {
   const [raidLogHtml, setRaidLogHtml] = useState("");
   const [archDiagramHtml, setArchDiagramHtml] = useState("");
   const [roadmapHtml, setRoadmapHtml] = useState("");
+  const [resumeHtml, setResumeHtml] = useState("");
 
   const bgJob = useBackgroundJob(id);
   const isBgGenerating = !!(bgJob && !["complete", "error"].includes(bgJob.status));
@@ -107,6 +110,7 @@ export function useApplicationDetail(id: string | undefined): ApplicationState {
       setRaidLogHtml(data.raid_log_html || "");
       setArchDiagramHtml(data.architecture_diagram_html || "");
       setRoadmapHtml(data.roadmap_html || "");
+      setResumeHtml((data as any).resume_html || "");
       setChatHistory(Array.isArray(data.chat_history) ? data.chat_history as Array<{ role: string; content: string }> : []);
     } catch (err: unknown) {
       toast({ title: "Error", description: err instanceof Error ? err.message : "Unknown error", variant: "destructive" });
@@ -179,6 +183,7 @@ export function useApplicationDetail(id: string | undefined): ApplicationState {
     raidLogHtml, setRaidLogHtml,
     archDiagramHtml, setArchDiagramHtml,
     roadmapHtml, setRoadmapHtml,
+    resumeHtml, setResumeHtml,
     saveField, handleCopy,
     isBgGenerating, bgJob,
     reload: () => { if (id) loadApplication(id); },

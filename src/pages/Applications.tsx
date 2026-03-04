@@ -566,7 +566,7 @@ const ASSET_FIELDS = [
   { key: "cover_letter", label: "Cover Letter", assetType: "cover-letter" },
   { key: "executive_report_html", label: "Executive Report", assetType: "executive-report" },
   { key: "raid_log_html", label: "RAID Log", assetType: "raid-log" },
-  { key: "architecture_diagram_html", label: "Architecture", assetType: "architecture" },
+  { key: "architecture_diagram_html", label: "Architecture", assetType: "architecture-diagram" },
   { key: "roadmap_html", label: "Roadmap", assetType: "roadmap" },
 ] as const;
 

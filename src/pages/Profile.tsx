@@ -70,36 +70,11 @@ export default function Profile() {
     loadProfile();
   }, []);
 
-  // Browser beforeunload + link click guard
-  useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (hasUnsavedChanges) {
-        e.preventDefault();
-        e.returnValue = "";
-      }
-    };
-
-    // Intercept clicks on internal navigation links
-    const handleClick = (e: MouseEvent) => {
-      if (!hasUnsavedChanges) return;
-      const anchor = (e.target as HTMLElement).closest("a[href]");
-      if (!anchor) return;
-      const href = anchor.getAttribute("href");
-      if (!href || href.startsWith("http") || href.startsWith("#")) return;
-      // Internal link — confirm before navigating
-      if (!window.confirm("You have unsaved profile changes. Leave without saving?")) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
-    };
-
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    document.addEventListener("click", handleClick, true);
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-      document.removeEventListener("click", handleClick, true);
-    };
-  }, [hasUnsavedChanges]);
+  // Block navigation when there are unsaved changes
+  unstable_usePrompt({
+    when: hasUnsavedChanges,
+    message: "You have unsaved profile changes. Leave without saving?",
+  });
 
   const loadProfile = async () => {
     try {

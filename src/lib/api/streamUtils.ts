@@ -80,8 +80,8 @@ export async function processSSEStream(
     }
   }
 
-  // Flush remaining buffer
-  if (buffer.trim()) {
+  // Flush remaining buffer (only if stream ended without [DONE])
+  if (!streamDone && buffer.trim()) {
     for (let raw of buffer.split('\n')) {
       if (!raw) continue;
       if (raw.endsWith('\r')) raw = raw.slice(0, -1);

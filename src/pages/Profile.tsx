@@ -10,17 +10,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Upload, X, Plus, FileText, User, Briefcase, Sparkles, Save } from "lucide-react";
 import { getProfile, updateProfile, uploadResumePdf, type UserProfile } from "@/lib/api/profile";
 import StylePreferencesCard from "@/components/StylePreferencesCard";
-import { useBlocker } from "react-router-dom";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 
 const TONE_OPTIONS = [
   { value: "professional", label: "Professional" },
@@ -37,14 +26,6 @@ const EXPERIENCE_OPTIONS = [
   { value: "staff", label: "Staff / Principal (10-15 years)" },
   { value: "executive", label: "Executive (15+ years)" },
 ];
-
-// Track which cards have unsaved changes
-type DirtyCards = {
-  identity: boolean;
-  resume: boolean;
-  skills: boolean;
-  tone: boolean;
-};
 
 export default function Profile() {
   const { toast } = useToast();
@@ -75,7 +56,7 @@ export default function Profile() {
   });
 
   // Compute dirty state per card
-  const dirty: DirtyCards = useMemo(() => ({
+  const dirty = useMemo(() => ({
     identity: displayName !== saved.displayName || yearsExperience !== saved.yearsExperience,
     resume: resumeText !== saved.resumeText,
     skills: JSON.stringify(skills) !== JSON.stringify(saved.skills) || JSON.stringify(industries) !== JSON.stringify(saved.industries),
@@ -84,26 +65,39 @@ export default function Profile() {
 
   const hasUnsavedChanges = dirty.identity || dirty.resume || dirty.skills || dirty.tone;
 
-  // Navigation blocker
-  const blocker = useBlocker(
-    ({ currentLocation, nextLocation }) =>
-      hasUnsavedChanges && currentLocation.pathname !== nextLocation.pathname
-  );
-
   useEffect(() => {
     loadProfile();
   }, []);
 
-  // Browser beforeunload guard
+  // Browser beforeunload + link click guard
   useEffect(() => {
-    const handler = (e: BeforeUnloadEvent) => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (hasUnsavedChanges) {
         e.preventDefault();
         e.returnValue = "";
       }
     };
-    window.addEventListener("beforeunload", handler);
-    return () => window.removeEventListener("beforeunload", handler);
+
+    // Intercept clicks on internal navigation links
+    const handleClick = (e: MouseEvent) => {
+      if (!hasUnsavedChanges) return;
+      const anchor = (e.target as HTMLElement).closest("a[href]");
+      if (!anchor) return;
+      const href = anchor.getAttribute("href");
+      if (!href || href.startsWith("http") || href.startsWith("#")) return;
+      // Internal link — confirm before navigating
+      if (!window.confirm("You have unsaved profile changes. Leave without saving?")) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    document.addEventListener("click", handleClick, true);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      document.removeEventListener("click", handleClick, true);
+    };
   }, [hasUnsavedChanges]);
 
   const loadProfile = async () => {
@@ -233,11 +227,18 @@ export default function Profile() {
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-2xl mx-auto p-4 md:p-8 space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight font-heading">My Profile</h1>
-          <p className="text-muted-foreground text-sm">
-            Your background and preferences personalize cover letters and executive reports.
-          </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight font-heading">My Profile</h1>
+            <p className="text-muted-foreground text-sm">
+              Your background and preferences personalize cover letters and executive reports.
+            </p>
+          </div>
+          {hasUnsavedChanges && (
+            <Badge variant="secondary" className="bg-primary/10 text-primary animate-pulse">
+              Unsaved changes
+            </Badge>
+          )}
         </div>
 
         {/* Identity */}
@@ -311,7 +312,6 @@ export default function Profile() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Key Skills */}
             <div className="space-y-2">
               <Label>Key Skills & Strengths</Label>
               <div className="flex flex-wrap gap-1.5 min-h-[28px]">
@@ -338,7 +338,6 @@ export default function Profile() {
               </div>
             </div>
 
-            {/* Target Industries */}
             <div className="space-y-2">
               <Label>Target Industries</Label>
               <div className="flex flex-wrap gap-1.5 min-h-[28px]">
@@ -398,7 +397,7 @@ export default function Profile() {
         {/* AI Style Memory */}
         <StylePreferencesCard />
 
-        {/* Global save */}
+        {/* Global save — only shows when there are changes */}
         {hasUnsavedChanges && (
           <div className="flex justify-end">
             <Button onClick={doSave} disabled={saving} size="lg">
@@ -408,32 +407,6 @@ export default function Profile() {
           </div>
         )}
       </div>
-
-      {/* Navigation guard dialog */}
-      <AlertDialog open={blocker.state === "blocked"}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Unsaved changes</AlertDialogTitle>
-            <AlertDialogDescription>
-              You have unsaved changes on your profile. Would you like to save before leaving?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => blocker.proceed?.()}>
-              Discard & Leave
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={async () => {
-                await doSave();
-                blocker.proceed?.();
-              }}
-            >
-              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Save & Leave
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

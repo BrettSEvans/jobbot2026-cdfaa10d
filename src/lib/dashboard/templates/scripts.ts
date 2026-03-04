@@ -611,7 +611,7 @@ export function getScriptsJs(): string {
         var group = el('div', { className: 'slider-group' });
         var labelDiv = el('div', { className: 'slider-label' });
         labelDiv.appendChild(el('span', {}, slider.label));
-        var valueSpan = el('span', {}, slider['default'] + slider.unit);
+        var valueSpan = el('span', {}, formatSliderValue(slider['default'], slider.unit));
         labelDiv.appendChild(valueSpan);
         group.appendChild(labelDiv);
 
@@ -624,7 +624,7 @@ export function getScriptsJs(): string {
 
         input.addEventListener('input', function() {
           sliderValues[slider.id] = parseFloat(this.value);
-          valueSpan.textContent = this.value + slider.unit;
+          valueSpan.textContent = formatSliderValue(this.value, slider.unit);
           updateCFOChart(scenario, sliderValues, chartRef);
         });
 

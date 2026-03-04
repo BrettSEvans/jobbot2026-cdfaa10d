@@ -58,35 +58,27 @@ export default function AppHeader({ onSignOut }: AppHeaderProps) {
           {/* Logo + Nav */}
           <div className="flex items-center gap-4">
             <button
-              onClick={() => guardedNavigate(() => navigate("/"))}
+61:               onClick={() => guardedNavigate(() => navigate("/"))}
               className="flex items-center gap-1.5 font-heading text-base font-bold tracking-tight text-primary hover:opacity-80 transition-opacity"
-              disabled={isImpersonating}
             >
               <Zap className="h-5 w-5 fill-primary text-primary" />
               JobBot
             </button>
             <nav className="flex items-center gap-1">
-              {links.map((l) => {
-                // When impersonating, only Profile link stays active
-                const disabled = isImpersonating && l.to !== "/profile";
-                return (
+              {links.map((l) => (
                   <button
                     key={l.to}
-                    onClick={() => !disabled && guardedNavigate(() => navigate(l.to))}
-                    disabled={disabled}
+                    onClick={() => guardedNavigate(() => navigate(l.to))}
                     className={cn(
                       "px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
-                      disabled
-                        ? "text-muted-foreground/40 cursor-not-allowed"
-                        : l.match(pathname)
-                          ? "bg-accent text-accent-foreground"
-                          : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                      l.match(pathname)
+                        ? "bg-accent text-accent-foreground"
+                        : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
                     )}
                   >
                     {l.label}
                   </button>
-                );
-              })}
+              ))}
             </nav>
           </div>
 

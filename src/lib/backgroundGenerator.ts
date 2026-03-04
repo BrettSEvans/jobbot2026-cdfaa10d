@@ -137,7 +137,8 @@ class BackgroundGenerationManager {
     jobUrl: string,
     companyUrl?: string,
     manualDescription?: string,
-    useManualInput?: boolean
+    useManualInput?: boolean,
+    signal?: AbortSignal,
   ) {
     try {
       // 0. Load user profile context for AI personalization

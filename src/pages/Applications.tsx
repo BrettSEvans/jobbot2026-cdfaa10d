@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -70,8 +70,16 @@ const Applications = () => {
   const [sortKey, setSortKey] = useState<SortKey>("created_at");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [activeView, setActiveView] = useState<"active" | "trash">("active");
+  const previewRef = useRef<HTMLDivElement>(null);
 
   const activeJobCount = useActiveJobCount();
+
+  // Auto-scroll to preview when it appears
+  useEffect(() => {
+    if (previewId && previewRef.current) {
+      previewRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [previewId]);
 
   useEffect(() => {
     loadApplications();
@@ -393,7 +401,7 @@ const Applications = () => {
                   </div>
 
                   {previewApp?.dashboard_html && (
-                    <Card className="overflow-hidden">
+                    <Card ref={previewRef} className="overflow-hidden">
                       <div className="p-2 bg-muted flex items-center justify-between">
                         <span className="text-sm font-medium px-2">
                           Preview: {previewApp.company_name} — {previewApp.job_title}

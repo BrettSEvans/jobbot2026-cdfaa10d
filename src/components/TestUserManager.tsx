@@ -198,7 +198,7 @@ function TestUserEditForm({ testUser, onSaved }: { testUser: TestUserRow; onSave
   const [editMiddleName, setEditMiddleName] = useState(testUser.middle_name || "");
   const [editDisplayName, setEditDisplayName] = useState(testUser.display_name || "");
   const [editResumeText, setEditResumeText] = useState(testUser.resume_text || "");
-  const [editYearsExperience, setEditYearsExperience] = useState(testUser.years_experience || "");
+  const [editYearsExperience, setEditYearsExperience] = useState(testUser.years_experience || "none");
   const [editPreferredTone, setEditPreferredTone] = useState(testUser.preferred_tone || "professional");
   const [editSkills, setEditSkills] = useState<string[]>(testUser.key_skills || []);
   const [editIndustries, setEditIndustries] = useState<string[]>(testUser.target_industries || []);
@@ -234,7 +234,7 @@ function TestUserEditForm({ testUser, onSaved }: { testUser: TestUserRow; onSave
         middle_name: editMiddleName.trim() || null,
         display_name: editDisplayName.trim() || null,
         resume_text: editResumeText.trim() || null,
-        years_experience: editYearsExperience || null,
+        years_experience: editYearsExperience === "none" ? null : editYearsExperience,
         preferred_tone: editPreferredTone,
         key_skills: finalSkills,
         target_industries: finalIndustries,

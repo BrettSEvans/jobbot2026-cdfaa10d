@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { jobDescription, companyName, jobTitle, competitors, customers, products, department, branding } = await req.json();
+    const { jobDescription, companyName, jobTitle, competitors, customers, products, department, branding, profileContext } = await req.json();
 
     if (!jobDescription) {
       return new Response(
@@ -106,7 +106,7 @@ STYLE REQUIREMENTS:
 - Include a bold header bar with the company name and project title using brand colors
 
 TONE: Crisp, authoritative, objective. Focused on business impact and technical velocity. No fluff.
-
+${profileContext ? `\n${profileContext}` : ''}
 Output ONLY the complete HTML document. No markdown fences, no explanations.`;
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {

@@ -47,8 +47,8 @@ export default function DashboardTab({ appId, state }: DashboardTabProps) {
       let accumulated = "";
       await streamDashboardGeneration({
         jobDescription, branding: app?.branding, companyName, jobTitle,
-        competitors: app?.competitors || [], customers: app?.customers || [],
-        products: app?.products || [],
+        competitors: (app?.competitors as string[]) || [], customers: (app?.customers as string[]) || [],
+        products: (app?.products as string[]) || [],
         onDelta: (text) => { accumulated += text; },
         onDone: () => {
           const parsed = parseLlmJsonOutput(accumulated);

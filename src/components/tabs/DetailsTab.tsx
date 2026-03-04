@@ -71,12 +71,12 @@ export default function DetailsTab({ state }: DetailsTabProps) {
           <TagSection label="Products" items={app.products as string[] | null} />
           <TagSection label="Competitors" items={app.competitors as string[] | null} />
           <TagSection label="Customers" items={app.customers as string[] | null} />
-          {app.branding && (
+          {app.branding && typeof app.branding === 'object' && !Array.isArray(app.branding) && (
             <div>
               <span className="text-sm font-medium text-muted-foreground">Branding:</span>
               <div className="flex items-center gap-2 mt-1">
                 <Badge variant="secondary">✓ Captured</Badge>
-                {app.branding.colors && Object.entries(app.branding.colors).slice(0, 6).map(([key, val]) => (
+                {(app.branding as Record<string, any>).colors && Object.entries((app.branding as Record<string, any>).colors).slice(0, 6).map(([key, val]) => (
                   <div key={key} className="h-5 w-5 rounded-full border" style={{ backgroundColor: val as string }} title={`${key}: ${val}`} />
                 ))}
               </div>

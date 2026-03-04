@@ -150,7 +150,7 @@ export function useApplicationDetail(id: string | undefined): ApplicationState {
     if (!id) return;
     setSaving(true);
     try {
-      const updated = await saveJobApplication({ id, job_url: app!.job_url, ...fields });
+      const updated = await saveJobApplication({ id, job_url: app!.job_url, ...fields } as any);
       setApp(updated);
       toast({ title: "Saved", description: "Changes saved." });
     } catch (err: unknown) {

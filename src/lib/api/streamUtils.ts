@@ -7,35 +7,63 @@
  * Call a Supabase Edge Function that returns an SSE stream,
  * and pipe deltas to the caller via onDelta/onDone callbacks.
  */
+/** Default SSE stream timeout: 2 minutes */
+const DEFAULT_STREAM_TIMEOUT_MS = 120_000;
+
 export async function streamFromEdgeFunction({
   functionName,
   body,
   onDelta,
   onDone,
+  timeoutMs = DEFAULT_STREAM_TIMEOUT_MS,
+  signal: externalSignal,
 }: {
   functionName: string;
   body: Record<string, unknown>;
   onDelta: (text: string) => void;
   onDone: () => void;
+  /** Timeout in milliseconds (default 120 000). Set to 0 to disable. */
+  timeoutMs?: number;
+  /** Optional external AbortSignal for caller-controlled cancellation. */
+  signal?: AbortSignal;
 }): Promise<void> {
-  const resp = await fetch(
-    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${functionName}`,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-      },
-      body: JSON.stringify(body),
-    }
-  );
+  const controller = new AbortController();
+  const timeoutId = timeoutMs > 0
+    ? setTimeout(() => controller.abort(new Error(`SSE stream timed out after ${timeoutMs / 1000}s`)), timeoutMs)
+    : undefined;
 
-  if (!resp.ok || !resp.body) {
-    const errData = await resp.json().catch(() => ({}));
-    throw new Error(errData.error || `Request failed (${resp.status})`);
+  // If the caller provides an external signal, forward its abort
+  if (externalSignal) {
+    if (externalSignal.aborted) {
+      controller.abort(externalSignal.reason);
+    } else {
+      externalSignal.addEventListener('abort', () => controller.abort(externalSignal.reason), { once: true });
+    }
   }
 
-  await processSSEStream(resp.body, onDelta, onDone);
+  try {
+    const resp = await fetch(
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${functionName}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      }
+    );
+
+    if (!resp.ok || !resp.body) {
+      const errData = await resp.json().catch(() => ({}));
+      throw new Error(errData.error || `Request failed (${resp.status})`);
+    }
+
+    await processSSEStream(resp.body, onDelta, onDone);
+  } finally {
+    if (timeoutId !== undefined) clearTimeout(timeoutId);
+  }
 }
 
 /**

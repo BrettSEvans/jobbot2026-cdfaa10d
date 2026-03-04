@@ -63,25 +63,40 @@ export async function uploadResumePdf(file: File): Promise<string> {
 
 /**
  * Returns the profile context string for injection into AI prompts.
+ * Includes both profile data and learned style preferences.
  * Returns empty string if no profile data is set.
  */
 export async function getProfileContextForPrompt(): Promise<string> {
   try {
-    const profile = await getProfile();
-    if (!profile) return "";
+    const { getStyleContextForPrompt } = await import("@/lib/api/stylePreferences");
+    
+    const [profile, styleContext] = await Promise.all([
+      getProfile(),
+      getStyleContextForPrompt(),
+    ]);
 
     const parts: string[] = [];
 
-    if (profile.display_name) parts.push(`Name: ${profile.display_name}`);
-    if (profile.years_experience) parts.push(`Experience level: ${profile.years_experience}`);
-    if (profile.target_industries?.length) parts.push(`Target industries: ${profile.target_industries.join(", ")}`);
-    if (profile.key_skills?.length) parts.push(`Key skills & strengths: ${profile.key_skills.join(", ")}`);
-    if (profile.preferred_tone) parts.push(`Preferred writing tone: ${profile.preferred_tone}`);
-    if (profile.resume_text) parts.push(`\nResume / background:\n${profile.resume_text}`);
+    if (profile) {
+      if (profile.display_name) parts.push(`Name: ${profile.display_name}`);
+      if (profile.years_experience) parts.push(`Experience level: ${profile.years_experience}`);
+      if (profile.target_industries?.length) parts.push(`Target industries: ${profile.target_industries.join(", ")}`);
+      if (profile.key_skills?.length) parts.push(`Key skills & strengths: ${profile.key_skills.join(", ")}`);
+      if (profile.preferred_tone) parts.push(`Preferred writing tone: ${profile.preferred_tone}`);
+      if (profile.resume_text) parts.push(`\nResume / background:\n${profile.resume_text}`);
+    }
 
-    if (parts.length === 0) return "";
+    let result = "";
+    if (parts.length > 0) {
+      result = `\n\nAPPLICANT PROFILE (use this to personalize the output):\n${parts.join("\n")}`;
+    }
 
-    return `\n\nAPPLICANT PROFILE (use this to personalize the output):\n${parts.join("\n")}`;
+    // Append learned style preferences
+    if (styleContext) {
+      result += styleContext;
+    }
+
+    return result;
   } catch {
     return "";
   }

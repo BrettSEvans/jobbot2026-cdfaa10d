@@ -99,7 +99,7 @@ export function NavigationGuardProvider({ children }: { children: React.ReactNod
             <AlertDialogAction onClick={handleCancel} className="bg-primary text-primary-foreground hover:bg-primary/90">Stay on Page</AlertDialogAction>
             <AlertDialogCancel onClick={handleConfirmLeave} className="border-transparent bg-transparent text-muted-foreground hover:bg-muted hover:text-foreground">
               Leave Without Saving
-            </AlertDialogAction>
+            </AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

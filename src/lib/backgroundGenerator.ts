@@ -69,6 +69,18 @@ class BackgroundGenerationManager {
   }
 
   /**
+   * Cancel an active generation job.
+   */
+  cancelJob(id: string) {
+    const controller = this.abortControllers.get(id);
+    if (controller) {
+      controller.abort(new Error("Cancelled by user"));
+      this.abortControllers.delete(id);
+    }
+    this.updateJob(id, { status: "error", progress: "Cancelled", error: "Generation cancelled by user" });
+  }
+
+  /**
    * Start a full generation pipeline for a single application.
    * Runs entirely in the background — no UI dependency.
    */

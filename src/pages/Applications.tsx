@@ -355,38 +355,58 @@ const Applications = () => {
                             <TableCell>
                               <div className="flex gap-1 justify-end" onClick={(e) => e.stopPropagation()}>
                                 {app.cover_letter && (
-                                  <Button size="sm" variant="ghost" onClick={(e) => handleCopyCoverLetter(app.cover_letter, e)} title="Copy cover letter">
-                                    <FileText className="h-4 w-4" />
-                                  </Button>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button size="sm" variant="ghost" onClick={(e) => handleCopyCoverLetter(app.cover_letter, e)}>
+                                        <FileText className="h-4 w-4" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Copy cover letter</TooltipContent>
+                                  </Tooltip>
                                 )}
                                 {app.dashboard_html && (
                                   <>
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        if (previewId === app.id) {
-                                          handleClosePreview();
-                                        } else {
-                                          setIsClosing(false);
-                                          setPreviewId(app.id);
-                                        }
-                                      }}
-                                      title="Preview"
-                                    >
-                                      <Eye className="h-4 w-4" />
-                                    </Button>
-                                    <Button size="sm" variant="ghost" onClick={(e) => handleCopyHtml(app.dashboard_html, e)} title="Copy HTML">
-                                      <Copy className="h-4 w-4" />
-                                    </Button>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (previewId === app.id) {
+                                              handleClosePreview();
+                                            } else {
+                                              setIsClosing(false);
+                                              setPreviewId(app.id);
+                                            }
+                                          }}
+                                        >
+                                          <Eye className="h-4 w-4" />
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>Preview dashboard</TooltipContent>
+                                    </Tooltip>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button size="sm" variant="ghost" onClick={(e) => handleCopyHtml(app.dashboard_html, e)}>
+                                          <Copy className="h-4 w-4" />
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>Copy HTML</TooltipContent>
+                                    </Tooltip>
                                   </>
                                 )}
                                 <AlertDialog>
-                                  <AlertDialogTrigger asChild>
-                                    <Button size="sm" variant="ghost" title="Move to trash">
-                                      <Trash2 className="h-4 w-4 text-destructive" />
-                                    </Button>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <AlertDialogTrigger asChild>
+                                        <Button size="sm" variant="ghost">
+                                          <Trash2 className="h-4 w-4 text-destructive" />
+                                        </Button>
+                                      </AlertDialogTrigger>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Move to trash</TooltipContent>
+                                  </Tooltip>
                                   </AlertDialogTrigger>
                                   <AlertDialogContent>
                                     <AlertDialogHeader>

@@ -4,10 +4,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Copy, Edit3, Check, X, Loader2, RefreshCw } from "lucide-react";
+import { Copy, Edit3, Check, X, Loader2, RefreshCw, Download } from "lucide-react";
 import CoverLetterRevisions from "@/components/CoverLetterRevisions";
 import { streamTailoredLetter } from "@/lib/api/coverLetter";
 import { saveCoverLetterRevision } from "@/lib/api/coverLetterRevisions";
+import { downloadCoverLetterPdf } from "@/lib/coverLetterPdf";
 import type { ApplicationState } from "@/hooks/useApplicationDetail";
 
 interface CoverLetterTabProps {
@@ -62,9 +63,24 @@ export default function CoverLetterTab({ appId, state }: CoverLetterTabProps) {
     <div className="space-y-4">
       <div className="flex flex-wrap gap-2">
         {coverLetter && (
-          <Button variant="outline" size="sm" onClick={() => handleCopy(coverLetter, "Cover letter")}>
-            <Copy className="mr-2 h-4 w-4" /> Copy
-          </Button>
+          <>
+            <Button variant="outline" size="sm" onClick={() => handleCopy(coverLetter, "Cover letter")}>
+              <Copy className="mr-2 h-4 w-4" /> Copy
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                downloadCoverLetterPdf(
+                  coverLetter,
+                  app?.company_name || "Company",
+                  app?.job_title || "Position",
+                )
+              }
+            >
+              <Download className="mr-2 h-4 w-4" /> Download PDF
+            </Button>
+          </>
         )}
         <Button variant="outline" size="sm" onClick={() => setEditingCoverLetter(!editingCoverLetter)}>
           <Edit3 className="mr-2 h-4 w-4" /> {editingCoverLetter ? "Cancel Edit" : "Edit"}

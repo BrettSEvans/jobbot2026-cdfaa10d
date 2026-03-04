@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Edit3, Copy, RefreshCw, Loader2, Download, Sparkles, FileDown,
+  Edit3, RefreshCw, Loader2, Download, Sparkles, FileDown,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import SaveAsTemplate from "@/components/SaveAsTemplate";
@@ -140,9 +140,6 @@ export default function HtmlAssetTab({
         </Button>
         {html && (
           <>
-            <Button variant="outline" size="sm" onClick={() => handleCopy(html, `${label} HTML`)}>
-              <Copy className="mr-2 h-4 w-4" /> Copy HTML
-            </Button>
             <SaveAsTemplate
               dashboardHtml={html} applicationId={appId} assetType={assetType}
               defaultLabel={`${companyName} ${jobTitle} ${label}`.trim()}

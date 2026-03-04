@@ -425,6 +425,39 @@ export type Database = {
           },
         ]
       }
+      rate_limit_overrides: {
+        Row: {
+          created_at: string
+          id: string
+          is_unlimited: boolean
+          notes: string | null
+          per_day: number
+          per_hour: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_unlimited?: boolean
+          notes?: string | null
+          per_day?: number
+          per_hour?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_unlimited?: boolean
+          notes?: string | null
+          per_day?: number
+          per_hour?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       resume_prompt_styles: {
         Row: {
           created_at: string

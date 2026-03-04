@@ -224,13 +224,20 @@ export async function deleteJobApplication(id: string) {
   if (error) throw new Error(error.message);
 }
 
-export async function getDeletedJobApplications() {
-  // RLS policy "Users can view own deleted applications" handles filtering
-  const { data, error } = await (supabase as any)
+export async function getDeletedJobApplications(personaId?: string | null) {
+  let query = (supabase as any)
     .from('job_applications')
     .select('*')
     .not('deleted_at', 'is', null)
     .order('deleted_at', { ascending: false });
+
+  if (personaId) {
+    query = query.eq('persona_id', personaId);
+  } else {
+    query = query.is('persona_id', null);
+  }
+
+  const { data, error } = await query;
   if (error) throw new Error(error.message);
   return data;
 }

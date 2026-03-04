@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,9 +9,10 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Upload, X, Plus, FileText, User, Briefcase, Sparkles, Save } from "lucide-react";
+import { Loader2, Upload, X, Plus, FileText, User, Briefcase, Sparkles, Save, Shield } from "lucide-react";
 import { getProfile, updateProfile, uploadResumePdf, type UserProfile } from "@/lib/api/profile";
 import StylePreferencesCard from "@/components/StylePreferencesCard";
+import { useAdminRole } from "@/hooks/useAdminRole";
 
 const TONE_OPTIONS = [
   { value: "professional", label: "Professional" },
@@ -30,7 +32,9 @@ const EXPERIENCE_OPTIONS = [
 
 export default function Profile() {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const fileRef = useRef<HTMLInputElement>(null);
+  const { isAdmin } = useAdminRole();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savingCard, setSavingCard] = useState<string | null>(null);
@@ -402,6 +406,23 @@ export default function Profile() {
 
         {/* AI Style Memory */}
         <StylePreferencesCard />
+
+        {/* Admin Panel Link */}
+        {isAdmin && (
+          <Card className="border-primary/30">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Shield className="h-4 w-4 text-primary" /> Admin Settings
+              </CardTitle>
+              <CardDescription>Manage resume prompt styles and admin users.</CardDescription>
+            </CardHeader>
+            <CardFooter>
+              <Button variant="outline" size="sm" onClick={() => navigate("/admin")}>
+                <Shield className="mr-2 h-4 w-4" /> Open Admin Panel
+              </Button>
+            </CardFooter>
+          </Card>
+        )}
 
         {/* Global save — only shows when there are changes */}
         {hasUnsavedChanges && (

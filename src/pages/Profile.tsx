@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Upload, X, Plus, FileText, User, Briefcase, Sparkles, Save, Shield } from "lucide-react";
 import { getProfile, updateProfile, uploadResumePdf, type UserProfile } from "@/lib/api/profile";
+import { updateTestUser } from "@/lib/api/testUsers";
 import StylePreferencesCard from "@/components/StylePreferencesCard";
 import TestUserManager from "@/components/TestUserManager";
 import { useAdminRole } from "@/hooks/useAdminRole";
@@ -37,7 +38,7 @@ export default function Profile() {
   const navigate = useNavigate();
   const fileRef = useRef<HTMLInputElement>(null);
   const { isAdmin } = useAdminRole();
-  const { refreshRoot, isImpersonating } = useImpersonation();
+  const { activePersona, isImpersonating, refreshRoot, updateActivePersona } = useImpersonation();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savingCard, setSavingCard] = useState<string | null>(null);
@@ -75,13 +76,58 @@ export default function Profile() {
     resume: resumeText !== saved.resumeText,
     skills: JSON.stringify(skills) !== JSON.stringify(saved.skills) || JSON.stringify(industries) !== JSON.stringify(saved.industries) || newSkill.trim() !== "" || newIndustry.trim() !== "",
     tone: preferredTone !== saved.preferredTone,
-  }), [displayName, resumeText, yearsExperience, preferredTone, industries, skills, saved, newSkill, newIndustry, middleName]);
+  }), [displayName, resumeText, yearsExperience, preferredTone, industries, skills, saved, newSkill, newIndustry, middleName, firstName, lastName]);
 
   const hasUnsavedChanges = dirty.identity || dirty.resume || dirty.skills || dirty.tone;
 
+  // Populate form fields from a persona object
+  const populateFromPersona = useCallback((p: {
+    first_name?: string | null; middle_name?: string | null; last_name?: string | null;
+    display_name?: string | null; resume_text?: string | null; years_experience?: string | null;
+    preferred_tone?: string | null; target_industries?: string[] | null; key_skills?: string[] | null;
+  }) => {
+    const vals = {
+      firstName: p.first_name || "",
+      middleName: p.middle_name || "",
+      lastName: p.last_name || "",
+      displayName: p.display_name || "",
+      resumeText: p.resume_text || "",
+      yearsExperience: p.years_experience || "",
+      preferredTone: p.preferred_tone || "professional",
+      industries: p.target_industries || [],
+      skills: p.key_skills || [],
+    };
+    setFirstName(vals.firstName);
+    setMiddleName(vals.middleName);
+    setLastName(vals.lastName);
+    setDisplayName(vals.displayName);
+    setResumeText(vals.resumeText);
+    setYearsExperience(vals.yearsExperience);
+    setPreferredTone(vals.preferredTone);
+    setIndustries(vals.industries);
+    setSkills(vals.skills);
+    setSaved(vals);
+  }, []);
+
+  // Load profile data — from activePersona when impersonating, from DB otherwise
+  const loadProfile = useCallback(async () => {
+    try {
+      if (isImpersonating && activePersona) {
+        populateFromPersona(activePersona);
+      } else {
+        const p = await getProfile();
+        if (p) populateFromPersona(p);
+      }
+    } catch (err: any) {
+      toast({ title: "Error loading profile", description: err.message, variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  }, [isImpersonating, activePersona, populateFromPersona, toast]);
+
   useEffect(() => {
     loadProfile();
-  }, []);
+  }, [loadProfile]);
 
   // Sync dirty state to navigation guard context
   const { setHasUnsavedChanges, setDirtySections } = useNavigationGuard();
@@ -99,43 +145,10 @@ export default function Profile() {
     };
   }, [hasUnsavedChanges, dirty, setHasUnsavedChanges, setDirtySections]);
 
-  const loadProfile = async () => {
-    try {
-      const p = await getProfile();
-      if (p) {
-        const vals = {
-          firstName: p.first_name || "",
-          middleName: p.middle_name || "",
-          lastName: p.last_name || "",
-          displayName: p.display_name || "",
-          resumeText: p.resume_text || "",
-          yearsExperience: p.years_experience || "",
-          preferredTone: p.preferred_tone || "professional",
-          industries: p.target_industries || [],
-          skills: p.key_skills || [],
-        };
-        setFirstName(vals.firstName);
-        setMiddleName(vals.middleName);
-        setLastName(vals.lastName);
-        setDisplayName(vals.displayName);
-        setResumeText(vals.resumeText);
-        setYearsExperience(vals.yearsExperience);
-        setPreferredTone(vals.preferredTone);
-        setIndustries(vals.industries);
-        setSkills(vals.skills);
-        setSaved(vals);
-      }
-    } catch (err: any) {
-      toast({ title: "Error loading profile", description: err.message, variant: "destructive" });
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const doSave = useCallback(async () => {
     setSaving(true);
     try {
-      await updateProfile({
+      const updates = {
         first_name: firstName || null,
         middle_name: middleName || null,
         last_name: lastName || null,
@@ -145,20 +158,39 @@ export default function Profile() {
         target_industries: industries,
         key_skills: skills,
         preferred_tone: preferredTone,
-      });
+      };
+
+      if (isImpersonating && activePersona) {
+        // Save to test_users table
+        await updateTestUser(activePersona.id, updates);
+        // Update the in-memory persona so the rest of the app sees the changes
+        updateActivePersona({
+          first_name: updates.first_name,
+          middle_name: updates.middle_name,
+          last_name: updates.last_name,
+          display_name: updates.display_name,
+          resume_text: updates.resume_text,
+          years_experience: updates.years_experience,
+          target_industries: industries,
+          key_skills: skills,
+          preferred_tone: preferredTone,
+        });
+      } else {
+        await updateProfile(updates);
+        await refreshRoot();
+      }
+
       setSaved({
         firstName, middleName, lastName, displayName, resumeText, yearsExperience, preferredTone,
         industries: [...industries], skills: [...skills],
       });
-      // Refresh impersonation context so header name updates
-      await refreshRoot();
       toast({ title: "Profile saved", description: "Your preferences will personalize future AI outputs." });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
       setSaving(false);
     }
-  }, [firstName, middleName, lastName, displayName, resumeText, yearsExperience, preferredTone, industries, skills, toast, refreshRoot]);
+  }, [firstName, middleName, lastName, displayName, resumeText, yearsExperience, preferredTone, industries, skills, toast, refreshRoot, isImpersonating, activePersona, updateActivePersona]);
 
   const handleCardSave = async (cardName: string) => {
     setSavingCard(cardName);
@@ -239,9 +271,13 @@ export default function Profile() {
       <div className="max-w-2xl mx-auto p-4 md:p-8 space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight font-heading">My Profile</h1>
+            <h1 className="text-2xl font-bold tracking-tight font-heading">
+              {isImpersonating ? `${activePersona?.first_name} ${activePersona?.last_name}'s Profile` : "My Profile"}
+            </h1>
             <p className="text-muted-foreground text-sm">
-              Your background and preferences personalize cover letters and executive reports.
+              {isImpersonating
+                ? "Editing test user profile — changes will personalize AI outputs when impersonating this user."
+                : "Your background and preferences personalize cover letters and executive reports."}
             </p>
           </div>
           {hasUnsavedChanges && (
@@ -305,13 +341,16 @@ export default function Profile() {
             <CardDescription>Upload a PDF or paste key highlights — this context personalizes your AI outputs.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="flex gap-2">
-              <input ref={fileRef} type="file" accept=".pdf" onChange={handleFileUpload} className="hidden" />
-              <Button variant="outline" size="sm" onClick={() => fileRef.current?.click()} disabled={uploading}>
-                {uploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
-                Upload PDF
-              </Button>
-            </div>
+            {/* PDF upload only for real profiles, not test users */}
+            {!isImpersonating && (
+              <div className="flex gap-2">
+                <input ref={fileRef} type="file" accept=".pdf" onChange={handleFileUpload} className="hidden" />
+                <Button variant="outline" size="sm" onClick={() => fileRef.current?.click()} disabled={uploading}>
+                  {uploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+                  Upload PDF
+                </Button>
+              </div>
+            )}
             <div className="space-y-1.5">
               <Label htmlFor="resumeText">Resume highlights (recommended)</Label>
               <Textarea
@@ -418,11 +457,11 @@ export default function Profile() {
           <SaveCardButton cardName="tone" isDirty={dirty.tone} />
         </Card>
 
-        {/* AI Style Memory */}
-        <StylePreferencesCard />
+        {/* AI Style Memory — only for real profiles */}
+        {!isImpersonating && <StylePreferencesCard />}
 
         {/* Test User Impersonation (Admin Only) */}
-        {isAdmin && <TestUserManager />}
+        {isAdmin && !isImpersonating && <TestUserManager />}
 
         {/* Admin Panel Link */}
         {isAdmin && (

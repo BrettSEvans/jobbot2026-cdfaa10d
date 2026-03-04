@@ -49,6 +49,32 @@ export async function createTestUser(input: {
   return data;
 }
 
+export async function updateTestUser(
+  id: string,
+  updates: Partial<Omit<TestUserRow, "id" | "admin_id" | "created_at">>
+): Promise<TestUserRow> {
+  const { data, error } = await (supabase as any)
+    .from("test_users")
+    .update(updates)
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function getTestUser(id: string): Promise<TestUserRow | null> {
+  const { data, error } = await (supabase as any)
+    .from("test_users")
+    .select("*")
+    .eq("id", id)
+    .single();
+
+  if (error) return null;
+  return data;
+}
+
 export async function deleteTestUser(id: string): Promise<void> {
   const { error } = await (supabase as any)
     .from("test_users")

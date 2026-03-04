@@ -23,7 +23,7 @@ import { cleanHtml } from "@/lib/cleanHtml";
 
 export type GenerationJob = {
   applicationId: string;
-  status: "pending" | "scraping" | "analyzing" | "cover-letter" | "dashboard" | "generating-assets" | "executive-report" | "raid-log" | "architecture-diagram" | "roadmap" | "resume" | "complete" | "error";
+  status: "pending" | "scraping" | "analyzing" | "cover-letter" | "dashboard" | "generating-assets" | "executive-report" | "raid-log" | "architecture-diagram" | "roadmap" | "resume" | "generating-asset" | "refining-asset" | "complete" | "error";
   progress: string;
   error?: string;
   /** Tracks how many of the 4 parallel assets have finished (used by UI) */
@@ -33,7 +33,12 @@ export type GenerationJob = {
   startedAt?: number;
   /** Timestamp when each stage started */
   stageStartedAt?: number;
+  /** For asset-specific background jobs */
+  assetType?: string;
+  jobLabel?: string;
 };
+
+export type AssetJobResult = { html: string; extraFields?: Record<string, any> };
 
 type Listener = () => void;
 
@@ -555,6 +560,128 @@ class BackgroundGenerationManager {
     } catch (err: any) {
       console.error("Background refinement error:", err);
       this.updateJob(appId, { status: "error", progress: "Refinement failed", error: err.message });
+    }
+  }
+
+  // --- Generic asset job support (keyed as appId::assetType) ---
+
+  private assetJobKey(appId: string, assetType: string): string {
+    return `${appId}::${assetType}`;
+  }
+
+  getAssetJob(appId: string, assetType: string): GenerationJob | undefined {
+    return this.jobs.get(this.assetJobKey(appId, assetType));
+  }
+
+  /** Check if any job (pipeline or asset-specific) is active for a given application */
+  hasActiveJobsForApp(appId: string): boolean {
+    for (const [key, job] of this.jobs.entries()) {
+      if ((key === appId || key.startsWith(`${appId}::`)) && !["complete", "error"].includes(job.status)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /** Get all active asset types for an application */
+  getActiveAssetTypesForApp(appId: string): string[] {
+    const types: string[] = [];
+    for (const [key, job] of this.jobs.entries()) {
+      if (key.startsWith(`${appId}::`) && !["complete", "error"].includes(job.status)) {
+        types.push(key.split("::")[1]);
+      }
+    }
+    return types;
+  }
+
+  /**
+   * Start a generic asset background job (generate or refine).
+   * runFn does the actual streaming work and returns the result.
+   * The backgroundGenerator manages state and persists to DB.
+   */
+  async startAssetJob({
+    applicationId,
+    assetType,
+    label,
+    dbField,
+    runFn,
+    saveRevisionFn,
+    revisionLabel,
+  }: {
+    applicationId: string;
+    assetType: string;
+    label: string;
+    dbField: string;
+    runFn: () => Promise<AssetJobResult>;
+    saveRevisionFn?: (appId: string, html: string, label: string) => Promise<any>;
+    revisionLabel?: string;
+  }): Promise<void> {
+    const jobKey = this.assetJobKey(applicationId, assetType);
+    const now = Date.now();
+    const job: GenerationJob = {
+      applicationId,
+      status: "generating-asset",
+      progress: `${label}...`,
+      assetType,
+      jobLabel: label,
+      startedAt: now,
+      stageStartedAt: now,
+    };
+    this.jobs.set(jobKey, job);
+    this.notify();
+
+    // Run in background — don't await at call site
+    this.runAssetJob(jobKey, applicationId, dbField, label, runFn, saveRevisionFn, revisionLabel);
+  }
+
+  private async runAssetJob(
+    jobKey: string,
+    appId: string,
+    dbField: string,
+    label: string,
+    runFn: () => Promise<AssetJobResult>,
+    saveRevisionFn?: (appId: string, html: string, label: string) => Promise<any>,
+    revisionLabel?: string,
+  ) {
+    try {
+      const result = await runFn();
+
+      // Save to DB
+      const savePayload: Record<string, any> = { [dbField]: result.html };
+      if (result.extraFields) Object.assign(savePayload, result.extraFields);
+
+      // Need job_url for saveJobApplication — fetch it
+      const { getJobApplication } = await import("@/lib/api/jobApplication");
+      const app = await getJobApplication(appId);
+      await saveJobApplication({
+        id: appId,
+        job_url: app.job_url,
+        ...savePayload,
+      } as any);
+
+      // Save revision if provided
+      if (saveRevisionFn && revisionLabel) {
+        try {
+          await saveRevisionFn(appId, result.html, revisionLabel);
+        } catch (e) { console.warn("Failed to save revision:", e); }
+      }
+
+      this.updateJob(jobKey, { status: "complete", progress: `${label} complete!` });
+    } catch (err: any) {
+      console.error(`Background ${label} error:`, err);
+      this.updateJob(jobKey, { status: "error", progress: `${label} failed`, error: err.message });
+    }
+  }
+
+  /** Override updateJob to work with any key (not just appId) */
+  private updateJobByKey(key: string, updates: Partial<GenerationJob>) {
+    const job = this.jobs.get(key);
+    if (job) {
+      if (updates.status && updates.status !== job.status) {
+        updates.stageStartedAt = Date.now();
+      }
+      Object.assign(job, updates);
+      this.notify();
     }
   }
 }

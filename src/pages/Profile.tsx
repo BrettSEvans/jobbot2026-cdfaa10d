@@ -150,13 +150,15 @@ export default function Profile() {
         firstName, middleName, lastName, displayName, resumeText, yearsExperience, preferredTone,
         industries: [...industries], skills: [...skills],
       });
+      // Refresh impersonation context so header name updates
+      await refreshRoot();
       toast({ title: "Profile saved", description: "Your preferences will personalize future AI outputs." });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
       setSaving(false);
     }
-  }, [firstName, middleName, lastName, displayName, resumeText, yearsExperience, preferredTone, industries, skills, toast]);
+  }, [firstName, middleName, lastName, displayName, resumeText, yearsExperience, preferredTone, industries, skills, toast, refreshRoot]);
 
   const handleCardSave = async (cardName: string) => {
     setSavingCard(cardName);

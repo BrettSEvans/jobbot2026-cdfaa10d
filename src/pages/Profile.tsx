@@ -33,6 +33,68 @@ const EXPERIENCE_OPTIONS = [
   { value: "executive", label: "Executive (15+ years)" },
 ];
 
+// ---------- Resume PDF Drop Zone ----------
+
+function ResumeDropZone({
+  fileRef,
+  uploading,
+  onFileSelected,
+}: {
+  fileRef: React.RefObject<HTMLInputElement>;
+  uploading: boolean;
+  onFileSelected: (e: React.ChangeEvent<HTMLInputElement>) => void;
+}) {
+  const [dragOver, setDragOver] = useState(false);
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (!file) return;
+    // Simulate a file input change by setting files on the hidden input
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    if (fileRef.current) {
+      fileRef.current.files = dt.files;
+      fileRef.current.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+  };
+
+  return (
+    <div
+      onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+      onDragLeave={() => setDragOver(false)}
+      onDrop={handleDrop}
+      onClick={() => !uploading && fileRef.current?.click()}
+      className={`
+        relative flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-6 cursor-pointer transition-colors
+        ${dragOver
+          ? "border-primary bg-primary/5"
+          : "border-border hover:border-primary/50 hover:bg-muted/50"
+        }
+        ${uploading ? "pointer-events-none opacity-60" : ""}
+      `}
+    >
+      <input ref={fileRef} type="file" accept=".pdf" onChange={onFileSelected} className="hidden" />
+      {uploading ? (
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      ) : (
+        <Upload className="h-8 w-8 text-muted-foreground" />
+      )}
+      <div className="text-center">
+        <p className="text-sm font-medium text-foreground">
+          {uploading ? "Uploading..." : "Drop your resume PDF here"}
+        </p>
+        <p className="text-xs text-muted-foreground mt-0.5">
+          or click to browse · PDF only · 5 MB max
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ---------- Profile Page ----------
+
 export default function Profile() {
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -343,13 +405,11 @@ export default function Profile() {
           <CardContent className="space-y-3">
             {/* PDF upload only for real profiles, not test users */}
             {!isImpersonating && (
-              <div className="flex gap-2">
-                <input ref={fileRef} type="file" accept=".pdf" onChange={handleFileUpload} className="hidden" />
-                <Button variant="outline" size="sm" onClick={() => fileRef.current?.click()} disabled={uploading}>
-                  {uploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
-                  Upload PDF
-                </Button>
-              </div>
+              <ResumeDropZone
+                fileRef={fileRef}
+                uploading={uploading}
+                onFileSelected={handleFileUpload}
+              />
             )}
             <div className="space-y-1.5">
               <Label htmlFor="resumeText">Resume highlights (recommended)</Label>

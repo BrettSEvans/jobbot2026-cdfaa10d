@@ -222,6 +222,95 @@ export type Database = {
           },
         ]
       }
+      generated_asset_revisions: {
+        Row: {
+          application_id: string
+          asset_id: string
+          created_at: string
+          html: string
+          id: string
+          label: string | null
+          revision_number: number
+        }
+        Insert: {
+          application_id: string
+          asset_id: string
+          created_at?: string
+          html: string
+          id?: string
+          label?: string | null
+          revision_number?: number
+        }
+        Update: {
+          application_id?: string
+          asset_id?: string
+          created_at?: string
+          html?: string
+          id?: string
+          label?: string | null
+          revision_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "generated_asset_revisions_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "job_applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "generated_asset_revisions_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "generated_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      generated_assets: {
+        Row: {
+          application_id: string
+          asset_name: string
+          brief_description: string | null
+          created_at: string
+          generation_error: string | null
+          generation_status: string
+          html: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          application_id: string
+          asset_name: string
+          brief_description?: string | null
+          created_at?: string
+          generation_error?: string | null
+          generation_status?: string
+          html?: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          application_id?: string
+          asset_name?: string
+          brief_description?: string | null
+          created_at?: string
+          generation_error?: string | null
+          generation_status?: string
+          html?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "generated_assets_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "job_applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       generation_usage: {
         Row: {
           asset_type: string
@@ -389,6 +478,41 @@ export type Database = {
           years_experience?: string | null
         }
         Relationships: []
+      }
+      proposed_assets: {
+        Row: {
+          application_id: string
+          asset_name: string
+          brief_description: string
+          created_at: string
+          id: string
+          selected: boolean
+        }
+        Insert: {
+          application_id: string
+          asset_name: string
+          brief_description?: string
+          created_at?: string
+          id?: string
+          selected?: boolean
+        }
+        Update: {
+          application_id?: string
+          asset_name?: string
+          brief_description?: string
+          created_at?: string
+          id?: string
+          selected?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposed_assets_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "job_applications"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       raid_log_revisions: {
         Row: {

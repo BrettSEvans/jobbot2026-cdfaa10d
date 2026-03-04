@@ -1,9 +1,31 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
+
+const RATE_LIMITS = { perHour: 20, perDay: 100 };
+async function checkRateLimit(req: Request, assetType: string, edgeFunction: string): Promise<Response | null> {
+  try {
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) return null;
+    const anonClient = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!, { global: { headers: { Authorization: authHeader } } });
+    const { data } = await anonClient.auth.getClaims(authHeader.replace('Bearer ', ''));
+    const userId = data?.claims?.sub;
+    if (!userId) return null;
+    const svc = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+    const now = Date.now();
+    const { count: hourCount } = await svc.from('generation_usage').select('*', { count: 'exact', head: true }).eq('user_id', userId).gte('created_at', new Date(now - 3600_000).toISOString());
+    const { count: dayCount } = await svc.from('generation_usage').select('*', { count: 'exact', head: true }).eq('user_id', userId).gte('created_at', new Date(now - 86400_000).toISOString());
+    if ((hourCount ?? 0) >= RATE_LIMITS.perHour || (dayCount ?? 0) >= RATE_LIMITS.perDay) {
+      return new Response(JSON.stringify({ error: 'Rate limit exceeded. Please try again later.', retry_after_seconds: 60 }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+    await svc.from('generation_usage').insert({ user_id: userId, asset_type: assetType, edge_function: edgeFunction });
+  } catch (e) { console.warn('Rate limit check failed, allowing request:', e); }
+  return null;
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -11,6 +33,9 @@ serve(async (req) => {
   }
 
   try {
+    const rateLimitResponse = await checkRateLimit(req, 'executive-report', 'generate-executive-report');
+    if (rateLimitResponse) return rateLimitResponse;
+
     const { jobDescription, companyName, jobTitle, competitors, customers, products, department, branding, profileContext } = await req.json();
 
     if (!jobDescription) {

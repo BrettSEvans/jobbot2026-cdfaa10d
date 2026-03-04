@@ -15,6 +15,10 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   ArrowLeft, Edit3, Plus, Trash2, Loader2, Shield, FileText, Users, BookOpen,
 } from "lucide-react";
 import {
@@ -204,6 +208,11 @@ export default function Admin() {
   const [newAdminId, setNewAdminId] = useState("");
   const [addingAdmin, setAddingAdmin] = useState(false);
 
+  // Confirmation dialog state
+  const [deleteStyleTarget, setDeleteStyleTarget] = useState<ResumePromptStyle | null>(null);
+  const [deleteConfirmSlug, setDeleteConfirmSlug] = useState("");
+  const [removeAdminTarget, setRemoveAdminTarget] = useState<string | null>(null);
+
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       setCurrentUserId(user?.id || null);
@@ -388,7 +397,7 @@ export default function Admin() {
                         </Button>
                         <Button
                           variant="ghost" size="sm"
-                          onClick={() => handleDeleteStyle(style.id)}
+                          onClick={() => { setDeleteStyleTarget(style); setDeleteConfirmSlug(""); }}
                           className="text-destructive hover:text-destructive"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
@@ -433,7 +442,13 @@ export default function Admin() {
                     </div>
                     <Button
                       variant="ghost" size="sm"
-                      onClick={() => handleRemoveAdmin(admin.user_id)}
+                      onClick={() => {
+                        if (admin.user_id === currentUserId) {
+                          toast({ title: "Cannot remove yourself", description: "You cannot remove your own admin access.", variant: "destructive" });
+                        } else {
+                          setRemoveAdminTarget(admin.user_id);
+                        }
+                      }}
                       disabled={admin.user_id === currentUserId}
                       className="text-destructive hover:text-destructive"
                     >
@@ -542,6 +557,64 @@ export default function Admin() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Delete Style Confirmation */}
+        <AlertDialog open={!!deleteStyleTarget} onOpenChange={(open) => { if (!open) setDeleteStyleTarget(null); }}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Prompt Style</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will permanently delete <strong>{deleteStyleTarget?.label}</strong> (<code className="text-xs bg-muted px-1 py-0.5 rounded">{deleteStyleTarget?.slug}</code>). This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <div className="space-y-2">
+              <Label className="text-sm">Type <strong>{deleteStyleTarget?.slug}</strong> to confirm:</Label>
+              <Input
+                value={deleteConfirmSlug}
+                onChange={(e) => setDeleteConfirmSlug(e.target.value)}
+                placeholder={deleteStyleTarget?.slug}
+              />
+            </div>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => { setDeleteStyleTarget(null); setDeleteConfirmSlug(""); }}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                disabled={deleteConfirmSlug !== deleteStyleTarget?.slug}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                onClick={() => {
+                  if (deleteStyleTarget) handleDeleteStyle(deleteStyleTarget.id);
+                  setDeleteStyleTarget(null);
+                  setDeleteConfirmSlug("");
+                }}
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Remove Admin Confirmation */}
+        <AlertDialog open={!!removeAdminTarget} onOpenChange={(open) => { if (!open) setRemoveAdminTarget(null); }}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Remove Admin Access</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will revoke admin privileges for user <code className="text-xs bg-muted px-1 py-0.5 rounded">{removeAdminTarget?.slice(0, 8)}...</code>. They will lose access to this panel immediately.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                onClick={() => {
+                  if (removeAdminTarget) handleRemoveAdmin(removeAdminTarget);
+                  setRemoveAdminTarget(null);
+                }}
+              >
+                Remove Admin
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );

@@ -45,7 +45,7 @@ serve(async (req) => {
 
     const {
       jobDescription, resumeText, systemPrompt, companyName, jobTitle,
-      branding, competitors, customers, products, profileContext,
+      branding, competitors, customers, products, profileContext, generationGuide,
     } = await req.json();
 
     if (!jobDescription) {
@@ -90,7 +90,8 @@ CRITICAL RULES:
 8. Use Google Fonts via @import for professional typography.
 9. All CSS must be embedded inline in a <style> tag.
 10. Replace any placeholder names with the candidate's actual name from the profile context.
-${profileContext ? `\nCANDIDATE PROFILE CONTEXT:\n${profileContext}` : ''}`;
+${profileContext ? `\nCANDIDATE PROFILE CONTEXT:\n${profileContext}` : ''}
+${generationGuide ? `\n${generationGuide}` : ''}`;
 
     const userContent = `Generate a tailored resume for this position.
 

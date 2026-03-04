@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/sheet";
 import {
   ArrowLeft, Loader2,
-  Info, FileText, LayoutDashboard, Mail, FileUser,
+  Info, FileText, LayoutDashboard, Mail, FileUser, Sparkles, ArrowLeftRight,
 } from "lucide-react";
 import { useApplicationDetail } from "@/hooks/useApplicationDetail";
 import { streamResumeGeneration } from "@/lib/api/resume";
@@ -31,8 +31,13 @@ import CoverLetterTab from "@/components/tabs/CoverLetterTab";
 import HtmlAssetTab from "@/components/tabs/HtmlAssetTab";
 import JobDescriptionTab from "@/components/tabs/JobDescriptionTab";
 import DetailsTab from "@/components/tabs/DetailsTab";
-import AssetProposalCard from "@/components/AssetProposalCard";
 import DynamicAssetTab from "@/components/DynamicAssetTab";
+import ChangeAssetDialog from "@/components/ChangeAssetDialog";
+import AssetProposalCard from "@/components/AssetProposalCard";
+import {
+  Dialog,
+  DialogContent,
+} from "@/components/ui/dialog";
 import ImpersonationNotice from "@/components/ImpersonationNotice";
 
 type ActiveView = "dashboard" | "cover-letter" | "resume" | string;
@@ -47,6 +52,7 @@ const ApplicationDetail = () => {
   const [dynamicAssets, setDynamicAssets] = useState<GeneratedAsset[]>([]);
   const [hasProposals, setHasProposals] = useState(false);
   const [dynamicLoading, setDynamicLoading] = useState(true);
+  const [showProposalDialog, setShowProposalDialog] = useState(false);
 
   // Load dynamic assets on mount
   useEffect(() => {
@@ -67,6 +73,7 @@ const ApplicationDetail = () => {
 
   const handleAssetsConfirmed = async (assets: GeneratedAsset[]) => {
     setDynamicAssets(assets);
+    setShowProposalDialog(false);
 
     // Auto-generate all 3 assets
     for (const asset of assets) {
@@ -199,7 +206,7 @@ const ApplicationDetail = () => {
         </div>
 
         {/* Primary Tab Triggers */}
-        <div className="flex gap-1 border-b border-border pb-0">
+        <div className="flex items-center gap-1 border-b border-border pb-0">
           {primaryTabs.map((tab) => (
             <button
               key={tab.id}
@@ -214,6 +221,17 @@ const ApplicationDetail = () => {
               {tab.label}
             </button>
           ))}
+          {dynamicAssets.length === 0 && !dynamicLoading && (
+            <div className="ml-auto -mb-px pb-1">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowProposalDialog(true)}
+              >
+                <Sparkles className="mr-2 h-4 w-4" /> Propose Assets
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Dynamic Assets Bar */}
@@ -224,30 +242,47 @@ const ApplicationDetail = () => {
             </span>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               {dynamicAssets.map((asset) => (
-                <button
-                  key={asset.id}
-                  onClick={() => setActiveView(asset.id)}
-                  className={`flex items-center gap-2 px-3 py-2.5 rounded-lg border text-sm font-medium transition-all text-left ${
-                    activeView === asset.id
-                      ? "border-primary bg-primary/5 text-foreground shadow-sm"
-                      : "border-border text-muted-foreground hover:text-foreground hover:border-foreground/20 hover:bg-muted/50"
-                  }`}
-                >
-                  <FileText className="h-4 w-4 shrink-0" />
-                  <span className="truncate">{asset.asset_name}</span>
-                  <div
-                    className={`h-2 w-2 rounded-full shrink-0 ml-auto ${
-                      asset.generation_status === 'complete' && asset.html
-                        ? "bg-primary"
-                        : asset.generation_status === 'generating'
-                        ? "bg-yellow-500 animate-pulse"
-                        : asset.generation_status === 'error'
-                        ? "bg-destructive"
-                        : "bg-muted-foreground/30"
+                <div key={asset.id} className="flex items-center gap-1">
+                  <button
+                    onClick={() => setActiveView(asset.id)}
+                    className={`flex-1 flex items-center gap-2 px-3 py-2.5 rounded-lg border text-sm font-medium transition-all text-left ${
+                      activeView === asset.id
+                        ? "border-primary bg-primary/5 text-foreground shadow-sm"
+                        : "border-border text-muted-foreground hover:text-foreground hover:border-foreground/20 hover:bg-muted/50"
                     }`}
-                    title={asset.generation_status}
-                  />
-                </button>
+                  >
+                    <FileText className="h-4 w-4 shrink-0" />
+                    <span className="truncate">{asset.asset_name}</span>
+                    <div
+                      className={`h-2 w-2 rounded-full shrink-0 ml-auto ${
+                        asset.generation_status === 'complete' && asset.html
+                          ? "bg-primary"
+                          : asset.generation_status === 'generating'
+                          ? "bg-yellow-500 animate-pulse"
+                          : asset.generation_status === 'error'
+                          ? "bg-destructive"
+                          : "bg-muted-foreground/30"
+                      }`}
+                      title={asset.generation_status}
+                    />
+                  </button>
+                  <ChangeAssetDialog
+                    asset={asset}
+                    otherAssetNames={dynamicAssets.filter((a) => a.id !== asset.id).map((a) => a.asset_name)}
+                    jobDescription={state.jobDescription}
+                    companyName={state.companyName}
+                    jobTitle={state.jobTitle}
+                    onAssetReplaced={(updated) => {
+                      handleAssetUpdated(updated);
+                      // Auto-generate the new asset
+                      generateDynamicAsset(updated);
+                    }}
+                  >
+                    <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" title="Change asset type">
+                      <ArrowLeftRight className="h-3.5 w-3.5" />
+                    </Button>
+                  </ChangeAssetDialog>
+                </div>
               ))}
             </div>
           </div>
@@ -290,9 +325,9 @@ const ApplicationDetail = () => {
             />
           )}
 
-          {/* Show proposal card when no dynamic assets and viewing a primary tab */}
-          {isPrimaryView && dynamicAssets.length === 0 && !dynamicLoading && (
-            <div className="mt-6">
+          {/* Proposal Dialog */}
+          <Dialog open={showProposalDialog} onOpenChange={setShowProposalDialog}>
+            <DialogContent className="max-w-lg">
               <AssetProposalCard
                 applicationId={id!}
                 jobDescription={state.jobDescription}
@@ -300,8 +335,8 @@ const ApplicationDetail = () => {
                 jobTitle={state.jobTitle}
                 onAssetsConfirmed={handleAssetsConfirmed}
               />
-            </div>
-          )}
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
     </div>

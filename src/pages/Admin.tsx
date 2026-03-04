@@ -208,6 +208,11 @@ export default function Admin() {
   const [newAdminId, setNewAdminId] = useState("");
   const [addingAdmin, setAddingAdmin] = useState(false);
 
+  // Confirmation dialog state
+  const [deleteStyleTarget, setDeleteStyleTarget] = useState<ResumePromptStyle | null>(null);
+  const [deleteConfirmSlug, setDeleteConfirmSlug] = useState("");
+  const [removeAdminTarget, setRemoveAdminTarget] = useState<string | null>(null);
+
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       setCurrentUserId(user?.id || null);

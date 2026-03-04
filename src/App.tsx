@@ -88,8 +88,8 @@ function AuthenticatedApp() {
             </>
           )}
         </Routes>
-        {user && <HelpButton />}
       </NavigationGuardProvider>
+      {user && <HelpButton />}
     </BrowserRouter>
   );
 }

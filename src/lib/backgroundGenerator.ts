@@ -396,11 +396,10 @@ class BackgroundGenerationManager {
           }
 
           // Get user's baseline resume text from profile
-          const { getProfile } = await import("@/lib/api/profile");
+          const { getActiveResumeText } = await import("@/lib/api/profile");
           let resumeText = "";
           try {
-            const profile = await getProfile();
-            resumeText = profile?.resume_text || "";
+            resumeText = await getActiveResumeText();
           } catch (e) {
             console.warn("Failed to fetch profile for resume:", e);
           }

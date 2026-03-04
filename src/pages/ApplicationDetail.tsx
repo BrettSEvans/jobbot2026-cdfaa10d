@@ -24,7 +24,7 @@ import {
   saveDynamicAssetRevision,
   type GeneratedAsset,
 } from "@/lib/api/dynamicAssets";
-import { getProfile } from "@/lib/api/profile";
+import { getActiveResumeText } from "@/lib/api/profile";
 import { cleanHtml } from "@/lib/cleanHtml";
 import DashboardTab from "@/components/tabs/DashboardTab";
 import CoverLetterTab from "@/components/tabs/CoverLetterTab";
@@ -81,7 +81,7 @@ const ApplicationDetail = () => {
       );
 
       let resumeText = "";
-      try { const p = await getProfile(); resumeText = p?.resume_text || ""; } catch { }
+      try { resumeText = await getActiveResumeText(); } catch { }
 
       let accumulated = "";
       await streamDynamicAssetGeneration({

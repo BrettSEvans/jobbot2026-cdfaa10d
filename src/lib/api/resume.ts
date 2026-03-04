@@ -1,6 +1,6 @@
 import { streamFromEdgeFunction } from './streamUtils';
 import { supabase } from '@/integrations/supabase/client';
-import { getProfile } from './profile';
+import { getActiveResumeText } from './profile';
 
 /**
  * Stream-generate a tailored resume HTML.
@@ -36,10 +36,7 @@ export async function streamResumeGeneration({
   // Auto-fetch resume text from profile if not provided
   let finalResumeText = resumeText;
   if (!finalResumeText) {
-    try {
-      const profile = await getProfile();
-      finalResumeText = profile?.resume_text || "";
-    } catch { /* non-critical */ }
+    try { finalResumeText = await getActiveResumeText(); } catch { /* non-critical */ }
   }
 
   await streamFromEdgeFunction({

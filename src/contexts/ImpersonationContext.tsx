@@ -30,15 +30,30 @@ interface ImpersonationState {
   switchToSelf: () => void;
   /** Refresh root profile from DB */
   refreshRoot: () => Promise<void>;
+  /** Update the active persona in-place (e.g. after saving test user fields) */
+  updateActivePersona: (updates: Partial<PersonaProfile>) => void;
   loading: boolean;
 }
 
 const ImpersonationContext = createContext<ImpersonationState | null>(null);
 
+// ── Module-level store for non-React code (e.g. backgroundGenerator) ──
+let _activePersona: PersonaProfile | null = null;
+
+/** Get the current active persona from outside React (module-level) */
+export function getActivePersonaSnapshot(): PersonaProfile | null {
+  return _activePersona;
+}
+
 export function ImpersonationProvider({ children }: { children: ReactNode }) {
   const [rootProfile, setRootProfile] = useState<PersonaProfile | null>(null);
   const [activePersona, setActivePersona] = useState<PersonaProfile | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Keep module-level ref in sync
+  useEffect(() => {
+    _activePersona = activePersona;
+  }, [activePersona]);
 
   const loadRoot = useCallback(async () => {
     try {
@@ -63,15 +78,15 @@ export function ImpersonationProvider({ children }: { children: ReactNode }) {
 
       const persona: PersonaProfile = {
         id: data.id,
-        first_name: (data as any).first_name ?? null,
-        middle_name: (data as any).middle_name ?? null,
-        last_name: (data as any).last_name ?? null,
+        first_name: data.first_name ?? null,
+        middle_name: data.middle_name ?? null,
+        last_name: data.last_name ?? null,
         display_name: data.display_name,
-        resume_text: (data as any).resume_text ?? null,
-        years_experience: (data as any).years_experience ?? null,
-        preferred_tone: (data as any).preferred_tone ?? "professional",
-        key_skills: (data as any).key_skills ?? [],
-        target_industries: (data as any).target_industries ?? [],
+        resume_text: data.resume_text ?? null,
+        years_experience: data.years_experience ?? null,
+        preferred_tone: data.preferred_tone ?? "professional",
+        key_skills: data.key_skills ?? [],
+        target_industries: data.target_industries ?? [],
         isTestUser: false,
       };
 
@@ -97,6 +112,10 @@ export function ImpersonationProvider({ children }: { children: ReactNode }) {
     setActivePersona(rootProfile);
   }, [rootProfile]);
 
+  const updateActivePersona = useCallback((updates: Partial<PersonaProfile>) => {
+    setActivePersona((prev) => prev ? { ...prev, ...updates } : prev);
+  }, []);
+
   const isImpersonating = !!(activePersona?.isTestUser);
 
   return (
@@ -108,6 +127,7 @@ export function ImpersonationProvider({ children }: { children: ReactNode }) {
         switchToTestUser,
         switchToSelf,
         refreshRoot: loadRoot,
+        updateActivePersona,
         loading,
       }}
     >

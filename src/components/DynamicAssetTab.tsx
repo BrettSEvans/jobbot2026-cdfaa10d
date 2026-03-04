@@ -23,7 +23,7 @@ import {
 import { extractStyleSignalsFromMessage } from "@/lib/api/stylePreferences";
 import { cleanHtml } from "@/lib/cleanHtml";
 import { downloadHtmlAsPdf, buildPdfFilename } from "@/lib/htmlToPdf";
-import { getProfile } from "@/lib/api/profile";
+import { getActiveResumeText } from "@/lib/api/profile";
 
 interface DynamicAssetTabProps {
   asset: GeneratedAsset;
@@ -89,7 +89,7 @@ export default function DynamicAssetTab({
       await updateGeneratedAsset(asset.id, { generation_status: 'generating' } as any);
 
       let resumeText = "";
-      try { const p = await getProfile(); resumeText = p?.resume_text || ""; } catch { }
+      try { resumeText = await getActiveResumeText(); } catch { }
 
       let accumulated = "";
       await streamDynamicAssetGeneration({

@@ -9,7 +9,8 @@ import CoverLetterRevisions from "@/components/CoverLetterRevisions";
 import { streamTailoredLetter } from "@/lib/api/coverLetter";
 import { saveCoverLetterRevision } from "@/lib/api/coverLetterRevisions";
 import { downloadCoverLetterPdf } from "@/lib/coverLetterPdf";
-import { getProfile, getProfileContextForPrompt } from "@/lib/api/profile";
+import { getProfileContextForPrompt } from "@/lib/api/profile";
+import { useImpersonation } from "@/contexts/ImpersonationContext";
 import type { ApplicationState } from "@/hooks/useApplicationDetail";
 
 interface CoverLetterTabProps {
@@ -19,6 +20,7 @@ interface CoverLetterTabProps {
 
 export default function CoverLetterTab({ appId, state }: CoverLetterTabProps) {
   const { toast } = useToast();
+  const { activePersona } = useImpersonation();
   const {
     app, coverLetter, setCoverLetter, editingCoverLetter, setEditingCoverLetter,
     jobDescription, saveField, saving, handleCopy,
@@ -27,16 +29,11 @@ export default function CoverLetterTab({ appId, state }: CoverLetterTabProps) {
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [revisionTrigger, setRevisionTrigger] = useState(0);
   const [previewCoverLetter, setPreviewCoverLetter] = useState<string | null>(null);
-  const [applicantName, setApplicantName] = useState<string | undefined>();
 
-  useEffect(() => {
-    getProfile().then((p) => {
-      if (p) {
-        const full = [p.first_name, p.last_name].filter(Boolean).join(" ");
-        setApplicantName(full || p.display_name || undefined);
-      }
-    }).catch(() => {});
-  }, []);
+  // Build applicant name from activePersona
+  const applicantName = activePersona
+    ? [activePersona.first_name, activePersona.last_name].filter(Boolean).join(" ") || activePersona.display_name || undefined
+    : undefined;
 
   const handleRegenerateCoverLetter = async () => {
     if (!jobDescription.trim()) {

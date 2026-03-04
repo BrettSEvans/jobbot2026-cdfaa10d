@@ -397,7 +397,7 @@ export default function Admin() {
                         </Button>
                         <Button
                           variant="ghost" size="sm"
-                          onClick={() => handleDeleteStyle(style.id)}
+                          onClick={() => { setDeleteStyleTarget(style); setDeleteConfirmSlug(""); }}
                           className="text-destructive hover:text-destructive"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
@@ -442,7 +442,13 @@ export default function Admin() {
                     </div>
                     <Button
                       variant="ghost" size="sm"
-                      onClick={() => handleRemoveAdmin(admin.user_id)}
+                      onClick={() => {
+                        if (admin.user_id === currentUserId) {
+                          toast({ title: "Cannot remove yourself", description: "You cannot remove your own admin access.", variant: "destructive" });
+                        } else {
+                          setRemoveAdminTarget(admin.user_id);
+                        }
+                      }}
                       disabled={admin.user_id === currentUserId}
                       className="text-destructive hover:text-destructive"
                     >

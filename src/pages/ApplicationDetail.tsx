@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/sheet";
 import {
   ArrowLeft, Loader2,
-  Info, FileText, LayoutDashboard, Mail, FileUser,
+  Info, FileText, LayoutDashboard, Mail, FileUser, Sparkles,
 } from "lucide-react";
 import { useApplicationDetail } from "@/hooks/useApplicationDetail";
 import { streamResumeGeneration } from "@/lib/api/resume";
@@ -33,6 +33,11 @@ import JobDescriptionTab from "@/components/tabs/JobDescriptionTab";
 import DetailsTab from "@/components/tabs/DetailsTab";
 import DynamicAssetTab from "@/components/DynamicAssetTab";
 import ChangeAssetDialog from "@/components/ChangeAssetDialog";
+import AssetProposalCard from "@/components/AssetProposalCard";
+import {
+  Dialog,
+  DialogContent,
+} from "@/components/ui/dialog";
 import ImpersonationNotice from "@/components/ImpersonationNotice";
 
 type ActiveView = "dashboard" | "cover-letter" | "resume" | string;
@@ -47,6 +52,7 @@ const ApplicationDetail = () => {
   const [dynamicAssets, setDynamicAssets] = useState<GeneratedAsset[]>([]);
   const [hasProposals, setHasProposals] = useState(false);
   const [dynamicLoading, setDynamicLoading] = useState(true);
+  const [showProposalDialog, setShowProposalDialog] = useState(false);
 
   // Load dynamic assets on mount
   useEffect(() => {
@@ -67,6 +73,7 @@ const ApplicationDetail = () => {
 
   const handleAssetsConfirmed = async (assets: GeneratedAsset[]) => {
     setDynamicAssets(assets);
+    setShowProposalDialog(false);
 
     // Auto-generate all 3 assets
     for (const asset of assets) {

@@ -407,7 +407,6 @@ const Applications = () => {
                                     </TooltipTrigger>
                                     <TooltipContent>Move to trash</TooltipContent>
                                   </Tooltip>
-                                  </AlertDialogTrigger>
                                   <AlertDialogContent>
                                     <AlertDialogHeader>
                                       <AlertDialogTitle>Move to trash?</AlertDialogTitle>

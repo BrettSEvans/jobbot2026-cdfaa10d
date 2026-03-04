@@ -26,6 +26,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import ImpersonationNotice from "@/components/ImpersonationNotice";
 
 const ASSET_TYPE_OPTIONS = [
   { value: "", label: "All Types" },
@@ -130,6 +131,7 @@ const Templates = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-5xl mx-auto p-4 md:p-8 space-y-6">
+        <ImpersonationNotice />
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="sm" onClick={() => navigate("/")}>

@@ -343,13 +343,11 @@ export default function Profile() {
           <CardContent className="space-y-3">
             {/* PDF upload only for real profiles, not test users */}
             {!isImpersonating && (
-              <div className="flex gap-2">
-                <input ref={fileRef} type="file" accept=".pdf" onChange={handleFileUpload} className="hidden" />
-                <Button variant="outline" size="sm" onClick={() => fileRef.current?.click()} disabled={uploading}>
-                  {uploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
-                  Upload PDF
-                </Button>
-              </div>
+              <ResumeDropZone
+                fileRef={fileRef}
+                uploading={uploading}
+                onFileSelected={handleFileUpload}
+              />
             )}
             <div className="space-y-1.5">
               <Label htmlFor="resumeText">Resume highlights (recommended)</Label>

@@ -8,10 +8,46 @@ import NewApplication from "./pages/NewApplication";
 import ApplicationDetail from "./pages/ApplicationDetail";
 import Templates from "./pages/Templates";
 import NotFound from "./pages/NotFound";
+import Auth from "./pages/Auth";
+import ResetPassword from "./pages/ResetPassword";
 import BackgroundJobsBanner from "./components/BackgroundJobsBanner";
 import AppHeader from "./components/AppHeader";
+import { useAuth } from "./hooks/useAuth";
+import { Loader2 } from "lucide-react";
 
 const queryClient = new QueryClient();
+
+function AuthenticatedApp() {
+  const { user, loading, signOut } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/reset-password" element={<ResetPassword />} />
+        {!user ? (
+          <Route path="*" element={<Auth />} />
+        ) : (
+          <>
+            <Route path="/" element={<><AppHeader onSignOut={signOut} userEmail={user.email} /><Applications /></>} />
+            <Route path="/applications" element={<Navigate to="/" replace />} />
+            <Route path="/applications/new" element={<><AppHeader onSignOut={signOut} userEmail={user.email} /><NewApplication /></>} />
+            <Route path="/applications/:id" element={<><AppHeader onSignOut={signOut} userEmail={user.email} /><ApplicationDetail /></>} />
+            <Route path="/templates" element={<><AppHeader onSignOut={signOut} userEmail={user.email} /><Templates /></>} />
+            <Route path="*" element={<NotFound />} />
+          </>
+        )}
+      </Routes>
+    </BrowserRouter>
+  );
+}
 
 const App = () => {
   return (
@@ -20,17 +56,7 @@ const App = () => {
         <Toaster />
         <Sonner />
         <BackgroundJobsBanner />
-        <BrowserRouter>
-          <AppHeader />
-          <Routes>
-            <Route path="/" element={<Applications />} />
-            <Route path="/applications" element={<Navigate to="/" replace />} />
-            <Route path="/applications/new" element={<NewApplication />} />
-            <Route path="/applications/:id" element={<ApplicationDetail />} />
-            <Route path="/templates" element={<Templates />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
+        <AuthenticatedApp />
       </TooltipProvider>
     </QueryClientProvider>
   );

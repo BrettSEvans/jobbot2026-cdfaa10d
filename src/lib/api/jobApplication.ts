@@ -161,9 +161,12 @@ export async function saveJobApplication(app: {
     if (error) throw new Error(error.message);
     return data;
   } else {
+    // Get current user for user_id
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("Not authenticated");
     const { data, error } = await supabase
       .from('job_applications')
-      .insert(app)
+      .insert({ ...app, user_id: user.id })
       .select()
       .single();
     if (error) throw new Error(error.message);

@@ -12,7 +12,9 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Upload, X, Plus, FileText, User, Briefcase, Sparkles, Save, Shield } from "lucide-react";
 import { getProfile, updateProfile, uploadResumePdf, type UserProfile } from "@/lib/api/profile";
 import StylePreferencesCard from "@/components/StylePreferencesCard";
+import TestUserManager from "@/components/TestUserManager";
 import { useAdminRole } from "@/hooks/useAdminRole";
+import { useImpersonation } from "@/contexts/ImpersonationContext";
 
 const TONE_OPTIONS = [
   { value: "professional", label: "Professional" },

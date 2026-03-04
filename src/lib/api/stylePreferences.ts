@@ -77,16 +77,21 @@ function capitalize(s: string): string {
 export function extractStyleSignalsFromMessage(userMessage: string): void {
   if (!userMessage || userMessage.length < 10) return;
 
-  // Fire and forget — don't await
-  fetch(
-    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/extract-style-signals`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-      },
-      body: JSON.stringify({ user_message: userMessage }),
-    }
-  ).catch(() => { /* non-critical */ });
+  // Get the session token and fire the request
+  supabase.auth.getSession().then(({ data: { session } }) => {
+    if (!session?.access_token) return;
+
+    fetch(
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/extract-style-signals`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify({ user_message: userMessage }),
+      }
+    ).catch(() => { /* non-critical */ });
+  }).catch(() => { /* non-critical */ });
 }

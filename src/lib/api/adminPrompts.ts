@@ -11,6 +11,7 @@ export interface ResumePromptStyle {
   created_by: string | null;
   created_at: string;
   updated_at: string;
+  deleted_at: string | null;
 }
 
 export interface AuditLogEntry {
@@ -81,8 +82,33 @@ export async function updateResumeStyle(
   return data;
 }
 
+/** Soft-delete a prompt style (moves to trash). */
 export async function deleteResumeStyle(id: string): Promise<void> {
-  // Grab label/slug before deleting for audit metadata
+  const { data: existing } = await (supabase as any)
+    .from('resume_prompt_styles')
+    .select('label, slug')
+    .eq('id', id)
+    .maybeSingle();
+  const { error } = await (supabase as any)
+    .from('resume_prompt_styles')
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('id', id);
+  if (error) throw new Error(error.message);
+  logAudit('delete_style', id, { label: existing?.label, slug: existing?.slug });
+}
+
+/** Restore a soft-deleted prompt style. */
+export async function restoreResumeStyle(id: string): Promise<void> {
+  const { error } = await (supabase as any)
+    .from('resume_prompt_styles')
+    .update({ deleted_at: null })
+    .eq('id', id);
+  if (error) throw new Error(error.message);
+  logAudit('restore_style', id, {});
+}
+
+/** Permanently delete a prompt style (hard delete). */
+export async function hardDeleteResumeStyle(id: string): Promise<void> {
   const { data: existing } = await (supabase as any)
     .from('resume_prompt_styles')
     .select('label, slug')
@@ -93,7 +119,7 @@ export async function deleteResumeStyle(id: string): Promise<void> {
     .delete()
     .eq('id', id);
   if (error) throw new Error(error.message);
-  logAudit('delete_style', id, { label: existing?.label, slug: existing?.slug });
+  logAudit('delete_style', id, { label: existing?.label, slug: existing?.slug, hard: true });
 }
 
 // ---- Admin Users ----

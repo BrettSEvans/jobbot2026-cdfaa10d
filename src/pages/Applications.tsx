@@ -393,7 +393,7 @@ const Applications = () => {
                   </div>
 
                   {previewApp?.dashboard_html && (
-                    <Card className="overflow-hidden">
+                    <Card ref={previewRef} className="overflow-hidden">
                       <div className="p-2 bg-muted flex items-center justify-between">
                         <span className="text-sm font-medium px-2">
                           Preview: {previewApp.company_name} — {previewApp.job_title}

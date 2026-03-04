@@ -60,9 +60,9 @@ export default function Profile() {
   const dirty = useMemo(() => ({
     identity: displayName !== saved.displayName || yearsExperience !== saved.yearsExperience,
     resume: resumeText !== saved.resumeText,
-    skills: JSON.stringify(skills) !== JSON.stringify(saved.skills) || JSON.stringify(industries) !== JSON.stringify(saved.industries),
+    skills: JSON.stringify(skills) !== JSON.stringify(saved.skills) || JSON.stringify(industries) !== JSON.stringify(saved.industries) || newSkill.trim() !== "" || newIndustry.trim() !== "",
     tone: preferredTone !== saved.preferredTone,
-  }), [displayName, resumeText, yearsExperience, preferredTone, industries, skills, saved]);
+  }), [displayName, resumeText, yearsExperience, preferredTone, industries, skills, saved, newSkill, newIndustry]);
 
   const hasUnsavedChanges = dirty.identity || dirty.resume || dirty.skills || dirty.tone;
 

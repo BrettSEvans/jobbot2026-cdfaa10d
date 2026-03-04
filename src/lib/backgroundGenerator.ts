@@ -67,6 +67,10 @@ class BackgroundGenerationManager {
   private updateJob(id: string, updates: Partial<GenerationJob>) {
     const job = this.jobs.get(id);
     if (job) {
+      // Track stage transitions with timestamps
+      if (updates.status && updates.status !== job.status) {
+        updates.stageStartedAt = Date.now();
+      }
       Object.assign(job, updates);
       this.notify();
     }

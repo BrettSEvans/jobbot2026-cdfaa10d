@@ -19,13 +19,14 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  ArrowLeft, Edit3, Plus, Trash2, Loader2, Shield, FileText, Users, BookOpen,
+  ArrowLeft, Edit3, Plus, Trash2, Loader2, Shield, FileText, Users, BookOpen, ScrollText, RefreshCw,
 } from "lucide-react";
 import {
   getAllResumeStyles, createResumeStyle, updateResumeStyle, deleteResumeStyle,
-  getAdminUsers, addAdminRole, removeAdminRole,
-  type ResumePromptStyle,
+  getAdminUsers, addAdminRole, removeAdminRole, getAuditLog,
+  type ResumePromptStyle, type AuditLogEntry,
 } from "@/lib/api/adminPrompts";
+import { formatDistanceToNow } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 
 // Protected founder admin — cannot be removed via UI
@@ -356,12 +357,15 @@ export default function Admin() {
         </div>
 
         <Tabs defaultValue="prompts">
-          <TabsList className="w-full grid grid-cols-3">
+          <TabsList className="w-full grid grid-cols-4">
             <TabsTrigger value="prompts" className="flex items-center gap-1.5">
               <FileText className="h-3.5 w-3.5" /> Prompts
             </TabsTrigger>
             <TabsTrigger value="users" className="flex items-center gap-1.5">
               <Users className="h-3.5 w-3.5" /> Users
+            </TabsTrigger>
+            <TabsTrigger value="audit" className="flex items-center gap-1.5">
+              <ScrollText className="h-3.5 w-3.5" /> Audit
             </TabsTrigger>
             <TabsTrigger value="guide" className="flex items-center gap-1.5">
               <BookOpen className="h-3.5 w-3.5" /> Guide
@@ -480,6 +484,11 @@ export default function Admin() {
                 </Button>
               </CardFooter>
             </Card>
+          </TabsContent>
+
+          {/* Audit Tab */}
+          <TabsContent value="audit">
+            <AdminAuditTab />
           </TabsContent>
 
           {/* Guide Tab */}

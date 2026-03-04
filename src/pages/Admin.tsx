@@ -19,13 +19,15 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  ArrowLeft, Edit3, Plus, Trash2, Loader2, Shield, FileText, Users, BookOpen, ScrollText, RefreshCw,
+  ArrowLeft, Edit3, Plus, Trash2, Loader2, Shield, FileText, Users, BookOpen, ScrollText, RefreshCw, RotateCcw, ChevronDown,
 } from "lucide-react";
 import {
   getAllResumeStyles, createResumeStyle, updateResumeStyle, deleteResumeStyle,
+  restoreResumeStyle, hardDeleteResumeStyle,
   getAdminUsers, addAdminRole, removeAdminRole, getAuditLog,
   type ResumePromptStyle, type AuditLogEntry,
 } from "@/lib/api/adminPrompts";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { formatDistanceToNow } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -292,6 +294,9 @@ export default function Admin() {
   const [deleteStyleTarget, setDeleteStyleTarget] = useState<ResumePromptStyle | null>(null);
   const [deleteConfirmSlug, setDeleteConfirmSlug] = useState("");
   const [removeAdminTarget, setRemoveAdminTarget] = useState<string | null>(null);
+  const [hardDeleteTarget, setHardDeleteTarget] = useState<ResumePromptStyle | null>(null);
+  const [hardDeleteConfirmSlug, setHardDeleteConfirmSlug] = useState("");
+  const [trashOpen, setTrashOpen] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -461,37 +466,100 @@ export default function Admin() {
                 {loadingData ? (
                   <div className="flex justify-center py-4"><Loader2 className="h-5 w-5 animate-spin" /></div>
                 ) : (
-                  styles.map((style) => (
-                    <div
-                      key={style.id}
-                      className="flex items-center justify-between gap-3 p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors"
-                    >
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-sm">{style.label}</span>
-                          {!style.is_active && <Badge variant="secondary" className="text-xs">Inactive</Badge>}
+                  <>
+                    {/* Active styles */}
+                    {styles.filter(s => !s.deleted_at).map((style) => (
+                      <div
+                        key={style.id}
+                        className="flex items-center justify-between gap-3 p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-sm">{style.label}</span>
+                            {!style.is_active && <Badge variant="secondary" className="text-xs">Inactive</Badge>}
+                          </div>
+                          {style.description && (
+                            <p className="text-xs text-muted-foreground truncate">{style.description}</p>
+                          )}
                         </div>
-                        {style.description && (
-                          <p className="text-xs text-muted-foreground truncate">{style.description}</p>
-                        )}
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost" size="sm"
+                            onClick={() => { setEditStyle(style); setEditOpen(true); }}
+                          >
+                            <Edit3 className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost" size="sm"
+                            onClick={() => { setDeleteStyleTarget(style); setDeleteConfirmSlug(""); }}
+                            className="text-destructive hover:text-destructive"
+                            title="Move to Trash"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <Button
-                          variant="ghost" size="sm"
-                          onClick={() => { setEditStyle(style); setEditOpen(true); }}
-                        >
-                          <Edit3 className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button
-                          variant="ghost" size="sm"
-                          onClick={() => { setDeleteStyleTarget(style); setDeleteConfirmSlug(""); }}
-                          className="text-destructive hover:text-destructive"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))
+                    ))}
+
+                    {/* Trash section */}
+                    {styles.filter(s => !!s.deleted_at).length > 0 && (
+                      <Collapsible open={trashOpen} onOpenChange={setTrashOpen} className="mt-4">
+                        <CollapsibleTrigger asChild>
+                          <Button variant="ghost" size="sm" className="w-full justify-between text-muted-foreground">
+                            <span className="flex items-center gap-1.5">
+                              <Trash2 className="h-3.5 w-3.5" />
+                              Trash ({styles.filter(s => !!s.deleted_at).length})
+                            </span>
+                            <ChevronDown className={`h-3.5 w-3.5 transition-transform ${trashOpen ? 'rotate-180' : ''}`} />
+                          </Button>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="space-y-1.5 mt-1.5">
+                          {styles.filter(s => !!s.deleted_at).map((style) => {
+                            const deletedDate = new Date(style.deleted_at!);
+                            const daysLeft = Math.max(0, 30 - Math.floor((Date.now() - deletedDate.getTime()) / (1000 * 60 * 60 * 24)));
+                            return (
+                              <div
+                                key={style.id}
+                                className="flex items-center justify-between gap-3 p-3 rounded-lg border border-border bg-muted/30"
+                              >
+                                <div className="min-w-0 flex-1">
+                                  <span className="font-medium text-sm line-through text-muted-foreground">{style.label}</span>
+                                  <p className="text-xs text-muted-foreground">
+                                    Deleted {formatDistanceToNow(deletedDate, { addSuffix: true })} · {daysLeft}d left
+                                  </p>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Button
+                                    variant="ghost" size="sm"
+                                    onClick={async () => {
+                                      try {
+                                        await restoreResumeStyle(style.id);
+                                        toast({ title: "Restored", description: `"${style.label}" has been restored.` });
+                                        loadData();
+                                      } catch (err: any) {
+                                        toast({ title: "Error", description: err.message, variant: "destructive" });
+                                      }
+                                    }}
+                                    title="Restore"
+                                  >
+                                    <RotateCcw className="h-3.5 w-3.5" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost" size="sm"
+                                    onClick={() => { setHardDeleteTarget(style); setHardDeleteConfirmSlug(""); }}
+                                    className="text-destructive hover:text-destructive"
+                                    title="Delete Forever"
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </Button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </CollapsibleContent>
+                      </Collapsible>
+                    )}
+                  </>
                 )}
               </CardContent>
               <CardFooter>
@@ -653,35 +721,67 @@ export default function Admin() {
           </DialogContent>
         </Dialog>
 
-        {/* Delete Style Confirmation */}
+        {/* Move to Trash Confirmation */}
         <AlertDialog open={!!deleteStyleTarget} onOpenChange={(open) => { if (!open) setDeleteStyleTarget(null); }}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Delete Prompt Style</AlertDialogTitle>
+              <AlertDialogTitle>Move to Trash</AlertDialogTitle>
               <AlertDialogDescription>
-                This will permanently delete <strong>{deleteStyleTarget?.label}</strong> (<code className="text-xs bg-muted px-1 py-0.5 rounded">{deleteStyleTarget?.slug}</code>). This action cannot be undone.
+                <strong>{deleteStyleTarget?.label}</strong> (<code className="text-xs bg-muted px-1 py-0.5 rounded">{deleteStyleTarget?.slug}</code>) will be moved to trash. You can restore it within 30 days.
               </AlertDialogDescription>
             </AlertDialogHeader>
-            <div className="space-y-2">
-              <Label className="text-sm">Type <strong>{deleteStyleTarget?.slug}</strong> to confirm:</Label>
-              <Input
-                value={deleteConfirmSlug}
-                onChange={(e) => setDeleteConfirmSlug(e.target.value)}
-                placeholder={deleteStyleTarget?.slug}
-              />
-            </div>
             <AlertDialogFooter>
-              <AlertDialogCancel onClick={() => { setDeleteStyleTarget(null); setDeleteConfirmSlug(""); }}>Cancel</AlertDialogCancel>
+              <AlertDialogCancel onClick={() => { setDeleteStyleTarget(null); }}>Cancel</AlertDialogCancel>
               <AlertDialogAction
-                disabled={deleteConfirmSlug !== deleteStyleTarget?.slug}
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                 onClick={() => {
                   if (deleteStyleTarget) handleDeleteStyle(deleteStyleTarget.id);
                   setDeleteStyleTarget(null);
-                  setDeleteConfirmSlug("");
                 }}
               >
-                Delete
+                Move to Trash
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Hard Delete Confirmation */}
+        <AlertDialog open={!!hardDeleteTarget} onOpenChange={(open) => { if (!open) setHardDeleteTarget(null); }}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Permanently Delete</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will permanently delete <strong>{hardDeleteTarget?.label}</strong> (<code className="text-xs bg-muted px-1 py-0.5 rounded">{hardDeleteTarget?.slug}</code>). This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <div className="space-y-2">
+              <Label className="text-sm">Type <strong>{hardDeleteTarget?.slug}</strong> to confirm:</Label>
+              <Input
+                value={hardDeleteConfirmSlug}
+                onChange={(e) => setHardDeleteConfirmSlug(e.target.value)}
+                placeholder={hardDeleteTarget?.slug}
+              />
+            </div>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => { setHardDeleteTarget(null); setHardDeleteConfirmSlug(""); }}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                disabled={hardDeleteConfirmSlug !== hardDeleteTarget?.slug}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                onClick={async () => {
+                  if (hardDeleteTarget) {
+                    try {
+                      await hardDeleteResumeStyle(hardDeleteTarget.id);
+                      toast({ title: "Permanently deleted", description: `"${hardDeleteTarget.label}" has been permanently deleted.` });
+                      loadData();
+                    } catch (err: any) {
+                      toast({ title: "Error", description: err.message, variant: "destructive" });
+                    }
+                  }
+                  setHardDeleteTarget(null);
+                  setHardDeleteConfirmSlug("");
+                }}
+              >
+                Delete Forever
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

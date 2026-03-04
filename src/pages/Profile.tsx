@@ -77,16 +77,20 @@ function ResumeDropZone({
     >
       <input ref={fileRef} type="file" accept=".pdf" onChange={onFileSelected} className="hidden" />
       {uploading ? (
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
       ) : (
-        <Upload className="h-8 w-8 text-muted-foreground" />
+        <div className="flex flex-col items-center gap-1">
+          <div className="rounded-full bg-primary/10 p-3">
+            <Upload className="h-6 w-6 text-primary" />
+          </div>
+        </div>
       )}
       <div className="text-center">
         <p className="text-sm font-medium text-foreground">
-          {uploading ? "Uploading..." : "Drop your resume PDF here"}
+          {uploading ? "Uploading..." : "Drag & drop your resume here"}
         </p>
-        <p className="text-xs text-muted-foreground mt-0.5">
-          or click to browse · PDF only · 5 MB max
+        <p className="text-xs text-muted-foreground mt-1">
+          or <span className="text-primary font-medium underline underline-offset-2">click to browse</span> · PDF only · 5 MB max
         </p>
       </div>
     </div>
@@ -403,14 +407,11 @@ export default function Profile() {
             <CardDescription>Upload a PDF or paste key highlights — this context personalizes your AI outputs.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            {/* PDF upload only for real profiles, not test users */}
-            {!isImpersonating && (
-              <ResumeDropZone
-                fileRef={fileRef}
-                uploading={uploading}
-                onFileSelected={handleFileUpload}
-              />
-            )}
+            <ResumeDropZone
+              fileRef={fileRef}
+              uploading={uploading}
+              onFileSelected={handleFileUpload}
+            />
             <div className="space-y-1.5">
               <Label htmlFor="resumeText">Resume highlights (recommended)</Label>
               <Textarea

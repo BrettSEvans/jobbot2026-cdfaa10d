@@ -2,13 +2,6 @@ import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
 import {
   Sheet,
   SheetContent,
@@ -16,7 +9,10 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { ArrowLeft, Loader2, ClipboardList, Shield, Network, Map, Info, FileText } from "lucide-react";
+import {
+  ArrowLeft, Loader2, ClipboardList, Shield, Network, Map,
+  Info, FileText, LayoutDashboard, Mail,
+} from "lucide-react";
 import { useApplicationDetail } from "@/hooks/useApplicationDetail";
 import { streamExecutiveReport } from "@/lib/api/executiveReport";
 import { streamRaidLog } from "@/lib/api/raidLog";
@@ -32,11 +28,19 @@ import HtmlAssetTab from "@/components/tabs/HtmlAssetTab";
 import JobDescriptionTab from "@/components/tabs/JobDescriptionTab";
 import DetailsTab from "@/components/tabs/DetailsTab";
 
+type ActiveView =
+  | "dashboard"
+  | "cover-letter"
+  | "executive-report"
+  | "raid-log"
+  | "architecture"
+  | "roadmap";
+
 const ApplicationDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const state = useApplicationDetail(id);
-  const [activeTab, setActiveTab] = useState("dashboard");
+  const [activeView, setActiveView] = useState<ActiveView>("dashboard");
 
   if (state.loading) {
     return (
@@ -57,9 +61,14 @@ const ApplicationDetail = () => {
     );
   }
 
+  const primaryTabs = [
+    { id: "dashboard" as const, label: "Dashboard", icon: LayoutDashboard },
+    { id: "cover-letter" as const, label: "Cover Letter", icon: Mail },
+  ];
+
   const advancedAssets = [
     {
-      id: "executive-report",
+      id: "executive-report" as const,
       label: "Executive Report",
       icon: ClipboardList,
       dbField: "executive_report_html" as const,
@@ -71,7 +80,7 @@ const ApplicationDetail = () => {
       hasContent: !!state.executiveReportHtml,
     },
     {
-      id: "raid-log",
+      id: "raid-log" as const,
       label: "RAID Log",
       icon: Shield,
       dbField: "raid_log_html" as const,
@@ -83,8 +92,8 @@ const ApplicationDetail = () => {
       hasContent: !!state.raidLogHtml,
     },
     {
-      id: "architecture",
-      label: "Architecture Diagram",
+      id: "architecture" as const,
+      label: "Architecture",
       icon: Network,
       dbField: "architecture_diagram_html" as const,
       html: state.archDiagramHtml,
@@ -95,7 +104,7 @@ const ApplicationDetail = () => {
       hasContent: !!state.archDiagramHtml,
     },
     {
-      id: "roadmap",
+      id: "roadmap" as const,
       label: "Roadmap",
       icon: Map,
       dbField: "roadmap_html" as const,
@@ -108,9 +117,11 @@ const ApplicationDetail = () => {
     },
   ];
 
+  const isPrimary = activeView === "dashboard" || activeView === "cover-letter";
+
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-5xl mx-auto p-4 md:p-8 space-y-6">
+      <div className="max-w-5xl mx-auto p-4 md:p-8 space-y-4">
         {/* Header */}
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -125,7 +136,6 @@ const ApplicationDetail = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {/* Info Sheet trigger */}
             <Sheet>
               <SheetTrigger asChild>
                 <Button variant="outline" size="sm">
@@ -151,71 +161,78 @@ const ApplicationDetail = () => {
           </div>
         </div>
 
-        {/* Primary Tabs: Dashboard + Cover Letter */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-            <TabsTrigger value="cover-letter">Cover Letter</TabsTrigger>
-          </TabsList>
+        {/* Primary Tab Triggers */}
+        <div className="flex gap-1 border-b border-border pb-0">
+          {primaryTabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveView(tab.id)}
+              className={`inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium border-b-2 transition-colors -mb-px ${
+                activeView === tab.id
+                  ? "border-primary text-foreground"
+                  : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
+              }`}
+            >
+              <tab.icon className="h-4 w-4" />
+              {tab.label}
+            </button>
+          ))}
+        </div>
 
-          <TabsContent value="dashboard">
+        {/* Advanced Reports Bar */}
+        <div className="space-y-1.5">
+          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Advanced Reports</span>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {advancedAssets.map((asset) => (
+              <button
+                key={asset.id}
+                onClick={() => setActiveView(asset.id)}
+                className={`flex items-center gap-2 px-3 py-2.5 rounded-lg border text-sm font-medium transition-all text-left ${
+                  activeView === asset.id
+                    ? "border-primary bg-primary/5 text-foreground shadow-sm"
+                    : "border-border text-muted-foreground hover:text-foreground hover:border-foreground/20 hover:bg-muted/50"
+                }`}
+              >
+                <asset.icon className="h-4 w-4 shrink-0" />
+                <span className="truncate">{asset.label}</span>
+                <div
+                  className={`h-2 w-2 rounded-full shrink-0 ml-auto ${
+                    asset.hasContent ? "bg-primary" : "bg-muted-foreground/30"
+                  }`}
+                  title={asset.hasContent ? "Generated" : "Not generated"}
+                />
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Content Area */}
+        <div>
+          {activeView === "dashboard" && (
             <DashboardTab appId={id!} state={state} />
-          </TabsContent>
-
-          <TabsContent value="cover-letter">
+          )}
+          {activeView === "cover-letter" && (
             <CoverLetterTab appId={id!} state={state} />
-          </TabsContent>
-        </Tabs>
-
-        {/* Advanced Assets — Collapsible Accordion */}
-        <Accordion type="single" collapsible className="border rounded-lg">
-          <AccordionItem value="advanced-assets" className="border-0">
-            <AccordionTrigger className="px-4 py-3 hover:no-underline">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold font-heading">Advanced Reports</span>
-                <div className="flex gap-1">
-                  {advancedAssets.map((a) => (
-                    <div
-                      key={a.id}
-                      className={`h-2 w-2 rounded-full ${a.hasContent ? "bg-primary" : "bg-muted-foreground/30"}`}
-                      title={`${a.label}: ${a.hasContent ? "Generated" : "Not generated"}`}
-                    />
-                  ))}
-                </div>
-              </div>
-            </AccordionTrigger>
-            <AccordionContent className="px-4 pb-4">
-              <Tabs defaultValue={advancedAssets.find((a) => a.hasContent)?.id || advancedAssets[0].id} className="space-y-4">
-                <TabsList className="w-full justify-start">
-                  {advancedAssets.map((a) => (
-                    <TabsTrigger key={a.id} value={a.id} className="gap-1.5">
-                      <a.icon className="h-3.5 w-3.5" />
-                      <span className="hidden sm:inline">{a.label}</span>
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-
-                {advancedAssets.map((a) => (
-                  <TabsContent key={a.id} value={a.id}>
-                    <HtmlAssetTab
-                      appId={id!}
-                      state={state}
-                      assetType={a.id as any}
-                      label={a.label}
-                      dbField={a.dbField}
-                      html={a.html}
-                      setHtml={a.setHtml}
-                      generateFn={a.generateFn}
-                      saveRevisionFn={a.saveRevisionFn}
-                      emptyIcon={a.icon}
-                      refinePlaceholder={a.placeholder}
-                    />
-                  </TabsContent>
-                ))}
-              </Tabs>
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
+          )}
+          {advancedAssets.map((a) =>
+            activeView === a.id ? (
+              <HtmlAssetTab
+                key={a.id}
+                appId={id!}
+                state={state}
+                assetType={a.id as any}
+                label={a.label}
+                dbField={a.dbField}
+                html={a.html}
+                setHtml={a.setHtml}
+                generateFn={a.generateFn}
+                saveRevisionFn={a.saveRevisionFn}
+                emptyIcon={a.icon}
+                refinePlaceholder={a.placeholder}
+              />
+            ) : null
+          )}
+        </div>
       </div>
     </div>
   );

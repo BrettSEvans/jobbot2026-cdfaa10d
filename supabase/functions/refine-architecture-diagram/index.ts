@@ -9,7 +9,7 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
   try {
-    const { currentHtml, userMessage, jobDescription, companyName, jobTitle, branding } = await req.json();
+    const { currentHtml, userMessage, jobDescription, companyName, jobTitle, branding, styleContext } = await req.json();
     if (!userMessage) {
       return new Response(JSON.stringify({ error: 'User message is required' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
@@ -20,6 +20,7 @@ serve(async (req) => {
     }
 
     const systemPrompt = `You are an expert solutions architect. You are refining an existing Architecture Diagram based on user feedback.
+${styleContext || ''}
 
 RULES:
 - Output the COMPLETE modified HTML file, starting with <!DOCTYPE html> and ending with </html>
@@ -27,7 +28,14 @@ RULES:
 - Maintain the self-contained nature (all CSS and JavaScript embedded inline)
 - Preserve the dynamic SVG arrow connection logic using getBoundingClientRect
 - Apply the requested changes precisely
-- Do NOT add explanations — output ONLY the HTML`;
+- Do NOT add explanations — output ONLY the HTML
+
+STYLE SIGNAL DETECTION:
+If the user's feedback implies a general style preference, after the HTML output, add a JSON block:
+\`\`\`json
+{"style_signals":[{"category":"tone|length|formatting|emphasis|vocabulary|structure","preference":"...","confidence":0.7,"source_quote":"user's words"}]}
+\`\`\`
+Only flag GENERAL preferences. If none detected, omit this block.`;
 
     const messages = [
       { role: 'system', content: systemPrompt },

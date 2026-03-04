@@ -55,7 +55,7 @@ export default function HtmlAssetTab({
       try {
         await saveRevisionFn(appId, html, "Before regeneration");
         setRevisionTrigger((t) => t + 1);
-      } catch { /* non-critical */ }
+      } catch (e) { console.warn("Failed to save revision:", e); }
     }
     setIsGenerating(true);
     setHtml("");
@@ -74,7 +74,7 @@ export default function HtmlAssetTab({
       try {
         await saveRevisionFn(appId, clean, "Regenerated");
         setRevisionTrigger((t) => t + 1);
-      } catch { /* non-critical */ }
+      } catch (e) { console.warn("Failed to save revision:", e); }
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
@@ -92,7 +92,7 @@ export default function HtmlAssetTab({
         try {
           await saveRevisionFn(appId, html, `Before: ${msg.slice(0, 50)}`);
           setRevisionTrigger((t) => t + 1);
-        } catch { /* non-critical */ }
+        } catch (e) { console.warn("Failed to save revision:", e); }
       }
       let accumulated = "";
       await streamRefineAsset({
@@ -107,7 +107,7 @@ export default function HtmlAssetTab({
       try {
         await saveRevisionFn(appId, clean, `Refined: ${msg.slice(0, 50)}`);
         setRevisionTrigger((t) => t + 1);
-      } catch { /* non-critical */ }
+      } catch (e) { console.warn("Failed to save revision:", e); }
       toast({ title: "Refined!", description: `${label} updated successfully.` });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });

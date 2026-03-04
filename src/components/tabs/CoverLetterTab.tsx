@@ -35,7 +35,7 @@ export default function CoverLetterTab({ appId, state }: CoverLetterTabProps) {
       try {
         await saveCoverLetterRevision(appId, coverLetter, "Before regeneration");
         setRevisionTrigger((t) => t + 1);
-      } catch { /* non-critical */ }
+      } catch (e) { console.warn("Failed to save cover letter revision:", e); }
     }
     setIsRegenerating(true);
     setCoverLetter("");
@@ -50,7 +50,7 @@ export default function CoverLetterTab({ appId, state }: CoverLetterTabProps) {
       try {
         await saveCoverLetterRevision(appId, accumulated, "Regenerated");
         setRevisionTrigger((t) => t + 1);
-      } catch { /* non-critical */ }
+      } catch (e) { console.warn("Failed to save cover letter revision:", e); }
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {

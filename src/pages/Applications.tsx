@@ -361,9 +361,12 @@ const Applications = () => {
                                       variant="ghost"
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        setPreviewId(previewId === app.id ? null : app.id);
-                                      }}
-                                      title="Preview"
+                                        if (previewId === app.id) {
+                                          handleClosePreview();
+                                        } else {
+                                          setIsClosing(false);
+                                          setPreviewId(app.id);
+                                        }
                                     >
                                       <Eye className="h-4 w-4" />
                                     </Button>
@@ -399,26 +402,34 @@ const Applications = () => {
                         ))}
                       </TableBody>
                     </Table>
-                  </div>
 
-                  {previewApp?.dashboard_html && (
-                    <Card ref={previewRef} className="overflow-hidden">
-                      <div className="p-2 bg-muted flex items-center justify-between">
-                        <span className="text-sm font-medium px-2">
-                          Preview: {previewApp.company_name} — {previewApp.job_title}
-                        </span>
-                        <Button size="sm" variant="ghost" onClick={() => setPreviewId(null)}>Close</Button>
+                    {/* Slide-in preview panel */}
+                    {previewApp?.dashboard_html && (
+                      <div
+                        className={`absolute inset-0 z-10 bg-background flex flex-col w-full md:w-[70%] md:left-auto md:right-0 md:border-l ${
+                          isClosing ? "animate-slide-out-right" : "animate-slide-in-right"
+                        }`}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/50 shrink-0">
+                          <span className="text-sm font-medium text-muted-foreground truncate">
+                            {previewApp.company_name} — {previewApp.job_title}
+                          </span>
+                          <Button size="sm" variant="ghost" onClick={handleClosePreview}>
+                            ✕ Close
+                          </Button>
+                        </div>
+                        <div className="flex-1 min-h-0">
+                          <iframe
+                            srcDoc={previewApp.dashboard_html}
+                            className="w-full h-full border-0"
+                            sandbox="allow-scripts"
+                            title="Dashboard Preview"
+                          />
+                        </div>
                       </div>
-                      <div style={{ height: "60vh" }}>
-                        <iframe
-                          srcDoc={previewApp.dashboard_html}
-                          className="w-full h-full border-0"
-                          sandbox="allow-scripts"
-                          title="Dashboard Preview"
-                        />
-                      </div>
-                    </Card>
-                  )}
+                    )}
+                  </div>
                 </>
               )}
             </TabsContent>

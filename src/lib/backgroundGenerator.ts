@@ -28,6 +28,10 @@ export type GenerationJob = {
   /** Tracks how many of the 4 parallel assets have finished (used by UI) */
   parallelCompleted?: number;
   parallelTotal?: number;
+  /** Timestamp when the job started */
+  startedAt?: number;
+  /** Timestamp when each stage started */
+  stageStartedAt?: number;
 };
 
 type Listener = () => void;
@@ -63,6 +67,10 @@ class BackgroundGenerationManager {
   private updateJob(id: string, updates: Partial<GenerationJob>) {
     const job = this.jobs.get(id);
     if (job) {
+      // Track stage transitions with timestamps
+      if (updates.status && updates.status !== job.status) {
+        updates.stageStartedAt = Date.now();
+      }
       Object.assign(job, updates);
       this.notify();
     }
@@ -116,10 +124,13 @@ class BackgroundGenerationManager {
       } as any);
     }
 
+    const now = Date.now();
     const job: GenerationJob = {
       applicationId: appId,
       status: "pending",
       progress: "Starting...",
+      startedAt: now,
+      stageStartedAt: now,
     };
     this.jobs.set(appId, job);
     const abortController = new AbortController();

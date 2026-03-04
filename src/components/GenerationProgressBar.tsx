@@ -1,4 +1,5 @@
-import { Check, Loader2, XCircle } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Check, Loader2, XCircle, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
@@ -15,19 +16,53 @@ const STAGES: { key: PipelineStage; label: string }[] = [
   { key: "complete", label: "Done" },
 ];
 
+// Average seconds per stage (empirical estimates)
+const STAGE_ESTIMATES: Record<string, number> = {
+  scraping: 8,
+  branding: 10,
+  analyzing: 12,
+  research: 15,
+  "cover-letter": 20,
+  dashboard: 45,
+  "generating-assets": 60,
+};
+
 function stageIndex(stage: PipelineStage): number {
   return STAGES.findIndex((s) => s.key === stage);
+}
+
+function formatTime(seconds: number): string {
+  if (seconds < 60) return `${seconds}s`;
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return s > 0 ? `${m}m ${s}s` : `${m}m`;
 }
 
 interface GenerationProgressBarProps {
   currentStage: PipelineStage;
   error?: string;
   onCancel?: () => void;
+  startedAt?: number;
 }
 
-export default function GenerationProgressBar({ currentStage, error, onCancel }: GenerationProgressBarProps) {
+export default function GenerationProgressBar({ currentStage, error, onCancel, startedAt }: GenerationProgressBarProps) {
   const currentIdx = stageIndex(currentStage);
   const isActive = currentStage !== "complete" && !error;
+
+  // Tick every second for elapsed time
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    if (!isActive) return;
+    const interval = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, [isActive]);
+
+  const elapsedSec = startedAt ? Math.floor((now - startedAt) / 1000) : 0;
+
+  // Estimate remaining: sum of estimated seconds for remaining stages
+  const remainingSec = isActive
+    ? STAGES.slice(currentIdx).reduce((sum, s) => sum + (STAGE_ESTIMATES[s.key] || 0), 0)
+    : 0;
 
   return (
     <div className="w-full space-y-3">
@@ -85,8 +120,17 @@ export default function GenerationProgressBar({ currentStage, error, onCancel }:
         />
       </div>
 
-      {/* Error + Cancel */}
-      <div className="flex items-center justify-center gap-3">
+      {/* Time estimate + Error + Cancel */}
+      <div className="flex items-center justify-center gap-4">
+        {isActive && startedAt && (
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Clock className="h-3 w-3" />
+            <span>{formatTime(elapsedSec)} elapsed</span>
+            {remainingSec > 0 && (
+              <span className="text-muted-foreground/60">· ~{formatTime(remainingSec)} remaining</span>
+            )}
+          </div>
+        )}
         {error && (
           <p className="text-xs text-destructive text-center">{error}</p>
         )}

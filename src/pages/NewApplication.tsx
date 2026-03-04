@@ -54,6 +54,7 @@ const NewApplication = () => {
   const [step, setStep] = useState<Step>("input");
   const [loadingMsg, setLoadingMsg] = useState("");
   const [pipelineStage, setPipelineStage] = useState<PipelineStage>("scraping");
+  const [generationStartedAt, setGenerationStartedAt] = useState<number | undefined>();
 
   // Data - using refs to avoid stale closures in the async pipeline
   const [jobMarkdown, setJobMarkdown] = useState("");
@@ -91,6 +92,7 @@ const NewApplication = () => {
     }
     setStep("analyzing");
     setPipelineStage("scraping");
+    setGenerationStartedAt(Date.now());
 
     try {
       let markdown = "";
@@ -412,6 +414,7 @@ const NewApplication = () => {
             <CardContent className="py-10 space-y-6">
               <GenerationProgressBar
                 currentStage={pipelineStage}
+                startedAt={generationStartedAt}
                 onCancel={applicationId ? () => {
                   backgroundGenerator.cancelJob(applicationId);
                   setStep("input");
@@ -432,6 +435,7 @@ const NewApplication = () => {
             <CardContent className="py-10 space-y-6">
               <GenerationProgressBar
                 currentStage={pipelineStage}
+                startedAt={generationStartedAt}
                 onCancel={applicationId ? () => {
                   backgroundGenerator.cancelJob(applicationId);
                   setStep("input");

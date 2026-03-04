@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/sheet";
 import {
   ArrowLeft, Loader2,
-  Info, FileText, LayoutDashboard, Mail, FileUser, Sparkles,
+  Info, FileText, LayoutDashboard, Mail, FileUser, Sparkles, ArrowLeftRight,
 } from "lucide-react";
 import { useApplicationDetail } from "@/hooks/useApplicationDetail";
 import { streamResumeGeneration } from "@/lib/api/resume";
@@ -242,30 +242,47 @@ const ApplicationDetail = () => {
             </span>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               {dynamicAssets.map((asset) => (
-                <button
-                  key={asset.id}
-                  onClick={() => setActiveView(asset.id)}
-                  className={`flex items-center gap-2 px-3 py-2.5 rounded-lg border text-sm font-medium transition-all text-left ${
-                    activeView === asset.id
-                      ? "border-primary bg-primary/5 text-foreground shadow-sm"
-                      : "border-border text-muted-foreground hover:text-foreground hover:border-foreground/20 hover:bg-muted/50"
-                  }`}
-                >
-                  <FileText className="h-4 w-4 shrink-0" />
-                  <span className="truncate">{asset.asset_name}</span>
-                  <div
-                    className={`h-2 w-2 rounded-full shrink-0 ml-auto ${
-                      asset.generation_status === 'complete' && asset.html
-                        ? "bg-primary"
-                        : asset.generation_status === 'generating'
-                        ? "bg-yellow-500 animate-pulse"
-                        : asset.generation_status === 'error'
-                        ? "bg-destructive"
-                        : "bg-muted-foreground/30"
+                <div key={asset.id} className="flex items-center gap-1">
+                  <button
+                    onClick={() => setActiveView(asset.id)}
+                    className={`flex-1 flex items-center gap-2 px-3 py-2.5 rounded-lg border text-sm font-medium transition-all text-left ${
+                      activeView === asset.id
+                        ? "border-primary bg-primary/5 text-foreground shadow-sm"
+                        : "border-border text-muted-foreground hover:text-foreground hover:border-foreground/20 hover:bg-muted/50"
                     }`}
-                    title={asset.generation_status}
-                  />
-                </button>
+                  >
+                    <FileText className="h-4 w-4 shrink-0" />
+                    <span className="truncate">{asset.asset_name}</span>
+                    <div
+                      className={`h-2 w-2 rounded-full shrink-0 ml-auto ${
+                        asset.generation_status === 'complete' && asset.html
+                          ? "bg-primary"
+                          : asset.generation_status === 'generating'
+                          ? "bg-yellow-500 animate-pulse"
+                          : asset.generation_status === 'error'
+                          ? "bg-destructive"
+                          : "bg-muted-foreground/30"
+                      }`}
+                      title={asset.generation_status}
+                    />
+                  </button>
+                  <ChangeAssetDialog
+                    asset={asset}
+                    otherAssetNames={dynamicAssets.filter((a) => a.id !== asset.id).map((a) => a.asset_name)}
+                    jobDescription={state.jobDescription}
+                    companyName={state.companyName}
+                    jobTitle={state.jobTitle}
+                    onAssetReplaced={(updated) => {
+                      handleAssetUpdated(updated);
+                      // Auto-generate the new asset
+                      generateDynamicAsset(updated);
+                    }}
+                  >
+                    <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" title="Change asset type">
+                      <ArrowLeftRight className="h-3.5 w-3.5" />
+                    </Button>
+                  </ChangeAssetDialog>
+                </div>
               ))}
             </div>
           </div>
@@ -308,9 +325,9 @@ const ApplicationDetail = () => {
             />
           )}
 
-          {/* Show proposal card when no dynamic assets and viewing a primary tab */}
-          {isPrimaryView && dynamicAssets.length === 0 && !dynamicLoading && (
-            <div className="mt-6">
+          {/* Proposal Dialog */}
+          <Dialog open={showProposalDialog} onOpenChange={setShowProposalDialog}>
+            <DialogContent className="max-w-lg">
               <AssetProposalCard
                 applicationId={id!}
                 jobDescription={state.jobDescription}
@@ -318,8 +335,8 @@ const ApplicationDetail = () => {
                 jobTitle={state.jobTitle}
                 onAssetsConfirmed={handleAssetsConfirmed}
               />
-            </div>
-          )}
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
     </div>

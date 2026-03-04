@@ -208,6 +208,8 @@ export type Database = {
           customers: Json | null
           dashboard_data: Json | null
           dashboard_html: string | null
+          deleted_at: string | null
+          deleted_by: string | null
           executive_report_html: string | null
           generation_error: string | null
           generation_status: string
@@ -235,6 +237,8 @@ export type Database = {
           customers?: Json | null
           dashboard_data?: Json | null
           dashboard_html?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           executive_report_html?: string | null
           generation_error?: string | null
           generation_status?: string
@@ -262,6 +266,8 @@ export type Database = {
           customers?: Json | null
           dashboard_data?: Json | null
           dashboard_html?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           executive_report_html?: string | null
           generation_error?: string | null
           generation_status?: string

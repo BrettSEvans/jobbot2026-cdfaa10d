@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { getActivePersonaSnapshot } from '@/contexts/ImpersonationContext';
 import { streamFromEdgeFunction, processSSEStream } from './streamUtils';
 import { getStyleContextForPrompt } from './stylePreferences';
 
@@ -170,9 +171,14 @@ export async function saveJobApplication(app: {
     // Get current user for user_id
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("Not authenticated");
+
+    // Track which persona created this application
+    const activePersona = getActivePersonaSnapshot();
+    const personaId = activePersona?.isTestUser ? activePersona.id : null;
+
     const { data, error } = await supabase
       .from('job_applications')
-      .insert({ ...app, user_id: user.id })
+      .insert({ ...app, user_id: user.id, persona_id: personaId } as any)
       .select()
       .single();
     if (error) throw new Error(error.message);
@@ -180,11 +186,20 @@ export async function saveJobApplication(app: {
   }
 }
 
-export async function getJobApplications() {
-  const { data, error } = await supabase
+export async function getJobApplications(personaId?: string | null) {
+  let query = (supabase as any)
     .from('job_applications')
     .select('*')
     .order('created_at', { ascending: false });
+
+  // Filter by persona: null = admin's own, uuid = specific test user
+  if (personaId) {
+    query = query.eq('persona_id', personaId);
+  } else {
+    query = query.is('persona_id', null);
+  }
+
+  const { data, error } = await query;
   if (error) throw new Error(error.message);
   return data;
 }
@@ -209,13 +224,20 @@ export async function deleteJobApplication(id: string) {
   if (error) throw new Error(error.message);
 }
 
-export async function getDeletedJobApplications() {
-  // RLS policy "Users can view own deleted applications" handles filtering
-  const { data, error } = await (supabase as any)
+export async function getDeletedJobApplications(personaId?: string | null) {
+  let query = (supabase as any)
     .from('job_applications')
     .select('*')
     .not('deleted_at', 'is', null)
     .order('deleted_at', { ascending: false });
+
+  if (personaId) {
+    query = query.eq('persona_id', personaId);
+  } else {
+    query = query.is('persona_id', null);
+  }
+
+  const { data, error } = await query;
   if (error) throw new Error(error.message);
   return data;
 }

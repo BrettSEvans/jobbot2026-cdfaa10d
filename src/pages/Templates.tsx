@@ -27,6 +27,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import ImpersonationNotice from "@/components/ImpersonationNotice";
+import { useImpersonation } from "@/contexts/ImpersonationContext";
 
 const ASSET_TYPE_OPTIONS = [
   { value: "", label: "All Types" },
@@ -46,6 +47,7 @@ const ASSET_TYPE_LABELS: Record<string, string> = {
 };
 
 const Templates = () => {
+  const { activePersona, isImpersonating } = useImpersonation();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [allTemplates, setAllTemplates] = useState<DashboardTemplate[]>([]);
@@ -56,12 +58,13 @@ const Templates = () => {
 
   useEffect(() => {
     loadTemplates();
-  }, []);
+  }, [isImpersonating, activePersona?.id]);
 
   const loadTemplates = async () => {
     setLoading(true);
     try {
-      const data = await getTemplates();
+      const personaId = isImpersonating && activePersona?.isTestUser ? activePersona.id : null;
+      const data = await getTemplates({ personaId });
       setAllTemplates(data);
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });

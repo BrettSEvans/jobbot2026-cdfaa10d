@@ -155,7 +155,9 @@ export type Database = {
           id: string
           job_function: string
           label: string
+          persona_id: string | null
           source_application_id: string | null
+          user_id: string | null
         }
         Insert: {
           asset_type?: string
@@ -165,7 +167,9 @@ export type Database = {
           id?: string
           job_function?: string
           label: string
+          persona_id?: string | null
           source_application_id?: string | null
+          user_id?: string | null
         }
         Update: {
           asset_type?: string
@@ -175,7 +179,9 @@ export type Database = {
           id?: string
           job_function?: string
           label?: string
+          persona_id?: string | null
           source_application_id?: string | null
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -357,6 +363,7 @@ export type Database = {
           job_description_markdown: string | null
           job_title: string | null
           job_url: string
+          persona_id: string | null
           products: Json | null
           raid_log_html: string | null
           research_reasoning: string | null
@@ -388,6 +395,7 @@ export type Database = {
           job_description_markdown?: string | null
           job_title?: string | null
           job_url: string
+          persona_id?: string | null
           products?: Json | null
           raid_log_html?: string | null
           research_reasoning?: string | null
@@ -419,6 +427,7 @@ export type Database = {
           job_description_markdown?: string | null
           job_title?: string | null
           job_url?: string
+          persona_id?: string | null
           products?: Json | null
           raid_log_html?: string | null
           research_reasoning?: string | null

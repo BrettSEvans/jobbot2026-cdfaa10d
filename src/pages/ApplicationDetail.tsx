@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,40 +10,121 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import {
-  ArrowLeft, Loader2, ClipboardList, Shield, Network, Map,
+  ArrowLeft, Loader2,
   Info, FileText, LayoutDashboard, Mail, FileUser,
 } from "lucide-react";
 import { useApplicationDetail } from "@/hooks/useApplicationDetail";
-import { streamExecutiveReport } from "@/lib/api/executiveReport";
-import { streamRaidLog } from "@/lib/api/raidLog";
-import { streamArchitectureDiagram } from "@/lib/api/architectureDiagram";
-import { streamRoadmap } from "@/lib/api/roadmap";
 import { streamResumeGeneration } from "@/lib/api/resume";
-import { saveExecutiveReportRevision } from "@/lib/api/executiveReportRevisions";
-import { saveRaidLogRevision } from "@/lib/api/raidLogRevisions";
-import { saveArchitectureDiagramRevision } from "@/lib/api/architectureDiagramRevisions";
-import { saveRoadmapRevision } from "@/lib/api/roadmapRevisions";
 import { saveResumeRevision } from "@/lib/api/resumeRevisions";
+import {
+  getProposedAssets,
+  getGeneratedAssets,
+  streamDynamicAssetGeneration,
+  updateGeneratedAsset,
+  saveDynamicAssetRevision,
+  type GeneratedAsset,
+} from "@/lib/api/dynamicAssets";
+import { getProfile } from "@/lib/api/profile";
+import { cleanHtml } from "@/lib/cleanHtml";
 import DashboardTab from "@/components/tabs/DashboardTab";
 import CoverLetterTab from "@/components/tabs/CoverLetterTab";
 import HtmlAssetTab from "@/components/tabs/HtmlAssetTab";
 import JobDescriptionTab from "@/components/tabs/JobDescriptionTab";
 import DetailsTab from "@/components/tabs/DetailsTab";
+import AssetProposalCard from "@/components/AssetProposalCard";
+import DynamicAssetTab from "@/components/DynamicAssetTab";
 
-type ActiveView =
-  | "dashboard"
-  | "cover-letter"
-  | "resume"
-  | "executive-report"
-  | "raid-log"
-  | "architecture-diagram"
-  | "roadmap";
+type ActiveView = "dashboard" | "cover-letter" | "resume" | string;
 
 const ApplicationDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const state = useApplicationDetail(id);
   const [activeView, setActiveView] = useState<ActiveView>("dashboard");
+
+  // Dynamic assets state
+  const [dynamicAssets, setDynamicAssets] = useState<GeneratedAsset[]>([]);
+  const [hasProposals, setHasProposals] = useState(false);
+  const [dynamicLoading, setDynamicLoading] = useState(true);
+
+  // Load dynamic assets on mount
+  useEffect(() => {
+    if (!id) return;
+    (async () => {
+      setDynamicLoading(true);
+      try {
+        const [assets, proposals] = await Promise.all([
+          getGeneratedAssets(id),
+          getProposedAssets(id),
+        ]);
+        setDynamicAssets(assets);
+        setHasProposals(proposals.length > 0);
+      } catch { }
+      finally { setDynamicLoading(false); }
+    })();
+  }, [id]);
+
+  const handleAssetsConfirmed = async (assets: GeneratedAsset[]) => {
+    setDynamicAssets(assets);
+
+    // Auto-generate all 3 assets
+    for (const asset of assets) {
+      generateDynamicAsset(asset);
+    }
+  };
+
+  const generateDynamicAsset = async (asset: GeneratedAsset) => {
+    try {
+      await updateGeneratedAsset(asset.id, { generation_status: 'generating' } as any);
+      setDynamicAssets((prev) =>
+        prev.map((a) => a.id === asset.id ? { ...a, generation_status: 'generating' } : a)
+      );
+
+      let resumeText = "";
+      try { const p = await getProfile(); resumeText = p?.resume_text || ""; } catch { }
+
+      let accumulated = "";
+      await streamDynamicAssetGeneration({
+        assetName: asset.asset_name,
+        briefDescription: asset.brief_description,
+        jobDescription: state.jobDescription,
+        resumeText,
+        companyName: state.companyName,
+        jobTitle: state.jobTitle,
+        branding: state.app?.branding,
+        onDelta: (text) => { accumulated += text; },
+        onDone: () => {},
+      });
+
+      const cleaned = cleanHtml(accumulated);
+      const updated = await updateGeneratedAsset(asset.id, {
+        html: cleaned,
+        generation_status: 'complete',
+      } as any);
+
+      try {
+        await saveDynamicAssetRevision(asset.id, asset.application_id, cleaned, "Initial generation");
+      } catch { }
+
+      setDynamicAssets((prev) =>
+        prev.map((a) => a.id === asset.id ? updated : a)
+      );
+    } catch (err: any) {
+      await updateGeneratedAsset(asset.id, {
+        generation_status: 'error',
+        generation_error: err.message,
+      } as any);
+      setDynamicAssets((prev) =>
+        prev.map((a) => a.id === asset.id ? { ...a, generation_status: 'error', generation_error: err.message } : a)
+      );
+    }
+  };
+
+  const handleAssetUpdated = (updated: GeneratedAsset) => {
+    setDynamicAssets((prev) =>
+      prev.map((a) => a.id === updated.id ? updated : a)
+    );
+  };
 
   if (state.loading) {
     return (
@@ -70,58 +151,8 @@ const ApplicationDetail = () => {
     { id: "resume" as const, label: "Resume", icon: FileUser },
   ];
 
-  const advancedAssets = [
-    {
-      id: "executive-report" as const,
-      label: "Executive Report",
-      icon: ClipboardList,
-      dbField: "executive_report_html" as const,
-      html: state.executiveReportHtml,
-      setHtml: state.setExecutiveReportHtml,
-      generateFn: streamExecutiveReport,
-      saveRevisionFn: saveExecutiveReportRevision,
-      placeholder: 'e.g. "Add a risk mitigation section"',
-      hasContent: !!state.executiveReportHtml,
-    },
-    {
-      id: "raid-log" as const,
-      label: "RAID Log",
-      icon: Shield,
-      dbField: "raid_log_html" as const,
-      html: state.raidLogHtml,
-      setHtml: state.setRaidLogHtml,
-      generateFn: streamRaidLog,
-      saveRevisionFn: saveRaidLogRevision,
-      placeholder: 'e.g. "Add a new risk about vendor lock-in"',
-      hasContent: !!state.raidLogHtml,
-    },
-    {
-      id: "architecture-diagram" as const,
-      label: "Architecture",
-      icon: Network,
-      dbField: "architecture_diagram_html" as const,
-      html: state.archDiagramHtml,
-      setHtml: state.setArchDiagramHtml,
-      generateFn: streamArchitectureDiagram,
-      saveRevisionFn: saveArchitectureDiagramRevision,
-      placeholder: 'e.g. "Add a caching layer"',
-      hasContent: !!state.archDiagramHtml,
-    },
-    {
-      id: "roadmap" as const,
-      label: "Roadmap",
-      icon: Map,
-      dbField: "roadmap_html" as const,
-      html: state.roadmapHtml,
-      setHtml: state.setRoadmapHtml,
-      generateFn: streamRoadmap,
-      saveRevisionFn: saveRoadmapRevision,
-      placeholder: 'e.g. "Extend the timeline to 4 quarters"',
-      hasContent: !!state.roadmapHtml,
-    },
-  ];
-
-  const isPrimary = activeView === "dashboard" || activeView === "cover-letter" || activeView === "resume";
+  const isPrimaryView = ["dashboard", "cover-letter", "resume"].includes(activeView);
+  const activeDynamicAsset = dynamicAssets.find((a) => a.id === activeView);
 
   return (
     <div className="min-h-screen bg-background">
@@ -183,32 +214,42 @@ const ApplicationDetail = () => {
           ))}
         </div>
 
-        {/* Advanced Reports Bar */}
-        <div className="space-y-1.5">
-          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Advanced Reports</span>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            {advancedAssets.map((asset) => (
-              <button
-                key={asset.id}
-                onClick={() => setActiveView(asset.id)}
-                className={`flex items-center gap-2 px-3 py-2.5 rounded-lg border text-sm font-medium transition-all text-left ${
-                  activeView === asset.id
-                    ? "border-primary bg-primary/5 text-foreground shadow-sm"
-                    : "border-border text-muted-foreground hover:text-foreground hover:border-foreground/20 hover:bg-muted/50"
-                }`}
-              >
-                <asset.icon className="h-4 w-4 shrink-0" />
-                <span className="truncate">{asset.label}</span>
-                <div
-                  className={`h-2 w-2 rounded-full shrink-0 ml-auto ${
-                    asset.hasContent ? "bg-primary" : "bg-muted-foreground/30"
+        {/* Dynamic Assets Bar */}
+        {dynamicAssets.length > 0 && (
+          <div className="space-y-1.5">
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              Industry Assets
+            </span>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              {dynamicAssets.map((asset) => (
+                <button
+                  key={asset.id}
+                  onClick={() => setActiveView(asset.id)}
+                  className={`flex items-center gap-2 px-3 py-2.5 rounded-lg border text-sm font-medium transition-all text-left ${
+                    activeView === asset.id
+                      ? "border-primary bg-primary/5 text-foreground shadow-sm"
+                      : "border-border text-muted-foreground hover:text-foreground hover:border-foreground/20 hover:bg-muted/50"
                   }`}
-                  title={asset.hasContent ? "Generated" : "Not generated"}
-                />
-              </button>
-            ))}
+                >
+                  <FileText className="h-4 w-4 shrink-0" />
+                  <span className="truncate">{asset.asset_name}</span>
+                  <div
+                    className={`h-2 w-2 rounded-full shrink-0 ml-auto ${
+                      asset.generation_status === 'complete' && asset.html
+                        ? "bg-primary"
+                        : asset.generation_status === 'generating'
+                        ? "bg-yellow-500 animate-pulse"
+                        : asset.generation_status === 'error'
+                        ? "bg-destructive"
+                        : "bg-muted-foreground/30"
+                    }`}
+                    title={asset.generation_status}
+                  />
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Content Area */}
         <div>
@@ -233,23 +274,31 @@ const ApplicationDetail = () => {
               refinePlaceholder='e.g. "Make it more concise" or "Emphasize leadership experience"'
             />
           )}
-          {advancedAssets.map((a) =>
-            activeView === a.id ? (
-              <HtmlAssetTab
-                key={a.id}
-                appId={id!}
-                state={state}
-                assetType={a.id as any}
-                label={a.label}
-                dbField={a.dbField}
-                html={a.html}
-                setHtml={a.setHtml}
-                generateFn={a.generateFn}
-                saveRevisionFn={a.saveRevisionFn}
-                emptyIcon={a.icon}
-                refinePlaceholder={a.placeholder}
+
+          {/* Dynamic asset view */}
+          {activeDynamicAsset && (
+            <DynamicAssetTab
+              key={activeDynamicAsset.id}
+              asset={activeDynamicAsset}
+              jobDescription={state.jobDescription}
+              companyName={state.companyName}
+              jobTitle={state.jobTitle}
+              branding={state.app?.branding as any}
+              onAssetUpdated={handleAssetUpdated}
+            />
+          )}
+
+          {/* Show proposal card when no dynamic assets and viewing a primary tab */}
+          {isPrimaryView && dynamicAssets.length === 0 && !dynamicLoading && (
+            <div className="mt-6">
+              <AssetProposalCard
+                applicationId={id!}
+                jobDescription={state.jobDescription}
+                companyName={state.companyName}
+                jobTitle={state.jobTitle}
+                onAssetsConfirmed={handleAssetsConfirmed}
               />
-            ) : null
+            </div>
           )}
         </div>
       </div>

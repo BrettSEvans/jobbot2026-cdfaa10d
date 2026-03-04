@@ -70,11 +70,12 @@ export default function Profile() {
     loadProfile();
   }, []);
 
-  // Block navigation when there are unsaved changes
-  unstable_usePrompt({
-    when: hasUnsavedChanges,
-    message: "You have unsaved profile changes. Leave without saving?",
-  });
+  // Sync dirty state to navigation guard context
+  const { setHasUnsavedChanges } = useNavigationGuard();
+  useEffect(() => {
+    setHasUnsavedChanges(hasUnsavedChanges);
+    return () => setHasUnsavedChanges(false);
+  }, [hasUnsavedChanges, setHasUnsavedChanges]);
 
   const loadProfile = async () => {
     try {

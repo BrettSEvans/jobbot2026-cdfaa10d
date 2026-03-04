@@ -694,6 +694,54 @@ export type Database = {
           },
         ]
       }
+      test_users: {
+        Row: {
+          admin_id: string
+          created_at: string
+          display_name: string | null
+          first_name: string
+          id: string
+          key_skills: string[] | null
+          last_name: string
+          middle_name: string | null
+          preferred_tone: string | null
+          resume_text: string | null
+          target_industries: string[] | null
+          updated_at: string
+          years_experience: string | null
+        }
+        Insert: {
+          admin_id: string
+          created_at?: string
+          display_name?: string | null
+          first_name?: string
+          id?: string
+          key_skills?: string[] | null
+          last_name?: string
+          middle_name?: string | null
+          preferred_tone?: string | null
+          resume_text?: string | null
+          target_industries?: string[] | null
+          updated_at?: string
+          years_experience?: string | null
+        }
+        Update: {
+          admin_id?: string
+          created_at?: string
+          display_name?: string | null
+          first_name?: string
+          id?: string
+          key_skills?: string[] | null
+          last_name?: string
+          middle_name?: string | null
+          preferred_tone?: string | null
+          resume_text?: string | null
+          target_industries?: string[] | null
+          updated_at?: string
+          years_experience?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string

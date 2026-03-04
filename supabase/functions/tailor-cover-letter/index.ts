@@ -26,7 +26,7 @@ serve(async (req) => {
   }
 
   try {
-    const { jobDescription, customInstructions, profileContext } = await req.json();
+    const { jobDescription, customInstructions, profileContext, styleContext } = await req.json();
 
     if (!jobDescription) {
       return new Response(
@@ -56,6 +56,7 @@ CRITICAL Rules:
 - Do NOT invent new experiences — only reframe existing ones
 - Output ONLY the tailored cover letter text, no explanations or metadata
 ${profileContext ? `\n${profileContext}` : ''}
+${styleContext ? `\n${styleContext}` : ''}
 ${customInstructions ? `\nAdditional instructions: ${customInstructions}` : ''}`;
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {

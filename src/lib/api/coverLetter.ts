@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { streamFromEdgeFunction } from './streamUtils';
+import { getStyleContextForPrompt } from './stylePreferences';
 
 export async function scrapeJob(url: string): Promise<{ markdown: string; title: string }> {
   const { data, error } = await supabase.functions.invoke('scrape-job', {
@@ -24,9 +25,12 @@ export async function streamTailoredLetter({
   onDelta: (text: string) => void;
   onDone: () => void;
 }) {
+  let styleContext = "";
+  try { styleContext = await getStyleContextForPrompt(); } catch { /* non-critical */ }
+
   await streamFromEdgeFunction({
     functionName: 'tailor-cover-letter',
-    body: { jobDescription, customInstructions, profileContext },
+    body: { jobDescription, customInstructions, profileContext, styleContext },
     onDelta,
     onDone,
   });

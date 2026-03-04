@@ -119,9 +119,12 @@ export async function streamDashboardRefinement({
   onDelta: (text: string) => void;
   onDone: () => void;
 }) {
+  let styleContext = "";
+  try { styleContext = await getStyleContextForPrompt(); } catch { /* non-critical */ }
+
   await streamFromEdgeFunction({
     functionName: 'refine-dashboard',
-    body: { currentHtml, currentDashboardData, userMessage, chatHistory },
+    body: { currentHtml, currentDashboardData, userMessage, chatHistory, styleContext },
     onDelta,
     onDone,
   });

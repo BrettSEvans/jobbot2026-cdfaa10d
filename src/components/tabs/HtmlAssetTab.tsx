@@ -15,6 +15,7 @@ import type { LucideIcon } from "lucide-react";
 import SaveAsTemplate from "@/components/SaveAsTemplate";
 import AssetRevisions from "@/components/AssetRevisions";
 import { streamRefineAsset, type RefinableAssetType } from "@/lib/api/refineAsset";
+import { extractStyleSignalsFromMessage } from "@/lib/api/stylePreferences";
 import { cleanHtml } from "@/lib/cleanHtml";
 import type { ApplicationState } from "@/hooks/useApplicationDetail";
 
@@ -108,6 +109,8 @@ export default function HtmlAssetTab({
         await saveRevisionFn(appId, clean, `Refined: ${msg.slice(0, 50)}`);
         setRevisionTrigger((t) => t + 1);
       } catch (e) { console.warn("Failed to save revision:", e); }
+      // Extract style signals from the user's message (fire-and-forget)
+      extractStyleSignalsFromMessage(msg);
       toast({ title: "Refined!", description: `${label} updated successfully.` });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });

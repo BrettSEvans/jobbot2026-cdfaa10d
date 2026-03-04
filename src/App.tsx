@@ -16,6 +16,7 @@ import BackgroundJobsBanner from "./components/BackgroundJobsBanner";
 import AppHeader from "./components/AppHeader";
 import { useAuth } from "./hooks/useAuth";
 import { NavigationGuardProvider } from "./hooks/useNavigationGuard";
+import { ImpersonationProvider } from "./contexts/ImpersonationContext";
 import { Loader2 } from "lucide-react";
 
 const queryClient = new QueryClient();
@@ -40,13 +41,13 @@ function AuthenticatedApp() {
             <Route path="*" element={<Auth />} />
           ) : (
             <>
-              <Route path="/" element={<><AppHeader onSignOut={signOut} userEmail={user.email} /><Applications /></>} />
+              <Route path="/" element={<><AppHeader onSignOut={signOut} /><Applications /></>} />
               <Route path="/applications" element={<Navigate to="/" replace />} />
-              <Route path="/applications/new" element={<><AppHeader onSignOut={signOut} userEmail={user.email} /><NewApplication /></>} />
-              <Route path="/applications/:id" element={<><AppHeader onSignOut={signOut} userEmail={user.email} /><ApplicationDetail /></>} />
-              <Route path="/templates" element={<><AppHeader onSignOut={signOut} userEmail={user.email} /><Templates /></>} />
-              <Route path="/profile" element={<><AppHeader onSignOut={signOut} userEmail={user.email} /><Profile /></>} />
-              <Route path="/admin" element={<><AppHeader onSignOut={signOut} userEmail={user.email} /><Admin /></>} />
+              <Route path="/applications/new" element={<><AppHeader onSignOut={signOut} /><NewApplication /></>} />
+              <Route path="/applications/:id" element={<><AppHeader onSignOut={signOut} /><ApplicationDetail /></>} />
+              <Route path="/templates" element={<><AppHeader onSignOut={signOut} /><Templates /></>} />
+              <Route path="/profile" element={<><AppHeader onSignOut={signOut} /><Profile /></>} />
+              <Route path="/admin" element={<><AppHeader onSignOut={signOut} /><Admin /></>} />
               <Route path="*" element={<NotFound />} />
             </>
           )}
@@ -63,7 +64,9 @@ const App = () => {
         <Toaster />
         <Sonner />
         <BackgroundJobsBanner />
-        <AuthenticatedApp />
+        <ImpersonationProvider>
+          <AuthenticatedApp />
+        </ImpersonationProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );

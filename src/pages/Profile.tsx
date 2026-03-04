@@ -12,7 +12,9 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Upload, X, Plus, FileText, User, Briefcase, Sparkles, Save, Shield } from "lucide-react";
 import { getProfile, updateProfile, uploadResumePdf, type UserProfile } from "@/lib/api/profile";
 import StylePreferencesCard from "@/components/StylePreferencesCard";
+import TestUserManager from "@/components/TestUserManager";
 import { useAdminRole } from "@/hooks/useAdminRole";
+import { useImpersonation } from "@/contexts/ImpersonationContext";
 
 const TONE_OPTIONS = [
   { value: "professional", label: "Professional" },
@@ -35,6 +37,7 @@ export default function Profile() {
   const navigate = useNavigate();
   const fileRef = useRef<HTMLInputElement>(null);
   const { isAdmin } = useAdminRole();
+  const { refreshRoot, isImpersonating } = useImpersonation();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savingCard, setSavingCard] = useState<string | null>(null);
@@ -147,13 +150,15 @@ export default function Profile() {
         firstName, middleName, lastName, displayName, resumeText, yearsExperience, preferredTone,
         industries: [...industries], skills: [...skills],
       });
+      // Refresh impersonation context so header name updates
+      await refreshRoot();
       toast({ title: "Profile saved", description: "Your preferences will personalize future AI outputs." });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
       setSaving(false);
     }
-  }, [firstName, middleName, lastName, displayName, resumeText, yearsExperience, preferredTone, industries, skills, toast]);
+  }, [firstName, middleName, lastName, displayName, resumeText, yearsExperience, preferredTone, industries, skills, toast, refreshRoot]);
 
   const handleCardSave = async (cardName: string) => {
     setSavingCard(cardName);
@@ -416,9 +421,12 @@ export default function Profile() {
         {/* AI Style Memory */}
         <StylePreferencesCard />
 
+        {/* Test User Impersonation (Admin Only) */}
+        {isAdmin && <TestUserManager />}
+
         {/* Admin Panel Link */}
         {isAdmin && (
-          <Card className="border-primary/30">
+          <Card className={`border-primary/30 ${isImpersonating ? "opacity-50 pointer-events-none" : ""}`}>
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
                 <Shield className="h-4 w-4 text-primary" /> Admin Settings
@@ -426,7 +434,7 @@ export default function Profile() {
               <CardDescription>Manage resume prompt styles and admin users.</CardDescription>
             </CardHeader>
             <CardFooter>
-              <Button variant="outline" size="sm" onClick={() => navigate("/admin")}>
+              <Button variant="outline" size="sm" onClick={() => navigate("/admin")} disabled={isImpersonating}>
                 <Shield className="mr-2 h-4 w-4" /> Open Admin Panel
               </Button>
             </CardFooter>

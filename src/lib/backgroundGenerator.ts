@@ -387,10 +387,17 @@ class BackgroundGenerationManager {
         generation_status: "complete",
       } as any);
 
+      this.abortControllers.delete(appId);
       this.updateJob(appId, { status: "complete", progress: "Done!" });
     } catch (err: any) {
-      console.error("Background generation error:", err);
-      this.updateJob(appId, { status: "error", progress: "Failed", error: err.message });
+      this.abortControllers.delete(appId);
+      const isCancelled = signal?.aborted;
+      if (isCancelled) {
+        // Already handled by cancelJob — just save the status
+      } else {
+        console.error("Background generation error:", err);
+        this.updateJob(appId, { status: "error", progress: "Failed", error: err.message });
+      }
       try {
         await saveJobApplication({
           id: appId,

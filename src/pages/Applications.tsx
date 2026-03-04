@@ -44,6 +44,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { backgroundGenerator } from "@/lib/backgroundGenerator";
 import { useActiveJobCount } from "@/hooks/useBackgroundJob";
+import BatchModePrompt from "@/components/BatchModePrompt";
 
 type SortKey = "company_name" | "job_title" | "status" | "created_at" | "updated_at";
 type SortDir = "asc" | "desc";
@@ -188,6 +189,7 @@ const Applications = () => {
           </Card>
         ) : (
           <>
+            <BatchModePrompt applicationCount={applications.length} />
             <div className="rounded-md border">
               <Table>
                 <TableHeader>

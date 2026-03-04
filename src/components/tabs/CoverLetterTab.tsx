@@ -9,7 +9,7 @@ import CoverLetterRevisions from "@/components/CoverLetterRevisions";
 import { streamTailoredLetter } from "@/lib/api/coverLetter";
 import { saveCoverLetterRevision } from "@/lib/api/coverLetterRevisions";
 import { downloadCoverLetterPdf } from "@/lib/coverLetterPdf";
-import { getProfile } from "@/lib/api/profile";
+import { getProfile, getProfileContextForPrompt } from "@/lib/api/profile";
 import type { ApplicationState } from "@/hooks/useApplicationDetail";
 
 interface CoverLetterTabProps {
@@ -53,8 +53,11 @@ export default function CoverLetterTab({ appId, state }: CoverLetterTabProps) {
     setCoverLetter("");
     try {
       let accumulated = "";
+      let profileContext = "";
+      try { profileContext = await getProfileContextForPrompt(); } catch { /* non-critical */ }
       await streamTailoredLetter({
         jobDescription,
+        profileContext,
         onDelta: (text) => { accumulated += text; setCoverLetter(accumulated); },
         onDone: () => {},
       });

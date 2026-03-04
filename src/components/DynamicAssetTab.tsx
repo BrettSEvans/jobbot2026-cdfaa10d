@@ -23,7 +23,7 @@ import {
 import { extractStyleSignalsFromMessage } from "@/lib/api/stylePreferences";
 import { cleanHtml } from "@/lib/cleanHtml";
 import { downloadHtmlAsPdf, buildPdfFilename } from "@/lib/htmlToPdf";
-import { getProfile } from "@/lib/api/profile";
+import { getActiveResumeText } from "@/lib/api/profile";
 
 interface DynamicAssetTabProps {
   asset: GeneratedAsset;

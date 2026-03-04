@@ -351,4 +351,35 @@ function ApplicationStatusCell({ appId, dbStatus, generationStatus }: { appId: s
   );
 }
 
+const ASSET_FIELDS = [
+  { key: "dashboard_html", label: "Dashboard" },
+  { key: "cover_letter", label: "Cover Letter" },
+  { key: "executive_report_html", label: "Executive Report" },
+  { key: "raid_log_html", label: "RAID Log" },
+  { key: "architecture_diagram_html", label: "Architecture" },
+  { key: "roadmap_html", label: "Roadmap" },
+] as const;
+
+function AssetDots({ app }: { app: JobApplication }) {
+  return (
+    <div className="flex items-center gap-1">
+      {ASSET_FIELDS.map((f) => {
+        const has = !!(app as any)[f.key];
+        return (
+          <Tooltip key={f.key}>
+            <TooltipTrigger asChild>
+              <div
+                className={`h-2.5 w-2.5 rounded-full ${has ? "bg-primary" : "bg-muted-foreground/25"}`}
+              />
+            </TooltipTrigger>
+            <TooltipContent side="top" className="text-xs">
+              {f.label}: {has ? "✓" : "—"}
+            </TooltipContent>
+          </Tooltip>
+        );
+      })}
+    </div>
+  );
+}
+
 export default Applications;

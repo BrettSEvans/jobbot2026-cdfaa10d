@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -70,16 +70,17 @@ const Applications = () => {
   const [sortKey, setSortKey] = useState<SortKey>("created_at");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [activeView, setActiveView] = useState<"active" | "trash">("active");
-  const previewRef = useRef<HTMLDivElement>(null);
+  const [isClosing, setIsClosing] = useState(false);
 
   const activeJobCount = useActiveJobCount();
 
-  // Auto-scroll to preview when it appears
-  useEffect(() => {
-    if (previewId && previewRef.current) {
-      previewRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-  }, [previewId]);
+  const handleClosePreview = () => {
+    setIsClosing(true);
+    setTimeout(() => {
+      setPreviewId(null);
+      setIsClosing(false);
+    }, 300);
+  };
 
   useEffect(() => {
     loadApplications();

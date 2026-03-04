@@ -14,17 +14,19 @@ export async function scrapeJob(url: string): Promise<{ markdown: string; title:
 export async function streamTailoredLetter({
   jobDescription,
   customInstructions,
+  profileContext,
   onDelta,
   onDone,
 }: {
   jobDescription: string;
   customInstructions?: string;
+  profileContext?: string;
   onDelta: (text: string) => void;
   onDone: () => void;
 }) {
   await streamFromEdgeFunction({
     functionName: 'tailor-cover-letter',
-    body: { jobDescription, customInstructions },
+    body: { jobDescription, customInstructions, profileContext },
     onDelta,
     onDone,
   });

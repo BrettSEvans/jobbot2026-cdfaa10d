@@ -12,6 +12,7 @@ export async function streamExecutiveReport({
   products,
   department,
   branding,
+  profileContext,
   onDelta,
   onDone,
 }: {
@@ -23,12 +24,13 @@ export async function streamExecutiveReport({
   products?: string[];
   department?: string;
   branding?: any;
+  profileContext?: string;
   onDelta: (text: string) => void;
   onDone: () => void;
 }) {
   await streamFromEdgeFunction({
     functionName: 'generate-executive-report',
-    body: { jobDescription, companyName, jobTitle, competitors, customers, products, department, branding },
+    body: { jobDescription, companyName, jobTitle, competitors, customers, products, department, branding, profileContext },
     onDelta,
     onDone,
   });

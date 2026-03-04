@@ -56,9 +56,6 @@ RULES:
 - Ensure navigation includes "agentic-workforce" and "cfo-view" entries
 ${styleContext || ''}`
       : `You are an expert front-end developer helping refine a standalone HTML Business Intelligence Dashboard.
-...
-- Do NOT add explanations — output ONLY the HTML
-${styleContext || ''}`;
 
 RULES:
 - Output the COMPLETE modified HTML file, starting with <!DOCTYPE html> and ending with </html>
@@ -66,7 +63,8 @@ RULES:
 - Maintain the self-contained nature (all CSS/JS embedded)
 - Preserve Chart.js charts and interactive elements
 - Apply the requested changes precisely
-- Do NOT add explanations — output ONLY the HTML`;
+- Do NOT add explanations — output ONLY the HTML
+${styleContext || ''}`;
 
     const messages: Array<{role: string; content: string}> = [
       { role: 'system', content: systemPrompt },

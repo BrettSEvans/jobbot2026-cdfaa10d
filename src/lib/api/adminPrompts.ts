@@ -13,9 +13,31 @@ export interface ResumePromptStyle {
   updated_at: string;
 }
 
-/**
- * Get ALL prompt styles (admin view — includes inactive).
- */
+export interface AuditLogEntry {
+  id: string;
+  admin_id: string;
+  action: string;
+  target_id: string;
+  metadata: Record<string, unknown>;
+  created_at: string;
+}
+
+// ---- Audit helper (fire-and-forget) ----
+
+async function logAudit(action: string, targetId: string, metadata: Record<string, unknown> = {}) {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    await (supabase as any)
+      .from('admin_audit_log')
+      .insert({ admin_id: user.id, action, target_id: targetId, metadata });
+  } catch (err) {
+    console.warn('[audit] Failed to log action:', action, err);
+  }
+}
+
+// ---- Prompt Styles ----
+
 export async function getAllResumeStyles(): Promise<ResumePromptStyle[]> {
   const { data, error } = await (supabase as any)
     .from('resume_prompt_styles')
@@ -25,9 +47,6 @@ export async function getAllResumeStyles(): Promise<ResumePromptStyle[]> {
   return data;
 }
 
-/**
- * Create a new prompt style.
- */
 export async function createResumeStyle(style: {
   label: string;
   slug: string;
@@ -43,12 +62,10 @@ export async function createResumeStyle(style: {
     .select()
     .single();
   if (error) throw new Error(error.message);
+  logAudit('create_style', data.id, { label: data.label, slug: data.slug });
   return data;
 }
 
-/**
- * Update an existing prompt style.
- */
 export async function updateResumeStyle(
   id: string,
   updates: Partial<Pick<ResumePromptStyle, 'label' | 'slug' | 'system_prompt' | 'description' | 'is_active' | 'sort_order'>>
@@ -60,23 +77,27 @@ export async function updateResumeStyle(
     .select()
     .single();
   if (error) throw new Error(error.message);
+  logAudit('update_style', id, { ...updates });
   return data;
 }
 
-/**
- * Delete a prompt style.
- */
 export async function deleteResumeStyle(id: string): Promise<void> {
+  // Grab label/slug before deleting for audit metadata
+  const { data: existing } = await (supabase as any)
+    .from('resume_prompt_styles')
+    .select('label, slug')
+    .eq('id', id)
+    .maybeSingle();
   const { error } = await (supabase as any)
     .from('resume_prompt_styles')
     .delete()
     .eq('id', id);
   if (error) throw new Error(error.message);
+  logAudit('delete_style', id, { label: existing?.label, slug: existing?.slug });
 }
 
-/**
- * Get all admin users (for user management).
- */
+// ---- Admin Users ----
+
 export async function getAdminUsers(): Promise<Array<{ id: string; user_id: string; role: string }>> {
   const { data, error } = await (supabase as any)
     .from('user_roles')
@@ -86,19 +107,14 @@ export async function getAdminUsers(): Promise<Array<{ id: string; user_id: stri
   return data;
 }
 
-/**
- * Add a new admin by user ID.
- */
 export async function addAdminRole(userId: string): Promise<void> {
   const { error } = await (supabase as any)
     .from('user_roles')
     .insert({ user_id: userId, role: 'admin' });
   if (error) throw new Error(error.message);
+  logAudit('grant_admin', userId, { user_id: userId });
 }
 
-/**
- * Remove admin role.
- */
 export async function removeAdminRole(userId: string): Promise<void> {
   const { error } = await (supabase as any)
     .from('user_roles')
@@ -106,21 +122,21 @@ export async function removeAdminRole(userId: string): Promise<void> {
     .eq('user_id', userId)
     .eq('role', 'admin');
   if (error) throw new Error(error.message);
+  logAudit('revoke_admin', userId, { user_id: userId });
 }
 
-/**
- * Look up a user ID by email (using profiles or auth).
- */
 export async function lookupUserByEmail(email: string): Promise<string | null> {
-  // We can't query auth.users from the client, so we check profiles
-  // where display_name or some field might help. 
-  // For now, we'll use an edge function approach or just note the limitation.
-  // As a workaround, check if we can find via profiles table.
-  const { data } = await (supabase as any)
-    .from('profiles')
-    .select('id')
-    .limit(100);
-  // This is a limitation — we'd need a server-side function to look up by email.
-  // For now, return null and let the admin enter user IDs directly.
   return null;
+}
+
+// ---- Audit Log ----
+
+export async function getAuditLog(limit = 50): Promise<AuditLogEntry[]> {
+  const { data, error } = await (supabase as any)
+    .from('admin_audit_log')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  if (error) throw new Error(error.message);
+  return data;
 }

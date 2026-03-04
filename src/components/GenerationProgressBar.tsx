@@ -56,7 +56,7 @@ export default function GenerationProgressBar({ currentStage, error }: Generatio
               </div>
               <span
                 className={cn(
-                  "text-[10px] font-medium text-center leading-tight",
+                  "text-xs font-medium text-center leading-tight",
                   isDone && "text-primary",
                   isActive && "text-foreground",
                   isPending && "text-muted-foreground"

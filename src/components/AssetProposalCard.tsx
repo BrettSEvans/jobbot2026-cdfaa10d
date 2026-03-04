@@ -14,7 +14,7 @@ import {
   type ProposedAsset,
   type GeneratedAsset,
 } from "@/lib/api/dynamicAssets";
-import { getProfile } from "@/lib/api/profile";
+import { getActiveResumeText } from "@/lib/api/profile";
 
 interface AssetProposalCardProps {
   applicationId: string;
@@ -45,10 +45,7 @@ export default function AssetProposalCard({
     setLoading(true);
     try {
       let resumeText = "";
-      try {
-        const profile = await getProfile();
-        resumeText = profile?.resume_text || "";
-      } catch { /* non-critical */ }
+      try { resumeText = await getActiveResumeText(); } catch { /* non-critical */ }
 
       const results = await proposeAssets({
         jobDescription,

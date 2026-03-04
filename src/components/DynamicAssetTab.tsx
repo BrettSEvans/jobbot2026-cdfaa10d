@@ -89,7 +89,7 @@ export default function DynamicAssetTab({
       await updateGeneratedAsset(asset.id, { generation_status: 'generating' } as any);
 
       let resumeText = "";
-      try { const p = await getProfile(); resumeText = p?.resume_text || ""; } catch { }
+      try { resumeText = await getActiveResumeText(); } catch { }
 
       let accumulated = "";
       await streamDynamicAssetGeneration({

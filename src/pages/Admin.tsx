@@ -269,6 +269,7 @@ function AdminAuditTab() {
 }
 
 
+export default function Admin() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { isAdmin, loading: roleLoading } = useAdminRole();

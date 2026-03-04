@@ -208,6 +208,7 @@ class BackgroundGenerationManager {
       let coverLetter = "";
       await streamTailoredLetter({
         jobDescription: markdown,
+        profileContext,
         onDelta: (text) => { coverLetter += text; },
         onDone: () => {},
       });
@@ -280,7 +281,7 @@ class BackgroundGenerationManager {
         try {
           let accumulated = "";
           await streamExecutiveReport({
-            jobDescription: markdown, companyName, jobTitle, competitors, customers, products, department, branding: brandingData,
+            jobDescription: markdown, companyName, jobTitle, competitors, customers, products, department, branding: brandingData, profileContext,
             onDelta: (text) => { accumulated += text; },
             onDone: () => {},
           });

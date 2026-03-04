@@ -35,6 +35,7 @@ import TemplateSelector from "@/components/TemplateSelector";
 import SaveAsTemplate from "@/components/SaveAsTemplate";
 import GenerationProgressBar, { type PipelineStage } from "@/components/GenerationProgressBar";
 import type { DashboardTemplate } from "@/lib/api/templates";
+import { backgroundGenerator } from "@/lib/backgroundGenerator";
 
 type Step = "input" | "analyzing" | "generating" | "preview";
 type AnalyzeStage = "scraping" | "branding" | "analyzing" | "cover-letter" | "complete";
@@ -409,7 +410,14 @@ const NewApplication = () => {
         {step === "analyzing" && (
           <Card>
             <CardContent className="py-10 space-y-6">
-              <GenerationProgressBar currentStage={pipelineStage} />
+              <GenerationProgressBar
+                currentStage={pipelineStage}
+                onCancel={applicationId ? () => {
+                  backgroundGenerator.cancelJob(applicationId);
+                  setStep("input");
+                  toast({ title: "Cancelled", description: "Generation has been cancelled." });
+                } : undefined}
+              />
               <p className="text-sm text-muted-foreground text-center">{loadingMsg}</p>
             </CardContent>
           </Card>
@@ -422,7 +430,14 @@ const NewApplication = () => {
         {step === "generating" && (
           <Card>
             <CardContent className="py-10 space-y-6">
-              <GenerationProgressBar currentStage={pipelineStage} />
+              <GenerationProgressBar
+                currentStage={pipelineStage}
+                onCancel={applicationId ? () => {
+                  backgroundGenerator.cancelJob(applicationId);
+                  setStep("input");
+                  toast({ title: "Cancelled", description: "Generation has been cancelled." });
+                } : undefined}
+              />
               <p className="text-sm text-muted-foreground text-center">{loadingMsg}</p>
               <div className="flex items-center justify-center gap-3 mt-2">
                 <Loader2 className="h-5 w-5 animate-spin text-primary" />

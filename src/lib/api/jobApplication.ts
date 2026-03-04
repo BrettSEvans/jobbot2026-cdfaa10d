@@ -187,16 +187,16 @@ export async function saveJobApplication(app: {
 }
 
 export async function getJobApplications(personaId?: string | null) {
-  let query = supabase
+  let query = (supabase as any)
     .from('job_applications')
     .select('*')
     .order('created_at', { ascending: false });
 
   // Filter by persona: null = admin's own, uuid = specific test user
   if (personaId) {
-    query = query.eq('persona_id' as any, personaId);
+    query = query.eq('persona_id', personaId);
   } else {
-    query = query.is('persona_id' as any, null);
+    query = query.is('persona_id', null);
   }
 
   const { data, error } = await query;

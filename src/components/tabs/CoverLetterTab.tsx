@@ -63,9 +63,24 @@ export default function CoverLetterTab({ appId, state }: CoverLetterTabProps) {
     <div className="space-y-4">
       <div className="flex flex-wrap gap-2">
         {coverLetter && (
-          <Button variant="outline" size="sm" onClick={() => handleCopy(coverLetter, "Cover letter")}>
-            <Copy className="mr-2 h-4 w-4" /> Copy
-          </Button>
+          <>
+            <Button variant="outline" size="sm" onClick={() => handleCopy(coverLetter, "Cover letter")}>
+              <Copy className="mr-2 h-4 w-4" /> Copy
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                downloadCoverLetterPdf(
+                  coverLetter,
+                  app?.company_name || "Company",
+                  app?.job_title || "Position",
+                )
+              }
+            >
+              <Download className="mr-2 h-4 w-4" /> Download PDF
+            </Button>
+          </>
         )}
         <Button variant="outline" size="sm" onClick={() => setEditingCoverLetter(!editingCoverLetter)}>
           <Edit3 className="mr-2 h-4 w-4" /> {editingCoverLetter ? "Cancel Edit" : "Edit"}

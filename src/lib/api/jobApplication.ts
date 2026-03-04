@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { streamFromEdgeFunction, processSSEStream } from './streamUtils';
 
 // --- Search for company icon (three-tier fallback) ---
 export async function searchCompanyIcon(companyName?: string, companyUrl?: string): Promise<{ iconUrl: string | null; source: string | null }> {
@@ -93,24 +94,12 @@ export async function streamDashboardGeneration({
   onDelta: (text: string) => void;
   onDone: () => void;
 }) {
-  const resp = await fetch(
-    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-dashboard`,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-      },
-      body: JSON.stringify({ jobDescription, branding, companyName, jobTitle, competitors, customers, products, department, templateHtml, researchedSections }),
-    }
-  );
-
-  if (!resp.ok || !resp.body) {
-    const errData = await resp.json().catch(() => ({}));
-    throw new Error(errData.error || `Request failed (${resp.status})`);
-  }
-
-  await processSSEStream(resp.body, onDelta, onDone);
+  await streamFromEdgeFunction({
+    functionName: 'generate-dashboard',
+    body: { jobDescription, branding, companyName, jobTitle, competitors, customers, products, department, templateHtml, researchedSections },
+    onDelta,
+    onDone,
+  });
 }
 
 // --- Stream dashboard refinement ---
@@ -129,24 +118,12 @@ export async function streamDashboardRefinement({
   onDelta: (text: string) => void;
   onDone: () => void;
 }) {
-  const resp = await fetch(
-    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/refine-dashboard`,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-      },
-      body: JSON.stringify({ currentHtml, currentDashboardData, userMessage, chatHistory }),
-    }
-  );
-
-  if (!resp.ok || !resp.body) {
-    const errData = await resp.json().catch(() => ({}));
-    throw new Error(errData.error || `Request failed (${resp.status})`);
-  }
-
-  await processSSEStream(resp.body, onDelta, onDone);
+  await streamFromEdgeFunction({
+    functionName: 'refine-dashboard',
+    body: { currentHtml, currentDashboardData, userMessage, chatHistory },
+    onDelta,
+    onDone,
+  });
 }
 
 // --- CRUD for job applications ---
@@ -219,61 +196,4 @@ export async function deleteJobApplication(id: string) {
     .delete()
     .eq('id', id);
   if (error) throw new Error(error.message);
-}
-
-// --- SSE Stream processor (shared) ---
-async function processSSEStream(
-  body: ReadableStream<Uint8Array>,
-  onDelta: (text: string) => void,
-  onDone: () => void
-) {
-  const reader = body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = '';
-  let streamDone = false;
-
-  while (!streamDone) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-
-    let idx: number;
-    while ((idx = buffer.indexOf('\n')) !== -1) {
-      let line = buffer.slice(0, idx);
-      buffer = buffer.slice(idx + 1);
-      if (line.endsWith('\r')) line = line.slice(0, -1);
-      if (line.startsWith(':') || line.trim() === '') continue;
-      if (!line.startsWith('data: ')) continue;
-
-      const json = line.slice(6).trim();
-      if (json === '[DONE]') { streamDone = true; break; }
-
-      try {
-        const parsed = JSON.parse(json);
-        const content = parsed.choices?.[0]?.delta?.content as string | undefined;
-        if (content) onDelta(content);
-      } catch {
-        buffer = line + '\n' + buffer;
-        break;
-      }
-    }
-  }
-
-  // flush remaining
-  if (buffer.trim()) {
-    for (let raw of buffer.split('\n')) {
-      if (!raw) continue;
-      if (raw.endsWith('\r')) raw = raw.slice(0, -1);
-      if (!raw.startsWith('data: ')) continue;
-      const json = raw.slice(6).trim();
-      if (json === '[DONE]') continue;
-      try {
-        const parsed = JSON.parse(json);
-        const content = parsed.choices?.[0]?.delta?.content as string | undefined;
-        if (content) onDelta(content);
-      } catch { /* ignore */ }
-    }
-  }
-
-  onDone();
 }

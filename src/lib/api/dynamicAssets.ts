@@ -235,3 +235,34 @@ export async function getDynamicAssetRevisions(assetId: string) {
   if (error) throw new Error(error.message);
   return data || [];
 }
+
+// --- Replace a single generated asset with a new asset type ---
+export async function replaceGeneratedAsset(
+  assetId: string,
+  applicationId: string,
+  newAssetName: string,
+  newBriefDescription: string,
+): Promise<GeneratedAsset> {
+  // Delete old revisions for this asset
+  await (supabase as any)
+    .from('generated_asset_revisions')
+    .delete()
+    .eq('asset_id', assetId);
+
+  // Update the asset row with new type
+  const { data, error } = await (supabase as any)
+    .from('generated_assets')
+    .update({
+      asset_name: newAssetName,
+      brief_description: newBriefDescription,
+      html: '',
+      generation_status: 'pending',
+      generation_error: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', assetId)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return data as GeneratedAsset;
+}

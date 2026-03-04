@@ -31,8 +31,8 @@ import CoverLetterTab from "@/components/tabs/CoverLetterTab";
 import HtmlAssetTab from "@/components/tabs/HtmlAssetTab";
 import JobDescriptionTab from "@/components/tabs/JobDescriptionTab";
 import DetailsTab from "@/components/tabs/DetailsTab";
-import AssetProposalCard from "@/components/AssetProposalCard";
 import DynamicAssetTab from "@/components/DynamicAssetTab";
+import ChangeAssetDialog from "@/components/ChangeAssetDialog";
 import ImpersonationNotice from "@/components/ImpersonationNotice";
 
 type ActiveView = "dashboard" | "cover-letter" | "resume" | string;
@@ -199,7 +199,7 @@ const ApplicationDetail = () => {
         </div>
 
         {/* Primary Tab Triggers */}
-        <div className="flex gap-1 border-b border-border pb-0">
+        <div className="flex items-center gap-1 border-b border-border pb-0">
           {primaryTabs.map((tab) => (
             <button
               key={tab.id}
@@ -214,6 +214,17 @@ const ApplicationDetail = () => {
               {tab.label}
             </button>
           ))}
+          {dynamicAssets.length === 0 && !dynamicLoading && (
+            <div className="ml-auto -mb-px pb-1">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowProposalDialog(true)}
+              >
+                <Sparkles className="mr-2 h-4 w-4" /> Propose Assets
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Dynamic Assets Bar */}

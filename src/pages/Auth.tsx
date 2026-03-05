@@ -39,9 +39,13 @@ export default function Auth() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
 
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
+    setEmailError(null);
+    setPasswordError(null);
     setLoading(true);
     try {
       if (mode === "signup") {
@@ -63,7 +67,16 @@ export default function Auth() {
         toast({ title: "Check your email", description: "We sent you a password reset link." });
       }
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      const msg = err.message || "Unknown error";
+      // Associate error with the relevant field
+      if (msg.toLowerCase().includes("password")) {
+        setPasswordError(msg);
+      } else if (msg.toLowerCase().includes("email") || msg.toLowerCase().includes("user")) {
+        setEmailError(msg);
+      } else {
+        setEmailError(msg);
+      }
+      toast({ title: "Error", description: msg, variant: "destructive" });
     } finally {
       setLoading(false);
     }

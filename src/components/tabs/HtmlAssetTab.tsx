@@ -35,11 +35,12 @@ interface HtmlAssetTabProps {
   saveRevisionFn: (appId: string, html: string, label: string) => Promise<any>;
   emptyIcon: LucideIcon;
   refinePlaceholder: string;
+  canRefine?: boolean;
 }
 
 export default function HtmlAssetTab({
   appId, state, assetType, label, dbField, html, setHtml,
-  generateFn, saveRevisionFn, emptyIcon: EmptyIcon, refinePlaceholder,
+  generateFn, saveRevisionFn, emptyIcon: EmptyIcon, refinePlaceholder, canRefine: canRefineProp = true,
 }: HtmlAssetTabProps) {
   const { toast } = useToast();
   const { app, jobDescription, companyName, jobTitle, saveField, handleCopy } = state;
@@ -134,8 +135,8 @@ export default function HtmlAssetTab({
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-2">
-        <Button data-tutorial="refine-ai-btn" variant="outline" size="sm" onClick={() => setChatOpen(!chatOpen)}>
-          <Edit3 className="mr-2 h-4 w-4" /> {chatOpen ? "Hide Chat" : "Refine with AI"}
+        <Button data-tutorial="refine-ai-btn" variant="outline" size="sm" onClick={() => setChatOpen(!chatOpen)} disabled={!canRefineProp}>
+          <Edit3 className="mr-2 h-4 w-4" /> {!canRefineProp ? "Upgrade to Refine" : chatOpen ? "Hide Chat" : "Refine with AI"}
         </Button>
         {html && (
           <Button variant="outline" size="sm" onClick={() => { if (!editing) setEditHtml(html); setEditing(!editing); }}>

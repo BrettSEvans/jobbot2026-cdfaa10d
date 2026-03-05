@@ -32,6 +32,7 @@ interface DynamicAssetTabProps {
   jobTitle?: string;
   branding?: any;
   onAssetUpdated: (updated: GeneratedAsset) => void;
+  canRefine?: boolean;
 }
 
 export default function DynamicAssetTab({
@@ -41,6 +42,7 @@ export default function DynamicAssetTab({
   jobTitle,
   branding,
   onAssetUpdated,
+  canRefine: canRefineProp = true,
 }: DynamicAssetTabProps) {
   const { toast } = useToast();
   const [generating, setGenerating] = useState(false);
@@ -204,8 +206,8 @@ export default function DynamicAssetTab({
     <div className="space-y-4">
       {/* Action Bar */}
       <div className="flex flex-wrap gap-2">
-        <Button data-tutorial="refine-ai-btn" variant="outline" size="sm" onClick={() => setChatOpen(!chatOpen)} disabled={!html}>
-          <Edit3 className="mr-2 h-4 w-4" /> {chatOpen ? "Hide Chat" : "Refine with AI"}
+        <Button data-tutorial="refine-ai-btn" variant="outline" size="sm" onClick={() => setChatOpen(!chatOpen)} disabled={!html || !canRefineProp}>
+          <Edit3 className="mr-2 h-4 w-4" /> {!canRefineProp ? "Upgrade to Refine" : chatOpen ? "Hide Chat" : "Refine with AI"}
         </Button>
         <Button data-tutorial="generate-btn" variant="outline" size="sm" onClick={handleGenerate} disabled={isWorking}>
           {isWorking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}

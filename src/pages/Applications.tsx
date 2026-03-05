@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import CompanyIcon from "@/components/CompanyIcon";
 import {
   getJobApplications,
   deleteJobApplication,
@@ -381,7 +382,10 @@ const Applications = () => {
                             }}
                           >
                             <TableCell className="font-medium">
-                              {app.company_name || "Unknown"}
+                              <div className="flex items-center gap-2">
+                                <CompanyIcon iconUrl={(app as any).company_icon_url} companyName={app.company_name} size={20} />
+                                {app.company_name || "Unknown"}
+                              </div>
                             </TableCell>
                             <TableCell>{app.job_title || "Unknown"}</TableCell>
                             <TableCell>
@@ -540,7 +544,12 @@ const Applications = () => {
                         const days = getDaysRemaining(app.deleted_at);
                         return (
                           <TableRow key={app.id} className="opacity-70">
-                            <TableCell className="font-medium">{app.company_name || "Unknown"}</TableCell>
+                            <TableCell className="font-medium">
+                              <div className="flex items-center gap-2">
+                                <CompanyIcon iconUrl={app.company_icon_url} companyName={app.company_name} size={20} />
+                                {app.company_name || "Unknown"}
+                              </div>
+                            </TableCell>
                             <TableCell>{app.job_title || "Unknown"}</TableCell>
                             <TableCell className="text-sm text-muted-foreground">
                               {new Date(app.deleted_at).toLocaleDateString()}

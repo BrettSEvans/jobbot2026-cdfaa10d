@@ -1,0 +1,1 @@
+ALTER TABLE public.job_applications ADD COLUMN company_icon_url text;

@@ -210,18 +210,23 @@ class BackgroundGenerationManager {
 
       // 3b. Logo fallback: if branding scrape found no logo, search external icon repos
       const hasLogo = brandingData?.logo || brandingData?.images?.logo || brandingData?.images?.favicon;
+      let companyIconUrl: string | null = null;
       if (!hasLogo && companyName) {
         this.updateJob(appId, { progress: "Searching for company logo..." });
         try {
           const { iconUrl, source } = await searchCompanyIcon(companyName, companyUrl);
           if (iconUrl) {
             console.log(`Logo fallback found via ${source}: ${iconUrl}`);
+            companyIconUrl = iconUrl;
             if (!brandingData) brandingData = {};
             brandingData.logo = iconUrl;
           }
         } catch (e) {
           console.warn("Logo fallback search failed:", e);
         }
+      } else if (hasLogo) {
+        // Use the logo from branding as the icon URL
+        companyIconUrl = brandingData?.logo || brandingData?.images?.logo || brandingData?.images?.favicon || null;
       }
 
       // Save intermediate results
@@ -237,6 +242,7 @@ class BackgroundGenerationManager {
         customers,
         products,
         generation_status: "cover-letter",
+        ...(companyIconUrl ? { company_icon_url: companyIconUrl } : {}),
       } as any);
 
       // 4. Generate cover letter

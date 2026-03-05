@@ -14,6 +14,7 @@ import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
 import PendingApproval from "./pages/PendingApproval";
+import Pricing from "./pages/Pricing";
 import BackgroundJobsBanner from "./components/BackgroundJobsBanner";
 import AppHeader from "./components/AppHeader";
 import HelpButton from "./components/HelpButton";
@@ -90,6 +91,7 @@ function AuthenticatedApp() {
               <Route path="/templates" element={<><AppHeader onSignOut={signOut} /><main id="main-content"><Templates /></main></>} />
               <Route path="/profile" element={<><AppHeader onSignOut={signOut} /><main id="main-content"><Profile /></main></>} />
               <Route path="/admin" element={<><AppHeader onSignOut={signOut} /><main id="main-content"><Admin /></main></>} />
+              <Route path="/pricing" element={<><AppHeader onSignOut={signOut} /><main id="main-content"><Pricing /></main></>} />
               <Route path="/tutorial-demo" element={<><AppHeader onSignOut={signOut} /><main id="main-content"><TutorialDemo /></main></>} />
               <Route path="*" element={<NotFound />} />
             </>

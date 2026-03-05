@@ -122,7 +122,7 @@ registerTutorialStep({
   placement: "top",
   route: "/applications/:id",
   order: 11,
-  prerequisiteSelector: '[data-tutorial="dashboard-tab"]',
+  prerequisiteSelector: '[data-tutorial="industry-assets-grid"] button',
 });
 
 registerTutorialStep({
@@ -134,7 +134,7 @@ registerTutorialStep({
   placement: "bottom",
   route: "/applications/:id",
   order: 12,
-  prerequisiteSelector: '[data-tutorial="dashboard-tab"]',
+  prerequisiteSelector: '[data-tutorial="industry-assets-grid"] button',
 });
 
 registerTutorialStep({
@@ -146,7 +146,7 @@ registerTutorialStep({
   placement: "bottom",
   route: "/applications/:id",
   order: 13,
-  prerequisiteSelector: '[data-tutorial="dashboard-tab"]',
+  prerequisiteSelector: '[data-tutorial="industry-assets-grid"] button',
 });
 
 registerTutorialStep({
@@ -158,5 +158,5 @@ registerTutorialStep({
   placement: "bottom",
   route: "/applications/:id",
   order: 14,
-  prerequisiteSelector: '[data-tutorial="dashboard-tab"]',
+  prerequisiteSelector: '[data-tutorial="industry-assets-grid"] button',
 });

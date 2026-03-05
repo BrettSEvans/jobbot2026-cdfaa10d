@@ -105,6 +105,7 @@ class BackgroundGenerationManager {
     jobDescription,
     useManualInput,
     resumeStyleId,
+    sourceResumeId,
   }: {
     applicationId?: string;
     jobUrl: string;
@@ -112,6 +113,7 @@ class BackgroundGenerationManager {
     jobDescription?: string;
     useManualInput?: boolean;
     resumeStyleId?: string;
+    sourceResumeId?: string;
   }): Promise<string> {
     // Create a DB record first if we don't have one
     let appId = applicationId;
@@ -146,7 +148,7 @@ class BackgroundGenerationManager {
     this.notify();
 
     // Run in background (don't await at call site)
-    this.runPipeline(appId, jobUrl, companyUrl, jobDescription, useManualInput, resumeStyleId, abortController.signal);
+    this.runPipeline(appId, jobUrl, companyUrl, jobDescription, useManualInput, resumeStyleId, sourceResumeId, abortController.signal);
 
     return appId;
   }
@@ -158,6 +160,7 @@ class BackgroundGenerationManager {
     manualDescription?: string,
     useManualInput?: boolean,
     resumeStyleId?: string,
+    sourceResumeId?: string,
     signal?: AbortSignal,
   ) {
     try {
@@ -247,6 +250,7 @@ class BackgroundGenerationManager {
         products,
         generation_status: "cover-letter",
         company_icon_url: companyIconUrl,
+        ...(sourceResumeId ? { source_resume_id: sourceResumeId } : {}),
       } as any);
 
       // 4. Generate cover letter

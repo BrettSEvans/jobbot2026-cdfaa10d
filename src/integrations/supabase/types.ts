@@ -371,6 +371,7 @@ export type Database = {
           resume_html: string | null
           resume_style_id: string | null
           roadmap_html: string | null
+          source_resume_id: string | null
           status: string
           updated_at: string
           user_id: string | null
@@ -404,6 +405,7 @@ export type Database = {
           resume_html?: string | null
           resume_style_id?: string | null
           roadmap_html?: string | null
+          source_resume_id?: string | null
           status?: string
           updated_at?: string
           user_id?: string | null
@@ -437,6 +439,7 @@ export type Database = {
           resume_html?: string | null
           resume_style_id?: string | null
           roadmap_html?: string | null
+          source_resume_id?: string | null
           status?: string
           updated_at?: string
           user_id?: string | null
@@ -790,6 +793,33 @@ export type Database = {
         }
         Relationships: []
       }
+      user_resumes: {
+        Row: {
+          file_name: string
+          id: string
+          is_active: boolean
+          storage_path: string
+          uploaded_at: string
+          user_id: string
+        }
+        Insert: {
+          file_name: string
+          id?: string
+          is_active?: boolean
+          storage_path: string
+          uploaded_at?: string
+          user_id: string
+        }
+        Update: {
+          file_name?: string
+          id?: string
+          is_active?: boolean
+          storage_path?: string
+          uploaded_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
@@ -860,6 +890,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      set_active_resume: { Args: { p_resume_id: string }; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "user"

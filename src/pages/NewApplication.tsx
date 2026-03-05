@@ -16,6 +16,7 @@ import { scrapeJob, streamTailoredLetter } from "@/lib/api/coverLetter";
 import { parseLlmJsonOutput, assembleDashboardHtml } from "@/lib/dashboard/assembler";
 import { extractStyleSignalsFromMessage } from "@/lib/api/stylePreferences";
 import { getActiveResumeStyles } from "@/lib/api/resume";
+import { listUserResumes, type UserResume } from "@/lib/api/profile";
 import ImpersonationNotice from "@/components/ImpersonationNotice";
 import {
   Loader2,
@@ -82,15 +83,26 @@ const NewApplication = () => {
   const [resumeStyles, setResumeStyles] = useState<Array<{ id: string; label: string; description: string | null }>>([]);
   const [selectedResumeStyleId, setSelectedResumeStyleId] = useState<string>("");
 
+  // Source resume selection
+  const [userResumes, setUserResumes] = useState<UserResume[]>([]);
+  const [selectedSourceResumeId, setSelectedSourceResumeId] = useState<string>("");
+
   // Editable fields
   const [editingField, setEditingField] = useState<string | null>(null);
   const [tempEdit, setTempEdit] = useState("");
 
-  // Load resume styles on mount
+  // Load resume styles and user resumes on mount
   useEffect(() => {
     getActiveResumeStyles().then((styles) => {
       setResumeStyles(styles);
       if (styles.length > 0) setSelectedResumeStyleId(styles[0].id);
+    }).catch(console.warn);
+
+    listUserResumes().then((resumes) => {
+      setUserResumes(resumes);
+      const active = resumes.find((r) => r.is_active);
+      if (active) setSelectedSourceResumeId(active.id);
+      else if (resumes.length > 0) setSelectedSourceResumeId(resumes[0].id);
     }).catch(console.warn);
   }, []);
 
@@ -266,6 +278,7 @@ const NewApplication = () => {
         status: "complete",
         research_reasoning: researchReasoning || undefined,
         ...(selectedResumeStyleId ? { resume_style_id: selectedResumeStyleId } : {}),
+        ...(selectedSourceResumeId ? { source_resume_id: selectedSourceResumeId } : {}),
       } as any);
       setApplicationId(saved.id);
 
@@ -440,6 +453,47 @@ const NewApplication = () => {
                     </Select>
                     <p className="text-xs text-muted-foreground mt-2">
                       Controls the AI-generated resume style and format
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Source Resume selector */}
+              {userResumes.length > 0 ? (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <FileText className="h-5 w-5" /> Source Resume
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Select value={selectedSourceResumeId} onValueChange={setSelectedSourceResumeId}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a source resume" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {userResumes.map((r) => (
+                          <SelectItem key={r.id} value={r.id}>
+                            <span>{r.file_name}</span>
+                            {r.is_active && <span className="text-xs text-primary ml-2">★</span>}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      The uploaded resume PDF used as the base template for AI generation
+                    </p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card>
+                  <CardContent className="py-4">
+                    <p className="text-sm text-muted-foreground">
+                      No source resumes uploaded.{" "}
+                      <a href="/profile" className="text-primary underline underline-offset-2">
+                        Upload a resume on your Profile page
+                      </a>{" "}
+                      for better AI-generated results.
                     </p>
                   </CardContent>
                 </Card>

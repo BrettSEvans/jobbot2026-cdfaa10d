@@ -1,70 +1,259 @@
+# Custom AI Resume Generation — Product Spec & System Architecture
 
+## 1. Feature Overview
 
-# LLM Coding Prompt: Fix Tutorial Tour Dropout and Add Demo Mode
-
-Below is the prompt you can hand to an LLM to implement both fixes.
+Add AI-generated, job-tailored resumes to JobBot. Users select a resume style during job creation; the system combines their baseline resume, the job description, and company research to produce a customized resume. An admin panel allows prompt management.
 
 ---
 
-## Prompt
+## 2. User Flow: Job Creation → Resume
 
-You are working on a React + TypeScript application called JobBot. It has a 14-step interactive tutorial overlay system. Two problems need to be fixed:
+1. User clicks **"New Application"** → enters Job URL → system scrapes job description & company info (existing flow).
+2. **NEW**: A "Resume Style" dropdown appears in the creation form, populated from `resume_prompt_styles` table. Default: "Traditional Corporate".
+3. User clicks **"Create"** → background generation kicks off (existing `backgroundGenerator.ts` pattern).
+4. The generation pipeline now includes a **resume generation step** after the cover letter step:
+   - Fetch user's `resume_text` from `profiles`
+   - Fetch selected `resume_prompt_styles` row (system prompt + style instructions)
+   - Fetch company research data (competitors, products, customers, branding)
+   - Call new Edge Function `generate-resume` with all inputs
+   - Store result in `job_applications.resume_html`
+5. User lands on Application Detail → **Resume tab** appears alongside Dashboard and Cover Letter in the primary tabs bar.
+6. Resume tab uses the existing `HtmlAssetTab` component with actions: Download PDF, Copy Text, Refine with AI, Save as Template.
 
-### Problem 1: Tour closes prematurely after the "Swap Any Asset" step
+---
 
-**Symptom:** When the user clicks "Next" after step 10 (`tour-change-asset`, targeting `[data-tutorial="change-asset-btn"]`), the tour closes instead of advancing to step 11 (`tour-revision-history`).
+## 3. Data Model Updates
 
-**Root cause:** The element polling in `TutorialOverlay.tsx` (lines 80-104) gives each step only 60 attempts at 50ms (3 seconds) to find its target element. Steps 11-14 target elements like `[data-tutorial="revision-history"]`, `[data-tutorial="refine-ai-btn"]`, `[data-tutorial="generate-btn"]`, and `[data-tutorial="download-btn"]`. These elements are conditionally rendered — they only appear when the user is viewing a specific asset tab that has content, revisions, etc. If the element is not in the DOM within 3 seconds, the step is skipped. If *multiple consecutive steps* fail to find their elements, the overlay reaches the end of the step list and calls `onDismiss()`, closing the tour entirely.
+### New Tables
 
-**Fix required:**
-1. When a step's target element is not found after polling, skip to the next step instead of closing the tour. The current code at lines 92-100 already does this for non-final steps, but the cascade of multiple skips in quick succession can cause the overlay to dismiss. Add a safeguard: if more than 3 consecutive steps are skipped, show a fallback "center of screen" bubble for the current step rather than skipping it — display the step content without a spotlight so the user still reads the explanation.
-2. Increase `maxAttempts` from 60 to 120 (6 seconds) to give route transitions and lazy-loaded content more time to render.
-3. When navigating to a new step that requires a different tab to be visible (e.g., the revision history is only visible when viewing a specific asset), consider programmatically clicking the relevant tab before polling. Add an optional `prerequisiteSelector` field to `TutorialStep` that, if present, is clicked before polling begins (e.g., clicking the first dynamic asset tab to ensure revision history and refine buttons are visible).
+#### `resume_prompt_styles`
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | uuid PK | `gen_random_uuid()` |
+| `label` | text NOT NULL | Display name (e.g., "Traditional Corporate") |
+| `slug` | text NOT NULL UNIQUE | URL-safe key (e.g., "traditional-corporate") |
+| `system_prompt` | text NOT NULL | The full system prompt for the AI |
+| `description` | text | Short description shown to users in the dropdown |
+| `is_active` | boolean DEFAULT true | Soft-disable without deleting |
+| `sort_order` | integer DEFAULT 0 | Controls display order |
+| `created_by` | uuid | FK-free reference to admin who created it |
+| `created_at` | timestamptz DEFAULT now() | |
+| `updated_at` | timestamptz DEFAULT now() | |
 
-**Files to modify:**
-- `src/lib/tutorial/types.ts` — add optional `prerequisiteSelector?: string` to `TutorialStep`
-- `src/components/tutorial/TutorialOverlay.tsx` — implement the prerequisite click, increase poll timeout, add consecutive-skip fallback
-- `src/lib/tutorial/steps.ts` — add `prerequisiteSelector` to steps 11-14 that need a specific asset tab to be active
+**RLS**: 
+- SELECT: `is_active = true` for all authenticated users (they need to see the dropdown)
+- INSERT/UPDATE/DELETE: Only users with admin role
 
-### Problem 2: New users see empty/broken screens during the tour
+#### `resume_revisions`
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | uuid PK | |
+| `application_id` | uuid NOT NULL | FK → job_applications |
+| `html` | text NOT NULL | |
+| `label` | text | |
+| `revision_number` | integer DEFAULT 1 | |
+| `created_at` | timestamptz DEFAULT now() | |
 
-**Symptom:** Steps 5-14 navigate to `/applications/:id` and highlight real application content. A brand-new user who has never created an application sees nothing — the tour either skips all those steps or shows empty states.
+**RLS**: Same pattern as other revision tables (user owns parent application).
 
-**Fix required:** Implement a **demo mode** for the tutorial so new users see pre-built demo content during the tour.
+#### `user_roles` (for admin access)
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | uuid PK | |
+| `user_id` | uuid NOT NULL UNIQUE | References auth.users(id) ON DELETE CASCADE |
+| `role` | app_role NOT NULL | Enum: 'admin', 'user' |
 
-**Approach:**
-1. Create a static set of demo HTML strings in a new file `src/lib/tutorial/demoContent.ts`. Include:
-   - `demoDashboardHtml` — a small representative executive dashboard
-   - `demoCoverLetterHtml` — a sample tailored cover letter
-   - `demoResumeHtml` — a sample resume
-   - `demoIndustryAssets` — array of 3 objects `{ title: string, description: string, html: string }` representing sample dynamic assets (e.g., RAID Log, Architecture Diagram, Executive Report)
-   - Keep the HTML simple and self-contained (inline styles). Content should be for a fictional "Acme Corp — Senior Product Manager" role.
+**RLS**: 
+- SELECT own role: `user_id = auth.uid()`
+- INSERT/UPDATE/DELETE: Only existing admins via `has_role()` security definer function
 
-2. Add a `mode` field to the tutorial context: `"live" | "demo"`.
-   - In `useTutorial.ts`, determine the mode: if the user has at least 1 non-deleted application, use `"live"` mode. Otherwise, use `"demo"` mode.
-   - Pass this mode through to `TutorialOverlay`.
+### Modified Tables
 
-3. In `"demo"` mode:
-   - Skip steps 1-4 (the onboarding flow steps for `/`, `/applications/new`, `/profile`) since there is nothing to show yet — or keep steps 1-2 and skip 3-4.
-   - For steps 5-14 (`/applications/:id`), instead of navigating to a real application, navigate to a new route `/tutorial-demo` that renders a **read-only mock** of the `ApplicationDetail` page populated with the demo content.
-   - Create `src/pages/TutorialDemo.tsx` — a simplified, read-only version of `ApplicationDetail` that renders the demo data with the same `data-tutorial` attributes so the spotlight and bubble positioning work identically.
-   - Register the `/tutorial-demo` route in `App.tsx`.
-   - In `TutorialOverlay.tsx`, when mode is `"demo"` and the step route is `/applications/:id`, navigate to `/tutorial-demo` instead.
+#### `job_applications` — add columns:
+| Column | Type | Notes |
+|--------|------|-------|
+| `resume_html` | text NULL | Generated resume HTML |
+| `resume_style_id` | uuid NULL | FK-free reference to selected prompt style |
 
-4. In `"live"` mode (user has applications):
-   - Behavior is unchanged — the tour navigates to the user's most recent real application.
+---
 
-**Files to create:**
-- `src/lib/tutorial/demoContent.ts` — static demo HTML content
-- `src/pages/TutorialDemo.tsx` — read-only mock application detail page
+## 4. Admin Role System
 
-**Files to modify:**
-- `src/hooks/useTutorial.ts` — expose `tutorialMode: "live" | "demo"`
-- `src/components/tutorial/TutorialOverlay.tsx` — accept mode, route to `/tutorial-demo` in demo mode
-- `src/App.tsx` — register `/tutorial-demo` route
+### Bootstrap
+- Seed `user_roles` with `brettevanssf@gmail.com`'s user ID as `admin` role.
+- Create `has_role(uuid, app_role)` security definer function (per project guidelines).
 
-### Summary of deliverables
-1. Tour no longer closes prematurely — graceful fallback when elements are missing
-2. New users get a polished demo walkthrough with realistic sample content
-3. Existing users continue to see their real application data during the tour
+### Admin Assignment Flow
+1. Admin navigates to Profile page → sees "Admin Settings" button (conditionally rendered).
+2. Admin Panel has a "User Management" section listing current admins.
+3. Admin can add new admins by entering an email → system looks up user ID → inserts into `user_roles`.
+4. Admin can remove other admins (but not themselves).
 
+---
+
+## 5. API / Backend Architecture
+
+### New Edge Function: `generate-resume`
+**Input:**
+```json
+{
+  "jobDescription": "...",
+  "resumeText": "...",
+  "systemPrompt": "...",
+  "companyName": "...",
+  "jobTitle": "...",
+  "branding": {...},
+  "competitors": [...],
+  "customers": [...],
+  "products": [...]
+}
+```
+**Behavior:** SSE streaming (same pattern as `generate-dashboard`, `tailor-cover-letter`). Returns styled HTML resume.
+
+### New Edge Function: `refine-resume`
+Same pattern as `refine-dashboard` — accepts current HTML + user message + chat history, returns refined HTML via SSE.
+
+### Client-Side API Layer
+- `src/lib/api/resume.ts` — `streamResumeGeneration()`, mirrors `streamDashboardGeneration()`
+- `src/lib/api/resumeRevisions.ts` — Revision CRUD via factory
+- `src/lib/api/adminPrompts.ts` — CRUD for resume_prompt_styles
+
+### Background Generator Update
+- `src/lib/backgroundGenerator.ts` — add resume generation step after cover letter, using the selected style's prompt.
+
+---
+
+## 6. UI/UX Architecture
+
+### 6a. Job Creation Flow (`NewApplication.tsx`)
+
+**Addition:** Below the Job URL input, add:
+```
+Resume Style: [▾ Traditional Corporate]
+```
+- Dropdown fetches from `resume_prompt_styles` where `is_active = true`, ordered by `sort_order`.
+- Each option shows `label` + `description` as a subtitle.
+- Selection stored and passed to background generator.
+
+### 6b. Application Detail View (`ApplicationDetail.tsx`)
+
+**Primary tabs bar update:**
+Currently: `Dashboard | Cover Letter`
+New: `Dashboard | Cover Letter | Resume`
+
+The Resume tab uses the existing `HtmlAssetTab` component with:
+- `assetType: "resume"`
+- `dbField: "resume_html"`
+- `generateFn: streamResumeGeneration`
+- `saveRevisionFn: saveResumeRevision`
+- Actions: Download PDF, Copy Text, Refine with AI, Save as Template
+
+### 6c. Admin Panel (`/admin` route or modal from Profile)
+
+**Access:** Profile page shows "Admin Settings" button only when `has_role(auth.uid(), 'admin')` returns true.
+
+**Admin Page Layout:**
+```
+┌─────────────────────────────────────────┐
+│  Admin Panel                            │
+├─────────────────────────────────────────┤
+│                                         │
+│  📝 Resume Prompt Styles                │
+│  ┌───────────────────────────────────┐  │
+│  │ Traditional Corporate    [Edit]   │  │
+│  │ Tech Engineering         [Edit]   │  │
+│  │ Career Changer           [Edit]   │  │
+│  │ Creative/Design          [Edit]   │  │
+│  │ Executive Leadership     [Edit]   │  │
+│  └───────────────────────────────────┘  │
+│  [+ Add New Style]                      │
+│                                         │
+│  👥 User Management                     │
+│  ┌───────────────────────────────────┐  │
+│  │ brett@... (you)          [Owner]  │  │
+│  │ other@...                [Remove] │  │
+│  └───────────────────────────────────┘  │
+│  [+ Add Admin]                          │
+│                                         │
+└─────────────────────────────────────────┘
+```
+
+**Edit Prompt Modal:**
+- Label (text input)
+- Description (text input, shown in user dropdown)
+- System Prompt (large textarea, the actual AI instructions)
+- Active toggle
+- Sort order (number input)
+- Save / Cancel
+
+---
+
+## 7. File Checklist
+
+### New Files
+| File | Purpose |
+|------|---------|
+| `supabase/functions/generate-resume/index.ts` | SSE streaming resume generation |
+| `supabase/functions/refine-resume/index.ts` | SSE streaming resume refinement |
+| `src/lib/api/resume.ts` | Client API for resume generation/refinement |
+| `src/lib/api/resumeRevisions.ts` | Revision CRUD via factory |
+| `src/lib/api/adminPrompts.ts` | CRUD for resume_prompt_styles |
+| `src/pages/Admin.tsx` | Admin panel page |
+| `src/hooks/useAdminRole.ts` | Hook to check admin status via `has_role()` |
+
+### Modified Files
+| File | Change |
+|------|--------|
+| `src/pages/ApplicationDetail.tsx` | Add Resume to primary tabs |
+| `src/pages/NewApplication.tsx` | Add style dropdown to creation form |
+| `src/pages/Profile.tsx` | Add Admin Panel link (conditional) |
+| `src/lib/backgroundGenerator.ts` | Add resume generation step |
+| `src/lib/api/refineAsset.ts` | Add `"resume"` to `RefinableAssetType` |
+| `src/hooks/useApplicationDetail.ts` | Add `resumeHtml` / `setResumeHtml` state |
+| `src/App.tsx` | Add `/admin` route (protected) |
+
+### Database Migrations
+1. Create `app_role` enum + `user_roles` table + `has_role()` function
+2. Create `resume_prompt_styles` table with RLS
+3. Create `resume_revisions` table with RLS
+4. Add `resume_html` and `resume_style_id` columns to `job_applications`
+5. Seed initial 5 prompt styles
+6. Seed initial admin user
+
+---
+
+## 8. Security Considerations
+
+- **Admin access**: Server-side only via `has_role()` security definer function. Never checked client-side via localStorage.
+- **RLS on prompt styles**: All authenticated users can SELECT active styles. Only admins can INSERT/UPDATE/DELETE.
+- **RLS on user_roles**: Users can read their own role. Only admins can manage roles.
+- **Resume content**: Same RLS as other assets — user owns parent job_application.
+
+---
+
+## 9. Generation Pipeline (Updated)
+
+```
+User clicks Create
+  → scrape-job (existing)
+  → scrape-company-branding (existing)
+  → analyze-company (existing)
+  → research-company (existing)
+  → generate-dashboard (existing)
+  → tailor-cover-letter (existing)
+  → generate-resume (NEW) ← uses selected style prompt + resume_text + JD + research
+```
+
+All steps run sequentially in `backgroundGenerator.ts`. Resume is the final step.
+
+---
+
+## 10. Initial Prompt Styles (Seed Data)
+
+| Label | Slug | Description |
+|-------|------|-------------|
+| Traditional Corporate | `traditional-corporate` | Clean, formal format suited for corporate and financial roles |
+| Tech Engineering | `tech-engineering` | Skills-forward layout emphasizing technical projects and stack |
+| Career Changer | `career-changer` | Highlights transferable skills and reframes prior experience |
+| Creative & Design | `creative-design` | Visually distinctive layout for creative and marketing roles |
+| Executive Leadership | `executive-leadership` | Achievement-focused format for senior and C-level positions |

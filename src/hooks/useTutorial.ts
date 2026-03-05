@@ -37,23 +37,35 @@ export function useTutorial() {
     return () => window.removeEventListener(TUTORIAL_EVENT, handler);
   }, []);
 
-  // Query completed application count
+  const [totalAppCount, setTotalAppCount] = useState<number | null>(null);
+
+  // Query completed application count + total app count
   useEffect(() => {
     if (!user) {
       setCompletedCount(null);
+      setTotalAppCount(null);
       return;
     }
     (async () => {
       try {
-        const { count, error } = await supabase
-          .from("job_applications")
-          .select("*", { count: "exact", head: true })
-          .eq("user_id", user.id)
-          .eq("generation_status", "complete")
-          .is("deleted_at", null);
-        if (!error) setCompletedCount(count ?? 0);
+        const [completedRes, totalRes] = await Promise.all([
+          supabase
+            .from("job_applications")
+            .select("*", { count: "exact", head: true })
+            .eq("user_id", user.id)
+            .eq("generation_status", "complete")
+            .is("deleted_at", null),
+          supabase
+            .from("job_applications")
+            .select("*", { count: "exact", head: true })
+            .eq("user_id", user.id)
+            .is("deleted_at", null),
+        ]);
+        if (!completedRes.error) setCompletedCount(completedRes.count ?? 0);
+        if (!totalRes.error) setTotalAppCount(totalRes.count ?? 0);
       } catch {
         setCompletedCount(0);
+        setTotalAppCount(0);
       }
     })();
   }, [user]);
@@ -87,9 +99,12 @@ export function useTutorial() {
     window.dispatchEvent(new CustomEvent(TUTORIAL_EVENT, { detail: false }));
   }, []);
 
+  const tutorialMode: "live" | "demo" = (totalAppCount !== null && totalAppCount > 0) ? "live" : "demo";
+
   return {
     showTutorial,
     isTutorialActive,
+    tutorialMode,
     startTutorial,
     dismissTutorial,
     stopTutorial,

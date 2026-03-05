@@ -17,6 +17,7 @@ import BackgroundJobsBanner from "./components/BackgroundJobsBanner";
 import AppHeader from "./components/AppHeader";
 import HelpButton from "./components/HelpButton";
 import TutorialOverlay from "./components/tutorial/TutorialOverlay";
+import TutorialDemo from "./pages/TutorialDemo";
 import { useAuth } from "./hooks/useAuth";
 import { useTutorial } from "./hooks/useTutorial";
 import { NavigationGuardProvider } from "./hooks/useNavigationGuard";
@@ -31,7 +32,7 @@ const queryClient = new QueryClient();
 
 function AuthenticatedApp() {
   const { user, loading, signOut } = useAuth();
-  const { isTutorialActive, dismissTutorial, stopTutorial } = useTutorial();
+  const { isTutorialActive, tutorialMode, dismissTutorial, stopTutorial } = useTutorial();
   const [approvalStatus, setApprovalStatus] = useState<string | null>(null);
   const [approvalLoading, setApprovalLoading] = useState(true);
 
@@ -88,13 +89,14 @@ function AuthenticatedApp() {
               <Route path="/templates" element={<><AppHeader onSignOut={signOut} /><Templates /></>} />
               <Route path="/profile" element={<><AppHeader onSignOut={signOut} /><Profile /></>} />
               <Route path="/admin" element={<><AppHeader onSignOut={signOut} /><Admin /></>} />
+              <Route path="/tutorial-demo" element={<><AppHeader onSignOut={signOut} /><TutorialDemo /></>} />
               <Route path="*" element={<NotFound />} />
             </>
           )}
         </Routes>
       </NavigationGuardProvider>
       {user && <HelpButton />}
-      {user && isTutorialActive && <TutorialOverlay onDismiss={dismissTutorial} />}
+      {user && isTutorialActive && <TutorialOverlay onDismiss={dismissTutorial} tutorialMode={tutorialMode} />}
     </BrowserRouter>
   );
 }

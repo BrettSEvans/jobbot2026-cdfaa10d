@@ -66,6 +66,7 @@ registerTutorialStep({
   placement: "bottom",
   route: "/applications/:id",
   order: 6,
+  prerequisiteSelector: '[data-tutorial="dashboard-tab"]',
 });
 
 registerTutorialStep({
@@ -121,6 +122,7 @@ registerTutorialStep({
   placement: "top",
   route: "/applications/:id",
   order: 11,
+  prerequisiteSelector: '[data-tutorial="dashboard-tab"]',
 });
 
 registerTutorialStep({
@@ -132,6 +134,7 @@ registerTutorialStep({
   placement: "bottom",
   route: "/applications/:id",
   order: 12,
+  prerequisiteSelector: '[data-tutorial="dashboard-tab"]',
 });
 
 registerTutorialStep({
@@ -143,6 +146,7 @@ registerTutorialStep({
   placement: "bottom",
   route: "/applications/:id",
   order: 13,
+  prerequisiteSelector: '[data-tutorial="dashboard-tab"]',
 });
 
 registerTutorialStep({
@@ -154,4 +158,5 @@ registerTutorialStep({
   placement: "bottom",
   route: "/applications/:id",
   order: 14,
+  prerequisiteSelector: '[data-tutorial="dashboard-tab"]',
 });

@@ -135,42 +135,23 @@ export async function renameResume(resumeId: string, newName: string): Promise<v
 }
 
 export async function deleteResume(resumeId: string): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not authenticated");
-
-  // Get the storage path first
+  // Get the storage path first so we can clean up the file
   const { data: resume, error: fetchError } = await supabase
     .from("user_resumes")
-    .select("storage_path, is_active")
+    .select("storage_path")
     .eq("id", resumeId)
     .single();
   if (fetchError) throw fetchError;
 
-  // Delete from storage
+  // Delete from storage (best-effort)
   const { error: storageError } = await supabase.storage
     .from("resume-uploads")
     .remove([resume.storage_path]);
   if (storageError) console.warn("Storage delete failed:", storageError);
 
-  // Delete DB record
-  const { error: deleteError } = await supabase
-    .from("user_resumes")
-    .delete()
-    .eq("id", resumeId);
-  if (deleteError) throw deleteError;
-
-  // If deleted resume was active, set the most recent remaining one as active
-  if (resume.is_active) {
-    const { data: remaining } = await supabase
-      .from("user_resumes")
-      .select("id")
-      .eq("user_id", user.id)
-      .order("uploaded_at", { ascending: false })
-      .limit(1);
-    if (remaining && remaining.length > 0) {
-      await supabase.rpc("set_active_resume", { p_resume_id: remaining[0].id });
-    }
-  }
+  // Atomic DB delete + reassign active status
+  const { error } = await supabase.rpc("delete_and_reassign_resume", { p_resume_id: resumeId });
+  if (error) throw error;
 }
 
 export async function getActiveResumeStoragePath(): Promise<string | null> {

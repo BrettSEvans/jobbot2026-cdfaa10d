@@ -105,6 +105,7 @@ class BackgroundGenerationManager {
     jobDescription,
     useManualInput,
     resumeStyleId,
+    sourceResumeId,
   }: {
     applicationId?: string;
     jobUrl: string;
@@ -112,6 +113,7 @@ class BackgroundGenerationManager {
     jobDescription?: string;
     useManualInput?: boolean;
     resumeStyleId?: string;
+    sourceResumeId?: string;
   }): Promise<string> {
     // Create a DB record first if we don't have one
     let appId = applicationId;

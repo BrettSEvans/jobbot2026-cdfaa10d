@@ -278,6 +278,7 @@ const NewApplication = () => {
         status: "complete",
         research_reasoning: researchReasoning || undefined,
         ...(selectedResumeStyleId ? { resume_style_id: selectedResumeStyleId } : {}),
+        ...(selectedSourceResumeId ? { source_resume_id: selectedSourceResumeId } : {}),
       } as any);
       setApplicationId(saved.id);
 

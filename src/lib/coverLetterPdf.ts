@@ -1,3 +1,5 @@
+import { marked } from "marked";
+
 /**
  * Generates a print-ready cover letter in a hidden iframe and triggers
  * the browser's Save-as-PDF dialog via window.print().
@@ -15,11 +17,8 @@ export function buildCoverLetterHtml(
     day: "numeric",
   });
 
-  const paragraphs = coverLetter
-    .split(/\n{2,}/)
-    .map((p) => p.replace(/\n/g, "<br/>"))
-    .map((p) => `<p>${p}</p>`)
-    .join("\n");
+  // Convert markdown (tables, bold, lists, etc.) to HTML
+  const bodyHtml = marked.parse(coverLetter, { async: false }) as string;
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -71,6 +70,25 @@ export function buildCoverLetterHtml(
     margin-bottom: 8pt;
     text-align: justify;
   }
+  .body table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 8pt 0;
+    font-size: 9.5pt;
+  }
+  .body th, .body td {
+    border: 0.75pt solid #ccc;
+    padding: 4pt 6pt;
+    text-align: left;
+  }
+  .body th {
+    background: #f5f5f5;
+    font-weight: 700;
+  }
+  .body strong { font-weight: 700; }
+  .body em { font-style: italic; }
+  .body ul, .body ol { margin: 6pt 0 6pt 18pt; }
+  .body li { margin-bottom: 3pt; }
   .signature {
     margin-top: 24pt;
   }
@@ -91,7 +109,7 @@ export function buildCoverLetterHtml(
     ${escapeHtml(companyName)}${jobTitle ? `<br/>${escapeHtml(jobTitle)}` : ""}
   </div>
   <div class="body">
-    ${paragraphs}
+    ${bodyHtml}
   </div>
   <div class="signature">
     <div class="closing">Sincerely,</div>

@@ -210,6 +210,7 @@ const ApplicationDetail = () => {
           {primaryTabs.map((tab) => (
             <button
               key={tab.id}
+              data-tutorial={`${tab.id}-tab`}
               onClick={() => setActiveView(tab.id)}
               className={`inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium border-b-2 transition-colors -mb-px ${
                 activeView === tab.id
@@ -240,7 +241,7 @@ const ApplicationDetail = () => {
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
               Industry Assets
             </span>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <div data-tutorial="industry-assets-grid" className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               {dynamicAssets.map((asset) => (
                 <div key={asset.id} className="flex items-center gap-1">
                   <button
@@ -278,7 +279,7 @@ const ApplicationDetail = () => {
                       generateDynamicAsset(updated);
                     }}
                   >
-                    <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" title="Change asset type">
+                    <Button data-tutorial="change-asset-btn" variant="ghost" size="icon" className="h-8 w-8 shrink-0" title="Change asset type">
                       <ArrowLeftRight className="h-3.5 w-3.5" />
                     </Button>
                   </ChangeAssetDialog>

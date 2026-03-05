@@ -55,6 +55,85 @@ registerTutorialStep({
   order: 5,
 });
 
+// ── Asset Tour Steps ──────────────────────────────────
+
+registerTutorialStep({
+  id: "tour-dashboard",
+  helpSlug: "dashboard-tab",
+  targetSelector: '[data-tutorial="dashboard-tab"]',
+  title: "Your Executive Dashboard",
+  body: "This interactive dashboard summarizes the company, role, and your strategic fit. It includes six tabs: Executive Overview, domain insights, Roadmap, Agentic Workforce, and CFO View.",
+  placement: "bottom",
+  route: "/applications/:id",
+  order: 6,
+});
+
+registerTutorialStep({
+  id: "tour-cover-letter",
+  helpSlug: "cover-letter-tab",
+  targetSelector: '[data-tutorial="cover-letter-tab"]',
+  title: "Tailored Cover Letter",
+  body: "Your cover letter is generated from the job description and your resume. You can edit it inline, regenerate it, or browse previous versions in the revision history.",
+  placement: "bottom",
+  route: "/applications/:id",
+  order: 7,
+});
+
+registerTutorialStep({
+  id: "tour-resume",
+  helpSlug: "resume-tab",
+  targetSelector: '[data-tutorial="resume-tab"]',
+  title: "Customized Resume",
+  body: "Each resume is tailored to the specific job posting. Choose from different resume styles, regenerate with fresh content, and download as a professionally formatted PDF.",
+  placement: "bottom",
+  route: "/applications/:id",
+  order: 8,
+});
+
+registerTutorialStep({
+  id: "tour-industry-assets",
+  helpSlug: "dynamic-assets",
+  targetSelector: '[data-tutorial="industry-assets-grid"]',
+  title: "Industry-Specific Assets",
+  body: "These are AI-proposed documents tailored to the job's industry — like a RAID Log, Architecture Diagram, or Executive Report. You selected three during setup; click \"Change Asset\" on any to swap it for a new suggestion.",
+  placement: "bottom",
+  route: "/applications/:id",
+  order: 9,
+});
+
+registerTutorialStep({
+  id: "tour-change-asset",
+  helpSlug: "change-asset",
+  targetSelector: '[data-tutorial="change-asset-btn"]',
+  title: "Swap Any Asset",
+  body: "Don't need this document? Click here to replace it with a different industry-relevant asset. The AI will propose fresh options based on the job context.",
+  placement: "left",
+  route: "/applications/:id",
+  order: 10,
+});
+
+registerTutorialStep({
+  id: "tour-revision-history",
+  helpSlug: "application-detail",
+  targetSelector: '[data-tutorial="revision-history"]',
+  title: "Revision History",
+  body: "Every time you generate or regenerate an asset, the previous version is saved here. Click any revision to preview it, or restore an older version.",
+  placement: "top",
+  route: "/applications/:id",
+  order: 11,
+});
+
+registerTutorialStep({
+  id: "tour-refine-ai",
+  helpSlug: "ai-chat",
+  targetSelector: '[data-tutorial="refine-ai-btn"]',
+  title: "Refine with AI — Vibe Your Assets",
+  body: "This is your creative superpower. Click here and describe what you want changed in plain English — \"make it punchier\", \"add more metrics\", \"emphasize leadership\". The AI reshapes your asset while keeping everything else intact. Vibe it until it's perfect.",
+  placement: "bottom",
+  route: "/applications/:id",
+  order: 12,
+});
+
 registerTutorialStep({
   id: "generate-asset",
   helpSlug: "dynamic-assets",
@@ -63,7 +142,7 @@ registerTutorialStep({
   body: "Click here to generate an asset for the first time, or regenerate it with fresh content. Previous versions are saved in revision history.",
   placement: "bottom",
   route: "/applications/:id",
-  order: 6,
+  order: 13,
 });
 
 registerTutorialStep({
@@ -74,5 +153,5 @@ registerTutorialStep({
   body: "Export any asset as a professionally formatted PDF. Ready to attach to your application or share with hiring managers.",
   placement: "bottom",
   route: "/applications/:id",
-  order: 7,
+  order: 14,
 });

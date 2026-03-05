@@ -2,12 +2,12 @@
  * Generates a print-ready cover letter in a hidden iframe and triggers
  * the browser's Save-as-PDF dialog via window.print().
  */
-export function downloadCoverLetterPdf(
+export function buildCoverLetterHtml(
   coverLetter: string,
   companyName: string,
   jobTitle: string,
   applicantName?: string,
-) {
+): string {
   const name = applicantName || "Your Name";
   const date = new Date().toLocaleDateString("en-US", {
     year: "numeric",
@@ -15,14 +15,13 @@ export function downloadCoverLetterPdf(
     day: "numeric",
   });
 
-  // Split cover letter into paragraphs, preserving blank-line breaks
   const paragraphs = coverLetter
     .split(/\n{2,}/)
     .map((p) => p.replace(/\n/g, "<br/>"))
     .map((p) => `<p>${p}</p>`)
     .join("\n");
 
-  const html = `<!DOCTYPE html>
+  return `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
@@ -100,8 +99,16 @@ export function downloadCoverLetterPdf(
   </div>
 </body>
 </html>`;
+}
 
-  // Create hidden iframe, print, then clean up
+export function downloadCoverLetterPdf(
+  coverLetter: string,
+  companyName: string,
+  jobTitle: string,
+  applicantName?: string,
+) {
+  const html = buildCoverLetterHtml(coverLetter, companyName, jobTitle, applicantName);
+
   const iframe = document.createElement("iframe");
   iframe.style.position = "fixed";
   iframe.style.right = "-9999px";
@@ -121,18 +128,15 @@ export function downloadCoverLetterPdf(
   doc.write(html);
   doc.close();
 
-  // Wait for fonts / styles then print
   iframe.onload = () => {
     setTimeout(() => {
       iframe.contentWindow?.print();
-      // Clean up after dialog closes
       setTimeout(() => {
         document.body.removeChild(iframe);
       }, 1000);
     }, 250);
   };
 
-  // Fallback if onload already fired (some browsers)
   if (doc.readyState === "complete") {
     setTimeout(() => {
       iframe.contentWindow?.print();

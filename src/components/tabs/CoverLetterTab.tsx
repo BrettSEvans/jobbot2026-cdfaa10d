@@ -33,7 +33,6 @@ export default function CoverLetterTab({ appId, state }: CoverLetterTabProps) {
   const [headerText, setHeaderText] = useState("");
   const [footerText, setFooterText] = useState("");
   const [dateText, setDateText] = useState("");
-  const [footerText, setFooterText] = useState("");
 
   // Build applicant name from activePersona
   const applicantName = activePersona

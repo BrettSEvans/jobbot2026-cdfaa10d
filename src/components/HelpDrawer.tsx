@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useLocation } from "react-router-dom";
+import { useTutorial } from "@/hooks/useTutorial";
 import {
   Sheet,
   SheetContent,
@@ -14,7 +15,8 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
-import { Search } from "lucide-react";
+import { Search, BookOpen } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   getAllHelp,
   getHelpForRoute,
@@ -95,6 +97,7 @@ function HelpEntry({
 
 export default function HelpDrawer({ open, onOpenChange }: HelpDrawerProps) {
   const { pathname } = useLocation();
+  const { startTutorial } = useTutorial();
   const [query, setQuery] = useState("");
   const [expandedSlugs, setExpandedSlugs] = useState<string[]>([]);
 
@@ -151,6 +154,18 @@ export default function HelpDrawer({ open, onOpenChange }: HelpDrawerProps) {
           <SheetHeader>
             <SheetTitle className="font-heading">Help & Documentation</SheetTitle>
           </SheetHeader>
+
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full justify-start"
+            onClick={() => {
+              onOpenChange(false);
+              setTimeout(() => startTutorial(), 300);
+            }}
+          >
+            <BookOpen className="mr-2 h-4 w-4" /> Take the Tour
+          </Button>
 
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />

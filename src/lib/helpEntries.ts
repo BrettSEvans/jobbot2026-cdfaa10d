@@ -377,3 +377,12 @@ registerHelp({
   keywords: ['nav', 'menu', 'header', 'navigate'],
   relatedSlugs: ['applications-list', 'templates', 'profile', 'admin-panel'],
 });
+
+registerHelp({
+  slug: 'tutorial-walkthrough',
+  title: 'Interactive Tutorial',
+  summary:
+    'A guided walkthrough that shows you how to create applications, upload your resume, generate assets, and download them as PDFs.',
+  keywords: ['tutorial', 'walkthrough', 'tour', 'guide', 'onboarding', 'help'],
+  relatedSlugs: ['applications-list', 'new-application', 'profile'],
+});

@@ -207,13 +207,13 @@ export default function DynamicAssetTab({
         <Button variant="outline" size="sm" onClick={() => setChatOpen(!chatOpen)} disabled={!html}>
           <Edit3 className="mr-2 h-4 w-4" /> {chatOpen ? "Hide Chat" : "Refine with AI"}
         </Button>
-        <Button variant="outline" size="sm" onClick={handleGenerate} disabled={isWorking}>
+        <Button data-tutorial="generate-btn" variant="outline" size="sm" onClick={handleGenerate} disabled={isWorking}>
           {isWorking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
           {html ? "Regenerate" : "Generate"}
         </Button>
         {html && (
           <>
-            <Button variant="outline" size="sm" onClick={handleDownloadPdf}>
+            <Button data-tutorial="download-btn" variant="outline" size="sm" onClick={handleDownloadPdf}>
               <FileDown className="mr-2 h-4 w-4" /> PDF Download
             </Button>
             <Button variant="outline" size="sm" onClick={handleCopyText}>

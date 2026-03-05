@@ -379,6 +379,7 @@ const NewApplication = () => {
                     />
                   ) : (
                     <Input
+                      data-tutorial="job-url"
                       type="url"
                       placeholder="https://jobs.example.com/role/12345"
                       value={jobUrl}

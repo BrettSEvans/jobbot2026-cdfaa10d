@@ -416,6 +416,7 @@ export default function Profile() {
               <Label htmlFor="resumeText">Resume highlights (recommended)</Label>
               <Textarea
                 id="resumeText"
+                data-tutorial="resume-input"
                 value={resumeText}
                 onChange={(e) => setResumeText(e.target.value)}
                 placeholder="Paste your resume content or key highlights here. This will be injected into AI prompts to personalize cover letters and reports."

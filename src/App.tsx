@@ -16,18 +16,22 @@ import PendingApproval from "./pages/PendingApproval";
 import BackgroundJobsBanner from "./components/BackgroundJobsBanner";
 import AppHeader from "./components/AppHeader";
 import HelpButton from "./components/HelpButton";
+import TutorialOverlay from "./components/tutorial/TutorialOverlay";
 import { useAuth } from "./hooks/useAuth";
+import { useTutorial } from "./hooks/useTutorial";
 import { NavigationGuardProvider } from "./hooks/useNavigationGuard";
 import { ImpersonationProvider } from "./contexts/ImpersonationContext";
 import { Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import "@/lib/helpEntries"; // register all help topics
+import "@/lib/tutorial/steps"; // register tutorial steps
 
 const queryClient = new QueryClient();
 
 function AuthenticatedApp() {
   const { user, loading, signOut } = useAuth();
+  const { isTutorialActive, dismissTutorial, stopTutorial } = useTutorial();
   const [approvalStatus, setApprovalStatus] = useState<string | null>(null);
   const [approvalLoading, setApprovalLoading] = useState(true);
 
@@ -90,6 +94,7 @@ function AuthenticatedApp() {
         </Routes>
       </NavigationGuardProvider>
       {user && <HelpButton />}
+      {user && isTutorialActive && <TutorialOverlay onDismiss={dismissTutorial} />}
     </BrowserRouter>
   );
 }

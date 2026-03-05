@@ -5,6 +5,7 @@ import { LogOut, Moon, Sun, Zap, ArrowRightLeft } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
 import { useNavigationGuard } from "@/hooks/useNavigationGuard";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
+import { useSubscription } from "@/hooks/useSubscription";
 import { Badge } from "@/components/ui/badge";
 
 interface AppHeaderProps {

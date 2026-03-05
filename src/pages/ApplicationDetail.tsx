@@ -206,7 +206,7 @@ const ApplicationDetail = () => {
         </div>
 
         {/* Primary Tab Triggers */}
-        <div className="flex items-center gap-1 border-b border-border pb-0">
+        <div data-tutorial="asset-tabs" className="flex items-center gap-1 border-b border-border pb-0">
           {primaryTabs.map((tab) => (
             <button
               key={tab.id}

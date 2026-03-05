@@ -487,9 +487,12 @@ const Applications = () => {
                         onClick={(e) => e.stopPropagation()}
                       >
                         <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/50 shrink-0">
-                          <span className="text-sm font-medium text-muted-foreground truncate">
-                            {previewApp.company_name} — {previewApp.job_title}
-                          </span>
+                          <div className="flex items-center gap-2 min-w-0">
+                            <CompanyIcon iconUrl={(previewApp as any).company_icon_url} companyName={previewApp.company_name} size={18} />
+                            <span className="text-sm font-medium text-muted-foreground truncate">
+                              {previewApp.company_name} — {previewApp.job_title}
+                            </span>
+                          </div>
                           <Button size="sm" variant="ghost" onClick={handleClosePreview}>
                             ✕ Close
                           </Button>

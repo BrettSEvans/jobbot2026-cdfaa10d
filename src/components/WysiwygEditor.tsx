@@ -8,7 +8,7 @@ import { TablePlugin } from "@lexical/react/LexicalTablePlugin";
 import { OnChangePlugin } from "@lexical/react/LexicalOnChangePlugin";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
-import { HeadingNode } from "@lexical/rich-text";
+import { HeadingNode, QuoteNode } from "@lexical/rich-text";
 import { ListNode, ListItemNode } from "@lexical/list";
 import { TableNode, TableCellNode, TableRowNode, INSERT_TABLE_COMMAND } from "@lexical/table";
 import { $generateHtmlFromNodes, $generateNodesFromDOM } from "@lexical/html";
@@ -41,7 +41,13 @@ import { LinkNode, AutoLinkNode } from "@lexical/link";
 import { AutoFocusPlugin } from "@lexical/react/LexicalAutoFocusPlugin";
 import { ClearEditorPlugin } from "@lexical/react/LexicalClearEditorPlugin";
 import { MarkdownShortcutPlugin } from "@lexical/react/LexicalMarkdownShortcutPlugin";
-import { TRANSFORMERS } from "@lexical/markdown";
+import {
+  HEADING, QUOTE as MD_QUOTE, UNORDERED_LIST, ORDERED_LIST,
+  BOLD_STAR, BOLD_UNDERSCORE, ITALIC_STAR, ITALIC_UNDERSCORE,
+  BOLD_ITALIC_STAR, BOLD_ITALIC_UNDERSCORE, STRIKETHROUGH, INLINE_CODE,
+  HIGHLIGHT, LINK as MD_LINK,
+} from "@lexical/markdown";
+import type { Transformer } from "@lexical/markdown";
 import { HashtagPlugin } from "@lexical/react/LexicalHashtagPlugin";
 import { HashtagNode } from "@lexical/hashtag";
 

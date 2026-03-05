@@ -883,6 +883,10 @@ export type Database = {
         Args: { _target_user_id: string }
         Returns: undefined
       }
+      delete_and_reassign_resume: {
+        Args: { p_resume_id: string }
+        Returns: undefined
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

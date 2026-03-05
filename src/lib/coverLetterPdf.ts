@@ -26,8 +26,11 @@ export function buildCoverLetterHtml(
   companyName: string,
   jobTitle: string,
   applicantName?: string,
+  headerOverride?: string,
+  footerOverride?: string,
 ): string {
-  const name = applicantName || "Your Name";
+  const name = headerOverride?.split("\n")[0]?.trim() || applicantName || "Your Name";
+  const subtitle = headerOverride?.split("\n").slice(1).join(" · ").trim() || "";
   const date = new Date().toLocaleDateString("en-US", {
     year: "numeric",
     month: "long",
@@ -119,6 +122,7 @@ export function buildCoverLetterHtml(
 <body>
   <div class="header">
     <div class="name">${escapeHtml(name)}</div>
+    ${subtitle ? `<div class="date">${escapeHtml(subtitle)}</div>` : ""}
     <div class="date">${date}</div>
   </div>
   <div class="recipient">
@@ -131,6 +135,7 @@ export function buildCoverLetterHtml(
     <div class="closing">Sincerely,</div>
     <div class="sig-name">${escapeHtml(name)}</div>
   </div>
+  ${footerOverride ? `<div style="margin-top:18pt;font-size:8.5pt;color:#888;border-top:0.5pt solid #ccc;padding-top:6pt;">${escapeHtml(footerOverride)}</div>` : ""}
 </body>
 </html>`;
 }

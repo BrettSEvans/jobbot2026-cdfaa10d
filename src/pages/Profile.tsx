@@ -468,15 +468,119 @@ export default function Profile() {
               <FileText className="h-4 w-4 text-primary" /> Resume / Background
               {dirty.resume && <Badge variant="secondary" className="text-xs bg-primary/10 text-primary">Unsaved</Badge>}
             </CardTitle>
-            <CardDescription>Upload a PDF or paste key highlights — this context personalizes your AI outputs.</CardDescription>
+            <CardDescription>Upload PDF resumes to use as templates when generating tailored resumes for job apps.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <ResumeDropZone
-              fileRef={fileRef}
-              uploading={uploading}
-              onFileSelected={handleFileUpload}
-            />
-            <div className="space-y-1.5">
+          <CardContent className="space-y-4">
+            {/* Resume file list */}
+            {!isImpersonating && resumesLoaded && resumes.length > 0 && (
+              <div className="space-y-2">
+                {resumes.map((r) => (
+                  <div
+                    key={r.id}
+                    className={`flex items-center gap-3 rounded-lg border p-3 transition-colors ${
+                      r.is_active ? "border-primary/50 bg-primary/5" : "border-border"
+                    }`}
+                  >
+                    <button
+                      onClick={() => handleSetActive(r.id)}
+                      className="shrink-0"
+                      title={r.is_active ? "Active resume" : "Set as active"}
+                    >
+                      <Star
+                        className={`h-4 w-4 transition-colors ${
+                          r.is_active ? "fill-primary text-primary" : "text-muted-foreground hover:text-primary"
+                        }`}
+                      />
+                    </button>
+
+                    <div className="flex-1 min-w-0">
+                      {renamingId === r.id ? (
+                        <div className="flex items-center gap-1">
+                          <Input
+                            value={renameValue}
+                            onChange={(e) => setRenameValue(e.target.value)}
+                            className="h-7 text-sm"
+                            onKeyDown={(e) => e.key === "Enter" && handleRename(r.id)}
+                            autoFocus
+                          />
+                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => handleRename(r.id)}>
+                            <Check className="h-3 w-3" />
+                          </Button>
+                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => setRenamingId(null)}>
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <>
+                          <p className="text-sm font-medium truncate">{r.file_name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            Uploaded {new Date(r.uploaded_at).toLocaleDateString()}
+                          </p>
+                        </>
+                      )}
+                    </div>
+
+                    {r.is_active && (
+                      <Badge variant="secondary" className="shrink-0 text-xs bg-primary/10 text-primary">Active</Badge>
+                    )}
+
+                    {renamingId !== r.id && (
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 w-7 p-0"
+                          onClick={() => { setRenamingId(r.id); setRenameValue(r.file_name); }}
+                          title="Rename"
+                        >
+                          <Pencil className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                          onClick={() => setDeleteConfirmId(r.id)}
+                          title="Delete"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Upload zone: full when empty, compact button when files exist */}
+            {!isImpersonating && (
+              resumes.length === 0 ? (
+                <ResumeDropZone
+                  fileRef={fileRef}
+                  uploading={uploading}
+                  onFileSelected={handleFileUpload}
+                />
+              ) : resumes.length < MAX_RESUMES ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fileRef.current?.click()}
+                  disabled={uploading}
+                  className="w-full"
+                >
+                  {uploading ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Plus className="mr-2 h-4 w-4" />
+                  )}
+                  {uploading ? "Uploading..." : "Upload Another Resume"}
+                </Button>
+              ) : (
+                <p className="text-xs text-muted-foreground text-center">Maximum of {MAX_RESUMES} resumes reached.</p>
+              )
+            )}
+            <input ref={fileRef} type="file" accept=".pdf" onChange={handleFileUpload} className="hidden" />
+
+            <div className="border-t pt-4 space-y-1.5">
               <Label htmlFor="resumeText">Resume highlights (recommended)</Label>
               <Textarea
                 id="resumeText"
@@ -491,6 +595,27 @@ export default function Profile() {
           </CardContent>
           <SaveCardButton cardName="resume" isDirty={dirty.resume} />
         </Card>
+
+        {/* Delete confirmation dialog */}
+        <AlertDialog open={!!deleteConfirmId} onOpenChange={() => setDeleteConfirmId(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete this resume?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will permanently delete the uploaded file. This cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                onClick={() => deleteConfirmId && handleDelete(deleteConfirmId)}
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         {/* Skills & Industries */}
         <Card className={`transition-all ${cardBorderClass(dirty.skills)}`}>

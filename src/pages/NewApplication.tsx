@@ -496,7 +496,7 @@ const NewApplication = () => {
                     </p>
                   </CardContent>
                 </Card>
-              )
+              )}
 
               <Button
                 onClick={handleAnalyze}

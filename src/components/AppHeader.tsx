@@ -95,6 +95,15 @@ onClick={() => guardedNavigate(() => navigate("/"))}
 
           {/* Right side */}
           <div className="flex items-center gap-1.5">
+            {!subLoading && (
+              <Badge
+                variant={tier === "premium" ? "default" : tier === "pro" ? "secondary" : "outline"}
+                className="text-[10px] py-0 px-1.5 cursor-pointer hidden sm:inline-flex"
+                onClick={() => guardedNavigate(() => navigate("/pricing"))}
+              >
+                {tier === "free" ? "Free" : tier === "pro" ? "Pro" : "Premium"}
+              </Badge>
+            )}
             {displayName && (
               <span className="text-sm text-muted-foreground hidden sm:inline mr-1">
                 {displayName}

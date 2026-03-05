@@ -1,15 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Copy, Edit3, Check, X, Loader2, RefreshCw, Download } from "lucide-react";
-import { useMemo } from "react";
 import CoverLetterRevisions from "@/components/CoverLetterRevisions";
+import WysiwygEditor from "@/components/WysiwygEditor";
 import { streamTailoredLetter } from "@/lib/api/coverLetter";
 import { saveCoverLetterRevision } from "@/lib/api/coverLetterRevisions";
-import { downloadCoverLetterPdf, buildCoverLetterHtml } from "@/lib/coverLetterPdf";
+import { downloadCoverLetterPdf, buildCoverLetterHtml, coverLetterBodyToHtml } from "@/lib/coverLetterPdf";
 import { getProfileContextForPrompt } from "@/lib/api/profile";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import type { ApplicationState } from "@/hooks/useApplicationDetail";
@@ -30,6 +29,7 @@ export default function CoverLetterTab({ appId, state }: CoverLetterTabProps) {
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [revisionTrigger, setRevisionTrigger] = useState(0);
   const [previewCoverLetter, setPreviewCoverLetter] = useState<string | null>(null);
+  const [editHtml, setEditHtml] = useState("");
 
   // Build applicant name from activePersona
   const applicantName = activePersona
@@ -95,7 +95,10 @@ export default function CoverLetterTab({ appId, state }: CoverLetterTabProps) {
             </Button>
           </>
         )}
-        <Button data-tutorial="refine-ai-btn" variant="outline" size="sm" onClick={() => setEditingCoverLetter(!editingCoverLetter)}>
+        <Button data-tutorial="refine-ai-btn" variant="outline" size="sm" onClick={() => {
+          if (!editingCoverLetter) setEditHtml(coverLetterBodyToHtml(coverLetter));
+          setEditingCoverLetter(!editingCoverLetter);
+        }}>
           <Edit3 className="mr-2 h-4 w-4" /> {editingCoverLetter ? "Cancel Edit" : "Edit"}
         </Button>
         <Button variant="outline" size="sm" onClick={handleRegenerateCoverLetter} disabled={isRegenerating}>
@@ -123,12 +126,12 @@ export default function CoverLetterTab({ appId, state }: CoverLetterTabProps) {
         <CardContent className="pt-6">
           {editingCoverLetter ? (
             <div className="space-y-3">
-              <Textarea value={coverLetter} onChange={(e) => setCoverLetter(e.target.value)} rows={16} className="font-mono text-sm" />
+              <WysiwygEditor content={editHtml} onChange={setEditHtml} />
               <div className="flex gap-2">
-                <Button size="sm" onClick={() => { saveField({ cover_letter: coverLetter }); setEditingCoverLetter(false); }} disabled={saving}>
+                <Button size="sm" onClick={() => { setCoverLetter(editHtml); saveField({ cover_letter: editHtml }); setEditingCoverLetter(false); }} disabled={saving}>
                   <Check className="mr-2 h-4 w-4" /> Save
                 </Button>
-                <Button size="sm" variant="ghost" onClick={() => { setCoverLetter(app.cover_letter || ""); setEditingCoverLetter(false); }}>
+                <Button size="sm" variant="ghost" onClick={() => { setEditingCoverLetter(false); }}>
                   <X className="mr-2 h-4 w-4" /> Discard
                 </Button>
               </div>

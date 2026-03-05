@@ -9,9 +9,10 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Edit3, RefreshCw, Loader2, Download, Sparkles, FileDown,
+  Edit3, RefreshCw, Loader2, Download, Sparkles, FileDown, Check, X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import WysiwygEditor from "@/components/WysiwygEditor";
 import SaveAsTemplate from "@/components/SaveAsTemplate";
 import AssetRevisions from "@/components/AssetRevisions";
 import { backgroundGenerator } from "@/lib/backgroundGenerator";
@@ -47,6 +48,8 @@ export default function HtmlAssetTab({
   const [chatInput, setChatInput] = useState("");
   const [revisionTrigger, setRevisionTrigger] = useState(0);
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [editHtml, setEditHtml] = useState("");
 
   const assetJob = useAssetJob(appId, assetType);
   const isAssetJobActive = !!(assetJob && !["complete", "error"].includes(assetJob.status));
@@ -134,6 +137,11 @@ export default function HtmlAssetTab({
         <Button data-tutorial="refine-ai-btn" variant="outline" size="sm" onClick={() => setChatOpen(!chatOpen)}>
           <Edit3 className="mr-2 h-4 w-4" /> {chatOpen ? "Hide Chat" : "Refine with AI"}
         </Button>
+        {html && (
+          <Button variant="outline" size="sm" onClick={() => { if (!editing) setEditHtml(html); setEditing(!editing); }}>
+            <Edit3 className="mr-2 h-4 w-4" /> {editing ? "Cancel Edit" : "Edit"}
+          </Button>
+        )}
         <Button variant="outline" size="sm" onClick={handleGenerate} disabled={isAssetJobActive}>
           {isAssetJobActive ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
           {html ? "Regenerate" : "Generate"} {label}
@@ -187,7 +195,21 @@ export default function HtmlAssetTab({
         </div>
       )}
 
-      {(previewHtml || html) ? (
+      {editing ? (
+        <Card>
+          <CardContent className="pt-4 space-y-3">
+            <WysiwygEditor content={editHtml} onChange={setEditHtml} />
+            <div className="flex gap-2">
+              <Button size="sm" onClick={() => { setHtml(editHtml); saveField({ [dbField]: editHtml }); setEditing(false); }}>
+                <Check className="mr-2 h-4 w-4" /> Save
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>
+                <X className="mr-2 h-4 w-4" /> Discard
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (previewHtml || html) ? (
         <Card className="overflow-hidden">
           <div className="w-full" style={{ height: "70vh" }}>
             <iframe srcDoc={previewHtml || html} className="w-full h-full border-0" sandbox="allow-scripts" title={`${label} Preview`} />

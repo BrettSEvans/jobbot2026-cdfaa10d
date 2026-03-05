@@ -157,6 +157,7 @@ export async function saveJobApplication(app: {
   roadmap_html?: string;
   resume_html?: string;
   resume_style_id?: string;
+  company_icon_url?: string;
 }) {
   if (app.id) {
     const { data, error } = await supabase

@@ -176,4 +176,20 @@
   .editor-table-header {
     @apply border border-border p-2 text-sm font-semibold bg-muted;
   }
+
+  .editor-hr {
+    @apply border-t-2 border-border my-4;
+  }
+
+  .editor-link {
+    @apply text-primary underline cursor-pointer hover:text-primary/80;
+  }
+
+  .editor-hashtag {
+    @apply text-primary/80 font-medium;
+  }
+
+  .editor-mention {
+    @apply bg-accent text-accent-foreground px-1 rounded font-medium;
+  }
 }

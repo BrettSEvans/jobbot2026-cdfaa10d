@@ -250,6 +250,7 @@ class BackgroundGenerationManager {
         products,
         generation_status: "cover-letter",
         company_icon_url: companyIconUrl,
+        ...(sourceResumeId ? { source_resume_id: sourceResumeId } : {}),
       } as any);
 
       // 4. Generate cover letter

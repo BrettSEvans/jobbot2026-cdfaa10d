@@ -16,6 +16,15 @@ export interface UserProfile {
   preferred_tone: string;
 }
 
+export interface UserResume {
+  id: string;
+  user_id: string;
+  file_name: string;
+  storage_path: string;
+  is_active: boolean;
+  uploaded_at: string;
+}
+
 export async function getProfile(): Promise<UserProfile | null> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
@@ -55,18 +64,113 @@ export async function updateProfile(updates: Partial<Omit<UserProfile, "id">>): 
   if (error) throw error;
 }
 
-export async function uploadResumePdf(file: File): Promise<string> {
+export async function uploadResumePdf(file: File): Promise<UserResume> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
-  const path = `${user.id}/resume.pdf`;
+  const fileId = crypto.randomUUID();
+  const path = `${user.id}/${fileId}.pdf`;
 
-  const { error } = await supabase.storage
+  const { error: uploadError } = await supabase.storage
     .from("resume-uploads")
-    .upload(path, file, { upsert: true, contentType: "application/pdf" });
+    .upload(path, file, { upsert: false, contentType: "application/pdf" });
+  if (uploadError) throw uploadError;
+
+  // Default display name = filename without extension
+  const displayName = file.name.replace(/\.pdf$/i, "");
+
+  // Insert DB record
+  const { data, error: insertError } = await supabase
+    .from("user_resumes")
+    .insert({ user_id: user.id, file_name: displayName, storage_path: path, is_active: false })
+    .select()
+    .single();
+  if (insertError) throw insertError;
+
+  // Set as active
+  await supabase.rpc("set_active_resume", { p_resume_id: data.id });
+
+  return { ...data, is_active: true } as UserResume;
+}
+
+export async function listUserResumes(): Promise<UserResume[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data, error } = await supabase
+    .from("user_resumes")
+    .select("*")
+    .eq("user_id", user.id)
+    .order("uploaded_at", { ascending: false });
 
   if (error) throw error;
-  return path;
+  return (data ?? []) as UserResume[];
+}
+
+export async function setActiveResume(resumeId: string): Promise<void> {
+  const { error } = await supabase.rpc("set_active_resume", { p_resume_id: resumeId });
+  if (error) throw error;
+}
+
+export async function renameResume(resumeId: string, newName: string): Promise<void> {
+  const { error } = await supabase
+    .from("user_resumes")
+    .update({ file_name: newName })
+    .eq("id", resumeId);
+  if (error) throw error;
+}
+
+export async function deleteResume(resumeId: string): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  // Get the storage path first
+  const { data: resume, error: fetchError } = await supabase
+    .from("user_resumes")
+    .select("storage_path, is_active")
+    .eq("id", resumeId)
+    .single();
+  if (fetchError) throw fetchError;
+
+  // Delete from storage
+  const { error: storageError } = await supabase.storage
+    .from("resume-uploads")
+    .remove([resume.storage_path]);
+  if (storageError) console.warn("Storage delete failed:", storageError);
+
+  // Delete DB record
+  const { error: deleteError } = await supabase
+    .from("user_resumes")
+    .delete()
+    .eq("id", resumeId);
+  if (deleteError) throw deleteError;
+
+  // If deleted resume was active, set the most recent remaining one as active
+  if (resume.is_active) {
+    const { data: remaining } = await supabase
+      .from("user_resumes")
+      .select("id")
+      .eq("user_id", user.id)
+      .order("uploaded_at", { ascending: false })
+      .limit(1);
+    if (remaining && remaining.length > 0) {
+      await supabase.rpc("set_active_resume", { p_resume_id: remaining[0].id });
+    }
+  }
+}
+
+export async function getActiveResumeStoragePath(): Promise<string | null> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data } = await supabase
+    .from("user_resumes")
+    .select("storage_path")
+    .eq("user_id", user.id)
+    .eq("is_active", true)
+    .maybeSingle();
+
+  return data?.storage_path ?? null;
 }
 
 /**

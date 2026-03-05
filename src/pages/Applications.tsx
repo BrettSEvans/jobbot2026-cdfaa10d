@@ -79,8 +79,29 @@ const Applications = () => {
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [activeView, setActiveView] = useState<"active" | "trash">("active");
   const [isClosing, setIsClosing] = useState(false);
+  const [backfilling, setBackfilling] = useState(false);
 
   const activeJobCount = useActiveJobCount();
+
+  // Check if any apps are missing icons
+  const needsBackfill = useMemo(
+    () => applications.some((a) => a.company_name && !(a as any).company_icon_url),
+    [applications]
+  );
+
+  const handleBackfillIcons = useCallback(async () => {
+    setBackfilling(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('backfill-company-icons');
+      if (error) throw error;
+      toast({ title: "Icons updated", description: `Updated ${data?.updated ?? 0} of ${data?.total ?? 0} applications.` });
+      loadApplications();
+    } catch (err: unknown) {
+      toast({ title: "Error", description: err instanceof Error ? err.message : "Backfill failed", variant: "destructive" });
+    } finally {
+      setBackfilling(false);
+    }
+  }, [toast]);
 
   const handleClosePreview = () => {
     setIsClosing(true);

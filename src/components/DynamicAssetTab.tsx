@@ -252,7 +252,7 @@ export default function DynamicAssetTab({
 
       {/* Revision History */}
       {revisions.length > 0 && (
-        <Card>
+        <Card data-tutorial="revision-history">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <History className="h-4 w-4" />

@@ -457,6 +457,47 @@ const NewApplication = () => {
                 </Card>
               )}
 
+              {/* Source Resume selector */}
+              {userResumes.length > 0 ? (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <FileText className="h-5 w-5" /> Source Resume
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Select value={selectedSourceResumeId} onValueChange={setSelectedSourceResumeId}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a source resume" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {userResumes.map((r) => (
+                          <SelectItem key={r.id} value={r.id}>
+                            <span>{r.file_name}</span>
+                            {r.is_active && <span className="text-xs text-primary ml-2">★</span>}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      The uploaded resume PDF used as the base template for AI generation
+                    </p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card>
+                  <CardContent className="py-4">
+                    <p className="text-sm text-muted-foreground">
+                      No source resumes uploaded.{" "}
+                      <a href="/profile" className="text-primary underline underline-offset-2">
+                        Upload a resume on your Profile page
+                      </a>{" "}
+                      for better AI-generated results.
+                    </p>
+                  </CardContent>
+                </Card>
+              )
+
               <Button
                 onClick={handleAnalyze}
                 disabled={useManualInput ? !manualJobDescription.trim() : !jobUrl.trim()}

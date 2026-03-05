@@ -46,9 +46,14 @@ async function tryIconIcons(companyName: string, firecrawlKey?: string): Promise
     const imgRegex = /https?:\/\/[^\s\)\"]+\.(png|svg|ico)(?:\?[^\s\)\"]*)?/gi;
     const matches = markdown.match(imgRegex);
     if (matches) {
-      // Prefer URLs with /icons/ in the path
-      const iconMatch = matches.find(m => m.includes('/icons/') || m.includes('/icon/'));
-      return iconMatch || matches[0];
+      // Filter: require the company name (or a significant substring) in the URL or surrounding text
+      const nameLower = companyName.toLowerCase().replace(/[^a-z0-9]/g, '');
+      const nameWords = companyName.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+      const relevantMatch = matches.find(m => {
+        const mLower = m.toLowerCase();
+        return nameWords.some(w => mLower.includes(w)) || mLower.includes(nameLower);
+      });
+      if (relevantMatch) return relevantMatch;
     }
   } catch (e) {
     console.warn('icon-icons.com search failed:', e);
@@ -66,8 +71,15 @@ async function trySvgRepo(companyName: string, firecrawlKey?: string): Promise<s
     const imgRegex = /https?:\/\/[^\s\)\"]+\.(svg|png)(?:\?[^\s\)\"]*)?/gi;
     const matches = markdown.match(imgRegex);
     if (matches) {
-      const svgMatch = matches.find(m => m.endsWith('.svg') || m.includes('/svg/') || m.includes('/show/'));
-      return svgMatch || matches[0];
+      // Filter: require the company name in the URL to avoid generic results
+      const nameWords = companyName.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+      const relevantMatch = matches.find(m => {
+        const mLower = m.toLowerCase();
+        // Skip svgrepo's own logo
+        if (mLower.includes('svgrepo.com/logo')) return false;
+        return nameWords.some(w => mLower.includes(w));
+      });
+      if (relevantMatch) return relevantMatch;
     }
   } catch (e) {
     console.warn('svgrepo.com search failed:', e);

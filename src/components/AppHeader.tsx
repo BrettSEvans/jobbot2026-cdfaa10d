@@ -33,6 +33,14 @@ export default function AppHeader({ onSignOut }: AppHeaderProps) {
 
   return (
     <>
+      {/* Skip navigation link — visible on focus for keyboard users */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md focus:text-sm focus:font-medium"
+      >
+        Skip to content
+      </a>
+
       {/* Impersonation banner */}
       {isImpersonating && (
         <div className="bg-primary text-primary-foreground text-center text-sm py-1.5 px-4 flex items-center justify-center gap-3">
@@ -70,7 +78,7 @@ onClick={() => guardedNavigate(() => navigate("/"))}
                     key={l.to}
                     onClick={() => guardedNavigate(() => navigate(l.to))}
                     className={cn(
-                      "px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
+                      "px-3 py-1.5 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                       l.match(pathname)
                         ? "bg-accent text-accent-foreground"
                         : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
@@ -94,14 +102,14 @@ onClick={() => guardedNavigate(() => navigate("/"))}
                 )}
               </span>
             )}
-            <Button variant="ghost" size="sm" onClick={toggle} title="Toggle theme" className="h-8 w-8 p-0">
+            <Button variant="ghost" size="sm" onClick={toggle} aria-label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"} className="h-8 w-8 p-0">
               {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>
             <Button
               variant="ghost"
               size="sm"
               onClick={() => guardedNavigate(onSignOut)}
-              title="Sign out"
+              aria-label="Sign out"
               className="h-8 w-8 p-0"
               disabled={isImpersonating}
             >

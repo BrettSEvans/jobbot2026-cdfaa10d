@@ -82,14 +82,14 @@ function AuthenticatedApp() {
             <Route path="*" element={<Auth />} />
           ) : (
             <>
-              <Route path="/" element={<><AppHeader onSignOut={signOut} /><Applications /></>} />
+              <Route path="/" element={<><AppHeader onSignOut={signOut} /><main id="main-content"><Applications /></main></>} />
               <Route path="/applications" element={<Navigate to="/" replace />} />
-              <Route path="/applications/new" element={<><AppHeader onSignOut={signOut} /><NewApplication /></>} />
-              <Route path="/applications/:id" element={<><AppHeader onSignOut={signOut} /><ApplicationDetail /></>} />
-              <Route path="/templates" element={<><AppHeader onSignOut={signOut} /><Templates /></>} />
-              <Route path="/profile" element={<><AppHeader onSignOut={signOut} /><Profile /></>} />
-              <Route path="/admin" element={<><AppHeader onSignOut={signOut} /><Admin /></>} />
-              <Route path="/tutorial-demo" element={<><AppHeader onSignOut={signOut} /><TutorialDemo /></>} />
+              <Route path="/applications/new" element={<><AppHeader onSignOut={signOut} /><main id="main-content"><NewApplication /></main></>} />
+              <Route path="/applications/:id" element={<><AppHeader onSignOut={signOut} /><main id="main-content"><ApplicationDetail /></main></>} />
+              <Route path="/templates" element={<><AppHeader onSignOut={signOut} /><main id="main-content"><Templates /></main></>} />
+              <Route path="/profile" element={<><AppHeader onSignOut={signOut} /><main id="main-content"><Profile /></main></>} />
+              <Route path="/admin" element={<><AppHeader onSignOut={signOut} /><main id="main-content"><Admin /></main></>} />
+              <Route path="/tutorial-demo" element={<><AppHeader onSignOut={signOut} /><main id="main-content"><TutorialDemo /></main></>} />
               <Route path="*" element={<NotFound />} />
             </>
           )}

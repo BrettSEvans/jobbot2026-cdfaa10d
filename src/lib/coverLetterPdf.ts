@@ -1,3 +1,5 @@
+import { marked } from "marked";
+
 /**
  * Generates a print-ready cover letter in a hidden iframe and triggers
  * the browser's Save-as-PDF dialog via window.print().
@@ -15,11 +17,8 @@ export function buildCoverLetterHtml(
     day: "numeric",
   });
 
-  const paragraphs = coverLetter
-    .split(/\n{2,}/)
-    .map((p) => p.replace(/\n/g, "<br/>"))
-    .map((p) => `<p>${p}</p>`)
-    .join("\n");
+  // Convert markdown (tables, bold, lists, etc.) to HTML
+  const bodyHtml = marked.parse(coverLetter, { async: false }) as string;
 
   return `<!DOCTYPE html>
 <html lang="en">

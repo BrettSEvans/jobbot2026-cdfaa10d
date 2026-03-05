@@ -1,26 +1,12 @@
-import { useState, useEffect, useCallback, useSyncExternalStore } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 
 const STORAGE_KEY = "jobbot-tutorial-state";
+const TUTORIAL_EVENT = "jobbot-tutorial-toggle";
 
 interface TutorialState {
   dismissed: boolean;
-}
-
-// Shared active state via a simple pub/sub so multiple hook instances stay in sync
-let _active = false;
-const listeners = new Set<() => void>();
-function setActive(v: boolean) {
-  _active = v;
-  listeners.forEach((l) => l());
-}
-function subscribe(cb: () => void) {
-  listeners.add(cb);
-  return () => listeners.delete(cb);
-}
-function getSnapshot() {
-  return _active;
 }
 
 function loadState(): TutorialState {
@@ -39,7 +25,17 @@ export function useTutorial() {
   const { user } = useAuth();
   const [state, setState] = useState<TutorialState>(loadState);
   const [completedCount, setCompletedCount] = useState<number | null>(null);
-  const isTutorialActive = useSyncExternalStore(subscribe, getSnapshot);
+  const [isTutorialActive, setIsTutorialActive] = useState(false);
+
+  // Listen for cross-instance toggle events
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const active = (e as CustomEvent).detail as boolean;
+      setIsTutorialActive(active);
+    };
+    window.addEventListener(TUTORIAL_EVENT, handler);
+    return () => window.removeEventListener(TUTORIAL_EVENT, handler);
+  }, []);
 
   // Query completed application count
   useEffect(() => {
@@ -62,7 +58,6 @@ export function useTutorial() {
     })();
   }, [user]);
 
-  // Show tutorial banner when user has <3 completed apps and hasn't dismissed
   const showTutorial = !state.dismissed && completedCount !== null && completedCount < 3;
 
   // Auto-launch on first visit
@@ -71,25 +66,25 @@ export function useTutorial() {
     const hasSeenBefore = localStorage.getItem(STORAGE_KEY);
     if (!hasSeenBefore && completedCount !== null && completedCount === 0) {
       const timer = setTimeout(() => {
-        setActive(true);
+        window.dispatchEvent(new CustomEvent(TUTORIAL_EVENT, { detail: true }));
       }, 1000);
       return () => clearTimeout(timer);
     }
   }, [user, completedCount]);
 
   const startTutorial = useCallback(() => {
-    setActive(true);
+    window.dispatchEvent(new CustomEvent(TUTORIAL_EVENT, { detail: true }));
   }, []);
 
   const dismissTutorial = useCallback(() => {
-    setActive(false);
-    const newState = { ...loadState(), dismissed: true };
+    window.dispatchEvent(new CustomEvent(TUTORIAL_EVENT, { detail: false }));
+    const newState = { dismissed: true };
     setState(newState);
     saveState(newState);
   }, []);
 
   const stopTutorial = useCallback(() => {
-    setActive(false);
+    window.dispatchEvent(new CustomEvent(TUTORIAL_EVENT, { detail: false }));
   }, []);
 
   return {

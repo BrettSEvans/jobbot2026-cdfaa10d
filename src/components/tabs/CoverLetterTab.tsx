@@ -5,11 +5,11 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Copy, Edit3, Check, X, Loader2, RefreshCw, Download } from "lucide-react";
-import ReactMarkdown from "react-markdown";
+import { useMemo } from "react";
 import CoverLetterRevisions from "@/components/CoverLetterRevisions";
 import { streamTailoredLetter } from "@/lib/api/coverLetter";
 import { saveCoverLetterRevision } from "@/lib/api/coverLetterRevisions";
-import { downloadCoverLetterPdf } from "@/lib/coverLetterPdf";
+import { downloadCoverLetterPdf, buildCoverLetterHtml } from "@/lib/coverLetterPdf";
 import { getProfileContextForPrompt } from "@/lib/api/profile";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import type { ApplicationState } from "@/hooks/useApplicationDetail";
@@ -134,9 +134,17 @@ export default function CoverLetterTab({ appId, state }: CoverLetterTabProps) {
               </div>
             </div>
           ) : (previewCoverLetter || coverLetter) ? (
-            <div className="prose prose-sm dark:prose-invert max-w-none max-h-[60vh] overflow-y-auto leading-relaxed">
-              <ReactMarkdown>{previewCoverLetter || coverLetter}</ReactMarkdown>
-            </div>
+            <iframe
+              srcDoc={buildCoverLetterHtml(
+                previewCoverLetter || coverLetter,
+                app?.company_name || "Company",
+                app?.job_title || "Position",
+                applicantName,
+              )}
+              className="w-full border rounded bg-white"
+              style={{ aspectRatio: "8.5 / 11", maxHeight: "70vh" }}
+              title="Cover letter preview"
+            />
           ) : (
             <p className="text-muted-foreground text-center py-8">No cover letter generated yet.</p>
           )}

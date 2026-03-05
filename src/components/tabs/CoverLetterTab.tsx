@@ -30,6 +30,8 @@ export default function CoverLetterTab({ appId, state }: CoverLetterTabProps) {
   const [revisionTrigger, setRevisionTrigger] = useState(0);
   const [previewCoverLetter, setPreviewCoverLetter] = useState<string | null>(null);
   const [editHtml, setEditHtml] = useState("");
+  const [headerText, setHeaderText] = useState("");
+  const [footerText, setFooterText] = useState("");
 
   // Build applicant name from activePersona
   const applicantName = activePersona
@@ -96,7 +98,11 @@ export default function CoverLetterTab({ appId, state }: CoverLetterTabProps) {
           </>
         )}
         <Button data-tutorial="refine-ai-btn" variant="outline" size="sm" onClick={() => {
-          if (!editingCoverLetter) setEditHtml(coverLetterBodyToHtml(coverLetter));
+          if (!editingCoverLetter) {
+            setEditHtml(coverLetterBodyToHtml(coverLetter));
+            setHeaderText(applicantName || "");
+            setFooterText("");
+          }
           setEditingCoverLetter(!editingCoverLetter);
         }}>
           <Edit3 className="mr-2 h-4 w-4" /> {editingCoverLetter ? "Cancel Edit" : "Edit"}
@@ -134,7 +140,14 @@ export default function CoverLetterTab({ appId, state }: CoverLetterTabProps) {
                   <X className="mr-2 h-4 w-4" /> Discard
                 </Button>
               </div>
-              <WysiwygEditor content={editHtml} onChange={setEditHtml} />
+              <WysiwygEditor
+                content={editHtml}
+                onChange={setEditHtml}
+                headerText={headerText}
+                onHeaderChange={setHeaderText}
+                footerText={footerText}
+                onFooterChange={setFooterText}
+              />
             </div>
           ) : (previewCoverLetter || coverLetter) ? (
             <iframe

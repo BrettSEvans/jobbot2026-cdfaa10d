@@ -346,9 +346,13 @@ interface WysiwygEditorProps {
   content: string;
   onChange: (html: string) => void;
   className?: string;
+  headerText?: string;
+  onHeaderChange?: (text: string) => void;
+  footerText?: string;
+  onFooterChange?: (text: string) => void;
 }
 
-export default function WysiwygEditor({ content, onChange, className }: WysiwygEditorProps) {
+export default function WysiwygEditor({ content, onChange, className, headerText, onHeaderChange, footerText, onFooterChange }: WysiwygEditorProps) {
   const handleChange = useCallback(
     (_editorState: EditorState, editor: LexicalEditor) => {
       editor.read(() => {
@@ -382,6 +386,29 @@ export default function WysiwygEditor({ content, onChange, className }: WysiwygE
   return (
     <LexicalComposer initialConfig={initialConfig}>
       <div className={cn("border rounded-md overflow-hidden bg-background lexical-editor", className)}>
+        {onHeaderChange !== undefined && (
+          <div className="editor-header-zone">
+            <input
+              className="header-name"
+              placeholder="Your name"
+              value={headerText?.split("\n")[0] ?? ""}
+              onChange={(e) => {
+                const lines = (headerText ?? "").split("\n");
+                lines[0] = e.target.value;
+                onHeaderChange(lines.join("\n"));
+              }}
+            />
+            <input
+              className="header-subtitle"
+              placeholder="Contact info / subtitle"
+              value={headerText?.split("\n").slice(1).join("\n") ?? ""}
+              onChange={(e) => {
+                const nameLine = (headerText ?? "").split("\n")[0] ?? "";
+                onHeaderChange(nameLine + "\n" + e.target.value);
+              }}
+            />
+          </div>
+        )}
         <ToolbarPlugin />
         <div className="relative">
           <RichTextPlugin
@@ -409,6 +436,16 @@ export default function WysiwygEditor({ content, onChange, className }: WysiwygE
         <MentionsPlugin />
         <OnChangePlugin onChange={handleChange} />
         <HtmlImportPlugin html={content} />
+        {onFooterChange !== undefined && (
+          <div className="editor-footer-zone">
+            <textarea
+              placeholder="Footer text (e.g. disclaimer, page note)"
+              value={footerText ?? ""}
+              onChange={(e) => onFooterChange(e.target.value)}
+              rows={2}
+            />
+          </div>
+        )}
       </div>
     </LexicalComposer>
   );

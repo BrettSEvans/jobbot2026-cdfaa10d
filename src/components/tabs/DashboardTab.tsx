@@ -21,9 +21,10 @@ import JSZip from "jszip";
 interface DashboardTabProps {
   appId: string;
   state: ApplicationState;
+  canRefine?: boolean;
 }
 
-export default function DashboardTab({ appId, state }: DashboardTabProps) {
+export default function DashboardTab({ appId, state, canRefine = true }: DashboardTabProps) {
   const { toast } = useToast();
   const {
     app, dashboardHtml, setDashboardHtml, dashboardData, setDashboardData,
@@ -156,8 +157,8 @@ export default function DashboardTab({ appId, state }: DashboardTabProps) {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-2">
-        <Button variant="outline" size="sm" onClick={() => setChatOpen(!chatOpen)}>
-          <Edit3 className="mr-2 h-4 w-4" /> {chatOpen ? "Hide Chat" : "Refine with AI"}
+        <Button variant="outline" size="sm" onClick={() => setChatOpen(!chatOpen)} disabled={!canRefine}>
+          <Edit3 className="mr-2 h-4 w-4" /> {!canRefine ? "Upgrade to Refine" : chatOpen ? "Hide Chat" : "Refine with AI"}
         </Button>
         <Button variant="outline" size="sm" onClick={handleRegenerateDashboard} disabled={isAssetJobActive}>
           {isAssetJobActive ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}

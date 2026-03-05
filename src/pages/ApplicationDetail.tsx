@@ -295,7 +295,9 @@ const ApplicationDetail = () => {
         {/* Content Area */}
         <div>
           {activeView === "dashboard" && (
-            <DashboardTab appId={id!} state={state} />
+            <UpgradeGate feature="Dashboard" isLocked={!isAssetAllowed("dashboard")} requiredTier="pro">
+              <DashboardTab appId={id!} state={state} canRefine={canRefine} />
+            </UpgradeGate>
           )}
           {activeView === "cover-letter" && (
             <CoverLetterTab appId={id!} state={state} />
@@ -313,20 +315,24 @@ const ApplicationDetail = () => {
               saveRevisionFn={saveResumeRevision}
               emptyIcon={FileUser}
               refinePlaceholder='e.g. "Make it more concise" or "Emphasize leadership experience"'
+              canRefine={canRefine}
             />
           )}
 
           {/* Dynamic asset view */}
           {activeDynamicAsset && (
-            <DynamicAssetTab
-              key={activeDynamicAsset.id}
-              asset={activeDynamicAsset}
-              jobDescription={state.jobDescription}
-              companyName={state.companyName}
-              jobTitle={state.jobTitle}
-              branding={state.app?.branding as any}
-              onAssetUpdated={handleAssetUpdated}
-            />
+            <UpgradeGate feature="Industry Assets" isLocked={!isAssetAllowed("dynamic")} requiredTier="premium">
+              <DynamicAssetTab
+                key={activeDynamicAsset.id}
+                asset={activeDynamicAsset}
+                jobDescription={state.jobDescription}
+                companyName={state.companyName}
+                jobTitle={state.jobTitle}
+                branding={state.app?.branding as any}
+                onAssetUpdated={handleAssetUpdated}
+                canRefine={canRefine}
+              />
+            </UpgradeGate>
           )}
 
           {/* Proposal Dialog */}

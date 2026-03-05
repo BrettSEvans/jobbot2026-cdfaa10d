@@ -251,8 +251,33 @@ const Applications = () => {
         </div>
 
         {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Company</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Created</TableHead>
+                  <TableHead className="hidden md:table-cell">Updated</TableHead>
+                  <TableHead className="hidden md:table-cell">Assets</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell><div className="h-4 w-24 bg-muted animate-pulse rounded" /></TableCell>
+                    <TableCell><div className="h-4 w-32 bg-muted animate-pulse rounded" /></TableCell>
+                    <TableCell><div className="h-5 w-16 bg-muted animate-pulse rounded-full" /></TableCell>
+                    <TableCell><div className="h-4 w-20 bg-muted animate-pulse rounded" /></TableCell>
+                    <TableCell className="hidden md:table-cell"><div className="h-4 w-20 bg-muted animate-pulse rounded" /></TableCell>
+                    <TableCell className="hidden md:table-cell"><div className="flex gap-1">{Array.from({ length: 6 }).map((_, j) => <div key={j} className="h-2.5 w-2.5 rounded-full bg-muted animate-pulse" />)}</div></TableCell>
+                    <TableCell><div className="h-8 w-20 bg-muted animate-pulse rounded ml-auto" /></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
         ) : applications.length === 0 && activeView === "active" && deletedApps.length === 0 ? (
           <Card className="border-dashed">

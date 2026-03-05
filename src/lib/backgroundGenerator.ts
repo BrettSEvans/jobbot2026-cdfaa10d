@@ -208,25 +208,29 @@ class BackgroundGenerationManager {
         console.warn("Analysis failed:", e);
       }
 
-      // 3b. Logo fallback: if branding scrape found no logo, search external icon repos
-      const hasLogo = brandingData?.logo || brandingData?.images?.logo || brandingData?.images?.favicon;
+      // 3b. Search for company icon (always try external search first for best quality)
       let companyIconUrl: string | null = null;
-      if (!hasLogo && companyName) {
+      if (companyName) {
         this.updateJob(appId, { progress: "Searching for company logo..." });
         try {
           const { iconUrl, source } = await searchCompanyIcon(companyName, companyUrl);
           if (iconUrl) {
-            console.log(`Logo fallback found via ${source}: ${iconUrl}`);
+            console.log(`Company icon found via ${source}: ${iconUrl}`);
             companyIconUrl = iconUrl;
-            if (!brandingData) brandingData = {};
-            brandingData.logo = iconUrl;
           }
         } catch (e) {
-          console.warn("Logo fallback search failed:", e);
+          console.warn("Company icon search failed:", e);
         }
-      } else if (hasLogo) {
-        // Use the logo from branding as the icon URL
+      }
+      // Fallback: use logo from branding scrape if icon search found nothing
+      if (!companyIconUrl) {
         companyIconUrl = brandingData?.logo || brandingData?.images?.logo || brandingData?.images?.favicon || null;
+      }
+      // Inject icon into branding for dashboard template usage
+      if (companyIconUrl && brandingData) {
+        if (!brandingData.logo) brandingData.logo = companyIconUrl;
+      } else if (companyIconUrl && !brandingData) {
+        brandingData = { logo: companyIconUrl };
       }
 
       // Save intermediate results

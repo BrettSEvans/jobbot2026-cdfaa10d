@@ -131,7 +131,7 @@ export default function HtmlAssetTab({
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-2">
-        <Button variant="outline" size="sm" onClick={() => setChatOpen(!chatOpen)}>
+        <Button data-tutorial="refine-ai-btn" variant="outline" size="sm" onClick={() => setChatOpen(!chatOpen)}>
           <Edit3 className="mr-2 h-4 w-4" /> {chatOpen ? "Hide Chat" : "Refine with AI"}
         </Button>
         <Button variant="outline" size="sm" onClick={handleGenerate} disabled={isAssetJobActive}>

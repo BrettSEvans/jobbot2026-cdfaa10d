@@ -204,7 +204,7 @@ export default function DynamicAssetTab({
     <div className="space-y-4">
       {/* Action Bar */}
       <div className="flex flex-wrap gap-2">
-        <Button variant="outline" size="sm" onClick={() => setChatOpen(!chatOpen)} disabled={!html}>
+        <Button data-tutorial="refine-ai-btn" variant="outline" size="sm" onClick={() => setChatOpen(!chatOpen)} disabled={!html}>
           <Edit3 className="mr-2 h-4 w-4" /> {chatOpen ? "Hide Chat" : "Refine with AI"}
         </Button>
         <Button data-tutorial="generate-btn" variant="outline" size="sm" onClick={handleGenerate} disabled={isWorking}>
@@ -252,7 +252,7 @@ export default function DynamicAssetTab({
 
       {/* Revision History */}
       {revisions.length > 0 && (
-        <Card>
+        <Card data-tutorial="revision-history">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <History className="h-4 w-4" />

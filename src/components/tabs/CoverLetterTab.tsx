@@ -95,7 +95,7 @@ export default function CoverLetterTab({ appId, state }: CoverLetterTabProps) {
             </Button>
           </>
         )}
-        <Button variant="outline" size="sm" onClick={() => setEditingCoverLetter(!editingCoverLetter)}>
+        <Button data-tutorial="refine-ai-btn" variant="outline" size="sm" onClick={() => setEditingCoverLetter(!editingCoverLetter)}>
           <Edit3 className="mr-2 h-4 w-4" /> {editingCoverLetter ? "Cancel Edit" : "Edit"}
         </Button>
         <Button variant="outline" size="sm" onClick={handleRegenerateCoverLetter} disabled={isRegenerating}>

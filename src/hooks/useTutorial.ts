@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useSyncExternalStore } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 
@@ -6,6 +6,21 @@ const STORAGE_KEY = "jobbot-tutorial-state";
 
 interface TutorialState {
   dismissed: boolean;
+}
+
+// Shared active state via a simple pub/sub so multiple hook instances stay in sync
+let _active = false;
+const listeners = new Set<() => void>();
+function setActive(v: boolean) {
+  _active = v;
+  listeners.forEach((l) => l());
+}
+function subscribe(cb: () => void) {
+  listeners.add(cb);
+  return () => listeners.delete(cb);
+}
+function getSnapshot() {
+  return _active;
 }
 
 function loadState(): TutorialState {
@@ -24,7 +39,7 @@ export function useTutorial() {
   const { user } = useAuth();
   const [state, setState] = useState<TutorialState>(loadState);
   const [completedCount, setCompletedCount] = useState<number | null>(null);
-  const [isTutorialActive, setIsTutorialActive] = useState(false);
+  const isTutorialActive = useSyncExternalStore(subscribe, getSnapshot);
 
   // Query completed application count
   useEffect(() => {
@@ -56,25 +71,25 @@ export function useTutorial() {
     const hasSeenBefore = localStorage.getItem(STORAGE_KEY);
     if (!hasSeenBefore && completedCount !== null && completedCount === 0) {
       const timer = setTimeout(() => {
-        setIsTutorialActive(true);
+        setActive(true);
       }, 1000);
       return () => clearTimeout(timer);
     }
   }, [user, completedCount]);
 
   const startTutorial = useCallback(() => {
-    setIsTutorialActive(true);
+    setActive(true);
   }, []);
 
   const dismissTutorial = useCallback(() => {
-    setIsTutorialActive(false);
-    const newState = { ...state, dismissed: true };
+    setActive(false);
+    const newState = { ...loadState(), dismissed: true };
     setState(newState);
     saveState(newState);
-  }, [state]);
+  }, []);
 
   const stopTutorial = useCallback(() => {
-    setIsTutorialActive(false);
+    setActive(false);
   }, []);
 
   return {

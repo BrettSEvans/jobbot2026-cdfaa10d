@@ -119,6 +119,12 @@ export default function Profile() {
   const [saving, setSaving] = useState(false);
   const [savingCard, setSavingCard] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [resumes, setResumes] = useState<UserResume[]>([]);
+  const [resumesLoaded, setResumesLoaded] = useState(false);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const MAX_RESUMES = 5;
 
   // Current values
   const [firstName, setFirstName] = useState("");
@@ -274,6 +280,15 @@ export default function Profile() {
     setSavingCard(null);
   };
 
+  // Load resumes list
+  useEffect(() => {
+    if (!isImpersonating) {
+      listUserResumes().then((r) => { setResumes(r); setResumesLoaded(true); }).catch(() => setResumesLoaded(true));
+    } else {
+      setResumesLoaded(true);
+    }
+  }, [isImpersonating]);
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -285,19 +300,58 @@ export default function Profile() {
       toast({ title: "File too large", description: "Maximum size is 5MB.", variant: "destructive" });
       return;
     }
+    if (resumes.length >= MAX_RESUMES) {
+      toast({ title: "Limit reached", description: `You can upload up to ${MAX_RESUMES} resumes.`, variant: "destructive" });
+      return;
+    }
 
     setUploading(true);
     try {
-      await uploadResumePdf(file);
-      toast({
-        title: "Resume uploaded!",
-        description: "PDF saved. For best results, also paste key highlights from your resume in the text box below.",
-      });
+      const newResume = await uploadResumePdf(file);
+      // Mark all others as inactive in local state, add the new one
+      setResumes((prev) => [newResume, ...prev.map((r) => ({ ...r, is_active: false }))]);
+      toast({ title: "Resume uploaded!", description: `"${newResume.file_name}" is now your active resume.` });
     } catch (err: any) {
       toast({ title: "Upload failed", description: err.message, variant: "destructive" });
     } finally {
       setUploading(false);
       if (fileRef.current) fileRef.current.value = "";
+    }
+  };
+
+  const handleSetActive = async (resumeId: string) => {
+    try {
+      await setActiveResume(resumeId);
+      setResumes((prev) => prev.map((r) => ({ ...r, is_active: r.id === resumeId })));
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const handleRename = async (resumeId: string) => {
+    if (!renameValue.trim()) return;
+    try {
+      await renameResume(resumeId, renameValue.trim());
+      setResumes((prev) => prev.map((r) => r.id === resumeId ? { ...r, file_name: renameValue.trim() } : r));
+      setRenamingId(null);
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const handleDelete = async (resumeId: string) => {
+    try {
+      await deleteResume(resumeId);
+      const wasActive = resumes.find((r) => r.id === resumeId)?.is_active;
+      const remaining = resumes.filter((r) => r.id !== resumeId);
+      if (wasActive && remaining.length > 0) {
+        remaining[0].is_active = true;
+      }
+      setResumes(remaining);
+      setDeleteConfirmId(null);
+      toast({ title: "Resume deleted" });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
     }
   };
 

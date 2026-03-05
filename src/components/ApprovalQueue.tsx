@@ -16,8 +16,10 @@ export default function ApprovalQueue() {
   const [pending, setPending] = useState<PendingUser[]>([]);
   const [approved, setApproved] = useState<PendingUser[]>([]);
   const [rejected, setRejected] = useState<PendingUser[]>([]);
+  const [deleted, setDeleted] = useState<PendingUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionId, setActionId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<PendingUser | null>(null);
   const { toast } = useToast();
 
   const load = async () => {

@@ -85,7 +85,16 @@ const editorTheme = {
   link: "editor-link",
   hashtag: "editor-hashtag",
   horizontalRule: "editor-hr",
+  quote: "editor-quote",
 };
+
+/* ---------- Markdown transformers (excluding CODE which needs CodeNode) ---------- */
+const MARKDOWN_TRANSFORMERS: Transformer[] = [
+  HEADING, MD_QUOTE, UNORDERED_LIST, ORDERED_LIST,
+  BOLD_STAR, BOLD_UNDERSCORE, ITALIC_STAR, ITALIC_UNDERSCORE,
+  BOLD_ITALIC_STAR, BOLD_ITALIC_UNDERSCORE, STRIKETHROUGH, INLINE_CODE,
+  HIGHLIGHT, MD_LINK,
+];
 
 /* ---------- Emoji shortcuts map ---------- */
 const EMOJI_MAP: Record<string, string> = {
@@ -354,7 +363,7 @@ export default function WysiwygEditor({ content, onChange, className }: WysiwygE
     namespace: "WysiwygEditor",
     theme: editorTheme,
     nodes: [
-      HeadingNode, ListNode, ListItemNode,
+      HeadingNode, QuoteNode, ListNode, ListItemNode,
       TableNode, TableCellNode, TableRowNode,
       HorizontalRuleNode, LinkNode, AutoLinkNode, HashtagNode,
     ],

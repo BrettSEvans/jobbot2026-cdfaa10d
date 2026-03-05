@@ -16,6 +16,7 @@ import { scrapeJob, streamTailoredLetter } from "@/lib/api/coverLetter";
 import { parseLlmJsonOutput, assembleDashboardHtml } from "@/lib/dashboard/assembler";
 import { extractStyleSignalsFromMessage } from "@/lib/api/stylePreferences";
 import { getActiveResumeStyles } from "@/lib/api/resume";
+import { listUserResumes, type UserResume } from "@/lib/api/profile";
 import ImpersonationNotice from "@/components/ImpersonationNotice";
 import {
   Loader2,
@@ -82,15 +83,26 @@ const NewApplication = () => {
   const [resumeStyles, setResumeStyles] = useState<Array<{ id: string; label: string; description: string | null }>>([]);
   const [selectedResumeStyleId, setSelectedResumeStyleId] = useState<string>("");
 
+  // Source resume selection
+  const [userResumes, setUserResumes] = useState<UserResume[]>([]);
+  const [selectedSourceResumeId, setSelectedSourceResumeId] = useState<string>("");
+
   // Editable fields
   const [editingField, setEditingField] = useState<string | null>(null);
   const [tempEdit, setTempEdit] = useState("");
 
-  // Load resume styles on mount
+  // Load resume styles and user resumes on mount
   useEffect(() => {
     getActiveResumeStyles().then((styles) => {
       setResumeStyles(styles);
       if (styles.length > 0) setSelectedResumeStyleId(styles[0].id);
+    }).catch(console.warn);
+
+    listUserResumes().then((resumes) => {
+      setUserResumes(resumes);
+      const active = resumes.find((r) => r.is_active);
+      if (active) setSelectedSourceResumeId(active.id);
+      else if (resumes.length > 0) setSelectedSourceResumeId(resumes[0].id);
     }).catch(console.warn);
   }, []);
 

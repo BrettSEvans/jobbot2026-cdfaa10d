@@ -344,8 +344,16 @@ const Applications = () => {
                         {sorted.map((app) => (
                           <TableRow
                             key={app.id}
-                            className="cursor-pointer hover:bg-muted/50"
+                            className="cursor-pointer hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
                             onClick={() => navigate(`/applications/${app.id}`)}
+                            tabIndex={0}
+                            role="link"
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                navigate(`/applications/${app.id}`);
+                              }
+                            }}
                           >
                             <TableCell className="font-medium">
                               {app.company_name || "Unknown"}
@@ -368,7 +376,7 @@ const Applications = () => {
                                 {app.cover_letter && (
                                   <Tooltip>
                                     <TooltipTrigger asChild>
-                                      <Button size="sm" variant="ghost" onClick={(e) => handleCopyCoverLetter(app.cover_letter, e)}>
+                                      <Button size="sm" variant="ghost" aria-label="Copy cover letter" onClick={(e) => handleCopyCoverLetter(app.cover_letter, e)}>
                                         <FileText className="h-4 w-4" />
                                       </Button>
                                     </TooltipTrigger>
@@ -382,6 +390,7 @@ const Applications = () => {
                                         <Button
                                           size="sm"
                                           variant="ghost"
+                                          aria-label="Preview dashboard"
                                           onClick={(e) => {
                                             e.stopPropagation();
                                             if (previewId === app.id) {
@@ -399,7 +408,7 @@ const Applications = () => {
                                     </Tooltip>
                                     <Tooltip>
                                       <TooltipTrigger asChild>
-                                        <Button size="sm" variant="ghost" onClick={(e) => handleCopyHtml(app.dashboard_html, e)}>
+                                        <Button size="sm" variant="ghost" aria-label="Copy dashboard HTML" onClick={(e) => handleCopyHtml(app.dashboard_html, e)}>
                                           <Copy className="h-4 w-4" />
                                         </Button>
                                       </TooltipTrigger>
@@ -411,7 +420,7 @@ const Applications = () => {
                                   <Tooltip>
                                     <TooltipTrigger asChild>
                                       <AlertDialogTrigger asChild>
-                                        <Button size="sm" variant="ghost">
+                                        <Button size="sm" variant="ghost" aria-label="Move to trash">
                                           <Trash2 className="h-4 w-4 text-destructive" />
                                         </Button>
                                       </AlertDialogTrigger>

@@ -198,7 +198,6 @@ export default function HtmlAssetTab({
       {editing ? (
         <Card>
           <CardContent className="pt-4 space-y-3">
-            <WysiwygEditor content={editHtml} onChange={setEditHtml} />
             <div className="flex gap-2">
               <Button size="sm" variant="default" onClick={() => { setHtml(editHtml); saveField({ [dbField]: editHtml }); setEditing(false); }}>
                 <Check className="mr-2 h-4 w-4" /> Save
@@ -207,6 +206,7 @@ export default function HtmlAssetTab({
                 <X className="mr-2 h-4 w-4" /> Discard
               </Button>
             </div>
+            <WysiwygEditor content={editHtml} onChange={setEditHtml} />
           </CardContent>
         </Card>
       ) : (previewHtml || html) ? (

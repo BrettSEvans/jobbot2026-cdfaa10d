@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -60,6 +61,7 @@ import ImpersonationNotice from "@/components/ImpersonationNotice";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { useTutorial } from "@/hooks/useTutorial";
 import { BookOpen } from "lucide-react";
+import { ImageIcon } from "lucide-react";
 type SortKey = "company_name" | "job_title" | "status" | "created_at" | "updated_at";
 type SortDir = "asc" | "desc";
 

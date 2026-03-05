@@ -90,7 +90,7 @@ export function buildCoverLetterHtml(
     ${escapeHtml(companyName)}${jobTitle ? `<br/>${escapeHtml(jobTitle)}` : ""}
   </div>
   <div class="body">
-    ${paragraphs}
+    ${bodyHtml}
   </div>
   <div class="signature">
     <div class="closing">Sincerely,</div>

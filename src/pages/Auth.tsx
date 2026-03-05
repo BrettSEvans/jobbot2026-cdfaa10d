@@ -186,12 +186,37 @@ export default function Auth() {
               <form onSubmit={handleEmailAuth} className="space-y-3">
                 <div className="space-y-1.5">
                   <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="you@example.com" />
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => { setEmail(e.target.value); setEmailError(null); }}
+                    required
+                    placeholder="you@example.com"
+                    aria-invalid={!!emailError}
+                    aria-describedby={emailError ? "email-error" : undefined}
+                  />
+                  {emailError && (
+                    <p id="email-error" role="alert" className="text-xs text-destructive">{emailError}</p>
+                  )}
                 </div>
                 {mode !== "forgot" && (
                   <div className="space-y-1.5">
                     <Label htmlFor="password">Password</Label>
-                    <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} placeholder="••••••••" />
+                    <Input
+                      id="password"
+                      type="password"
+                      value={password}
+                      onChange={(e) => { setPassword(e.target.value); setPasswordError(null); }}
+                      required
+                      minLength={6}
+                      placeholder="••••••••"
+                      aria-invalid={!!passwordError}
+                      aria-describedby={passwordError ? "password-error" : undefined}
+                    />
+                    {passwordError && (
+                      <p id="password-error" role="alert" className="text-xs text-destructive">{passwordError}</p>
+                    )}
                   </div>
                 )}
                 <Button type="submit" className="w-full" disabled={loading}>

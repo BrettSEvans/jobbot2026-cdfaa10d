@@ -32,6 +32,8 @@ export default function CoverLetterTab({ appId, state }: CoverLetterTabProps) {
   const [editHtml, setEditHtml] = useState("");
   const [headerText, setHeaderText] = useState("");
   const [footerText, setFooterText] = useState("");
+  const [dateText, setDateText] = useState("");
+  const [footerText, setFooterText] = useState("");
 
   // Build applicant name from activePersona
   const applicantName = activePersona
@@ -102,6 +104,7 @@ export default function CoverLetterTab({ appId, state }: CoverLetterTabProps) {
             setEditHtml(coverLetterBodyToHtml(coverLetter));
             setHeaderText(applicantName || "");
             setFooterText("");
+            setDateText(new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }));
           }
           setEditingCoverLetter(!editingCoverLetter);
         }}>
@@ -147,6 +150,8 @@ export default function CoverLetterTab({ appId, state }: CoverLetterTabProps) {
                 onHeaderChange={setHeaderText}
                 footerText={footerText}
                 onFooterChange={setFooterText}
+                dateText={dateText}
+                onDateChange={setDateText}
               />
             </div>
           ) : (previewCoverLetter || coverLetter) ? (

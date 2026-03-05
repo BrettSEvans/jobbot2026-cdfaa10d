@@ -148,7 +148,7 @@ class BackgroundGenerationManager {
     this.notify();
 
     // Run in background (don't await at call site)
-    this.runPipeline(appId, jobUrl, companyUrl, jobDescription, useManualInput, resumeStyleId, abortController.signal);
+    this.runPipeline(appId, jobUrl, companyUrl, jobDescription, useManualInput, resumeStyleId, sourceResumeId, abortController.signal);
 
     return appId;
   }
@@ -160,6 +160,7 @@ class BackgroundGenerationManager {
     manualDescription?: string,
     useManualInput?: boolean,
     resumeStyleId?: string,
+    sourceResumeId?: string,
     signal?: AbortSignal,
   ) {
     try {

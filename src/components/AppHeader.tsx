@@ -18,6 +18,7 @@ export default function AppHeader({ onSignOut }: AppHeaderProps) {
   const { theme, toggle } = useTheme();
   const { guardedNavigate } = useNavigationGuard();
   const { activePersona, isImpersonating, switchToSelf } = useImpersonation();
+  const { tier, isLoading: subLoading } = useSubscription();
 
   // Build display name from active persona
   const displayName = activePersona

@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -60,6 +61,7 @@ import ImpersonationNotice from "@/components/ImpersonationNotice";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { useTutorial } from "@/hooks/useTutorial";
 import { BookOpen } from "lucide-react";
+import { ImageIcon } from "lucide-react";
 type SortKey = "company_name" | "job_title" | "status" | "created_at" | "updated_at";
 type SortDir = "asc" | "desc";
 
@@ -77,8 +79,29 @@ const Applications = () => {
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [activeView, setActiveView] = useState<"active" | "trash">("active");
   const [isClosing, setIsClosing] = useState(false);
+  const [backfilling, setBackfilling] = useState(false);
 
   const activeJobCount = useActiveJobCount();
+
+  // Check if any apps are missing icons
+  const needsBackfill = useMemo(
+    () => applications.some((a) => a.company_name && !(a as any).company_icon_url),
+    [applications]
+  );
+
+  const handleBackfillIcons = useCallback(async () => {
+    setBackfilling(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('backfill-company-icons');
+      if (error) throw error;
+      toast({ title: "Icons updated", description: `Updated ${data?.updated ?? 0} of ${data?.total ?? 0} applications.` });
+      loadApplications();
+    } catch (err: unknown) {
+      toast({ title: "Error", description: err instanceof Error ? err.message : "Backfill failed", variant: "destructive" });
+    } finally {
+      setBackfilling(false);
+    }
+  }, [toast]);
 
   const handleClosePreview = () => {
     setIsClosing(true);
@@ -242,6 +265,16 @@ const Applications = () => {
             <p className="text-muted-foreground text-sm">Your saved applications and dashboards</p>
           </div>
           <div className="flex gap-2">
+            {needsBackfill && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" size="icon" onClick={handleBackfillIcons} disabled={backfilling} aria-label="Backfill company icons">
+                    {backfilling ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImageIcon className="h-4 w-4" />}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Fetch missing company logos</TooltipContent>
+              </Tooltip>
+            )}
             <Button variant="outline" onClick={() => navigate("/templates")}>
               <LayoutTemplate className="mr-2 h-4 w-4" /> Templates
             </Button>
@@ -487,9 +520,12 @@ const Applications = () => {
                         onClick={(e) => e.stopPropagation()}
                       >
                         <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/50 shrink-0">
-                          <span className="text-sm font-medium text-muted-foreground truncate">
-                            {previewApp.company_name} — {previewApp.job_title}
-                          </span>
+                          <div className="flex items-center gap-2 min-w-0">
+                            <CompanyIcon iconUrl={(previewApp as any).company_icon_url} companyName={previewApp.company_name} size={18} />
+                            <span className="text-sm font-medium text-muted-foreground truncate">
+                              {previewApp.company_name} — {previewApp.job_title}
+                            </span>
+                          </div>
                           <Button size="sm" variant="ghost" onClick={handleClosePreview}>
                             ✕ Close
                           </Button>

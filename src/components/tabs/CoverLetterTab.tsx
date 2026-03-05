@@ -128,10 +128,10 @@ export default function CoverLetterTab({ appId, state }: CoverLetterTabProps) {
             <div className="space-y-3">
               <WysiwygEditor content={editHtml} onChange={setEditHtml} />
               <div className="flex gap-2">
-                <Button size="sm" onClick={() => { setCoverLetter(editHtml); saveField({ cover_letter: editHtml }); setEditingCoverLetter(false); }} disabled={saving}>
+                <Button size="sm" variant="default" onClick={() => { setCoverLetter(editHtml); saveField({ cover_letter: editHtml }); setEditingCoverLetter(false); }} disabled={saving}>
                   <Check className="mr-2 h-4 w-4" /> Save
                 </Button>
-                <Button size="sm" variant="ghost" onClick={() => { setEditingCoverLetter(false); }}>
+                <Button size="sm" variant="destructive" onClick={() => { setEditingCoverLetter(false); }}>
                   <X className="mr-2 h-4 w-4" /> Discard
                 </Button>
               </div>

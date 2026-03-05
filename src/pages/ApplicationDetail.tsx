@@ -48,6 +48,7 @@ const ApplicationDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const state = useApplicationDetail(id);
+  const { isAssetAllowed, canRefine, tier } = useSubscription();
   const [activeView, setActiveView] = useState<ActiveView>("dashboard");
 
   // Dynamic assets state

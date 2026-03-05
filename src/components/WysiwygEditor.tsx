@@ -394,7 +394,7 @@ export default function WysiwygEditor({ content, onChange, className }: WysiwygE
         <LinkPlugin />
         <AutoFocusPlugin />
         <ClearEditorPlugin />
-        <MarkdownShortcutPlugin transformers={TRANSFORMERS} />
+        <MarkdownShortcutPlugin transformers={MARKDOWN_TRANSFORMERS} />
         <HashtagPlugin />
         <EmojisPlugin />
         <MentionsPlugin />

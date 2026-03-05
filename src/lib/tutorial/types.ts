@@ -13,4 +13,6 @@ export interface TutorialStep {
   route?: string;
   /** Order within the sequence */
   order: number;
+  /** Optional: CSS selector of element to click before polling for targetSelector (e.g. click a tab first) */
+  prerequisiteSelector?: string;
 }

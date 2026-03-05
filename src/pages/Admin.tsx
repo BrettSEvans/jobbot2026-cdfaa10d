@@ -18,7 +18,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  ArrowLeft, Edit3, Plus, Trash2, Loader2, Shield, FileText, Users, BookOpen, ScrollText, RotateCcw, ChevronDown, Gauge, FileCode, UserCheck,
+  ArrowLeft, Edit3, Plus, Trash2, Loader2, Shield, FileText, Users, BookOpen, ScrollText, RotateCcw, ChevronDown, Gauge, FileCode, UserCheck, CreditCard,
 } from "lucide-react";
 import ApprovalQueue from "@/components/ApprovalQueue";
 import {
@@ -36,6 +36,7 @@ import AdminGuideTab from "@/components/admin/AdminGuideTab";
 import AdminGenerationGuideTab from "@/components/admin/AdminGenerationGuideTab";
 import AdminRateLimitsTab from "@/components/admin/AdminRateLimitsTab";
 import AdminAuditTab from "@/components/admin/AdminAuditTab";
+import AdminSubscriptionsTab from "@/components/admin/AdminSubscriptionsTab";
 
 // Protected founder admin — cannot be removed via UI
 const PROTECTED_ADMIN_ID = "f8182de6-de8e-4c12-9009-88fb5c4e66b8";
@@ -207,7 +208,7 @@ export default function Admin() {
         </div>
 
         <Tabs defaultValue="approvals">
-          <TabsList className="w-full grid grid-cols-7">
+          <TabsList className="w-full grid grid-cols-8">
             <TabsTrigger value="approvals" className="flex items-center gap-1.5">
               <UserCheck className="h-3.5 w-3.5" /> Approvals
             </TabsTrigger>
@@ -219,6 +220,9 @@ export default function Admin() {
             </TabsTrigger>
             <TabsTrigger value="users" className="flex items-center gap-1.5">
               <Users className="h-3.5 w-3.5" /> Users
+            </TabsTrigger>
+            <TabsTrigger value="subscriptions" className="flex items-center gap-1.5">
+              <CreditCard className="h-3.5 w-3.5" /> Subs
             </TabsTrigger>
             <TabsTrigger value="limits" className="flex items-center gap-1.5">
               <Gauge className="h-3.5 w-3.5" /> Limits
@@ -412,6 +416,10 @@ export default function Admin() {
                 </Button>
               </CardFooter>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="subscriptions">
+            <AdminSubscriptionsTab />
           </TabsContent>
 
           <TabsContent value="limits">

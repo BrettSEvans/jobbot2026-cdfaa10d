@@ -323,6 +323,7 @@ const ACTION_BADGE: Record<string, { label: string; className: string }> = {
   restore_style: { label: 'Restore', className: 'bg-violet-500/15 text-violet-400 border-violet-500/30' },
   grant_admin: { label: 'Grant', className: 'bg-amber-500/15 text-amber-400 border-amber-500/30' },
   revoke_admin: { label: 'Revoke', className: 'bg-amber-500/15 text-amber-400 border-amber-500/30' },
+  delete_user: { label: 'Delete User', className: 'bg-red-500/15 text-red-400 border-red-500/30' },
 };
 
 type TopUser = { user_id: string; count: number };

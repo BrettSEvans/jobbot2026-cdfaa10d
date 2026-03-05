@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { getTutorialSteps } from "@/lib/tutorial/registry";
+import { supabase } from "@/integrations/supabase/client";
 import SpotlightMask from "./SpotlightMask";
 import TutorialBubble from "./TutorialBubble";
 import type { TutorialStep } from "@/lib/tutorial/types";
@@ -15,14 +16,26 @@ export default function TutorialOverlay({ onDismiss }: TutorialOverlayProps) {
   const [steps, setSteps] = useState<TutorialStep[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [waitingForElement, setWaitingForElement] = useState(false);
+  const [recentAppId, setRecentAppId] = useState<string | null>(null);
 
-  // Load steps once
+  // Load steps + fetch most recent application ID
   useEffect(() => {
     const loaded = getTutorialSteps();
     setSteps(loaded);
     if (loaded.length === 0) {
       onDismiss();
     }
+    // Fetch the user's most recent application
+    (async () => {
+      const { data } = await supabase
+        .from("job_applications")
+        .select("id")
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (data) setRecentAppId(data.id);
+    })();
   }, [onDismiss]);
 
   const currentStep = steps[currentIndex];
@@ -43,13 +56,19 @@ export default function TutorialOverlay({ onDismiss }: TutorialOverlayProps) {
     if (!currentStep) return;
 
     if (currentStep.route && !routeMatches(currentStep.route)) {
-      // Navigate to the step's route (use a concrete path for param routes)
-      const targetRoute = currentStep.route.includes(":id")
-        ? currentStep.route // Can't navigate to param routes without an ID - skip
-        : currentStep.route;
+      // Resolve parameterized routes using recentAppId
+      let targetRoute = currentStep.route;
+      if (targetRoute.includes(":id")) {
+        if (!recentAppId) {
+          // No application exists — skip param-route steps
+          handleNext();
+          return;
+        }
+        targetRoute = targetRoute.replace(":id", recentAppId);
+      }
 
       if (targetRoute.includes(":")) {
-        // Skip steps that require a specific application ID
+        // Still has unresolved params — skip
         handleNext();
         return;
       }

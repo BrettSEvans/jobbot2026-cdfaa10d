@@ -200,10 +200,10 @@ export default function HtmlAssetTab({
           <CardContent className="pt-4 space-y-3">
             <WysiwygEditor content={editHtml} onChange={setEditHtml} />
             <div className="flex gap-2">
-              <Button size="sm" onClick={() => { setHtml(editHtml); saveField({ [dbField]: editHtml }); setEditing(false); }}>
+              <Button size="sm" variant="default" onClick={() => { setHtml(editHtml); saveField({ [dbField]: editHtml }); setEditing(false); }}>
                 <Check className="mr-2 h-4 w-4" /> Save
               </Button>
-              <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>
+              <Button size="sm" variant="destructive" onClick={() => setEditing(false)}>
                 <X className="mr-2 h-4 w-4" /> Discard
               </Button>
             </div>

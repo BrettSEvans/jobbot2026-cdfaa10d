@@ -192,4 +192,8 @@
   .editor-mention {
     @apply bg-accent text-accent-foreground px-1 rounded font-medium;
   }
+
+  .editor-quote {
+    @apply border-l-4 border-primary/30 pl-4 italic text-muted-foreground my-2;
+  }
 }

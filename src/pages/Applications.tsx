@@ -265,6 +265,16 @@ const Applications = () => {
             <p className="text-muted-foreground text-sm">Your saved applications and dashboards</p>
           </div>
           <div className="flex gap-2">
+            {needsBackfill && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" size="icon" onClick={handleBackfillIcons} disabled={backfilling} aria-label="Backfill company icons">
+                    {backfilling ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImageIcon className="h-4 w-4" />}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Fetch missing company logos</TooltipContent>
+              </Tooltip>
+            )}
             <Button variant="outline" onClick={() => navigate("/templates")}>
               <LayoutTemplate className="mr-2 h-4 w-4" /> Templates
             </Button>

@@ -70,6 +70,25 @@ export function buildCoverLetterHtml(
     margin-bottom: 8pt;
     text-align: justify;
   }
+  .body table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 8pt 0;
+    font-size: 9.5pt;
+  }
+  .body th, .body td {
+    border: 0.75pt solid #ccc;
+    padding: 4pt 6pt;
+    text-align: left;
+  }
+  .body th {
+    background: #f5f5f5;
+    font-weight: 700;
+  }
+  .body strong { font-weight: 700; }
+  .body em { font-style: italic; }
+  .body ul, .body ol { margin: 6pt 0 6pt 18pt; }
+  .body li { margin-bottom: 3pt; }
   .signature {
     margin-top: 24pt;
   }

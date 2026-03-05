@@ -126,7 +126,6 @@ export default function CoverLetterTab({ appId, state }: CoverLetterTabProps) {
         <CardContent className="pt-6">
           {editingCoverLetter ? (
             <div className="space-y-3">
-              <WysiwygEditor content={editHtml} onChange={setEditHtml} />
               <div className="flex gap-2">
                 <Button size="sm" variant="default" onClick={() => { setCoverLetter(editHtml); saveField({ cover_letter: editHtml }); setEditingCoverLetter(false); }} disabled={saving}>
                   <Check className="mr-2 h-4 w-4" /> Save
@@ -135,6 +134,7 @@ export default function CoverLetterTab({ appId, state }: CoverLetterTabProps) {
                   <X className="mr-2 h-4 w-4" /> Discard
                 </Button>
               </div>
+              <WysiwygEditor content={editHtml} onChange={setEditHtml} />
             </div>
           ) : (previewCoverLetter || coverLetter) ? (
             <iframe

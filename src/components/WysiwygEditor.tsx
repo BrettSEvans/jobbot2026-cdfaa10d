@@ -350,9 +350,16 @@ interface WysiwygEditorProps {
   onHeaderChange?: (text: string) => void;
   footerText?: string;
   onFooterChange?: (text: string) => void;
+  dateText?: string;
+  onDateChange?: (text: string) => void;
 }
 
-export default function WysiwygEditor({ content, onChange, className, headerText, onHeaderChange, footerText, onFooterChange }: WysiwygEditorProps) {
+export default function WysiwygEditor({ content, onChange, className, headerText, onHeaderChange, footerText, onFooterChange, dateText, onDateChange }: WysiwygEditorProps) {
+  const defaultDate = useMemo(() => {
+    const d = new Date();
+    return d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+  }, []);
+  const displayDate = dateText ?? defaultDate;
   const handleChange = useCallback(
     (_editorState: EditorState, editor: LexicalEditor) => {
       editor.read(() => {
@@ -407,6 +414,16 @@ export default function WysiwygEditor({ content, onChange, className, headerText
                 onHeaderChange(nameLine + "\n" + e.target.value);
               }}
             />
+            {onDateChange ? (
+              <input
+                className="header-date"
+                placeholder="Date"
+                value={displayDate}
+                onChange={(e) => onDateChange(e.target.value)}
+              />
+            ) : (
+              <span className="header-date">{displayDate}</span>
+            )}
           </div>
         )}
         <ToolbarPlugin />

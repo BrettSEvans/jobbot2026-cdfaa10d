@@ -198,7 +198,9 @@
   }
 
   .editor-header-zone {
-    @apply bg-muted/40 border-b border-border px-4 py-3 space-y-2;
+    @apply bg-muted/40 px-4 py-3 space-y-2;
+    border-bottom: 1.5pt solid hsl(var(--foreground));
+    padding-bottom: 10px;
   }
 
   .editor-header-zone input {
@@ -212,6 +214,14 @@
 
   .editor-header-zone input.header-subtitle {
     @apply text-sm text-muted-foreground;
+  }
+
+  .editor-header-zone .header-date {
+    @apply block text-xs text-muted-foreground mt-1;
+  }
+
+  .editor-header-zone input.header-date {
+    @apply w-full bg-transparent outline-none text-xs text-muted-foreground mt-1;
   }
 
   .editor-footer-zone {

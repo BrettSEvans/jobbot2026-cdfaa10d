@@ -4,8 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, CheckCircle2, XCircle, RefreshCw, UserCheck } from "lucide-react";
-import { fetchUsersByApprovalStatus, approveUser, rejectUser, type PendingUser } from "@/lib/api/approvals";
+import { Loader2, CheckCircle2, XCircle, RefreshCw, UserCheck, Trash2 } from "lucide-react";
+import { fetchUsersByApprovalStatus, approveUser, rejectUser, softDeleteUser, type PendingUser } from "@/lib/api/approvals";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { formatDistanceToNow } from "date-fns";
 
 export default function ApprovalQueue() {

@@ -38,3 +38,10 @@ export async function rejectUser(userId: string): Promise<void> {
 
   if (error) throw error;
 }
+
+export async function softDeleteUser(userId: string): Promise<void> {
+  const { error } = await (supabase as any).rpc("admin_soft_delete_user", {
+    _target_user_id: userId,
+  });
+  if (error) throw error;
+}

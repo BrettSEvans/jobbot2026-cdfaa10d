@@ -199,8 +199,8 @@
 
   .editor-header-zone {
     @apply bg-muted/40 px-4 py-3 space-y-2;
-    border-bottom: 1.5pt solid hsl(var(--foreground));
-    padding-bottom: 10px;
+    border-bottom: 2.5px solid hsl(var(--foreground));
+    padding-bottom: 12px;
   }
 
   .editor-header-zone input {

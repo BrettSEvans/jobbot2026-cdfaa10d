@@ -103,3 +103,77 @@
     font-family: var(--font-heading);
   }
 }
+
+/* Lexical WYSIWYG Editor Theme */
+@layer components {
+  .lexical-editor {
+    @apply text-foreground;
+  }
+
+  .editor-paragraph {
+    @apply mb-2 leading-relaxed;
+  }
+
+  .editor-heading-h1 {
+    font-family: var(--font-heading);
+    @apply text-2xl font-bold mb-3 text-foreground;
+  }
+
+  .editor-heading-h2 {
+    font-family: var(--font-heading);
+    @apply text-xl font-semibold mb-2 text-foreground;
+  }
+
+  .editor-heading-h3 {
+    font-family: var(--font-heading);
+    @apply text-lg font-semibold mb-2 text-foreground;
+  }
+
+  .editor-text-bold {
+    @apply font-bold;
+  }
+
+  .editor-text-italic {
+    @apply italic;
+  }
+
+  .editor-text-underline {
+    @apply underline;
+  }
+
+  .editor-text-strikethrough {
+    @apply line-through;
+  }
+
+  .editor-list-ul {
+    @apply list-disc ml-6 mb-2;
+  }
+
+  .editor-list-ol {
+    @apply list-decimal ml-6 mb-2;
+  }
+
+  .editor-list-item {
+    @apply mb-1;
+  }
+
+  .editor-nested-list-item {
+    @apply list-none;
+  }
+
+  .editor-table {
+    @apply w-full border-collapse mb-3;
+  }
+
+  .editor-table-row {
+    /* row baseline */
+  }
+
+  .editor-table-cell {
+    @apply border border-border p-2 text-sm;
+  }
+
+  .editor-table-header {
+    @apply border border-border p-2 text-sm font-semibold bg-muted;
+  }
+}

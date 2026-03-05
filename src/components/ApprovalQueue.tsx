@@ -25,14 +25,16 @@ export default function ApprovalQueue() {
   const load = async () => {
     setLoading(true);
     try {
-      const [p, a, r] = await Promise.all([
+      const [p, a, r, d] = await Promise.all([
         fetchUsersByApprovalStatus("pending"),
         fetchUsersByApprovalStatus("approved"),
         fetchUsersByApprovalStatus("rejected"),
+        fetchUsersByApprovalStatus("deleted"),
       ]);
       setPending(p);
       setApproved(a);
       setRejected(r);
+      setDeleted(d);
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {

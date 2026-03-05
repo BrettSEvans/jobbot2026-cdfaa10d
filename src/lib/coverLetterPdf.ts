@@ -1,6 +1,23 @@
 import { marked } from "marked";
 
 /**
+ * Detect if a string already contains HTML tags.
+ */
+function isHtml(text: string): boolean {
+  return /<[a-z][\s\S]*>/i.test(text);
+}
+
+/**
+ * Convert cover letter body (markdown or HTML) to HTML string.
+ * Exported so the WYSIWYG editor can initialise from stored content.
+ */
+export function coverLetterBodyToHtml(text: string): string {
+  if (!text) return "";
+  if (isHtml(text)) return text;
+  return marked.parse(text, { async: false }) as string;
+}
+
+/**
  * Generates a print-ready cover letter in a hidden iframe and triggers
  * the browser's Save-as-PDF dialog via window.print().
  */
@@ -17,8 +34,7 @@ export function buildCoverLetterHtml(
     day: "numeric",
   });
 
-  // Convert markdown (tables, bold, lists, etc.) to HTML
-  const bodyHtml = marked.parse(coverLetter, { async: false }) as string;
+  const bodyHtml = coverLetterBodyToHtml(coverLetter);
 
   return `<!DOCTYPE html>
 <html lang="en">

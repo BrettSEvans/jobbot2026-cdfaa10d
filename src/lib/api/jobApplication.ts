@@ -204,7 +204,7 @@ export async function saveJobApplication(app: {
 
     const { data, error } = await supabase
       .from('job_applications')
-      .insert({ ...safeFields, user_id: user.id, persona_id: personaId })
+      .insert({ ...safeFields, user_id: user.id, persona_id: personaId } as any)
       .select()
       .single();
     if (error) throw new Error(error.message);

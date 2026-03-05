@@ -132,6 +132,25 @@ export async function streamDashboardRefinement({
 }
 
 // --- CRUD for job applications ---
+const ALLOWED_JOB_APP_FIELDS = [
+  "job_url", "company_url", "company_name", "job_title",
+  "job_description_markdown", "cover_letter", "branding",
+  "dashboard_html", "dashboard_data", "chat_history",
+  "competitors", "customers", "products", "status",
+  "generation_status", "generation_error", "research_reasoning",
+  "executive_report_html", "raid_log_html", "architecture_diagram_html",
+  "roadmap_html", "resume_html", "resume_style_id", "company_icon_url",
+  "source_resume_id", "persona_id", "deleted_at", "deleted_by",
+] as const;
+
+function pickAllowed(input: Record<string, unknown>): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+  for (const key of ALLOWED_JOB_APP_FIELDS) {
+    if (key in input) result[key] = input[key];
+  }
+  return result;
+}
+
 export async function saveJobApplication(app: {
   id?: string;
   job_url: string;
@@ -158,11 +177,17 @@ export async function saveJobApplication(app: {
   resume_html?: string;
   resume_style_id?: string;
   company_icon_url?: string;
+  source_resume_id?: string;
+  persona_id?: string | null;
+  deleted_at?: string | null;
+  deleted_by?: string | null;
 }) {
+  const safeFields = pickAllowed(app as Record<string, unknown>);
+
   if (app.id) {
     const { data, error } = await supabase
       .from('job_applications')
-      .update({ ...app, updated_at: new Date().toISOString() })
+      .update({ ...safeFields, updated_at: new Date().toISOString() })
       .eq('id', app.id)
       .select()
       .single();
@@ -179,7 +204,7 @@ export async function saveJobApplication(app: {
 
     const { data, error } = await supabase
       .from('job_applications')
-      .insert({ ...app, user_id: user.id, persona_id: personaId } as any)
+      .insert({ ...safeFields, user_id: user.id, persona_id: personaId })
       .select()
       .single();
     if (error) throw new Error(error.message);

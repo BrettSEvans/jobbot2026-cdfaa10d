@@ -52,13 +52,27 @@ export async function getProfile(): Promise<UserProfile | null> {
   };
 }
 
+const ALLOWED_PROFILE_FIELDS = [
+  "first_name", "middle_name", "last_name", "display_name",
+  "resume_text", "years_experience", "target_industries",
+  "key_skills", "preferred_tone",
+] as const;
+
 export async function updateProfile(updates: Partial<Omit<UserProfile, "id">>): Promise<void> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
+  // Whitelist fields to prevent injection of sensitive columns
+  const safeUpdates: Record<string, unknown> = {};
+  for (const key of ALLOWED_PROFILE_FIELDS) {
+    if (key in updates) {
+      safeUpdates[key] = (updates as Record<string, unknown>)[key];
+    }
+  }
+
   const { error } = await supabase
     .from("profiles")
-    .update(updates as any)
+    .update(safeUpdates)
     .eq("id", user.id);
 
   if (error) throw error;

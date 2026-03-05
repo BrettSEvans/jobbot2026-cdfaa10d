@@ -686,17 +686,6 @@ class BackgroundGenerationManager {
     }
   }
 
-  /** Override updateJob to work with any key (not just appId) */
-  private updateJobByKey(key: string, updates: Partial<GenerationJob>) {
-    const job = this.jobs.get(key);
-    if (job) {
-      if (updates.status && updates.status !== job.status) {
-        updates.stageStartedAt = Date.now();
-      }
-      Object.assign(job, updates);
-      this.notify();
-    }
-  }
 }
 
 // Singleton — persists across React navigations

@@ -42,12 +42,12 @@ function AuthenticatedApp() {
       setApprovalLoading(false);
       return;
     }
-    (supabase as any)
+    supabase
       .from("profiles")
       .select("approval_status")
       .eq("id", user.id)
       .single()
-      .then(({ data, error }: any) => {
+      .then(({ data }) => {
         setApprovalStatus(data?.approval_status ?? "pending");
         setApprovalLoading(false);
       });
@@ -97,6 +97,7 @@ function AuthenticatedApp() {
       </NavigationGuardProvider>
       {user && <HelpButton />}
       {user && isTutorialActive && <TutorialOverlay onDismiss={dismissTutorial} tutorialMode={tutorialMode} />}
+      <BackgroundJobsBanner />
     </BrowserRouter>
   );
 }
@@ -107,7 +108,6 @@ const App = () => {
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BackgroundJobsBanner />
         <ImpersonationProvider>
           <AuthenticatedApp />
         </ImpersonationProvider>

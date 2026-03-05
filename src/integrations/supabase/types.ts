@@ -346,6 +346,7 @@ export type Database = {
           architecture_diagram_html: string | null
           branding: Json | null
           chat_history: Json | null
+          company_icon_url: string | null
           company_name: string | null
           company_url: string | null
           competitors: Json | null
@@ -378,6 +379,7 @@ export type Database = {
           architecture_diagram_html?: string | null
           branding?: Json | null
           chat_history?: Json | null
+          company_icon_url?: string | null
           company_name?: string | null
           company_url?: string | null
           competitors?: Json | null
@@ -410,6 +412,7 @@ export type Database = {
           architecture_diagram_html?: string | null
           branding?: Json | null
           chat_history?: Json | null
+          company_icon_url?: string | null
           company_name?: string | null
           company_url?: string | null
           competitors?: Json | null

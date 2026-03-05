@@ -418,6 +418,10 @@ export default function Admin() {
             </Card>
           </TabsContent>
 
+          <TabsContent value="subscriptions">
+            <AdminSubscriptionsTab />
+          </TabsContent>
+
           <TabsContent value="limits">
             <AdminRateLimitsTab />
           </TabsContent>

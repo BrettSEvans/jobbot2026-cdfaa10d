@@ -52,6 +52,9 @@ type AnalyzeStage = "scraping" | "branding" | "analyzing" | "cover-letter" | "co
 const NewApplication = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { appLimit, tier } = useSubscription();
+  const { data: appsUsed = 0 } = useAppUsage();
+  const isAtLimit = appLimit !== -1 && appsUsed >= appLimit;
 
   // Inputs
   const [jobUrl, setJobUrl] = useState("");

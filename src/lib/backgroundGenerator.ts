@@ -246,7 +246,7 @@ class BackgroundGenerationManager {
         customers,
         products,
         generation_status: "cover-letter",
-        ...(companyIconUrl ? { company_icon_url: companyIconUrl } : {}),
+        company_icon_url: companyIconUrl,
       } as any);
 
       // 4. Generate cover letter

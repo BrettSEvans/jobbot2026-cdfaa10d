@@ -333,10 +333,10 @@ const Applications = () => {
                           <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("created_at")}>
                             <div className="flex items-center">Created <SortIcon col="created_at" /></div>
                           </TableHead>
-                          <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("updated_at")}>
+                          <TableHead className="cursor-pointer select-none hidden md:table-cell" onClick={() => toggleSort("updated_at")}>
                             <div className="flex items-center">Updated <SortIcon col="updated_at" /></div>
                           </TableHead>
-                          <TableHead>Assets</TableHead>
+                          <TableHead className="hidden md:table-cell">Assets</TableHead>
                           <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -365,10 +365,10 @@ const Applications = () => {
                             <TableCell className="text-sm text-muted-foreground">
                               {new Date(app.created_at).toLocaleDateString()}
                             </TableCell>
-                            <TableCell className="text-sm text-muted-foreground">
+                            <TableCell className="text-sm text-muted-foreground hidden md:table-cell">
                               {new Date(app.updated_at).toLocaleDateString()}
                             </TableCell>
-                            <TableCell>
+                            <TableCell className="hidden md:table-cell">
                               <AssetDots app={app} />
                             </TableCell>
                             <TableCell>

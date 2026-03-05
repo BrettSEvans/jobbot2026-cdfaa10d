@@ -317,13 +317,13 @@ function AdminGenerationGuideTab() {
 // ---------- Main Admin Component ----------
 
 const ACTION_BADGE: Record<string, { label: string; className: string }> = {
-  create_style: { label: 'Create', className: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' },
-  update_style: { label: 'Update', className: 'bg-blue-500/15 text-blue-400 border-blue-500/30' },
-  delete_style: { label: 'Delete', className: 'bg-red-500/15 text-red-400 border-red-500/30' },
-  restore_style: { label: 'Restore', className: 'bg-violet-500/15 text-violet-400 border-violet-500/30' },
-  grant_admin: { label: 'Grant', className: 'bg-amber-500/15 text-amber-400 border-amber-500/30' },
-  revoke_admin: { label: 'Revoke', className: 'bg-amber-500/15 text-amber-400 border-amber-500/30' },
-  delete_user: { label: 'Delete User', className: 'bg-red-500/15 text-red-400 border-red-500/30' },
+  create_style: { label: 'Create', className: 'bg-primary/15 text-primary border-primary/30' },
+  update_style: { label: 'Update', className: 'bg-accent-foreground/15 text-accent-foreground border-accent-foreground/30' },
+  delete_style: { label: 'Delete', className: 'bg-destructive/15 text-destructive border-destructive/30' },
+  restore_style: { label: 'Restore', className: 'bg-primary/15 text-primary border-primary/30' },
+  grant_admin: { label: 'Grant', className: 'bg-accent-foreground/15 text-accent-foreground border-accent-foreground/30' },
+  revoke_admin: { label: 'Revoke', className: 'bg-accent-foreground/15 text-accent-foreground border-accent-foreground/30' },
+  delete_user: { label: 'Delete User', className: 'bg-destructive/15 text-destructive border-destructive/30' },
 };
 
 type TopUser = { user_id: string; count: number };
@@ -480,7 +480,7 @@ function AdminRateLimitsTab() {
                     <div className="flex items-center gap-2">
                       <span className="font-mono text-xs break-all">{o.user_id}</span>
                       {o.is_unlimited ? (
-                        <Badge className="text-xs bg-emerald-500/15 text-emerald-400 border-emerald-500/30">Unlimited</Badge>
+                        <Badge className="text-xs bg-primary/15 text-primary border-primary/30">Unlimited</Badge>
                       ) : (
                         <Badge variant="secondary" className="text-xs">{o.per_hour}/hr · {o.per_day}/day</Badge>
                       )}

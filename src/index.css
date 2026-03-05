@@ -196,4 +196,29 @@
   .editor-quote {
     @apply border-l-4 border-primary/30 pl-4 italic text-muted-foreground my-2;
   }
+
+  .editor-header-zone {
+    @apply bg-muted/40 border-b border-border px-4 py-3 space-y-2;
+  }
+
+  .editor-header-zone input {
+    @apply w-full bg-transparent text-foreground placeholder:text-muted-foreground outline-none;
+  }
+
+  .editor-header-zone input.header-name {
+    font-family: var(--font-heading);
+    @apply text-lg font-semibold;
+  }
+
+  .editor-header-zone input.header-subtitle {
+    @apply text-sm text-muted-foreground;
+  }
+
+  .editor-footer-zone {
+    @apply bg-muted/40 border-t border-border px-4 py-3;
+  }
+
+  .editor-footer-zone textarea {
+    @apply w-full bg-transparent text-sm text-muted-foreground placeholder:text-muted-foreground outline-none resize-none min-h-[40px];
+  }
 }

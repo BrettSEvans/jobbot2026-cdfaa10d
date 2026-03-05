@@ -34,11 +34,13 @@ import DetailsTab from "@/components/tabs/DetailsTab";
 import DynamicAssetTab from "@/components/DynamicAssetTab";
 import ChangeAssetDialog from "@/components/ChangeAssetDialog";
 import AssetProposalCard from "@/components/AssetProposalCard";
+import UpgradeGate from "@/components/UpgradeGate";
 import {
   Dialog,
   DialogContent,
 } from "@/components/ui/dialog";
 import ImpersonationNotice from "@/components/ImpersonationNotice";
+import { useSubscription } from "@/hooks/useSubscription";
 
 type ActiveView = "dashboard" | "cover-letter" | "resume" | string;
 

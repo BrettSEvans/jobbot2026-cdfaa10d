@@ -96,6 +96,12 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Auth guard
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
     const { url } = await req.json();
 
     if (!url) {

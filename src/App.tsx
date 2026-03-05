@@ -1,3 +1,4 @@
+import ErrorBoundary from "@/components/ErrorBoundary";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -42,12 +43,12 @@ function AuthenticatedApp() {
       setApprovalLoading(false);
       return;
     }
-    (supabase as any)
+    supabase
       .from("profiles")
       .select("approval_status")
       .eq("id", user.id)
       .single()
-      .then(({ data, error }: any) => {
+      .then(({ data }) => {
         setApprovalStatus(data?.approval_status ?? "pending");
         setApprovalLoading(false);
       });
@@ -97,22 +98,24 @@ function AuthenticatedApp() {
       </NavigationGuardProvider>
       {user && <HelpButton />}
       {user && isTutorialActive && <TutorialOverlay onDismiss={dismissTutorial} tutorialMode={tutorialMode} />}
+      <BackgroundJobsBanner />
     </BrowserRouter>
   );
 }
 
 const App = () => {
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BackgroundJobsBanner />
-        <ImpersonationProvider>
-          <AuthenticatedApp />
-        </ImpersonationProvider>
-      </TooltipProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <ImpersonationProvider>
+            <AuthenticatedApp />
+          </ImpersonationProvider>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 };
 

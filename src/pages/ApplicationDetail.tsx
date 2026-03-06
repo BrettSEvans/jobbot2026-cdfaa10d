@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/sheet";
 import {
   ArrowLeft, Loader2,
-  Info, FileText, LayoutDashboard, Mail, FileUser, Sparkles, ArrowLeftRight,
+  Info, FileText, Mail, FileUser, Sparkles, ArrowLeftRight,
 } from "lucide-react";
 import { useApplicationDetail } from "@/hooks/useApplicationDetail";
 import { streamResumeGeneration } from "@/lib/api/resume";
@@ -26,7 +26,7 @@ import {
 } from "@/lib/api/dynamicAssets";
 import { getActiveResumeText } from "@/lib/api/profile";
 import { cleanHtml } from "@/lib/cleanHtml";
-import DashboardTab from "@/components/tabs/DashboardTab";
+// DashboardTab removed — dashboard is now a Premium industry asset
 import CoverLetterTab from "@/components/tabs/CoverLetterTab";
 import HtmlAssetTab from "@/components/tabs/HtmlAssetTab";
 import JobDescriptionTab from "@/components/tabs/JobDescriptionTab";
@@ -60,14 +60,14 @@ import {
 } from "@/lib/pipelineStages";
 import { downloadHtmlAsDocx, buildDocxFilename } from "@/lib/docxExport";
 
-type ActiveView = "dashboard" | "cover-letter" | "resume" | string;
+type ActiveView = "cover-letter" | "resume" | string;
 
 const ApplicationDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const state = useApplicationDetail(id);
   const { isAssetAllowed, canRefine, tier } = useSubscription();
-  const [activeView, setActiveView] = useState<ActiveView>("dashboard");
+  const [activeView, setActiveView] = useState<ActiveView>("cover-letter");
 
   // Dynamic assets state
   const [dynamicAssets, setDynamicAssets] = useState<GeneratedAsset[]>([]);
@@ -213,12 +213,11 @@ const ApplicationDetail = () => {
   }
 
   const primaryTabs = [
-    { id: "dashboard" as const, label: "Dashboard", icon: LayoutDashboard },
     { id: "cover-letter" as const, label: "Cover Letter", icon: Mail },
     { id: "resume" as const, label: "Resume", icon: FileUser },
   ];
 
-  const isPrimaryView = ["dashboard", "cover-letter", "resume"].includes(activeView);
+  const isPrimaryView = ["cover-letter", "resume"].includes(activeView);
   const activeDynamicAsset = dynamicAssets.find((a) => a.id === activeView);
 
   return (
@@ -349,22 +348,24 @@ const ApplicationDetail = () => {
                       title={asset.generation_status}
                     />
                   </button>
-                  <ChangeAssetDialog
-                    asset={asset}
-                    otherAssetNames={dynamicAssets.filter((a) => a.id !== asset.id).map((a) => a.asset_name)}
-                    jobDescription={state.jobDescription}
-                    companyName={state.companyName}
-                    jobTitle={state.jobTitle}
-                    onAssetReplaced={(updated) => {
-                      handleAssetUpdated(updated);
-                      // Auto-generate the new asset
-                      generateDynamicAsset(updated);
-                    }}
-                  >
-                    <Button data-tutorial="change-asset-btn" variant="ghost" size="icon" className="h-8 w-8 shrink-0" title="Change asset type">
-                      <ArrowLeftRight className="h-3.5 w-3.5" />
-                    </Button>
-                  </ChangeAssetDialog>
+                  {!isDownloaded && (
+                    <ChangeAssetDialog
+                      asset={asset}
+                      otherAssetNames={dynamicAssets.filter((a) => a.id !== asset.id).map((a) => a.asset_name)}
+                      jobDescription={state.jobDescription}
+                      companyName={state.companyName}
+                      jobTitle={state.jobTitle}
+                      onAssetReplaced={(updated) => {
+                        handleAssetUpdated(updated);
+                        // Auto-generate the new asset
+                        generateDynamicAsset(updated);
+                      }}
+                    >
+                      <Button data-tutorial="change-asset-btn" variant="ghost" size="icon" className="h-8 w-8 shrink-0" title="Change asset type">
+                        <ArrowLeftRight className="h-3.5 w-3.5" />
+                      </Button>
+                    </ChangeAssetDialog>
+                  )}
                 </div>
               ))}
             </div>
@@ -373,11 +374,6 @@ const ApplicationDetail = () => {
 
         {/* Content Area */}
         <div>
-          {activeView === "dashboard" && (
-            <UpgradeGate feature="Dashboard" isLocked={!isAssetAllowed("dashboard")} requiredTier="pro">
-              <DashboardTab appId={id!} state={state} canRefine={canRefine} />
-            </UpgradeGate>
-          )}
           {activeView === "cover-letter" && (
             <CoverLetterTab appId={id!} state={state} />
           )}

@@ -6,6 +6,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import CompanyIcon from "@/components/CompanyIcon";
+import KanbanBoard from "@/components/KanbanBoard";
 import {
   getJobApplications,
   deleteJobApplication,
@@ -34,6 +35,8 @@ import {
   Archive,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { List, LayoutGrid } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -65,6 +68,7 @@ import { BRAND } from "@/lib/branding";
 import { ImageIcon } from "lucide-react";
 type SortKey = "company_name" | "job_title" | "status" | "created_at" | "updated_at";
 type SortDir = "asc" | "desc";
+type ViewMode = "list" | "kanban";
 
 const Applications = () => {
   const { activePersona, isImpersonating } = useImpersonation();
@@ -81,6 +85,7 @@ const Applications = () => {
   const [activeView, setActiveView] = useState<"active" | "trash">("active");
   const [isClosing, setIsClosing] = useState(false);
   const [backfilling, setBackfilling] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>("list");
 
   const activeJobCount = useActiveJobCount();
 
@@ -279,6 +284,14 @@ const Applications = () => {
             <Button variant="outline" onClick={() => navigate("/templates")}>
               <LayoutTemplate className="mr-2 h-4 w-4" /> Templates
             </Button>
+            <ToggleGroup type="single" value={viewMode} onValueChange={(v) => v && setViewMode(v as ViewMode)} size="sm">
+              <ToggleGroupItem value="list" aria-label="List view">
+                <List className="h-4 w-4" />
+              </ToggleGroupItem>
+              <ToggleGroupItem value="kanban" aria-label="Kanban view">
+                <LayoutGrid className="h-4 w-4" />
+              </ToggleGroupItem>
+            </ToggleGroup>
             <Button data-tutorial="new-app-btn" onClick={() => navigate("/applications/new")}>
               <Plus className="mr-2 h-4 w-4" /> New Application
             </Button>
@@ -375,6 +388,8 @@ const Applications = () => {
                     </Button>
                   </CardContent>
                 </Card>
+              ) : viewMode === "kanban" ? (
+                <KanbanBoard applications={applications} onStageChanged={loadApplications} />
               ) : (
                 <>
                   <div data-tutorial="app-table" className="relative overflow-hidden rounded-md border min-h-[400px]">

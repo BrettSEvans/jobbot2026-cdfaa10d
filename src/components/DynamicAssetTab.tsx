@@ -26,6 +26,8 @@ import { extractStyleSignalsFromMessage } from "@/lib/api/stylePreferences";
 import { cleanHtml } from "@/lib/cleanHtml";
 import { downloadHtmlAsPdf, buildPdfFilename } from "@/lib/htmlToPdf";
 import { getActiveResumeText } from "@/lib/api/profile";
+import { getLayoutStyleForAsset } from "@/lib/assetLayoutStyles";
+import { getActiveResumeText } from "@/lib/api/profile";
 import {
   Tooltip,
   TooltipContent,
@@ -35,6 +37,7 @@ import {
 
 interface DynamicAssetTabProps {
   asset: GeneratedAsset;
+  allAssetNames: string[];
   jobDescription: string;
   companyName?: string;
   jobTitle?: string;
@@ -45,6 +48,7 @@ interface DynamicAssetTabProps {
 
 export default function DynamicAssetTab({
   asset,
+  allAssetNames,
   jobDescription,
   companyName,
   jobTitle,

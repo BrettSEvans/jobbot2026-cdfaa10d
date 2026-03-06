@@ -62,15 +62,15 @@ export default function PipelineAnalytics({ applications }: PipelineAnalyticsPro
     return { counts, maxCount, conversions, avgDays };
   }, [applications]);
 
-  if (applications.length === 0) return null;
-
-  const forwardStages: PipelineStage[] = ["bookmarked", "applied", "interviewing", "offer", "accepted"];
-  const terminalStages: PipelineStage[] = ["declined", "rejected"];
-
   const [open, setOpen] = useState(() => {
     const saved = localStorage.getItem("pipeline_analytics_open");
     return saved !== null ? saved === "true" : true;
   });
+
+  if (applications.length === 0) return null;
+
+  const forwardStages: PipelineStage[] = ["bookmarked", "applied", "interviewing", "offer", "accepted"];
+  const terminalStages: PipelineStage[] = ["declined", "rejected"];
 
   const handleToggle = (val: boolean) => {
     setOpen(val);

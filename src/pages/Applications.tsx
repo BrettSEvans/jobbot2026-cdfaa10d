@@ -36,8 +36,8 @@ import {
   Archive,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { List, LayoutGrid } from "lucide-react";
+import { Kanban } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 import {
   Table,
   TableBody,
@@ -69,13 +69,12 @@ import { BRAND } from "@/lib/branding";
 import { ImageIcon } from "lucide-react";
 type SortKey = "company_name" | "job_title" | "status" | "created_at" | "updated_at";
 type SortDir = "asc" | "desc";
-type ViewMode = "list" | "kanban";
-
 const Applications = () => {
   const { activePersona, isImpersonating } = useImpersonation();
   const { showTutorial, startTutorial } = useTutorial();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [applications, setApplications] = useState<JobApplication[]>([]);
   const [deletedApps, setDeletedApps] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -83,10 +82,10 @@ const Applications = () => {
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [sortKey, setSortKey] = useState<SortKey>("created_at");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
-  const [activeView, setActiveView] = useState<"active" | "trash">("active");
+  const initialView = searchParams.get("view") === "pipeline" ? "pipeline" : "active";
+  const [activeView, setActiveView] = useState<"active" | "pipeline" | "trash">(initialView);
   const [isClosing, setIsClosing] = useState(false);
   const [backfilling, setBackfilling] = useState(false);
-  const [viewMode, setViewMode] = useState<ViewMode>("list");
 
   const activeJobCount = useActiveJobCount();
 
@@ -285,14 +284,6 @@ const Applications = () => {
             <Button variant="outline" onClick={() => navigate("/templates")}>
               <LayoutTemplate className="mr-2 h-4 w-4" /> Templates
             </Button>
-            <ToggleGroup type="single" value={viewMode} onValueChange={(v) => v && setViewMode(v as ViewMode)} size="sm">
-              <ToggleGroupItem value="list" aria-label="List view">
-                <List className="h-4 w-4" />
-              </ToggleGroupItem>
-              <ToggleGroupItem value="kanban" aria-label="Kanban view">
-                <LayoutGrid className="h-4 w-4" />
-              </ToggleGroupItem>
-            </ToggleGroup>
             <Button data-tutorial="new-app-btn" onClick={() => navigate("/applications/new")}>
               <Plus className="mr-2 h-4 w-4" /> New Application
             </Button>
@@ -366,9 +357,22 @@ const Applications = () => {
             </CardContent>
           </Card>
         ) : (
-          <Tabs value={activeView} onValueChange={(v) => setActiveView(v as "active" | "trash")}>
+          <Tabs value={activeView} onValueChange={(v) => {
+            const view = v as "active" | "pipeline" | "trash";
+            setActiveView(view);
+            // Sync URL param for pipeline view
+            if (view === "pipeline") {
+              setSearchParams({ view: "pipeline" });
+            } else {
+              searchParams.delete("view");
+              setSearchParams(searchParams);
+            }
+          }}>
             <TabsList>
               <TabsTrigger value="active">Applications</TabsTrigger>
+              <TabsTrigger value="pipeline" data-tutorial="pipeline-tab" className="gap-1.5">
+                <Kanban className="h-3.5 w-3.5" /> Pipeline
+              </TabsTrigger>
               <TabsTrigger value="trash" className="gap-1.5">
                 <Trash2 className="h-3.5 w-3.5" /> Trash
                 {deletedApps.length > 0 && (
@@ -391,8 +395,6 @@ const Applications = () => {
                     </Button>
                   </CardContent>
                 </Card>
-              ) : viewMode === "kanban" ? (
-                <KanbanBoard applications={applications} onStageChanged={loadApplications} />
               ) : (
                 <>
                   <div data-tutorial="app-table" className="relative overflow-hidden rounded-md border min-h-[400px]">
@@ -568,6 +570,10 @@ const Applications = () => {
                   </div>
                 </>
               )}
+            </TabsContent>
+
+            <TabsContent value="pipeline" className="space-y-4">
+              <KanbanBoard applications={applications} onStageChanged={loadApplications} />
             </TabsContent>
 
             <TabsContent value="trash" className="space-y-4">

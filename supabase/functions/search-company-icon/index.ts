@@ -42,17 +42,10 @@ async function tryIconIcons(companyName: string, firecrawlKey?: string): Promise
     const markdown = await scrapePageMarkdown(searchUrl, firecrawlKey);
     if (!markdown) return null;
 
-    // Look for image URLs in markdown that point to icon assets
     const imgRegex = /https?:\/\/[^\s\)\"]+\.(png|svg|ico)(?:\?[^\s\)\"]*)?/gi;
     const matches = markdown.match(imgRegex);
     if (matches) {
-      // Filter: require the company name (or a significant substring) in the URL or surrounding text
-      const nameLower = companyName.toLowerCase().replace(/[^a-z0-9]/g, '');
-      const nameWords = companyName.toLowerCase().split(/\s+/).filter(w => w.length > 2);
-      const relevantMatch = matches.find(m => {
-        const mLower = m.toLowerCase();
-        return nameWords.some(w => mLower.includes(w)) || mLower.includes(nameLower);
-      });
+      const relevantMatch = matches.find(m => isRelevantUrl(m, companyName));
       if (relevantMatch) return relevantMatch;
     }
   } catch (e) {
@@ -67,17 +60,13 @@ async function trySvgRepo(companyName: string, firecrawlKey?: string): Promise<s
     const markdown = await scrapePageMarkdown(searchUrl, firecrawlKey);
     if (!markdown) return null;
 
-    // Look for SVG URLs
     const imgRegex = /https?:\/\/[^\s\)\"]+\.(svg|png)(?:\?[^\s\)\"]*)?/gi;
     const matches = markdown.match(imgRegex);
     if (matches) {
-      // Filter: require the company name in the URL to avoid generic results
-      const nameWords = companyName.toLowerCase().split(/\s+/).filter(w => w.length > 2);
       const relevantMatch = matches.find(m => {
         const mLower = m.toLowerCase();
-        // Skip svgrepo's own logo
         if (mLower.includes('svgrepo.com/logo')) return false;
-        return nameWords.some(w => mLower.includes(w));
+        return isRelevantUrl(m, companyName);
       });
       if (relevantMatch) return relevantMatch;
     }

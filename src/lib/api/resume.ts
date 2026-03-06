@@ -1,10 +1,10 @@
 import { streamFromEdgeFunction } from './streamUtils';
 import { supabase } from '@/integrations/supabase/client';
-import { getActiveResumeText } from './profile';
+import { getActiveResumeText, getProfileContextForPrompt } from './profile';
 
 /**
  * Stream-generate a tailored resume HTML.
- * Auto-fetches user's resume text from profile if not provided.
+ * Auto-fetches user's resume text and profile context if not provided.
  */
 export async function streamResumeGeneration({
   jobDescription,
@@ -33,22 +33,18 @@ export async function streamResumeGeneration({
   onDelta: (text: string) => void;
   onDone: () => void;
 }) {
-  // Auto-fetch resume text from profile if not provided
-  let finalResumeText = resumeText;
-  if (!finalResumeText) {
-    try { finalResumeText = await getActiveResumeText(); } catch { /* non-critical */ }
-  }
-
-  // Fetch generation guide (failover-safe — never blocks generation)
-  let generationGuide = "";
-  try {
-    const { getGenerationGuideForPrompt } = await import("@/lib/api/systemDocuments");
-    generationGuide = await getGenerationGuideForPrompt();
-  } catch { /* non-critical */ }
+  // Auto-fetch resume text and profile context in parallel
+  const [finalResumeText, finalProfileContext, generationGuide] = await Promise.all([
+    resumeText ? Promise.resolve(resumeText) : getActiveResumeText().catch(() => ""),
+    profileContext ? Promise.resolve(profileContext) : getProfileContextForPrompt().catch(() => ""),
+    import("@/lib/api/systemDocuments")
+      .then(({ getGenerationGuideForPrompt }) => getGenerationGuideForPrompt())
+      .catch(() => ""),
+  ]);
 
   await streamFromEdgeFunction({
     functionName: 'generate-resume',
-    body: { jobDescription, resumeText: finalResumeText, systemPrompt, companyName, jobTitle, branding, competitors, customers, products, profileContext, generationGuide },
+    body: { jobDescription, resumeText: finalResumeText, systemPrompt, companyName, jobTitle, branding, competitors, customers, products, profileContext: finalProfileContext, generationGuide },
     onDelta,
     onDone,
   });

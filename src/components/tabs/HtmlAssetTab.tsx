@@ -60,6 +60,19 @@ export default function HtmlAssetTab({
   const assetJob = useAssetJob(appId, assetType);
   const isAssetJobActive = !!(assetJob && !["complete", "error"].includes(assetJob.status));
 
+  // Check if resume text is available (only relevant for resume asset type)
+  const [missingResumeText, setMissingResumeText] = useState(false);
+  useEffect(() => {
+    if (assetType !== "resume") return;
+    let cancelled = false;
+    import("@/lib/api/profile").then(({ getProfile }) =>
+      getProfile().then((p) => {
+        if (!cancelled) setMissingResumeText(!p?.resume_text?.trim());
+      })
+    ).catch(() => {});
+    return () => { cancelled = true; };
+  }, [assetType]);
+
   const handleGenerate = async () => {
     if (!jobDescription.trim()) {
       toast({ title: "No job description", description: `A job description is needed to generate a ${label.toLowerCase()}.`, variant: "destructive" });

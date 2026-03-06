@@ -47,7 +47,7 @@ export default function KanbanBoard({ applications, onStageChanged }: KanbanBoar
 
   const columns = useMemo(() => {
     const map: Record<PipelineStage, JobApplication[]> = {
-      bookmarked: [], applied: [], interviewing: [], offer: [], accepted: [], rejected: [],
+      bookmarked: [], applied: [], interviewing: [], offer: [], accepted: [], declined: [], rejected: [],
     };
     for (const app of applications) {
       const stage = ((app as any).pipeline_stage || 'bookmarked') as PipelineStage;

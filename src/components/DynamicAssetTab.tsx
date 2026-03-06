@@ -160,6 +160,7 @@ export default function DynamicAssetTab({
 
     setRefining(true);
     try {
+      const layoutStyle = getLayoutStyleForAsset(asset.asset_name, allAssetNames);
       let accumulated = "";
       await streamRefineDynamicAsset({
         assetName: asset.asset_name,
@@ -169,6 +170,7 @@ export default function DynamicAssetTab({
         companyName,
         jobTitle,
         branding,
+        layoutStyle,
         onDelta: (text) => { accumulated += text; },
         onDone: () => {},
       });

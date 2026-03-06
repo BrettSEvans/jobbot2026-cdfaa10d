@@ -14,7 +14,7 @@ import {
   type PipelineStage,
 } from "@/lib/pipelineStages";
 import type { JobApplication } from "@/hooks/useApplicationDetail";
-import { BarChart3, TrendingDown, Clock, ArrowRight } from "lucide-react";
+import { BarChart3, TrendingDown, Clock, ArrowRight, ChevronDown } from "lucide-react";
 
 interface PipelineAnalyticsProps {
   applications: JobApplication[];

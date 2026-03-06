@@ -108,6 +108,7 @@ export default function DynamicAssetTab({
       let resumeText = "";
       try { resumeText = await getActiveResumeText(); } catch { }
 
+      const layoutStyle = getLayoutStyleForAsset(asset.asset_name, allAssetNames);
       let accumulated = "";
       await streamDynamicAssetGeneration({
         assetName: asset.asset_name,
@@ -117,6 +118,7 @@ export default function DynamicAssetTab({
         companyName,
         jobTitle,
         branding,
+        layoutStyle,
         onDelta: (text) => { accumulated += text; },
         onDone: () => {},
       });

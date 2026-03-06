@@ -415,9 +415,9 @@ export default function Landing() {
     <div className="min-h-screen bg-background text-foreground">
       <LandingNav />
       <Hero />
-      <Features />
-      <HowItWorks />
       <ExampleAssets />
+      <HowItWorks />
+      <Features />
       <Pricing />
       <Testimonials />
       <CtaFooter />

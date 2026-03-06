@@ -4,6 +4,7 @@ import mockupResume from "@/assets/mockup-resume.jpg";
 import mockupCoverLetter from "@/assets/mockup-cover-letter.jpg";
 import mockupDashboard from "@/assets/mockup-dashboard.jpg";
 import mockupRoadmap from "@/assets/mockup-roadmap.jpg";
+import mockupCustomAsset from "@/assets/mockup-custom-asset.jpg";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -208,6 +209,7 @@ const EXAMPLES = [
   { label: "Cover Letter", img: mockupCoverLetter },
   { label: "Executive Dashboard", img: mockupDashboard },
   { label: "90-Day Roadmap", img: mockupRoadmap },
+  { label: "Custom Asset", img: mockupCustomAsset },
 ];
 
 function ExampleAssets() {
@@ -220,7 +222,7 @@ function ExampleAssets() {
         <p className="mx-auto mt-3 max-w-xl text-center text-muted-foreground">
           Each asset is generated in real-time and styled to the company's brand.
         </p>
-        <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-5">
           {EXAMPLES.map((ex) => (
             <Card key={ex.label} className="overflow-hidden group transition-shadow hover:shadow-md">
               <div className="overflow-hidden">

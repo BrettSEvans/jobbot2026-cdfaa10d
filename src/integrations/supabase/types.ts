@@ -344,6 +344,8 @@ export type Database = {
       job_applications: {
         Row: {
           architecture_diagram_html: string | null
+          ats_score: Json | null
+          ats_scored_at: string | null
           branding: Json | null
           chat_history: Json | null
           company_icon_url: string | null
@@ -365,19 +367,24 @@ export type Database = {
           job_title: string | null
           job_url: string
           persona_id: string | null
+          pipeline_stage: string
           products: Json | null
           raid_log_html: string | null
           research_reasoning: string | null
           resume_html: string | null
           resume_style_id: string | null
           roadmap_html: string | null
+          selected_assets: Json | null
           source_resume_id: string | null
+          stage_changed_at: string | null
           status: string
           updated_at: string
           user_id: string | null
         }
         Insert: {
           architecture_diagram_html?: string | null
+          ats_score?: Json | null
+          ats_scored_at?: string | null
           branding?: Json | null
           chat_history?: Json | null
           company_icon_url?: string | null
@@ -399,19 +406,24 @@ export type Database = {
           job_title?: string | null
           job_url: string
           persona_id?: string | null
+          pipeline_stage?: string
           products?: Json | null
           raid_log_html?: string | null
           research_reasoning?: string | null
           resume_html?: string | null
           resume_style_id?: string | null
           roadmap_html?: string | null
+          selected_assets?: Json | null
           source_resume_id?: string | null
+          stage_changed_at?: string | null
           status?: string
           updated_at?: string
           user_id?: string | null
         }
         Update: {
           architecture_diagram_html?: string | null
+          ats_score?: Json | null
+          ats_scored_at?: string | null
           branding?: Json | null
           chat_history?: Json | null
           company_icon_url?: string | null
@@ -433,18 +445,56 @@ export type Database = {
           job_title?: string | null
           job_url?: string
           persona_id?: string | null
+          pipeline_stage?: string
           products?: Json | null
           raid_log_html?: string | null
           research_reasoning?: string | null
           resume_html?: string | null
           resume_style_id?: string | null
           roadmap_html?: string | null
+          selected_assets?: Json | null
           source_resume_id?: string | null
+          stage_changed_at?: string | null
           status?: string
           updated_at?: string
           user_id?: string | null
         }
         Relationships: []
+      }
+      pipeline_stage_history: {
+        Row: {
+          application_id: string
+          changed_at: string
+          from_stage: string | null
+          id: string
+          to_stage: string
+          user_id: string
+        }
+        Insert: {
+          application_id: string
+          changed_at?: string
+          from_stage?: string | null
+          id?: string
+          to_stage: string
+          user_id: string
+        }
+        Update: {
+          application_id?: string
+          changed_at?: string
+          from_stage?: string | null
+          id?: string
+          to_stage?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pipeline_stage_history_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "job_applications"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -458,6 +508,7 @@ export type Database = {
           key_skills: string[] | null
           last_name: string | null
           middle_name: string | null
+          onboarding_completed_at: string | null
           preferred_tone: string | null
           resume_text: string | null
           target_industries: string[] | null
@@ -475,6 +526,7 @@ export type Database = {
           key_skills?: string[] | null
           last_name?: string | null
           middle_name?: string | null
+          onboarding_completed_at?: string | null
           preferred_tone?: string | null
           resume_text?: string | null
           target_industries?: string[] | null
@@ -492,6 +544,7 @@ export type Database = {
           key_skills?: string[] | null
           last_name?: string | null
           middle_name?: string | null
+          onboarding_completed_at?: string | null
           preferred_tone?: string | null
           resume_text?: string | null
           target_industries?: string[] | null

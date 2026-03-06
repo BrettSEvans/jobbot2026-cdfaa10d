@@ -45,19 +45,40 @@ registerHelp({
   slug: 'applications-list',
   title: 'Applications List',
   summary:
-    'View all your job applications in one place. Each card shows the company, role, status, and creation date. Use the "+ New Application" button to start a new one.',
+    'View all your job applications in one place. Each card shows the company, role, status, and creation date. Switch to Pipeline view to see applications organized by stage on a drag-and-drop Kanban board.',
   steps: [
     'Browse your existing applications on the main page.',
     'Click any application card to view its details.',
     'Click "+ New Application" to create a new job application.',
+    'Switch to the Pipeline tab to see applications in a Kanban board by stage.',
   ],
   tips: [
     'Applications show their generation status so you know when assets are ready.',
     'Completed applications have all assets generated and available for download.',
+    'Drag and drop cards in Pipeline view to move applications between stages.',
   ],
   route: '/',
-  keywords: ['applications', 'jobs', 'list', 'dashboard', 'home'],
-  relatedSlugs: ['new-application', 'application-detail'],
+  keywords: ['applications', 'jobs', 'list', 'dashboard', 'home', 'pipeline', 'kanban'],
+  relatedSlugs: ['new-application', 'application-detail', 'pipeline-kanban'],
+});
+
+registerHelp({
+  slug: 'pipeline-kanban',
+  title: 'Pipeline (Kanban Board)',
+  summary:
+    'A drag-and-drop board showing all your applications organized by stage — Bookmarked, Applied, Interviewing, Offer, and Accepted. Drag cards between columns to update their status.',
+  steps: [
+    'Click the "Pipeline" tab on the Applications page to switch to Kanban view.',
+    'Drag application cards between columns to move them through stages.',
+    'If a transition seems illogical (e.g. Accepted → Bookmarked), you\'ll see a warning.',
+  ],
+  tips: [
+    'You can also change an application\'s stage from its detail page using the stage dropdown.',
+    'The "View all stages →" link on the detail page takes you directly to the Pipeline view.',
+  ],
+  route: '/',
+  keywords: ['pipeline', 'kanban', 'board', 'stages', 'drag', 'drop', 'bookmarked', 'applied', 'interviewing', 'offer', 'accepted'],
+  relatedSlugs: ['applications-list'],
 });
 
 registerHelp({

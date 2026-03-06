@@ -251,6 +251,15 @@ const ApplicationDetail = () => {
                 ))}
               </SelectContent>
             </Select>
+            <Button
+              data-tutorial="pipeline-link"
+              variant="link"
+              size="sm"
+              className="text-xs text-muted-foreground px-1 h-8"
+              onClick={() => navigate("/?view=pipeline")}
+            >
+              View all stages →
+            </Button>
             <Sheet>
               <SheetTrigger asChild>
                 <Button variant="outline" size="sm">

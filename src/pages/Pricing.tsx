@@ -79,29 +79,47 @@ export default function Pricing() {
         </div>
       )}
 
+      {currentTier !== "free" && (
+        <div className="mb-8 text-center">
+          <div className="inline-flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/10 px-4 py-2 text-sm text-primary">
+            <Sparkles className="h-4 w-4" />
+            <span>
+              Congrats! You're on the <strong>{TIER_CONFIGS[currentTier].label}</strong> plan 🎉
+            </span>
+          </div>
+        </div>
+      )}
+
       <div className="grid md:grid-cols-3 gap-6">
         {tiers.map((config) => {
           const isCurrent = config.tier === currentTier;
           const isDowngrade =
             tiers.indexOf(config) <
             tiers.findIndex((t) => t.tier === currentTier);
+          const shouldHighlight = isCurrent || (currentTier === "free" && config.highlighted);
 
           return (
             <Card
               key={config.tier}
               className={cn(
                 "relative flex flex-col",
-                config.highlighted &&
+                shouldHighlight &&
                   "border-primary shadow-md ring-1 ring-primary/20"
               )}
             >
-              {config.highlighted && (
+              {isCurrent && currentTier !== "free" ? (
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                  <Badge className="bg-primary text-primary-foreground shadow-sm">
+                    Your Plan
+                  </Badge>
+                </div>
+              ) : config.highlighted && currentTier === "free" ? (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                   <Badge className="bg-primary text-primary-foreground shadow-sm">
                     Most Popular
                   </Badge>
                 </div>
-              )}
+              ) : null}
               <CardHeader className="pb-4">
                 <div className="flex items-center gap-2 text-primary mb-1">
                   {TIER_ICONS[config.tier]}

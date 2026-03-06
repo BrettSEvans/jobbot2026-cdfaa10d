@@ -27,6 +27,8 @@ export const TIER_CONFIGS: Record<SubscriptionTier, TierConfig> = {
       appsPerMonth: 2,
       allowedAssets: ["resume", "cover_letter"],
       canRefine: false,
+      generationsPerHour: 5,
+      generationsPerDay: 15,
     },
     features: [
       "2 applications per month",
@@ -53,6 +55,8 @@ export const TIER_CONFIGS: Record<SubscriptionTier, TierConfig> = {
         "architecture_diagram",
       ],
       canRefine: true,
+      generationsPerHour: 20,
+      generationsPerDay: 100,
     },
     features: [
       "15 applications per month",

@@ -27,6 +27,7 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
+  AlertCircle,
   Sparkles,
   Zap,
   FileCheck,

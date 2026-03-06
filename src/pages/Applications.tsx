@@ -109,9 +109,9 @@ const Applications = () => {
       .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())[0] || null;
   }, [applications]);
 
-  // 14-day ghosted prompt: find oldest applied app sitting > 14 days and not dismissed
+  // 10-day ghosted prompt for applied apps
   const staleAppliedApp = useMemo(() => {
-    const FOURTEEN_DAYS = 14 * 24 * 60 * 60 * 1000;
+    const TEN_DAYS = 10 * 24 * 60 * 60 * 1000;
     const now = Date.now();
     const dismissed: string[] = JSON.parse(localStorage.getItem('dismissed_ghost_prompts') || '[]');
     return applications
@@ -120,7 +120,23 @@ const Applications = () => {
         if (stage !== 'applied') return false;
         if (dismissed.includes(app.id)) return false;
         const changedAt = (app as any).stage_changed_at || app.created_at;
-        return now - new Date(changedAt).getTime() > FOURTEEN_DAYS;
+        return now - new Date(changedAt).getTime() > TEN_DAYS;
+      })
+      .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())[0] || null;
+  }, [applications]);
+
+  // 7-day ghosted prompt for interviewing apps
+  const staleInterviewingApp = useMemo(() => {
+    const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
+    const now = Date.now();
+    const dismissed: string[] = JSON.parse(localStorage.getItem('dismissed_ghost_interview_prompts') || '[]');
+    return applications
+      .filter((app) => {
+        const stage = (app as any).pipeline_stage || 'bookmarked';
+        if (stage !== 'interviewing') return false;
+        if (dismissed.includes(app.id)) return false;
+        const changedAt = (app as any).stage_changed_at || app.created_at;
+        return now - new Date(changedAt).getTime() > SEVEN_DAYS;
       })
       .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())[0] || null;
   }, [applications]);
@@ -139,6 +155,13 @@ const Applications = () => {
     setApplications((prev) => [...prev]);
   }, []);
 
+  const dismissInterviewGhostPrompt = useCallback((appId: string) => {
+    const dismissed: string[] = JSON.parse(localStorage.getItem('dismissed_ghost_interview_prompts') || '[]');
+    dismissed.push(appId);
+    localStorage.setItem('dismissed_ghost_interview_prompts', JSON.stringify(dismissed));
+    setApplications((prev) => [...prev]);
+  }, []);
+
   const markAsGhosted = useCallback(async (appId: string) => {
     try {
       await updatePipelineStage(appId, 'applied', 'ghosted');
@@ -149,6 +172,17 @@ const Applications = () => {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     }
   }, [dismissGhostPrompt, toast]);
+
+  const markInterviewAsGhosted = useCallback(async (appId: string) => {
+    try {
+      await updatePipelineStage(appId, 'interviewing', 'ghosted');
+      dismissInterviewGhostPrompt(appId);
+      loadApplications();
+      toast({ title: "Marked as ghosted", description: "Application moved to Ghosted stage." });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  }, [dismissInterviewGhostPrompt, toast]);
 
   // Check if any apps are missing icons
   const needsBackfill = useMemo(
@@ -747,13 +781,27 @@ const Applications = () => {
         )}
       </div>
 
-      {/* Ghost prompt dialog — PREVIEW MODE: forced open for approval */}
-      <GhostPromptDialog
-        open={true}
-        companyName="Acme Corp"
-        onMarkGhosted={() => {}}
-        onDismiss={() => {}}
-      />
+      {/* Ghost prompt — applied (10-day trigger, one-time per job) */}
+      {staleAppliedApp && (
+        <GhostPromptDialog
+          open
+          stage="applied"
+          companyName={staleAppliedApp.company_name || "this company"}
+          onMarkGhosted={() => markAsGhosted(staleAppliedApp.id)}
+          onDismiss={() => dismissGhostPrompt(staleAppliedApp.id)}
+        />
+      )}
+
+      {/* Ghost prompt — interviewing (7-day trigger, one-time per job, only if no applied prompt) */}
+      {!staleAppliedApp && staleInterviewingApp && (
+        <GhostPromptDialog
+          open
+          stage="interviewing"
+          companyName={staleInterviewingApp.company_name || "this company"}
+          onMarkGhosted={() => markInterviewAsGhosted(staleInterviewingApp.id)}
+          onDismiss={() => dismissInterviewGhostPrompt(staleInterviewingApp.id)}
+        />
+      )}
     </div>
   );
 };

@@ -165,12 +165,12 @@ export default function HtmlAssetTab({
   return (
     <div className="space-y-4">
       {assetType === "resume" && missingResumeText && (
-        <Alert variant="destructive" className="border-yellow-500/50 bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 [&>svg]:text-yellow-600 dark:[&>svg]:text-yellow-400">
+        <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
           <AlertTitle>No baseline resume found</AlertTitle>
           <AlertDescription>
             Your profile doesn't have resume text yet. Without it, the AI will fabricate a resume instead of tailoring yours.{" "}
-            <Link to="/profile" className="underline font-medium hover:text-yellow-800 dark:hover:text-yellow-300">
+            <Link to="/profile" className="underline font-medium">
               Upload a PDF on your Profile page
             </Link>{" "}
             to get accurate, personalized results.

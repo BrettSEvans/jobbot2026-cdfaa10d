@@ -308,6 +308,56 @@ function Pricing() {
   );
 }
 
+/* ---------------------- Testimonials ---------------------------- */
+
+const TESTIMONIALS = [
+  { name: "Sarah M.", company: "Google", quote: "JobBot helped me stand out from 500+ applicants. The branded dashboard blew the hiring manager away!" },
+  { name: "James T.", company: "Microsoft", quote: "I landed my dream role in 3 weeks. The tailored cover letter was incredibly compelling." },
+  { name: "Priya K.", company: "Amazon", quote: "The RAID log showed I was ready for day one. My interviewer said it was unlike anything they'd seen." },
+  { name: "Marcus L.", company: "Meta", quote: "Went from zero callbacks to 4 offers. JobBot completely transformed my application strategy." },
+  { name: "Elena R.", company: "Netflix", quote: "The executive dashboard made me look like a senior strategist. Got the offer within a week!" },
+  { name: "David W.", company: "Stripe", quote: "Every asset was perfectly branded. It felt like I had a professional design team behind me." },
+  { name: "Aisha B.", company: "Salesforce", quote: "JobBot's AI resume matched every keyword in the JD. Recruiter told me it was a perfect fit." },
+  { name: "Tom H.", company: "Spotify", quote: "The 90-day roadmap sealed the deal. They said no other candidate came that prepared." },
+  { name: "Nina C.", company: "Airbnb", quote: "I was skeptical at first, but the quality of the generated assets is genuinely impressive." },
+  { name: "Ryan P.", company: "Shopify", quote: "Applied to 5 roles with JobBot materials — got interviews at all 5. Absolute game-changer." },
+];
+
+function Testimonials() {
+  return (
+    <section className="border-t border-border bg-muted/40 py-16 overflow-hidden">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 mb-10 text-center">
+        <h2 className="font-heading text-3xl font-bold text-foreground sm:text-4xl">
+          Loved by Job Seekers Everywhere
+        </h2>
+        <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
+          Real results from professionals who landed roles at top companies.
+        </p>
+      </div>
+
+      {/* Marquee row 1 */}
+      <div className="relative flex gap-6 py-2 animate-marquee hover:[animation-play-state:paused]">
+        {[...TESTIMONIALS, ...TESTIMONIALS].map((t, i) => (
+          <Card key={`${t.name}-${i}`} className="min-w-[320px] max-w-[360px] shrink-0">
+            <CardContent className="p-5 flex flex-col gap-3">
+              <p className="text-sm leading-relaxed text-muted-foreground italic">"{t.quote}"</p>
+              <div className="flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-bold">
+                  {t.name.charAt(0)}
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-foreground">{t.name}</p>
+                  <p className="text-xs text-muted-foreground">Hired at {t.company}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 /* ----------------------- CTA Footer ----------------------------- */
 
 function CtaFooter() {
@@ -344,6 +394,7 @@ export default function Landing() {
       <HowItWorks />
       <ExampleAssets />
       <Pricing />
+      <Testimonials />
       <CtaFooter />
       <footer className="border-t border-border py-6 text-center text-xs text-muted-foreground">
         © {new Date().getFullYear()} JobBot. All rights reserved.

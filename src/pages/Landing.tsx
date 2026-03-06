@@ -1,4 +1,8 @@
 import { useNavigate } from "react-router-dom";
+import mockupResume from "@/assets/mockup-resume.jpg";
+import mockupCoverLetter from "@/assets/mockup-cover-letter.jpg";
+import mockupDashboard from "@/assets/mockup-dashboard.jpg";
+import mockupRaidLog from "@/assets/mockup-raid-log.jpg";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";

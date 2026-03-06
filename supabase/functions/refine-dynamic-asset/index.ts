@@ -48,7 +48,7 @@ serve(async (req) => {
   }
 
   try {
-    const { assetName, currentHtml, userMessage, jobDescription, companyName, jobTitle, branding, styleContext } = await req.json();
+    const { assetName, currentHtml, userMessage, jobDescription, companyName, jobTitle, branding, styleContext, layoutStyle } = await req.json();
 
     const rateLimitResponse = await checkRateLimit(req, `dynamic-refine:${assetName}`, 'refine-dynamic-asset');
     if (rateLimitResponse) return rateLimitResponse;
@@ -68,6 +68,12 @@ serve(async (req) => {
       );
     }
 
+    // Build layout preservation instructions
+    let layoutInstructions = '';
+    if (layoutStyle?.name) {
+      layoutInstructions = `\nIMPORTANT - This document uses the "${layoutStyle.name}" layout style. When making refinements, preserve the overall layout structure (${layoutStyle.name}) while applying the user's requested changes. Do not flatten it into a generic header-body-table layout.`;
+    }
+
     const systemPrompt = `You are an expert document editor and professional writer. You have been given an existing HTML document (a "${assetName}") and a user's refinement request. Your task is to modify the document according to the user's instructions while maintaining professional quality and formatting.
 
 Rules:
@@ -75,6 +81,7 @@ Rules:
 2. Preserve the existing styling and branding unless the user specifically asks to change it.
 3. Keep the document to approximately 1 printed page (400-500 words).
 4. Maintain professional formatting appropriate for the document type.
+${layoutInstructions}
 ${styleContext ? `\nUser style preferences:\n${styleContext}` : ''}`;
 
     const userPrompt = `Here is the current "${assetName}" document:

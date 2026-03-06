@@ -26,6 +26,7 @@ import { extractStyleSignalsFromMessage } from "@/lib/api/stylePreferences";
 import { cleanHtml } from "@/lib/cleanHtml";
 import { downloadHtmlAsPdf, buildPdfFilename } from "@/lib/htmlToPdf";
 import { getActiveResumeText } from "@/lib/api/profile";
+import { getLayoutStyleForAsset } from "@/lib/assetLayoutStyles";
 import {
   Tooltip,
   TooltipContent,
@@ -35,6 +36,7 @@ import {
 
 interface DynamicAssetTabProps {
   asset: GeneratedAsset;
+  allAssetNames: string[];
   jobDescription: string;
   companyName?: string;
   jobTitle?: string;
@@ -45,6 +47,7 @@ interface DynamicAssetTabProps {
 
 export default function DynamicAssetTab({
   asset,
+  allAssetNames,
   jobDescription,
   companyName,
   jobTitle,
@@ -105,6 +108,7 @@ export default function DynamicAssetTab({
       let resumeText = "";
       try { resumeText = await getActiveResumeText(); } catch { }
 
+      const layoutStyle = getLayoutStyleForAsset(asset.asset_name, allAssetNames);
       let accumulated = "";
       await streamDynamicAssetGeneration({
         assetName: asset.asset_name,
@@ -114,6 +118,7 @@ export default function DynamicAssetTab({
         companyName,
         jobTitle,
         branding,
+        layoutStyle,
         onDelta: (text) => { accumulated += text; },
         onDone: () => {},
       });
@@ -155,6 +160,7 @@ export default function DynamicAssetTab({
 
     setRefining(true);
     try {
+      const layoutStyle = getLayoutStyleForAsset(asset.asset_name, allAssetNames);
       let accumulated = "";
       await streamRefineDynamicAsset({
         assetName: asset.asset_name,
@@ -164,6 +170,7 @@ export default function DynamicAssetTab({
         companyName,
         jobTitle,
         branding,
+        layoutStyle,
         onDelta: (text) => { accumulated += text; },
         onDone: () => {},
       });

@@ -8,8 +8,8 @@ const corsHeaders = {
 
 const TIER_LIMITS: Record<string, { perHour: number; perDay: number }> = {
   free: { perHour: 5, perDay: 15 },
-  pro: { perHour: 20, perDay: 100 },
-  premium: { perHour: 50, perDay: 250 },
+  pro: { perHour: -1, perDay: 100 },
+  premium: { perHour: -1, perDay: 250 },
 };
 const DEFAULT_LIMITS = TIER_LIMITS.free;
 async function checkRateLimit(req: Request, assetType: string, edgeFunction: string): Promise<Response | null> {
@@ -33,7 +33,7 @@ async function checkRateLimit(req: Request, assetType: string, edgeFunction: str
     const now = Date.now();
     const { count: hourCount } = await svc.from('generation_usage').select('*', { count: 'exact', head: true }).eq('user_id', userId).gte('created_at', new Date(now - 3600_000).toISOString());
     const { count: dayCount } = await svc.from('generation_usage').select('*', { count: 'exact', head: true }).eq('user_id', userId).gte('created_at', new Date(now - 86400_000).toISOString());
-    if ((hourCount ?? 0) >= limits.perHour || (dayCount ?? 0) >= limits.perDay) {
+    if ((limits.perHour !== -1 && (hourCount ?? 0) >= limits.perHour) || (limits.perDay !== -1 && (dayCount ?? 0) >= limits.perDay)) {
       const upgradeHint = tier !== 'premium' ? ` Upgrade to ${tier === 'free' ? 'Pro' : 'Premium'} for higher limits.` : '';
       return new Response(JSON.stringify({ error: `Rate limit exceeded.${upgradeHint}`, retry_after_seconds: 60, tier }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }

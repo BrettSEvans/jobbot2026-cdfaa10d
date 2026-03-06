@@ -746,6 +746,14 @@ const Applications = () => {
           </Tabs>
         )}
       </div>
+
+      {/* Ghost prompt dialog */}
+      <GhostPromptDialog
+        open={!!staleAppliedApp}
+        companyName={staleAppliedApp?.company_name || "this company"}
+        onMarkGhosted={() => staleAppliedApp && markAsGhosted(staleAppliedApp.id)}
+        onDismiss={() => staleAppliedApp && dismissGhostPrompt(staleAppliedApp.id)}
+      />
     </div>
   );
 };

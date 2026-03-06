@@ -2,6 +2,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { LogOut, Moon, Sun, Zap, ArrowRightLeft } from "lucide-react";
+import { BRAND } from "@/lib/branding";
 import { useTheme } from "@/hooks/useTheme";
 import { useNavigationGuard } from "@/hooks/useNavigationGuard";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
@@ -73,7 +74,7 @@ onClick={() => guardedNavigate(() => navigate("/"))}
               className="flex items-center gap-1.5 font-heading text-base font-bold tracking-tight text-primary hover:opacity-80 transition-opacity"
             >
               <Zap className="h-5 w-5 fill-primary text-primary" />
-              JobBot
+              {BRAND.name}
             </button>
             <nav className="flex items-center gap-1">
               {links.map((l) => (

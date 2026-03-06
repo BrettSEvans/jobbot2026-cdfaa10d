@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { BRAND } from "@/lib/branding";
 
 /** Shape shared by both real profiles and test-user personas */
 export interface PersonaProfile {
@@ -46,7 +47,7 @@ export function getActivePersonaSnapshot(): PersonaProfile | null {
 }
 
 // ── Session persistence helpers ──
-const SESSION_KEY = "jobbot_active_persona";
+const SESSION_KEY = `${BRAND.storagePrefix}_active_persona`;
 
 function persistPersona(persona: PersonaProfile | null) {
   if (persona?.isTestUser) {

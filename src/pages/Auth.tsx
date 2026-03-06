@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Zap, BarChart3, FileCheck, Sparkles, Shield, Clock } from "lucide-react";
+import { BRAND } from "@/lib/branding";
 
 type Mode = "login" | "signup" | "forgot";
 
@@ -102,7 +103,7 @@ export default function Auth() {
         <div className="relative z-10">
           <div className="flex items-center gap-2 mb-12">
             <Zap className="h-7 w-7 fill-primary text-primary" />
-            <span className="text-2xl font-heading font-bold tracking-tight text-primary">JobBot</span>
+            <span className="text-2xl font-heading font-bold tracking-tight text-primary">{BRAND.name}</span>
           </div>
 
           <h1 className="text-4xl font-heading font-bold tracking-tight leading-tight mb-4 text-foreground">
@@ -143,7 +144,7 @@ export default function Auth() {
           {/* Mobile-only branding */}
           <div className="flex items-center justify-center gap-2 lg:hidden mb-4">
             <Zap className="h-6 w-6 fill-primary text-primary" />
-            <span className="text-xl font-heading font-bold tracking-tight text-primary">JobBot</span>
+            <span className="text-xl font-heading font-bold tracking-tight text-primary">{BRAND.name}</span>
           </div>
 
           <Card className="border-0 shadow-none lg:border lg:shadow-sm">

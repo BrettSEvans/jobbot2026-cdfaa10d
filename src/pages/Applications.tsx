@@ -61,6 +61,7 @@ import ImpersonationNotice from "@/components/ImpersonationNotice";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { useTutorial } from "@/hooks/useTutorial";
 import { BookOpen } from "lucide-react";
+import { BRAND } from "@/lib/branding";
 import { ImageIcon } from "lucide-react";
 type SortKey = "company_name" | "job_title" | "status" | "created_at" | "updated_at";
 type SortDir = "asc" | "desc";
@@ -253,7 +254,7 @@ const Applications = () => {
         <ImpersonationNotice />
         {showTutorial && (
           <div className="flex items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3">
-            <p className="text-sm text-foreground"><strong>New here?</strong> Take a quick tour to learn how JobBot works.</p>
+            <p className="text-sm text-foreground"><strong>New here?</strong> Take a quick tour to learn how {BRAND.name} works.</p>
             <Button size="sm" variant="outline" onClick={startTutorial} className="shrink-0">
               <BookOpen className="mr-2 h-4 w-4" /> Take the Tour
             </Button>
@@ -322,7 +323,7 @@ const Applications = () => {
                 <Sparkles className="h-10 w-10" />
               </div>
               <div>
-                <h3 className="text-lg font-heading font-semibold mb-2">Welcome to JobBot</h3>
+                <h3 className="text-lg font-heading font-semibold mb-2">Welcome to {BRAND.name}</h3>
                 <p className="text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
                   Paste a job URL and we'll generate a <strong>branded dashboard</strong>, <strong>tailored cover letter</strong>, and <strong>6 executive reports</strong> — all customized to the company's branding.
                 </p>

@@ -31,7 +31,7 @@ export default function AppHeader({ onSignOut }: AppHeaderProps) {
   const links = [
     { to: "/", label: "Applications", match: (p: string) => p === "/" || p === "/applications" },
     { to: "/templates", label: "Templates", match: (p: string) => p === "/templates" },
-    { to: "/pricing", label: "Pricing", match: (p: string) => p === "/pricing" },
+    { to: "/pricing", label: "Membership", match: (p: string) => p === "/pricing" },
     { to: "/profile", label: "Profile", match: (p: string) => p === "/profile" },
   ];
 

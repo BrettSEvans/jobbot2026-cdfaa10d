@@ -101,7 +101,7 @@ export default function Pricing() {
     <div className="max-w-5xl mx-auto px-4 py-10">
       <div className="text-center mb-10">
         <h1 className="text-3xl font-heading font-bold text-foreground mb-2">
-          Choose Your Plan
+          Membership
         </h1>
         <p className="text-muted-foreground max-w-lg mx-auto">
           Supercharge your job search with AI-generated assets tailored to every

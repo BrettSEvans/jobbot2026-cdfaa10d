@@ -9,6 +9,8 @@ export interface TierConfig {
     appsPerMonth: number; // -1 = unlimited
     allowedAssets: string[]; // asset type slugs allowed
     canRefine: boolean;
+    generationsPerHour: number;
+    generationsPerDay: number;
   };
   features: string[];
   cta: string;

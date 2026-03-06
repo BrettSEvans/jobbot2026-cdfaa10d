@@ -155,6 +155,7 @@ export async function streamDynamicAssetGeneration({
   companyName,
   jobTitle,
   branding,
+  layoutStyle,
   onDelta,
   onDone,
 }: {
@@ -165,6 +166,7 @@ export async function streamDynamicAssetGeneration({
   companyName?: string;
   jobTitle?: string;
   branding?: any;
+  layoutStyle?: { name: string; cssGuidance: string; structureGuidance: string };
   onDelta: (text: string) => void;
   onDone: () => void;
 }) {
@@ -173,7 +175,7 @@ export async function streamDynamicAssetGeneration({
 
   await streamFromEdgeFunction({
     functionName: 'generate-dynamic-asset',
-    body: { assetName, briefDescription, jobDescription, resumeText, companyName, jobTitle, branding, styleContext },
+    body: { assetName, briefDescription, jobDescription, resumeText, companyName, jobTitle, branding, styleContext, layoutStyle },
     onDelta,
     onDone,
   });
@@ -188,6 +190,7 @@ export async function streamRefineDynamicAsset({
   companyName,
   jobTitle,
   branding,
+  layoutStyle,
   onDelta,
   onDone,
 }: {
@@ -198,6 +201,7 @@ export async function streamRefineDynamicAsset({
   companyName?: string;
   jobTitle?: string;
   branding?: any;
+  layoutStyle?: { name: string; cssGuidance: string; structureGuidance: string };
   onDelta: (text: string) => void;
   onDone: () => void;
 }) {
@@ -206,7 +210,7 @@ export async function streamRefineDynamicAsset({
 
   await streamFromEdgeFunction({
     functionName: 'refine-dynamic-asset',
-    body: { assetName, currentHtml, userMessage, jobDescription, companyName, jobTitle, branding, styleContext },
+    body: { assetName, currentHtml, userMessage, jobDescription, companyName, jobTitle, branding, styleContext, layoutStyle },
     onDelta,
     onDone,
   });

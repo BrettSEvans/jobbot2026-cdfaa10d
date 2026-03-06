@@ -162,7 +162,7 @@ export default function CoverLetterTab({ appId, state }: CoverLetterTabProps) {
                 applicantName,
               )}
               className="w-full border rounded bg-white"
-              style={{ aspectRatio: "8.5 / 11", maxHeight: "70vh" }}
+              style={{ height: "70vh" }}
               title="Cover letter preview"
             />
           ) : (

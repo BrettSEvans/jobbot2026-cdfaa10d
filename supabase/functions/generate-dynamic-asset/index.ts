@@ -48,7 +48,7 @@ serve(async (req) => {
   }
 
   try {
-    const { assetName, briefDescription, jobDescription, resumeText, companyName, jobTitle, branding, styleContext } = await req.json();
+    const { assetName, briefDescription, jobDescription, resumeText, companyName, jobTitle, branding, styleContext, layoutStyle } = await req.json();
 
     const rateLimitResponse = await checkRateLimit(req, `dynamic-asset:${assetName}`, 'generate-dynamic-asset');
     if (rateLimitResponse) return rateLimitResponse;
@@ -76,6 +76,17 @@ serve(async (req) => {
     const primaryFont = brandFonts.primary || brandFonts.heading || (branding?.fonts?.[0]?.family) || '';
     const bodyFont = brandFonts.body || brandFonts.primary || (branding?.fonts?.[1]?.family || branding?.fonts?.[0]?.family) || '';
 
+    // Build layout style instructions if provided
+    let layoutInstructions = '';
+    if (layoutStyle?.name) {
+      layoutInstructions = `
+LAYOUT STYLE: "${layoutStyle.name}"
+${layoutStyle.cssGuidance || ''}
+${layoutStyle.structureGuidance || ''}
+
+CRITICAL: You MUST follow this specific layout style exactly. Do NOT default to a simple header-body-table layout. The layout style defines the visual structure — follow it precisely while applying the brand colors and fonts above.`;
+    }
+
     const systemPrompt = `You are an expert ghostwriter and a senior professional in the user's target industry. Your task is to generate a highly professional, realistic 1-page document based on the specific asset type requested.
 
 You will be provided with the user's Resume, the target Job Description, the target Company, and the specific "Asset Name" you need to generate. 
@@ -99,6 +110,7 @@ STYLE RULES:
 - Clean, professional layout with proper spacing
 - Include a header with the document title and company name
 - Print-friendly single-page design
+${layoutInstructions}
 ${styleContext ? `\nUser style preferences:\n${styleContext}` : ''}`;
 
     const userPrompt = `Generate a "${assetName}" document.

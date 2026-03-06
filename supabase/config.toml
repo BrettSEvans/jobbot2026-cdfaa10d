@@ -74,3 +74,6 @@ verify_jwt = false
 
 [functions.import-job-external]
 verify_jwt = false
+
+[functions.extract-resume-text]
+verify_jwt = false

@@ -393,7 +393,7 @@ export default function Landing() {
       <Features />
       <HowItWorks />
       <ExampleAssets />
-      <Pricing />
+      <Testimonials />
       <CtaFooter />
       <footer className="border-t border-border py-6 text-center text-xs text-muted-foreground">
         © {new Date().getFullYear()} JobBot. All rights reserved.

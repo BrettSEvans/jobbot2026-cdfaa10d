@@ -41,6 +41,24 @@ import {
 } from "@/components/ui/dialog";
 import ImpersonationNotice from "@/components/ImpersonationNotice";
 import { useSubscription } from "@/hooks/useSubscription";
+import AtsScoreCard from "@/components/AtsScoreCard";
+import { scoreAtsMatch, isCacheValid, type AtsScoreResult } from "@/lib/api/atsScore";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  PIPELINE_STAGES,
+  STAGE_LABELS,
+  STAGE_COLORS,
+  isIllogicalTransition,
+  updatePipelineStage,
+  type PipelineStage,
+} from "@/lib/pipelineStages";
+import { downloadHtmlAsDocx, buildDocxFilename } from "@/lib/docxExport";
 
 type ActiveView = "dashboard" | "cover-letter" | "resume" | string;
 
@@ -56,6 +74,44 @@ const ApplicationDetail = () => {
   const [hasProposals, setHasProposals] = useState(false);
   const [dynamicLoading, setDynamicLoading] = useState(true);
   const [showProposalDialog, setShowProposalDialog] = useState(false);
+
+  // ATS Score state
+  const [atsScore, setAtsScore] = useState<AtsScoreResult | null>(null);
+  const [atsLoading, setAtsLoading] = useState(false);
+
+  // Pipeline stage
+  const currentStage = ((state.app as any)?.pipeline_stage || 'applied') as PipelineStage;
+
+  // Load ATS score from app data
+  useEffect(() => {
+    if (state.app && (state.app as any).ats_score) {
+      const score = (state.app as any).ats_score;
+      if (score.score != null) setAtsScore(score);
+    }
+  }, [state.app]);
+
+  const handleAtsRescan = async () => {
+    if (!id || !state.resumeHtml || !state.jobDescription) return;
+    setAtsLoading(true);
+    try {
+      const result = await scoreAtsMatch(id, state.jobDescription, state.resumeHtml);
+      setAtsScore(result);
+    } catch (err: any) {
+      console.warn("ATS scoring failed:", err);
+    } finally {
+      setAtsLoading(false);
+    }
+  };
+
+  const handleStageChange = async (newStage: string) => {
+    if (!id) return;
+    try {
+      await updatePipelineStage(id, currentStage, newStage as PipelineStage);
+      state.reload();
+    } catch (err: any) {
+      console.warn("Stage update failed:", err);
+    }
+  };
 
   // Load dynamic assets on mount
   useEffect(() => {
@@ -183,6 +239,19 @@ const ApplicationDetail = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {/* Pipeline stage dropdown */}
+            <Select value={currentStage} onValueChange={handleStageChange}>
+              <SelectTrigger className="w-[140px] h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {PIPELINE_STAGES.map((stage) => (
+                  <SelectItem key={stage} value={stage}>
+                    {STAGE_LABELS[stage]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Sheet>
               <SheetTrigger asChild>
                 <Button variant="outline" size="sm">
@@ -207,6 +276,16 @@ const ApplicationDetail = () => {
             <Badge variant={state.app.status === "complete" ? "default" : "secondary"}>{state.app.status}</Badge>
           </div>
         </div>
+
+        {/* ATS Score Card */}
+        {(state.resumeHtml || atsScore) && (
+          <AtsScoreCard
+            score={atsScore}
+            loading={atsLoading}
+            onRescan={handleAtsRescan}
+            disabled={!state.resumeHtml || !state.jobDescription}
+          />
+        )}
 
         {/* Primary Tab Triggers */}
         <div data-tutorial="asset-tabs" className="flex items-center gap-1 border-b border-border pb-0">

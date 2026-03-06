@@ -409,6 +409,7 @@ const ApplicationDetail = () => {
               <DynamicAssetTab
                 key={activeDynamicAsset.id}
                 asset={activeDynamicAsset}
+                allAssetNames={dynamicAssets.map(a => a.asset_name)}
                 jobDescription={state.jobDescription}
                 companyName={state.companyName}
                 jobTitle={state.jobTitle}

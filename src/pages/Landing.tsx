@@ -329,6 +329,28 @@ const TESTIMONIALS = [
   { name: "Andre W.", company: "Home Depot", quote: "I'm not tech-savvy at all, but JobBot made my operations manager application look world-class." },
 ];
 
+function TestimonialCard({ t }: { t: typeof TESTIMONIALS[number] }) {
+  return (
+    <Card className="min-w-[320px] max-w-[360px] shrink-0">
+      <CardContent className="p-5 flex flex-col gap-3">
+        <p className="text-sm leading-relaxed text-muted-foreground italic">"{t.quote}"</p>
+        <div className="flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-bold">
+            {t.name.charAt(0)}
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-foreground">{t.name}</p>
+            <p className="text-xs text-muted-foreground">Hired at {t.company}</p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+const ROW1 = TESTIMONIALS.slice(0, 8);
+const ROW2 = TESTIMONIALS.slice(8);
+
 function Testimonials() {
   return (
     <section className="border-t border-border bg-muted/40 py-16 overflow-hidden">
@@ -341,23 +363,17 @@ function Testimonials() {
         </p>
       </div>
 
-      {/* Marquee row 1 */}
+      {/* Row 1 — scrolls left */}
       <div className="relative flex gap-6 py-2 animate-marquee hover:[animation-play-state:paused]">
-        {[...TESTIMONIALS, ...TESTIMONIALS].map((t, i) => (
-          <Card key={`${t.name}-${i}`} className="min-w-[320px] max-w-[360px] shrink-0">
-            <CardContent className="p-5 flex flex-col gap-3">
-              <p className="text-sm leading-relaxed text-muted-foreground italic">"{t.quote}"</p>
-              <div className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-bold">
-                  {t.name.charAt(0)}
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-foreground">{t.name}</p>
-                  <p className="text-xs text-muted-foreground">Hired at {t.company}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        {[...ROW1, ...ROW1].map((t, i) => (
+          <TestimonialCard key={`r1-${i}`} t={t} />
+        ))}
+      </div>
+
+      {/* Row 2 — scrolls right */}
+      <div className="relative flex gap-6 py-2 mt-4 animate-marquee-reverse hover:[animation-play-state:paused]">
+        {[...ROW2, ...ROW2].map((t, i) => (
+          <TestimonialCard key={`r2-${i}`} t={t} />
         ))}
       </div>
     </section>

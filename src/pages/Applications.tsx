@@ -747,12 +747,12 @@ const Applications = () => {
         )}
       </div>
 
-      {/* Ghost prompt dialog */}
+      {/* Ghost prompt dialog — PREVIEW MODE: forced open for approval */}
       <GhostPromptDialog
-        open={!!staleAppliedApp}
-        companyName={staleAppliedApp?.company_name || "this company"}
-        onMarkGhosted={() => staleAppliedApp && markAsGhosted(staleAppliedApp.id)}
-        onDismiss={() => staleAppliedApp && dismissGhostPrompt(staleAppliedApp.id)}
+        open={true}
+        companyName="Acme Corp"
+        onMarkGhosted={() => {}}
+        onDismiss={() => {}}
       />
     </div>
   );

@@ -145,7 +145,7 @@ export default function HtmlAssetTab({
     }
   };
 
-  const showDocx = (assetType === "resume" || assetType === "cover_letter") && tier !== "free";
+  const showDocx = (assetType === "resume" || (assetType as string) === "cover_letter") && tier !== "free";
 
   return (
     <div className="space-y-4">

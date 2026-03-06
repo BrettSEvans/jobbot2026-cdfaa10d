@@ -311,16 +311,22 @@ function Pricing() {
 /* ---------------------- Testimonials ---------------------------- */
 
 const TESTIMONIALS = [
-  { name: "Sarah M.", company: "Google", quote: "JobBot helped me stand out from 500+ applicants. The branded dashboard blew the hiring manager away!" },
-  { name: "James T.", company: "Microsoft", quote: "I landed my dream role in 3 weeks. The tailored cover letter was incredibly compelling." },
-  { name: "Priya K.", company: "Amazon", quote: "The RAID log showed I was ready for day one. My interviewer said it was unlike anything they'd seen." },
-  { name: "Marcus L.", company: "Meta", quote: "Went from zero callbacks to 4 offers. JobBot completely transformed my application strategy." },
-  { name: "Elena R.", company: "Netflix", quote: "The executive dashboard made me look like a senior strategist. Got the offer within a week!" },
-  { name: "David W.", company: "Stripe", quote: "Every asset was perfectly branded. It felt like I had a professional design team behind me." },
-  { name: "Aisha B.", company: "Salesforce", quote: "JobBot's AI resume matched every keyword in the JD. Recruiter told me it was a perfect fit." },
-  { name: "Tom H.", company: "Spotify", quote: "The 90-day roadmap sealed the deal. They said no other candidate came that prepared." },
-  { name: "Nina C.", company: "Airbnb", quote: "I was skeptical at first, but the quality of the generated assets is genuinely impressive." },
-  { name: "Ryan P.", company: "Shopify", quote: "Applied to 5 roles with JobBot materials — got interviews at all 5. Absolute game-changer." },
+  { name: "Sarah M.", company: "Deloitte", quote: "JobBot helped me stand out from 500+ applicants. The branded dashboard blew the hiring manager away!" },
+  { name: "James T.", company: "Cleveland Clinic", quote: "I landed my dream healthcare admin role in 3 weeks. The tailored cover letter was incredibly compelling." },
+  { name: "Priya K.", company: "JPMorgan Chase", quote: "The RAID log showed I was ready for day one. My interviewer said it was unlike anything they'd seen." },
+  { name: "Marcus L.", company: "Target", quote: "Went from zero callbacks to 4 offers. JobBot completely transformed my application strategy." },
+  { name: "Elena R.", company: "Pfizer", quote: "The executive dashboard made me look like a senior strategist. Got the offer within a week!" },
+  { name: "David W.", company: "Accenture", quote: "Every asset was perfectly branded. It felt like I had a professional design team behind me." },
+  { name: "Aisha B.", company: "Southwest Airlines", quote: "JobBot's AI resume matched every keyword in the JD. Recruiter told me it was a perfect fit." },
+  { name: "Tom H.", company: "KPMG", quote: "The 90-day roadmap sealed the deal. They said no other candidate came that prepared." },
+  { name: "Nina C.", company: "Whole Foods", quote: "I was skeptical at first, but the quality of the generated assets is genuinely impressive." },
+  { name: "Ryan P.", company: "State Farm", quote: "Applied to 5 roles with JobBot materials — got interviews at all 5. Absolute game-changer." },
+  { name: "Lisa G.", company: "HCA Healthcare", quote: "As a nurse manager, the cover letter nailed my clinical leadership experience perfectly." },
+  { name: "Carlos D.", company: "FedEx", quote: "The architecture diagram helped me land a logistics tech role I didn't think I was qualified for." },
+  { name: "Monica J.", company: "Hilton", quote: "Switched from retail to hospitality management. JobBot made my transferable skills shine." },
+  { name: "Kevin R.", company: "Ernst & Young", quote: "The executive report positioned me as a thought leader. Got a senior consultant offer on the first try." },
+  { name: "Diane F.", company: "Mayo Clinic", quote: "Transitioning from military to civilian healthcare — JobBot translated my experience beautifully." },
+  { name: "Andre W.", company: "Home Depot", quote: "I'm not tech-savvy at all, but JobBot made my operations manager application look world-class." },
 ];
 
 function Testimonials() {
@@ -331,7 +337,7 @@ function Testimonials() {
           Loved by Job Seekers Everywhere
         </h2>
         <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
-          Real results from professionals who landed roles at top companies.
+          Real results from professionals across every industry.
         </p>
       </div>
 

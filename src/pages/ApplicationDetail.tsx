@@ -348,7 +348,7 @@ const ApplicationDetail = () => {
                       title={asset.generation_status}
                     />
                   </button>
-                  {!isDownloaded && (
+                  {!asset.downloaded_at && (
                     <ChangeAssetDialog
                       asset={asset}
                       otherAssetNames={dynamicAssets.filter((a) => a.id !== asset.id).map((a) => a.asset_name)}

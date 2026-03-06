@@ -1,5 +1,5 @@
-# JobBot Admin Panel — User Guide & Enhancement Roadmap
-<!-- REBRAND: Replace "JobBot" in heading and throughout this document -->
+# ResuVibe Admin Panel — User Guide & Enhancement Roadmap
+<!-- REBRAND: Replace "ResuVibe" in heading and throughout this document -->
 
 > **Last updated:** 2026-03-04  
 > **Version:** 3.0  
@@ -11,7 +11,7 @@
 
 ### 1. Accessing the Admin Panel
 
-1. Log in to JobBot with your admin account.
+1. Log in to ResuVibe with your admin account.
 2. Navigate to **Profile** (top-right avatar → Profile).
 3. Click **"Admin Settings"** (only visible to users with the `admin` role).
 4. You'll land on `/admin`.

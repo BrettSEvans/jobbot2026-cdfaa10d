@@ -86,6 +86,8 @@ export const TIER_CONFIGS: Record<SubscriptionTier, TierConfig> = {
         "dynamic",
       ],
       canRefine: true,
+      generationsPerHour: 50,
+      generationsPerDay: 250,
     },
     features: [
       "Unlimited applications",

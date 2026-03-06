@@ -230,7 +230,12 @@ ${customerContext}
 ${productContext}`;
 }
 
-const DEFAULT_LIMITS = { perHour: 20, perDay: 100 };
+const TIER_LIMITS: Record<string, { perHour: number; perDay: number }> = {
+  free: { perHour: 5, perDay: 15 },
+  pro: { perHour: 20, perDay: 100 },
+  premium: { perHour: 50, perDay: 250 },
+};
+const DEFAULT_LIMITS = TIER_LIMITS.free;
 async function checkRateLimit(req: Request, assetType: string, edgeFunction: string): Promise<Response | null> {
   try {
     const authHeader = req.headers.get('Authorization');
@@ -245,12 +250,16 @@ async function checkRateLimit(req: Request, assetType: string, edgeFunction: str
       await svc.from('generation_usage').insert({ user_id: userId, asset_type: assetType, edge_function: edgeFunction });
       return null;
     }
-    const limits = { perHour: override?.per_hour ?? DEFAULT_LIMITS.perHour, perDay: override?.per_day ?? DEFAULT_LIMITS.perDay };
+    const { data: sub } = await svc.from('user_subscriptions').select('tier').eq('user_id', userId).maybeSingle();
+    const tier = (sub?.tier as string) || 'free';
+    const tierDefaults = TIER_LIMITS[tier] || TIER_LIMITS.free;
+    const limits = { perHour: override?.per_hour ?? tierDefaults.perHour, perDay: override?.per_day ?? tierDefaults.perDay };
     const now = Date.now();
     const { count: hourCount } = await svc.from('generation_usage').select('*', { count: 'exact', head: true }).eq('user_id', userId).gte('created_at', new Date(now - 3600_000).toISOString());
     const { count: dayCount } = await svc.from('generation_usage').select('*', { count: 'exact', head: true }).eq('user_id', userId).gte('created_at', new Date(now - 86400_000).toISOString());
     if ((hourCount ?? 0) >= limits.perHour || (dayCount ?? 0) >= limits.perDay) {
-      return new Response(JSON.stringify({ error: 'Rate limit exceeded. Please try again later.', retry_after_seconds: 60 }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      const upgradeHint = tier !== 'premium' ? ` Upgrade to ${tier === 'free' ? 'Pro' : 'Premium'} for higher limits.` : '';
+      return new Response(JSON.stringify({ error: `Rate limit exceeded.${upgradeHint}`, retry_after_seconds: 60, tier }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
     await svc.from('generation_usage').insert({ user_id: userId, asset_type: assetType, edge_function: edgeFunction });
   } catch (e) { console.warn('Rate limit check failed, allowing request:', e); }

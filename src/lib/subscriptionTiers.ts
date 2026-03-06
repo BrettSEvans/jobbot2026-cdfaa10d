@@ -9,6 +9,8 @@ export interface TierConfig {
     appsPerMonth: number; // -1 = unlimited
     allowedAssets: string[]; // asset type slugs allowed
     canRefine: boolean;
+    generationsPerHour: number;
+    generationsPerDay: number;
   };
   features: string[];
   cta: string;
@@ -25,9 +27,12 @@ export const TIER_CONFIGS: Record<SubscriptionTier, TierConfig> = {
       appsPerMonth: 2,
       allowedAssets: ["resume", "cover_letter"],
       canRefine: false,
+      generationsPerHour: 5,
+      generationsPerDay: 15,
     },
     features: [
       "2 applications per month",
+      "5 generations per hour",
       "Resume generation",
       "Cover letter generation",
       "Company research",
@@ -51,9 +56,12 @@ export const TIER_CONFIGS: Record<SubscriptionTier, TierConfig> = {
         "architecture_diagram",
       ],
       canRefine: true,
+      generationsPerHour: 20,
+      generationsPerDay: 100,
     },
     features: [
       "15 applications per month",
+      "20 generations per hour",
       "All asset types",
       "AI refinement chat",
       "Company research",
@@ -80,9 +88,12 @@ export const TIER_CONFIGS: Record<SubscriptionTier, TierConfig> = {
         "dynamic",
       ],
       canRefine: true,
+      generationsPerHour: 50,
+      generationsPerDay: 250,
     },
     features: [
       "Unlimited applications",
+      "50 generations per hour",
       "All asset types + custom",
       "AI refinement chat",
       "Company research",

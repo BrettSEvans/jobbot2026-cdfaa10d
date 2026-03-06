@@ -12,9 +12,10 @@ import { useToast } from "@/hooks/use-toast";
 import { downloadHtmlAsDocx, buildDocxFilename } from "@/lib/docxExport";
 import { useSubscription } from "@/hooks/useSubscription";
 import {
-  Edit3, RefreshCw, Loader2, Download, Sparkles, FileDown, Check, X,
+  Edit3, RefreshCw, Loader2, Download, Sparkles, FileDown, Check, X, AlertTriangle,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { Link } from "react-router-dom";
 import WysiwygEditor from "@/components/WysiwygEditor";
 import SaveAsTemplate from "@/components/SaveAsTemplate";
 import AssetRevisions from "@/components/AssetRevisions";

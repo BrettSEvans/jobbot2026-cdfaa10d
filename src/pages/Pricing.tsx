@@ -153,15 +153,13 @@ export default function Pricing() {
           const buttonLabel = isCurrent
             ? "Current Plan"
             : isDowngrade
-            ? config.tier === "free"
-              ? "Cancel Plan"
-              : "Downgrade"
+            ? `Switch to ${config.label}`
             : config.cta;
 
           const buttonVariant = isCurrent
             ? "outline"
             : isDowngrade
-            ? "destructive"
+            ? "ghost"
             : config.highlighted
             ? "default"
             : "outline";
@@ -215,15 +213,21 @@ export default function Pricing() {
                 </ul>
               </CardContent>
 
-              <CardFooter>
+              <CardFooter className="flex-col gap-2">
                 <Button
-                  className="w-full"
+                  className={cn("w-full", isDowngrade && "text-muted-foreground")}
                   variant={buttonVariant as any}
                   disabled={isCurrent || isUpgrading}
                   onClick={() => handleChangePlan(config.tier)}
                 >
                   {buttonLabel}
                 </Button>
+                {isCurrent && currentTier === "premium" && (
+                  <p className="text-xs text-muted-foreground text-center">You have access to everything ✨</p>
+                )}
+                {isCurrent && currentTier === "pro" && (
+                  <p className="text-xs text-muted-foreground text-center">Powering your job search 🚀</p>
+                )}
               </CardFooter>
             </Card>
           );
@@ -269,13 +273,15 @@ export default function Pricing() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Keep current plan</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            <AlertDialogCancel
+              className="text-muted-foreground"
               onClick={confirmDowngrade}
               disabled={isUpgrading}
             >
-              {pendingTier === "free" ? "Cancel plan" : "Confirm downgrade"}
+              {pendingTier === "free" ? "Switch to Free" : `Switch to ${TIER_CONFIGS[pendingTier!]?.label}`}
+            </AlertDialogCancel>
+            <AlertDialogAction>
+              Keep current plan
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

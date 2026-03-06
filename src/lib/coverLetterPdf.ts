@@ -52,7 +52,9 @@ export function buildCoverLetterHtml(
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body {
     height: 100%;
-    overflow: hidden;
+  }
+  @media print {
+    html, body { overflow: hidden; }
   }
   body {
     font-family: Georgia, "Times New Roman", serif;

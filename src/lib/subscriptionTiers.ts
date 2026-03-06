@@ -58,8 +58,9 @@ export const TIER_CONFIGS: Record<SubscriptionTier, TierConfig> = {
       generationsPerDay: 100,
     },
     features: [
+      "Free features +",
       "15 applications per month",
-      "All asset types",
+      "Portfolio assets",
       "AI refinement chat",
       "Company research",
     ],
@@ -88,6 +89,7 @@ export const TIER_CONFIGS: Record<SubscriptionTier, TierConfig> = {
       generationsPerDay: 250,
     },
     features: [
+      "Pro features +",
       "Unlimited applications",
       "All asset types + custom",
       "AI refinement chat",

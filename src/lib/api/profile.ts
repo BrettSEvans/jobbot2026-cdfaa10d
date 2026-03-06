@@ -78,6 +78,17 @@ export async function updateProfile(updates: Partial<Omit<UserProfile, "id">>): 
   if (error) throw error;
 }
 
+export async function extractResumeText(storagePath: string): Promise<string> {
+  const { data, error } = await supabase.functions.invoke("extract-resume-text", {
+    body: { storagePath },
+  });
+  if (error) {
+    console.error("Resume text extraction failed:", error);
+    return "";
+  }
+  return data?.text || "";
+}
+
 export async function uploadResumePdf(file: File): Promise<UserResume> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
@@ -103,6 +114,17 @@ export async function uploadResumePdf(file: File): Promise<UserResume> {
 
   // Set as active
   await supabase.rpc("set_active_resume", { p_resume_id: data.id });
+
+  // Auto-extract text from PDF and save to profile (non-blocking)
+  extractResumeText(path).then(async (text) => {
+    if (text) {
+      try {
+        await updateProfile({ resume_text: text });
+      } catch (e) {
+        console.error("Failed to save extracted resume text:", e);
+      }
+    }
+  });
 
   return { ...data, is_active: true } as UserResume;
 }
@@ -251,7 +273,19 @@ export async function getActiveResumeText(): Promise<string> {
   }
   try {
     const profile = await getProfile();
-    return profile?.resume_text || "";
+    if (profile?.resume_text) return profile.resume_text;
+
+    // Backfill: if no resume_text but user has an active PDF, extract on demand
+    const storagePath = await getActiveResumeStoragePath();
+    if (storagePath) {
+      const extracted = await extractResumeText(storagePath);
+      if (extracted) {
+        // Cache it so future calls don't re-extract
+        await updateProfile({ resume_text: extracted }).catch(() => {});
+        return extracted;
+      }
+    }
+    return "";
   } catch {
     return "";
   }

@@ -781,13 +781,27 @@ const Applications = () => {
         )}
       </div>
 
-      {/* Ghost prompt dialog — PREVIEW MODE: forced open for approval */}
-      <GhostPromptDialog
-        open={true}
-        companyName="Acme Corp"
-        onMarkGhosted={() => {}}
-        onDismiss={() => {}}
-      />
+      {/* Ghost prompt — applied (10-day trigger, one-time per job) */}
+      {staleAppliedApp && (
+        <GhostPromptDialog
+          open
+          stage="applied"
+          companyName={staleAppliedApp.company_name || "this company"}
+          onMarkGhosted={() => markAsGhosted(staleAppliedApp.id)}
+          onDismiss={() => dismissGhostPrompt(staleAppliedApp.id)}
+        />
+      )}
+
+      {/* Ghost prompt — interviewing (7-day trigger, one-time per job, only if no applied prompt) */}
+      {!staleAppliedApp && staleInterviewingApp && (
+        <GhostPromptDialog
+          open
+          stage="interviewing"
+          companyName={staleInterviewingApp.company_name || "this company"}
+          onMarkGhosted={() => markInterviewAsGhosted(staleInterviewingApp.id)}
+          onDismiss={() => dismissInterviewGhostPrompt(staleInterviewingApp.id)}
+        />
+      )}
     </div>
   );
 };

@@ -3,7 +3,7 @@ import { BRAND } from "@/lib/branding";
 import mockupResume from "@/assets/mockup-resume.jpg";
 import mockupCoverLetter from "@/assets/mockup-cover-letter.jpg";
 import mockupDashboard from "@/assets/mockup-dashboard.jpg";
-import mockupRaidLog from "@/assets/mockup-raid-log.jpg";
+import mockupRoadmap from "@/assets/mockup-roadmap.jpg";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -207,7 +207,7 @@ const EXAMPLES = [
   { label: "Tailored Resume", img: mockupResume },
   { label: "Cover Letter", img: mockupCoverLetter },
   { label: "Executive Dashboard", img: mockupDashboard },
-  { label: "RAID Log", img: mockupRaidLog },
+  { label: "90-Day Roadmap", img: mockupRoadmap },
 ];
 
 function ExampleAssets() {

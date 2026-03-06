@@ -1,4 +1,5 @@
 # JobBot Admin Panel — User Guide & Enhancement Roadmap
+<!-- REBRAND: Replace "JobBot" in heading and throughout this document -->
 
 > **Last updated:** 2026-03-04  
 > **Version:** 3.0  

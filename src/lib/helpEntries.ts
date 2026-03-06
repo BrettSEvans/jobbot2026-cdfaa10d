@@ -66,7 +66,7 @@ registerHelp({
   slug: 'pipeline-kanban',
   title: 'Pipeline (Kanban Board)',
   summary:
-    'A drag-and-drop board showing all your applications organized by stage — Bookmarked, Applied, Interviewing, Offer, Accepted, and Declined. New applications start as Bookmarked. If an application stays in Bookmarked for over 48 hours, you\'ll get a one-time prompt asking if you\'ve applied.',
+    'A drag-and-drop board showing all your applications organized by stage — Created, Applied, Interviewing, Offer, Accepted, Withdrawn, Ghosted, and Rejected. New applications start as Created. If an application stays in Created for over 48 hours, you\'ll get a one-time prompt asking if you\'ve applied. If an application stays in Applied for over 2 weeks, you\'ll be asked if the company ghosted you.',
   steps: [
     'Click the "Pipeline" tab on the Applications page to switch to Kanban view.',
     'Drag application cards between columns to move them through stages.',
@@ -75,12 +75,13 @@ registerHelp({
   ],
   tips: [
     'New applications default to the "Bookmarked" stage.',
-    'The "Declined" column tracks offers you chose not to accept.',
+    'The "Withdrawn" column tracks offers you chose not to accept.',
+    'The "Ghosted" column is for applications where the company stopped responding.',
     'You can also change an application\'s stage from its detail page using the stage dropdown.',
     'The "View all stages →" link on the detail page takes you directly to the Pipeline view.',
   ],
   route: '/',
-  keywords: ['pipeline', 'kanban', 'board', 'stages', 'drag', 'drop', 'bookmarked', 'applied', 'interviewing', 'offer', 'accepted', 'declined'],
+  keywords: ['pipeline', 'kanban', 'board', 'stages', 'drag', 'drop', 'created', 'applied', 'interviewing', 'offer', 'accepted', 'withdrawn', 'ghosted'],
   relatedSlugs: ['applications-list'],
 });
 

@@ -10,19 +10,21 @@ export const PIPELINE_STAGES = [
   'interviewing',
   'offer',
   'accepted',
-  'declined',
+  'withdrawn',
+  'ghosted',
   'rejected',
 ] as const;
 
 export type PipelineStage = typeof PIPELINE_STAGES[number];
 
 export const STAGE_LABELS: Record<PipelineStage, string> = {
-  bookmarked: 'Bookmarked',
+  bookmarked: 'Created',
   applied: 'Applied',
   interviewing: 'Interviewing',
   offer: 'Offer',
   accepted: 'Accepted',
-  declined: 'Declined',
+  withdrawn: 'Withdrawn',
+  ghosted: 'Ghosted',
   rejected: 'Rejected',
 };
 
@@ -32,18 +34,20 @@ export const STAGE_COLORS: Record<PipelineStage, string> = {
   interviewing: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
   offer: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
   accepted: 'bg-primary/10 text-primary',
-  declined: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
+  withdrawn: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
+  ghosted: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300',
   rejected: 'bg-destructive/10 text-destructive',
 };
 
 /** Normal forward flow */
 const LOGICAL_FLOW: Record<PipelineStage, PipelineStage[]> = {
   bookmarked: ['applied'],
-  applied: ['interviewing', 'rejected'],
-  interviewing: ['offer', 'rejected'],
-  offer: ['accepted', 'rejected'],
-  accepted: ['declined'],
-  declined: [],
+  applied: ['interviewing', 'ghosted', 'rejected'],
+  interviewing: ['offer', 'ghosted', 'rejected'],
+  offer: ['accepted', 'withdrawn', 'rejected'],
+  accepted: ['withdrawn'],
+  withdrawn: [],
+  ghosted: [],
   rejected: [],
 };
 

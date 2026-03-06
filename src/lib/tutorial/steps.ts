@@ -17,7 +17,7 @@ registerTutorialStep({
   helpSlug: "pipeline-kanban",
   targetSelector: '[data-tutorial="pipeline-tab"]',
   title: "Pipeline View",
-  body: "Switch to Pipeline view to see all your applications organized by stage — Bookmarked, Applied, Interviewing, Offer, Accepted, and Declined. Drag and drop cards between columns to update their status.",
+  body: "Switch to Pipeline view to see all your applications organized by stage — Created, Applied, Interviewing, Offer, Accepted, Withdrawn, and Ghosted. Drag and drop cards between columns to update their status.",
   placement: "bottom",
   route: "/",
   order: 2,

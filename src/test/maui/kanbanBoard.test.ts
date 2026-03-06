@@ -22,8 +22,8 @@ function daysInStage(stageChangedAt: string): number {
 }
 
 describe("Kanban — Stage Definitions", () => {
-  it("has 6 defined stages", () => {
-    expect(PIPELINE_STAGES).toHaveLength(6);
+  it("has 8 defined stages", () => {
+    expect(PIPELINE_STAGES).toHaveLength(8);
   });
 
   it("includes all expected stages", () => {
@@ -32,6 +32,8 @@ describe("Kanban — Stage Definitions", () => {
     expect(PIPELINE_STAGES).toContain("interviewing");
     expect(PIPELINE_STAGES).toContain("offer");
     expect(PIPELINE_STAGES).toContain("accepted");
+    expect(PIPELINE_STAGES).toContain("withdrawn");
+    expect(PIPELINE_STAGES).toContain("ghosted");
     expect(PIPELINE_STAGES).toContain("rejected");
   });
 });

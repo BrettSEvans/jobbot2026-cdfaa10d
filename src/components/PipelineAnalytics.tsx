@@ -45,9 +45,7 @@ export default function PipelineAnalytics({ applications }: PipelineAnalyticsPro
     const forwardFlow: PipelineStage[] = ["bookmarked", "applied", "interviewing", "offer", "accepted"];
     const conversions: Record<string, number | null> = {};
     for (let i = 1; i < forwardFlow.length; i++) {
-      const prev = forwardFlow[i - 1];
       const curr = forwardFlow[i];
-      // Apps that reached this stage or beyond
       const reachedCurr = forwardFlow.slice(i).reduce((sum, s) => sum + counts[s], 0);
       const reachedPrev = forwardFlow.slice(i - 1).reduce((sum, s) => sum + counts[s], 0);
       conversions[curr] = reachedPrev > 0 ? Math.round((reachedCurr / reachedPrev) * 100) : null;
@@ -70,7 +68,7 @@ export default function PipelineAnalytics({ applications }: PipelineAnalyticsPro
   if (applications.length === 0) return null;
 
   const forwardStages: PipelineStage[] = ["bookmarked", "applied", "interviewing", "offer", "accepted"];
-  const terminalStages: PipelineStage[] = ["declined", "rejected"];
+  const terminalStages: PipelineStage[] = ["withdrawn", "ghosted", "rejected"];
 
   const handleToggle = (val: boolean) => {
     setOpen(val);

@@ -18,6 +18,30 @@ function extractDomain(companyUrl?: string, companyName?: string): string {
   return '';
 }
 
+/**
+ * Check if a URL is relevant to the company name using word-boundary matching.
+ * Prevents false positives like "appen" matching "append".
+ */
+function isRelevantUrl(url: string, companyName: string): boolean {
+  const mLower = url.toLowerCase();
+  const nameLower = companyName.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const nameWords = companyName.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+
+  // For the full concatenated name, use word boundary regex
+  const fullNameRegex = new RegExp(`(^|[^a-z])${escapeRegex(nameLower)}([^a-z]|$)`);
+  if (fullNameRegex.test(mLower)) return true;
+
+  // For individual words, also use word boundary checks
+  return nameWords.some(w => {
+    const wordRegex = new RegExp(`(^|[^a-z])${escapeRegex(w)}([^a-z]|$)`);
+    return wordRegex.test(mLower);
+  });
+}
+
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 async function tryClearbit(domain: string): Promise<string | null> {
   if (!domain) return null;
   const url = `https://logo.clearbit.com/${domain}`;

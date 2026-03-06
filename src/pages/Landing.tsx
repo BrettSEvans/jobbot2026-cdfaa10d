@@ -203,10 +203,10 @@ function HowItWorks() {
 /* ---------------------- Example Assets -------------------------- */
 
 const EXAMPLES = [
-  { label: "Tailored Resume", color: "bg-primary/10 text-primary" },
-  { label: "Cover Letter", color: "bg-accent text-accent-foreground" },
-  { label: "Executive Dashboard", color: "bg-primary/10 text-primary" },
-  { label: "RAID Log", color: "bg-accent text-accent-foreground" },
+  { label: "Tailored Resume", img: mockupResume },
+  { label: "Cover Letter", img: mockupCoverLetter },
+  { label: "Executive Dashboard", img: mockupDashboard },
+  { label: "RAID Log", img: mockupRaidLog },
 ];
 
 function ExampleAssets() {
@@ -221,9 +221,14 @@ function ExampleAssets() {
         </p>
         <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {EXAMPLES.map((ex) => (
-            <Card key={ex.label} className="overflow-hidden">
-              <div className={`flex h-40 items-center justify-center ${ex.color}`}>
-                <span className="font-heading text-sm font-semibold opacity-70">Preview</span>
+            <Card key={ex.label} className="overflow-hidden group transition-shadow hover:shadow-md">
+              <div className="overflow-hidden">
+                <img
+                  src={ex.img}
+                  alt={`${ex.label} mockup`}
+                  className="h-52 w-full object-cover object-top transition-transform duration-300 group-hover:scale-105"
+                  loading="lazy"
+                />
               </div>
               <CardContent className="p-4">
                 <p className="font-heading text-sm font-semibold text-foreground">{ex.label}</p>

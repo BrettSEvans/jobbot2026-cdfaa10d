@@ -301,6 +301,8 @@ const Applications = () => {
           </div>
         </div>
 
+        <ProUsageBar />
+
         {loading ? (
           <div className="rounded-md border">
             <Table>

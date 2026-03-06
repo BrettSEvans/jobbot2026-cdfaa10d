@@ -32,6 +32,7 @@ export const TIER_CONFIGS: Record<SubscriptionTier, TierConfig> = {
     },
     features: [
       "2 applications per month",
+      "5 generations per hour",
       "Resume generation",
       "Cover letter generation",
       "Company research",
@@ -60,6 +61,7 @@ export const TIER_CONFIGS: Record<SubscriptionTier, TierConfig> = {
     },
     features: [
       "15 applications per month",
+      "20 generations per hour",
       "All asset types",
       "AI refinement chat",
       "Company research",
@@ -91,6 +93,7 @@ export const TIER_CONFIGS: Record<SubscriptionTier, TierConfig> = {
     },
     features: [
       "Unlimited applications",
+      "50 generations per hour",
       "All asset types + custom",
       "AI refinement chat",
       "Company research",

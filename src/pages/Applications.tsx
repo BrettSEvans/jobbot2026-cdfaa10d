@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import CompanyIcon from "@/components/CompanyIcon";
 import KanbanBoard from "@/components/KanbanBoard";
+import PipelineAnalytics from "@/components/PipelineAnalytics";
 import {
   getJobApplications,
   deleteJobApplication,
@@ -618,6 +619,7 @@ const Applications = () => {
             </TabsContent>
 
             <TabsContent value="pipeline" className="space-y-4">
+              <PipelineAnalytics applications={applications} />
               <KanbanBoard applications={applications} onStageChanged={loadApplications} />
             </TabsContent>
 

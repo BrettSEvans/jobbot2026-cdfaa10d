@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, ArrowLeftRight, Check, Sparkles } from "lucide-react";
 import {
@@ -131,34 +132,36 @@ export default function ChangeAssetDialog({
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="grid grid-cols-1 gap-2">
-              {suggestions.map((s) => {
-                const isSelected = selected === s.asset_name;
-                return (
-                  <button
-                    key={s.asset_name}
-                    onClick={() => setSelected(s.asset_name)}
-                    className={`text-left p-3 rounded-lg border-2 transition-all ${
-                      isSelected
-                        ? "border-primary bg-primary/5 shadow-sm"
-                        : "border-border hover:border-foreground/20 hover:bg-muted/50"
-                    }`}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className={`mt-0.5 h-5 w-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
-                        isSelected ? "border-primary bg-primary" : "border-muted-foreground/40"
-                      }`}>
-                        {isSelected && <Check className="h-3 w-3 text-primary-foreground" />}
+            <ScrollArea className="max-h-[50vh]">
+              <div className="grid grid-cols-1 gap-2 pr-3">
+                {suggestions.map((s) => {
+                  const isSelected = selected === s.asset_name;
+                  return (
+                    <button
+                      key={s.asset_name}
+                      onClick={() => setSelected(s.asset_name)}
+                      className={`text-left p-3 rounded-lg border-2 transition-all ${
+                        isSelected
+                          ? "border-primary bg-primary/5 shadow-sm"
+                          : "border-border hover:border-foreground/20 hover:bg-muted/50"
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className={`mt-0.5 h-5 w-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
+                          isSelected ? "border-primary bg-primary" : "border-muted-foreground/40"
+                        }`}>
+                          {isSelected && <Check className="h-3 w-3 text-primary-foreground" />}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-medium text-sm">{s.asset_name}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">{s.brief_description}</p>
+                        </div>
                       </div>
-                      <div className="min-w-0">
-                        <p className="font-medium text-sm">{s.asset_name}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">{s.brief_description}</p>
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </ScrollArea>
 
             <div className="flex gap-2 justify-end">
               <Button variant="outline" size="sm" onClick={fetchSuggestions} disabled={loading}>

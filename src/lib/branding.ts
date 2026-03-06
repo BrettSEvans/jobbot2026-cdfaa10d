@@ -9,19 +9,19 @@
  */
 export const BRAND = {
   /** Display name shown throughout the UI */
-  name: "JobBot",
+  name: "ResuVibe",
   /** Tagline used in page title and hero badges */
   tagline: "AI-Powered Job Application Toolkit",
   /** Meta description / marketing one-liner */
   description:
     "Using this isn't fair to the other applicants. Sorry not sorry.",
   /** Twitter handle for social meta tags */
-  twitter: "@JobBot",
+  twitter: "@ResuVibe",
   /** Copyright line helper */
   copyright: (year: number) => `© ${year} ${BRAND.name}. All rights reserved.`,
   /**
    * Prefix for all localStorage / sessionStorage keys.
    * Changing this will reset user preferences (theme, tutorial state, etc.).
    */
-  storagePrefix: "jobbot",
+  storagePrefix: "resuvibe",
 } as const;

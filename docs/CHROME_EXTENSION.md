@@ -2,8 +2,8 @@
 
 ## Overview
 
-JobBot supports importing jobs from LinkedIn, Indeed, and other job boards via a Chrome extension.
-The extension extracts job data from the current page and sends it to the JobBot app.
+ResuVibe supports importing jobs from LinkedIn, Indeed, and other job boards via a Chrome extension.
+The extension extracts job data from the current page and sends it to the ResuVibe app.
 
 ## API Endpoint
 
@@ -61,7 +61,7 @@ The import page shows a confirmation card before creating the application.
 ```json
 {
   "manifest_version": 3,
-  "name": "JobBot Importer",
+  "name": "ResuVibe Importer",
   "permissions": ["activeTab"],
   "content_scripts": [{
     "matches": [
@@ -73,5 +73,5 @@ The import page shows a confirmation card before creating the application.
 }
 ```
 
-The content script detects job pages and injects an "Import to JobBot" button.
+The content script detects job pages and injects an "Import to ResuVibe" button.
 Clicking the button opens the deep link URL with extracted data.

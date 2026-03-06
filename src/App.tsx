@@ -94,6 +94,7 @@ function AuthenticatedApp() {
             <>
               <Route path="/" element={<><AppHeader onSignOut={signOut} /><main id="main-content"><Applications /></main></>} />
               <Route path="/applications" element={<Navigate to="/" replace />} />
+              <Route path="/auth" element={<Navigate to="/" replace />} />
               <Route path="/applications/new" element={<><AppHeader onSignOut={signOut} /><main id="main-content"><NewApplication /></main></>} />
               <Route path="/applications/:id" element={<><AppHeader onSignOut={signOut} /><main id="main-content"><ApplicationDetail /></main></>} />
               <Route path="/templates" element={<><AppHeader onSignOut={signOut} /><main id="main-content"><Templates /></main></>} />

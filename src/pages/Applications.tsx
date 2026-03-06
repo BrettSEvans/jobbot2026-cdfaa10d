@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import ProUsageBar from "@/components/ProUsageBar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -297,6 +298,8 @@ const Applications = () => {
             </Button>
           </div>
         </div>
+
+        <ProUsageBar />
 
         {loading ? (
           <div className="rounded-md border">

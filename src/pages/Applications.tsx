@@ -90,6 +90,30 @@ const Applications = () => {
 
   const activeJobCount = useActiveJobCount();
 
+  // 48-hour bookmarked prompt: find oldest bookmarked app that's been sitting > 48h and not dismissed
+  const staleBookmarkedApp = useMemo(() => {
+    const FORTY_EIGHT_HOURS = 48 * 60 * 60 * 1000;
+    const now = Date.now();
+    const dismissed: string[] = JSON.parse(localStorage.getItem('dismissed_bookmarked_prompts') || '[]');
+    return applications
+      .filter((app) => {
+        const stage = (app as any).pipeline_stage || 'bookmarked';
+        if (stage !== 'bookmarked') return false;
+        if (dismissed.includes(app.id)) return false;
+        const changedAt = (app as any).stage_changed_at || app.created_at;
+        return now - new Date(changedAt).getTime() > FORTY_EIGHT_HOURS;
+      })
+      .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())[0] || null;
+  }, [applications]);
+
+  const dismissBookmarkedPrompt = useCallback((appId: string) => {
+    const dismissed: string[] = JSON.parse(localStorage.getItem('dismissed_bookmarked_prompts') || '[]');
+    dismissed.push(appId);
+    localStorage.setItem('dismissed_bookmarked_prompts', JSON.stringify(dismissed));
+    // Force re-render by updating applications reference
+    setApplications((prev) => [...prev]);
+  }, []);
+
   // Check if any apps are missing icons
   const needsBackfill = useMemo(
     () => applications.some((a) => a.company_name && !(a as any).company_icon_url),

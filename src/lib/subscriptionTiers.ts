@@ -49,7 +49,6 @@ export const TIER_CONFIGS: Record<SubscriptionTier, TierConfig> = {
       allowedAssets: [
         "resume",
         "cover_letter",
-        "dashboard",
         "executive_report",
         "raid_log",
         "roadmap",
@@ -99,6 +98,7 @@ export const TIER_CONFIGS: Record<SubscriptionTier, TierConfig> = {
       "Company research",
       "Priority generation",
       "Custom asset proposals",
+      "Interactive Dashboard",
     ],
     cta: "Go Premium",
   },

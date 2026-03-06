@@ -70,7 +70,7 @@ registerHelp({
   steps: [
     'Click the "Pipeline" tab on the Applications page to switch to Kanban view.',
     'Drag application cards between columns to move them through stages.',
-    'If a transition seems illogical (e.g. Accepted → Bookmarked), you'll see a warning.',
+    'If a transition seems illogical (e.g. Accepted → Bookmarked), you\'ll see a warning.',
   ],
   tips: [
     'You can also change an application\'s stage from its detail page using the stage dropdown.',

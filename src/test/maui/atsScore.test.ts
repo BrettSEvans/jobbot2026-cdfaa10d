@@ -41,12 +41,13 @@ describe("ATS Score — Cache Invalidation", () => {
   it("should rescore when resume_html hash changes", () => {
     const oldHash = "abc123";
     const newHash = "def456";
-    expect(oldHash !== newHash).toBe(true);
+    expect(oldHash).not.toBe(newHash);
   });
 
   it("should use cache when resume_html unchanged", () => {
-    const hash = "abc123";
-    expect(hash === hash).toBe(true);
+    const oldHash = "abc123";
+    const sameHash = "abc123";
+    expect(oldHash).toBe(sameHash);
   });
 
   it("should rescore when ats_scored_at is older than 7 days", () => {

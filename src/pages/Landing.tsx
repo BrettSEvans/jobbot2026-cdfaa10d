@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { BRAND } from "@/lib/branding";
 import mockupResume from "@/assets/mockup-resume.jpg";
 import mockupCoverLetter from "@/assets/mockup-cover-letter.jpg";
 import mockupDashboard from "@/assets/mockup-dashboard.jpg";
@@ -32,7 +33,7 @@ function LandingNav() {
     <nav className="sticky top-0 z-50 border-b border-border/60 bg-background/80 backdrop-blur-md">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
         <span className="font-heading text-xl font-bold tracking-tight text-foreground">
-          Job<span className="text-primary">Bot</span>
+          {BRAND.name.replace(/([A-Z][a-z]+)$/, '')}<span className="text-primary">{BRAND.name.match(/[A-Z][a-z]+$/)?.[0] ?? ''}</span>
         </span>
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" onClick={() => navigate("/auth")}>
@@ -72,7 +73,7 @@ function Hero() {
           <span className="text-primary">AI‑Crafted Assets</span>
         </h1>
         <p className="mx-auto mt-5 max-w-2xl text-lg text-muted-foreground sm:text-xl">
-          Paste a job URL and let JobBot generate a tailored resume, cover
+          Paste a job URL and let {BRAND.name} generate a tailored resume, cover
           letter, executive dashboard, and more — all branded to the company
           you're applying to.
         </p>
@@ -161,7 +162,7 @@ const STEPS = [
     icon: Link2,
     num: "1",
     title: "Paste a Job URL",
-    desc: "Drop in the link to any job posting. JobBot scrapes the description and researches the company automatically.",
+    desc: `Drop in the link to any job posting. ${BRAND.name} scrapes the description and researches the company automatically.`,
   },
   {
     icon: Sparkles,
@@ -214,7 +215,7 @@ function ExampleAssets() {
     <section className="py-20 sm:py-24">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <h2 className="text-center font-heading text-3xl font-bold text-foreground sm:text-4xl">
-          See What JobBot Creates
+          See What {BRAND.name} Creates
         </h2>
         <p className="mx-auto mt-3 max-w-xl text-center text-muted-foreground">
           Each asset is generated in real-time and styled to the company's brand.
@@ -311,22 +312,22 @@ function Pricing() {
 /* ---------------------- Testimonials ---------------------------- */
 
 const TESTIMONIALS = [
-  { name: "Sarah M.", company: "Deloitte", quote: "JobBot helped me stand out from 500+ applicants. The branded dashboard blew the hiring manager away!" },
+  { name: "Sarah M.", company: "Deloitte", quote: `${BRAND.name} helped me stand out from 500+ applicants. The branded dashboard blew the hiring manager away!` },
   { name: "James T.", company: "Cleveland Clinic", quote: "I landed my dream healthcare admin role in 3 weeks. The tailored cover letter was incredibly compelling." },
   { name: "Priya K.", company: "JPMorgan Chase", quote: "The RAID log showed I was ready for day one. My interviewer said it was unlike anything they'd seen." },
-  { name: "Marcus L.", company: "Target", quote: "Went from zero callbacks to 4 offers. JobBot completely transformed my application strategy." },
+  { name: "Marcus L.", company: "Target", quote: `Went from zero callbacks to 4 offers. ${BRAND.name} completely transformed my application strategy.` },
   { name: "Elena R.", company: "Pfizer", quote: "The executive dashboard made me look like a senior strategist. Got the offer within a week!" },
   { name: "David W.", company: "Accenture", quote: "Every asset was perfectly branded. It felt like I had a professional design team behind me." },
-  { name: "Aisha B.", company: "Southwest Airlines", quote: "JobBot's AI resume matched every keyword in the JD. Recruiter told me it was a perfect fit." },
+  { name: "Aisha B.", company: "Southwest Airlines", quote: `${BRAND.name}'s AI resume matched every keyword in the JD. Recruiter told me it was a perfect fit.` },
   { name: "Tom H.", company: "KPMG", quote: "The 90-day roadmap sealed the deal. They said no other candidate came that prepared." },
   { name: "Nina C.", company: "Whole Foods", quote: "I was skeptical at first, but the quality of the generated assets is genuinely impressive." },
-  { name: "Ryan P.", company: "State Farm", quote: "Applied to 5 roles with JobBot materials — got interviews at all 5. Absolute game-changer." },
+  { name: "Ryan P.", company: "State Farm", quote: `Applied to 5 roles with ${BRAND.name} materials — got interviews at all 5. Absolute game-changer.` },
   { name: "Lisa G.", company: "HCA Healthcare", quote: "As a nurse manager, the cover letter nailed my clinical leadership experience perfectly." },
   { name: "Carlos D.", company: "FedEx", quote: "The architecture diagram helped me land a logistics tech role I didn't think I was qualified for." },
-  { name: "Monica J.", company: "Hilton", quote: "Switched from retail to hospitality management. JobBot made my transferable skills shine." },
+  { name: "Monica J.", company: "Hilton", quote: "Switched from retail to hospitality management. The generated assets made my transferable skills shine." },
   { name: "Kevin R.", company: "Ernst & Young", quote: "The executive report positioned me as a thought leader. Got a senior consultant offer on the first try." },
-  { name: "Diane F.", company: "Mayo Clinic", quote: "Transitioning from military to civilian healthcare — JobBot translated my experience beautifully." },
-  { name: "Andre W.", company: "Home Depot", quote: "I'm not tech-savvy at all, but JobBot made my operations manager application look world-class." },
+  { name: "Diane F.", company: "Mayo Clinic", quote: `Transitioning from military to civilian healthcare — ${BRAND.name} translated my experience beautifully.` },
+  { name: "Andre W.", company: "Home Depot", quote: `I'm not tech-savvy at all, but ${BRAND.name} made my operations manager application look world-class.` },
 ];
 
 function TestimonialCard({ t }: { t: typeof TESTIMONIALS[number] }) {
@@ -392,7 +393,7 @@ function CtaFooter() {
           Ready to Stand Out?
         </h2>
         <p className="mx-auto mt-3 max-w-lg text-muted-foreground">
-          Join professionals who use JobBot to create compelling, AI‑crafted
+          Join professionals who use {BRAND.name} to create compelling, AI‑crafted
           application materials in minutes.
         </p>
         <Button size="lg" className="mt-8 gap-2" onClick={() => navigate("/auth")}>
@@ -419,7 +420,7 @@ export default function Landing() {
       <Testimonials />
       <CtaFooter />
       <footer className="border-t border-border py-6 text-center text-xs text-muted-foreground">
-        © {new Date().getFullYear()} JobBot. All rights reserved.
+        {BRAND.copyright(new Date().getFullYear())}
       </footer>
     </div>
   );

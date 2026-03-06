@@ -2,8 +2,9 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Layers, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { BRAND } from "@/lib/branding";
 
-const DISMISSED_KEY = "jobbot_batch_prompt_dismissed";
+const DISMISSED_KEY = `${BRAND.storagePrefix}_batch_prompt_dismissed`;
 
 interface BatchModePromptProps {
   applicationCount: number;

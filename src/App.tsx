@@ -28,6 +28,7 @@ import { ImpersonationProvider } from "./contexts/ImpersonationContext";
 import { Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { BRAND } from "@/lib/branding";
 import "@/lib/helpEntries"; // register all help topics
 import "@/lib/tutorial/steps"; // register tutorial steps
 
@@ -112,6 +113,10 @@ function AuthenticatedApp() {
 }
 
 const App = () => {
+  useEffect(() => {
+    document.title = `${BRAND.name} — ${BRAND.tagline}`;
+  }, []);
+
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>

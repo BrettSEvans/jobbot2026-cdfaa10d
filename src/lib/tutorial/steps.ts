@@ -1,10 +1,11 @@
 import { registerTutorialStep } from "./registry";
+import { BRAND } from "@/lib/branding";
 
 registerTutorialStep({
   id: "welcome",
   helpSlug: "applications-list",
   targetSelector: '[data-tutorial="app-table"]',
-  title: "Welcome to JobBot!",
+  title: `Welcome to ${BRAND.name}!`,
   body: "This is your applications hub. Every job application you create will appear here with its status and generated assets.",
   placement: "bottom",
   route: "/",
@@ -16,7 +17,7 @@ registerTutorialStep({
   helpSlug: "new-application",
   targetSelector: '[data-tutorial="new-app-btn"]',
   title: "Create a New Application",
-  body: "Click here to start a new job application. You'll paste a job URL and JobBot will generate a full application package for you.",
+  body: `Click here to start a new job application. You'll paste a job URL and ${BRAND.name} will generate a full application package for you.`,
   placement: "bottom",
   route: "/",
   order: 2,
@@ -27,7 +28,7 @@ registerTutorialStep({
   helpSlug: "new-application",
   targetSelector: '[data-tutorial="job-url"]',
   title: "Paste the Job URL",
-  body: "Paste the full URL of the job posting here. JobBot will scrape the listing, research the company, and extract key details automatically.",
+  body: `Paste the full URL of the job posting here. ${BRAND.name} will scrape the listing, research the company, and extract key details automatically.`,
   placement: "bottom",
   route: "/applications/new",
   order: 3,

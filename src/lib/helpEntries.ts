@@ -6,6 +6,7 @@
  * co-located in the component file. This file covers the initial backfill.
  */
 import { registerHelp } from './helpRegistry';
+import { BRAND } from './branding';
 
 // ── Pages ──────────────────────────────────────────────
 
@@ -63,7 +64,7 @@ registerHelp({
   slug: 'new-application',
   title: 'New Application',
   summary:
-    'Start a new job application by pasting the job posting URL. JobBot will scrape the listing, research the company, and begin generating tailored assets.',
+    `Start a new job application by pasting the job posting URL. ${BRAND.name} will scrape the listing, research the company, and begin generating tailored assets.`,
   steps: [
     'Paste the full URL of the job posting.',
     'Optionally select a template or resume style.',

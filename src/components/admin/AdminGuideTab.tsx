@@ -1,4 +1,5 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { BRAND } from "@/lib/branding";
 
 export default function AdminGuideTab() {
   return (
@@ -9,7 +10,7 @@ export default function AdminGuideTab() {
 
         <h3>1. Accessing the Admin Panel</h3>
         <ol>
-          <li>Log in to JobBot with your admin account.</li>
+          <li>Log in to {BRAND.name} with your admin account.</li>
           <li>Navigate to <strong>Profile</strong> (top-right avatar → Profile).</li>
           <li>Click <strong>"Admin Settings"</strong> (only visible to users with the <code>admin</code> role).</li>
           <li>You'll land on <code>/admin</code>.</li>

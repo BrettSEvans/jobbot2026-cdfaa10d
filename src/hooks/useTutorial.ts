@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
+import { BRAND } from "@/lib/branding";
 
-const STORAGE_KEY = "jobbot-tutorial-state";
-const TUTORIAL_EVENT = "jobbot-tutorial-toggle";
+const STORAGE_KEY = `${BRAND.storagePrefix}-tutorial-state`;
+const TUTORIAL_EVENT = `${BRAND.storagePrefix}-tutorial-toggle`;
 
 interface TutorialState {
   dismissed: boolean;

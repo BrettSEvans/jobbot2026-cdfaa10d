@@ -150,6 +150,9 @@ const ApplicationDetail = () => {
       let resumeText = "";
       try { resumeText = await getActiveResumeText(); } catch { }
 
+      const { getLayoutStyleForAsset } = await import("@/lib/assetLayoutStyles");
+      const layoutStyle = getLayoutStyleForAsset(asset.asset_name, dynamicAssets.map(a => a.asset_name));
+
       let accumulated = "";
       await streamDynamicAssetGeneration({
         assetName: asset.asset_name,
@@ -159,6 +162,7 @@ const ApplicationDetail = () => {
         companyName: state.companyName,
         jobTitle: state.jobTitle,
         branding: state.app?.branding,
+        layoutStyle,
         onDelta: (text) => { accumulated += text; },
         onDone: () => {},
       });

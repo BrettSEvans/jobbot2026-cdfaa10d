@@ -15,6 +15,7 @@ import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
 import PendingApproval from "./pages/PendingApproval";
 import Pricing from "./pages/Pricing";
+import Landing from "./pages/Landing";
 import BackgroundJobsBanner from "./components/BackgroundJobsBanner";
 import AppHeader from "./components/AppHeader";
 import HelpButton from "./components/HelpButton";
@@ -81,7 +82,12 @@ function AuthenticatedApp() {
         <Routes>
           <Route path="/reset-password" element={<ResetPassword />} />
           {!user ? (
-            <Route path="*" element={<Auth />} />
+            <>
+              <Route path="/" element={<Landing />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/pricing" element={<Landing />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </>
           ) : (
             <>
               <Route path="/" element={<><AppHeader onSignOut={signOut} /><main id="main-content"><Applications /></main></>} />

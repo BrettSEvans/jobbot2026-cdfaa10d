@@ -1,39 +1,37 @@
+# JobBot Priority Roadmap ("Maui Plan")
 
+Based on the competitive landscape analysis and product critique, here is the prioritized update schedule with rationale for each item.
 
-## Public Landing Page — Plan
+## Feature Priority Matrix
 
-### Current State
-Right now, unauthenticated users hit `Auth.tsx` (login/signup form) for all routes via the catch-all `<Route path="*" element={<Auth />} />`. The Auth page already has a decent left-panel hero with feature bullets, but it's not a proper marketing landing page.
+| # | Update | Priority | Effort | Rationale | Status |
+|---|--------|----------|--------|-----------|--------|
+| 1 | Subscription Infrastructure | CRITICAL | 1–2 weeks | No revenue path exists. Nothing else matters without monetization. Blocks launch entirely. | ✅ DONE — 3-tier system (Free/Pro/Premium), feature gating, admin management, tier-based rate limiting |
+| 2 | Public Landing Page | CRITICAL | 3–5 days | No way for prospects to understand the product. Auth wall kills all top-of-funnel. Must showcase unique assets (RAID, dashboards) as differentiators. | ✅ DONE — Hero, features grid, how-it-works, example assets, pricing, CTA footer; routing updated |
+| 3 | ATS Match Score | HIGH | 3–5 days | Table-stakes feature offered by 6/7 competitors. Users expect it. Strongest signal of product competence at first glance. | 🔲 TODO |
+| 4 | Application Pipeline Stages | HIGH | 3–5 days | Teal's #1 feature. Without it, users need a second tool to track progress, reducing stickiness. | 🔲 TODO |
+| 5 | DOCX Export | HIGH | 1–2 days | 5/7 competitors offer it. Many ATS systems and recruiters require .docx uploads. PDF-only is a dealbreaker for some users. | 🔲 TODO |
+| 6 | Mobile Responsive UI | MEDIUM | 3–5 days | Job seekers browse on phones. Current desktop-only. | 🔲 TODO |
+| 7 | Selective Asset Generation (skip/choose which assets) | MEDIUM | 2–3 days | 8-step sequential pipeline is slow and wasteful. Free-tier users especially need fast results on just resume + cover letter. | 🔲 TODO |
+| 8 | Onboarding Flow (guided first-run wizard) | MEDIUM | 2–3 days | New users hit a blank profile page with no guidance. Resume upload + JD paste should be frictionless. | 🔲 TODO |
+| 9 | Code Cleanup (decompose, remove as-any) | LOW | 2–3 days | Profile.tsx 746 lines, duplicated pipeline in NewApplication.tsx — tech debt that slows all future development. | 🔲 TODO |
+| 10 | Chrome Extension (LinkedIn/Indeed import) | LOW | 2–4 weeks | 4/7 competitors have one. Important for retention but high effort and not viable inside Lovable. Defer until post-launch. | 🔲 TODO |
 
-### What We'll Build
-A dedicated `/landing` page (rendered at `/` for unauthenticated users) with these sections:
+---
 
-1. **Hero** — Headline, subheadline, CTA buttons ("Get Started Free" → signup, "See Pricing" → scroll), decorative gradient background
-2. **Features Grid** — 6 cards showcasing: Branded Dashboards, Tailored Cover Letters, Executive Reports, RAID Logs, Roadmaps, Architecture Diagrams — with icons and short descriptions
-3. **How It Works** — 3-step visual: Paste Job URL → AI Generates Assets → Download & Apply
-4. **Example Assets** — Visual preview cards showing what generated assets look like (static mockup screenshots or styled placeholder cards)
-5. **Pricing Section** — Reuse the existing `TIER_CONFIGS` to render the 3-tier pricing table inline (no need to navigate to `/pricing`)
-6. **CTA Footer** — Final call-to-action with signup button
+## Phased Schedule
 
-### Routing Changes (App.tsx)
-- When user is **not** authenticated, render:
-  - `/` → `LandingPage`
-  - `/pricing` → `LandingPage` (scroll to pricing anchor)
-  - `/auth` → `Auth` (dedicated login/signup page)
-  - `*` → redirect to `/`
-- Add "Sign In" / "Get Started" buttons on the landing page that navigate to `/auth`
-- The existing `Auth.tsx` stays as-is but becomes accessible at `/auth` instead of being the catch-all
+### Phase 1 — Launch-Blocking (Weeks 1–3)
+Items 1 & 2. Without payment infrastructure and a public-facing page, there is no product to sell.
 
-### New Files
-- `src/pages/Landing.tsx` — The full landing page component with all sections
+- ✅ **Item 1 — Subscription Infrastructure**: 3-tier model (Free $0 / Pro $19 / Premium $39), `user_subscriptions` table with auto-provisioning trigger, `useSubscription` hook, `UpgradeGate` component, app creation limits, header tier badge, admin Subs tab, tier-based generation rate limiting (Free: 5/hr 15/day, Pro: 20/hr 100/day, Premium: 50/hr 250/day), pricing page at `/pricing`.
+- 🔲 **Item 2 — Public Landing Page**: Needs public-facing page showcasing product value, asset examples, and pricing. Remove auth wall from top-of-funnel.
 
-### Modified Files
-- `src/App.tsx` — Update unauthenticated routing: `/` renders Landing, `/auth` renders Auth, keep `/reset-password`
+### Phase 2 — Competitive Parity (Weeks 3–5)
+Items 3–5. These close the most visible feature gaps vs Teal, Rezi, and Swooped. Match Score and DOCX export are low-effort, high-signal features that immediately raise perceived product maturity.
 
-### Design Approach
-- Uses existing teal/emerald design system, `font-heading` (Plus Jakarta Sans), and shadcn components (Card, Button, Badge)
-- Responsive: mobile-first with grid layouts that adapt
-- Lightweight navbar at top with JobBot logo + "Sign In" / "Get Started" buttons
-- Smooth scroll anchors for pricing section
-- No new dependencies needed
+### Phase 3 — Retention & Polish (Weeks 5–7)
+Items 6–8. Mobile support, faster generation, and onboarding reduce churn and improve activation rates.
 
+### Phase 4 — Maintenance & Future (Ongoing)
+Items 9–10. Tech debt cleanup enables velocity. Chrome extension is a post-launch growth lever.

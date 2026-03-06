@@ -7,7 +7,7 @@ Based on the competitive landscape analysis and product critique, here is the pr
 | # | Update | Priority | Effort | Rationale | Status |
 |---|--------|----------|--------|-----------|--------|
 | 1 | Subscription Infrastructure | CRITICAL | 1–2 weeks | No revenue path exists. Nothing else matters without monetization. Blocks launch entirely. | ✅ DONE — 3-tier system (Free/Pro/Premium), feature gating, admin management, tier-based rate limiting |
-| 2 | Public Landing Page | CRITICAL | 3–5 days | No way for prospects to understand the product. Auth wall kills all top-of-funnel. Must showcase unique assets (RAID, dashboards) as differentiators. | 🔲 TODO |
+| 2 | Public Landing Page | CRITICAL | 3–5 days | No way for prospects to understand the product. Auth wall kills all top-of-funnel. Must showcase unique assets (RAID, dashboards) as differentiators. | ✅ DONE — Hero, features grid, how-it-works, example assets, pricing, CTA footer; routing updated |
 | 3 | ATS Match Score | HIGH | 3–5 days | Table-stakes feature offered by 6/7 competitors. Users expect it. Strongest signal of product competence at first glance. | 🔲 TODO |
 | 4 | Application Pipeline Stages | HIGH | 3–5 days | Teal's #1 feature. Without it, users need a second tool to track progress, reducing stickiness. | 🔲 TODO |
 | 5 | DOCX Export | HIGH | 1–2 days | 5/7 competitors offer it. Many ATS systems and recruiters require .docx uploads. PDF-only is a dealbreaker for some users. | 🔲 TODO |

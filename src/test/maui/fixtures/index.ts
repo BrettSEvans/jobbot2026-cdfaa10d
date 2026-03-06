@@ -85,7 +85,7 @@ export const mockAtsScore = {
   },
 };
 
-export const PIPELINE_STAGES = ["bookmarked", "applied", "interviewing", "offer", "accepted", "rejected"] as const;
+export const PIPELINE_STAGES = ["bookmarked", "applied", "interviewing", "offer", "accepted", "declined", "rejected"] as const;
 
 export const mockStageHistory = [
   { id: "sh-1", application_id: mockJobApplication.id, from_stage: null, to_stage: "applied", changed_at: "2025-06-01T00:00:00Z", user_id: mockUser.id },

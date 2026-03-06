@@ -66,18 +66,21 @@ registerHelp({
   slug: 'pipeline-kanban',
   title: 'Pipeline (Kanban Board)',
   summary:
-    'A drag-and-drop board showing all your applications organized by stage — Bookmarked, Applied, Interviewing, Offer, and Accepted. Drag cards between columns to update their status.',
+    'A drag-and-drop board showing all your applications organized by stage — Bookmarked, Applied, Interviewing, Offer, Accepted, and Declined. New applications start as Bookmarked. If an application stays in Bookmarked for over 48 hours, you\'ll get a one-time prompt asking if you\'ve applied.',
   steps: [
     'Click the "Pipeline" tab on the Applications page to switch to Kanban view.',
     'Drag application cards between columns to move them through stages.',
     'If a transition seems illogical (e.g. Accepted → Bookmarked), you\'ll see a warning.',
+    'Applications bookmarked for 48+ hours trigger a one-time reminder to update their status.',
   ],
   tips: [
+    'New applications default to the "Bookmarked" stage.',
+    'The "Declined" column tracks offers you chose not to accept.',
     'You can also change an application\'s stage from its detail page using the stage dropdown.',
     'The "View all stages →" link on the detail page takes you directly to the Pipeline view.',
   ],
   route: '/',
-  keywords: ['pipeline', 'kanban', 'board', 'stages', 'drag', 'drop', 'bookmarked', 'applied', 'interviewing', 'offer', 'accepted'],
+  keywords: ['pipeline', 'kanban', 'board', 'stages', 'drag', 'drop', 'bookmarked', 'applied', 'interviewing', 'offer', 'accepted', 'declined'],
   relatedSlugs: ['applications-list'],
 });
 

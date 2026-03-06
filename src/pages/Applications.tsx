@@ -9,6 +9,8 @@ import { useNavigate } from "react-router-dom";
 import CompanyIcon from "@/components/CompanyIcon";
 import KanbanBoard from "@/components/KanbanBoard";
 import PipelineAnalytics from "@/components/PipelineAnalytics";
+import GhostPromptDialog from "@/components/GhostPromptDialog";
+import { updatePipelineStage } from "@/lib/pipelineStages";
 import {
   getJobApplications,
   deleteJobApplication,
@@ -107,13 +109,46 @@ const Applications = () => {
       .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())[0] || null;
   }, [applications]);
 
+  // 14-day ghosted prompt: find oldest applied app sitting > 14 days and not dismissed
+  const staleAppliedApp = useMemo(() => {
+    const FOURTEEN_DAYS = 14 * 24 * 60 * 60 * 1000;
+    const now = Date.now();
+    const dismissed: string[] = JSON.parse(localStorage.getItem('dismissed_ghost_prompts') || '[]');
+    return applications
+      .filter((app) => {
+        const stage = (app as any).pipeline_stage || 'bookmarked';
+        if (stage !== 'applied') return false;
+        if (dismissed.includes(app.id)) return false;
+        const changedAt = (app as any).stage_changed_at || app.created_at;
+        return now - new Date(changedAt).getTime() > FOURTEEN_DAYS;
+      })
+      .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())[0] || null;
+  }, [applications]);
+
   const dismissBookmarkedPrompt = useCallback((appId: string) => {
     const dismissed: string[] = JSON.parse(localStorage.getItem('dismissed_bookmarked_prompts') || '[]');
     dismissed.push(appId);
     localStorage.setItem('dismissed_bookmarked_prompts', JSON.stringify(dismissed));
-    // Force re-render by updating applications reference
     setApplications((prev) => [...prev]);
   }, []);
+
+  const dismissGhostPrompt = useCallback((appId: string) => {
+    const dismissed: string[] = JSON.parse(localStorage.getItem('dismissed_ghost_prompts') || '[]');
+    dismissed.push(appId);
+    localStorage.setItem('dismissed_ghost_prompts', JSON.stringify(dismissed));
+    setApplications((prev) => [...prev]);
+  }, []);
+
+  const markAsGhosted = useCallback(async (appId: string) => {
+    try {
+      await updatePipelineStage(appId, 'applied', 'ghosted');
+      dismissGhostPrompt(appId);
+      loadApplications();
+      toast({ title: "Marked as ghosted", description: "Application moved to Ghosted stage." });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  }, [dismissGhostPrompt, toast]);
 
   // Check if any apps are missing icons
   const needsBackfill = useMemo(

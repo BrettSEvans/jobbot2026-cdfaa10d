@@ -72,7 +72,7 @@ serve(async (req) => {
     }
 
     // Use the admin-configured system prompt, or fall back to a default
-    const basePrompt = systemPrompt || `You are an expert resume writer. Create a professional, ATS-optimized resume in HTML format that fits on exactly one printed page.`;
+    const basePrompt = systemPrompt || `You are an expert resume tailor. Your job is to take the candidate's EXISTING resume and adapt it to better match a target job description — WITHOUT fabricating any experience, skills, degrees, or achievements the candidate does not already have.`;
 
     const brandColors = branding?.colors || {};
     const primaryColor = brandColors.primary || brandColors['dominant-1'] || '#1a365d';
@@ -87,17 +87,26 @@ COMPANY CONTEXT:
 - Competitors: ${(competitors || []).join(', ') || 'N/A'}
 - Customers: ${(customers || []).join(', ') || 'N/A'}
 
+YOUR PROCESS:
+1. SCAN the job description to identify crucial skills, responsibilities, qualifications, and keywords the employer values.
+2. MAP the candidate's existing experience, skills, and achievements from their baseline resume onto the job requirements.
+3. REWRITE bullet points to emphasize relevant achievements using strong action verbs and keywords from the job description — but ONLY using facts already present in the candidate's resume.
+4. REORDER sections and bullet points so the most relevant experience appears first.
+5. FORMAT for ATS compatibility: clean structure, standard section headings (Experience, Education, Skills), no tables/columns/graphics, standard fonts.
+
 CRITICAL RULES:
 1. Output ONLY a complete, self-contained HTML document. No markdown fences, no explanations.
-2. The resume MUST be optimized for the specific job description provided — tailor every bullet point.
-3. Use the candidate's actual experience and skills from their resume text, but reframe and prioritize them for the target role.
-4. Include only relevant experience; omit or minimize irrelevant positions.
-5. Quantify achievements wherever possible (%, $, team sizes).
-6. The HTML must be print-friendly and fit on exactly ONE standard letter page (use @media print, size: letter, appropriate margins and font sizes).
-7. Use subtle brand colors if available: primary ${primaryColor}, secondary ${secondaryColor}.
-8. Use Google Fonts via @import for professional typography.
-9. All CSS must be embedded inline in a <style> tag.
-10. Replace any placeholder names with the candidate's actual name from the profile context.
+2. NEVER invent, fabricate, or embellish experience, job titles, companies, degrees, certifications, or skills the candidate does not have.
+3. You MAY rephrase, reframe, and re-prioritize existing experience to better align with the job description.
+4. You MAY incorporate relevant keywords from the job description into existing bullet points where they truthfully apply.
+5. You MAY de-emphasize or omit irrelevant positions to make room for relevant ones.
+6. Quantify achievements wherever possible using numbers already present in the resume (%, $, team sizes).
+7. The HTML must be print-friendly and fit on exactly ONE standard letter page (use @media print, size: letter, appropriate margins and font sizes).
+8. Use subtle brand colors if available: primary ${primaryColor}, secondary ${secondaryColor}.
+9. Use Google Fonts via @import for professional typography.
+10. All CSS must be embedded inline in a <style> tag.
+11. Replace any placeholder names with the candidate's actual name from the profile context or resume.
+12. If the candidate's resume text is missing or empty, state that you cannot generate a tailored resume without baseline data — do NOT make up a resume.
 ${profileContext ? `\nCANDIDATE PROFILE CONTEXT:\n${profileContext}` : ''}
 ${generationGuide ? `\n${generationGuide}` : ''}`;
 

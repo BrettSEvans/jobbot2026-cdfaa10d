@@ -279,6 +279,7 @@ export type Database = {
           asset_name: string
           brief_description: string | null
           created_at: string
+          downloaded_at: string | null
           generation_error: string | null
           generation_status: string
           html: string
@@ -290,6 +291,7 @@ export type Database = {
           asset_name: string
           brief_description?: string | null
           created_at?: string
+          downloaded_at?: string | null
           generation_error?: string | null
           generation_status?: string
           html?: string
@@ -301,6 +303,7 @@ export type Database = {
           asset_name?: string
           brief_description?: string | null
           created_at?: string
+          downloaded_at?: string | null
           generation_error?: string | null
           generation_status?: string
           html?: string

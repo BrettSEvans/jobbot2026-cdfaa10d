@@ -1,6 +1,7 @@
 /**
  * DynamicAssetTab - Renders a single dynamic (AI-proposed) asset with full feature parity:
  * Generate, Refine with AI, PDF Download, Copy Text, Revision History.
+ * After download, regeneration/refinement/swap are locked.
  */
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -10,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Edit3, RefreshCw, Loader2, FileDown, Sparkles, Copy, History, Eye,
+  Edit3, RefreshCw, Loader2, FileDown, Sparkles, Copy, History, Eye, HelpCircle, Lock,
 } from "lucide-react";
 import {
   streamDynamicAssetGeneration,
@@ -18,12 +19,19 @@ import {
   updateGeneratedAsset,
   saveDynamicAssetRevision,
   getDynamicAssetRevisions,
+  markAssetDownloaded,
   type GeneratedAsset,
 } from "@/lib/api/dynamicAssets";
 import { extractStyleSignalsFromMessage } from "@/lib/api/stylePreferences";
 import { cleanHtml } from "@/lib/cleanHtml";
 import { downloadHtmlAsPdf, buildPdfFilename } from "@/lib/htmlToPdf";
 import { getActiveResumeText } from "@/lib/api/profile";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface DynamicAssetTabProps {
   asset: GeneratedAsset;
@@ -57,6 +65,9 @@ export default function DynamicAssetTab({
   const [previewingId, setPreviewingId] = useState<string | null>(null);
   const [revisionTrigger, setRevisionTrigger] = useState(0);
 
+  const isDownloaded = !!asset.downloaded_at;
+  const isDashboardType = asset.asset_name.toLowerCase().includes("dashboard");
+
   useEffect(() => {
     if (asset.html) loadRevisions();
   }, [asset.id, revisionTrigger]);
@@ -73,6 +84,7 @@ export default function DynamicAssetTab({
   const html = asset.html;
 
   const handleGenerate = async () => {
+    if (isDownloaded) return;
     if (!jobDescription.trim()) {
       toast({ title: "No job description", description: "A job description is needed.", variant: "destructive" });
       return;
@@ -129,6 +141,7 @@ export default function DynamicAssetTab({
   };
 
   const handleRefine = async () => {
+    if (isDownloaded) return;
     if (!chatInput.trim()) return;
     const msg = chatInput.trim();
     setChatInput("");
@@ -174,11 +187,19 @@ export default function DynamicAssetTab({
     }
   };
 
-  const handleDownloadPdf = () => {
+  const handleDownloadPdf = async () => {
     const slug = asset.asset_name.replace(/\s+/g, '-').toLowerCase();
     const filename = buildPdfFilename(slug, companyName, jobTitle);
     downloadHtmlAsPdf(html, filename);
     toast({ title: "PDF export", description: "Print dialog opened — save as PDF." });
+
+    // Mark as downloaded to lock regeneration/refinement
+    if (!isDownloaded) {
+      try {
+        const updated = await markAssetDownloaded(asset.id);
+        onAssetUpdated(updated);
+      } catch (e) { console.warn("Failed to mark as downloaded:", e); }
+    }
   };
 
   const handleCopyText = async () => {
@@ -204,15 +225,80 @@ export default function DynamicAssetTab({
 
   return (
     <div className="space-y-4">
+      {/* Download Lock Banner */}
+      {isDownloaded && (
+        <div className="flex items-center gap-2 p-3 rounded-lg border border-muted bg-muted/50 text-sm">
+          <Lock className="h-4 w-4 text-muted-foreground shrink-0" />
+          <span className="text-muted-foreground">
+            This asset has been downloaded. Create a new application to generate fresh assets.
+          </span>
+        </div>
+      )}
+
+      {/* Dashboard Hosting Help */}
+      {isDashboardType && html && (
+        <div className="flex items-start gap-2 p-3 rounded-lg border border-accent bg-accent/30 text-sm">
+          <HelpCircle className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+          <span className="text-foreground">
+            To share this dashboard, download the files and host them on a free static site like{" "}
+            <a
+              href="https://pages.edgeone.ai/drop"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary underline underline-offset-2 font-medium"
+            >
+              pages.edgeone.ai/drop
+            </a>
+          </span>
+        </div>
+      )}
+
       {/* Action Bar */}
       <div className="flex flex-wrap gap-2">
-        <Button data-tutorial="refine-ai-btn" variant="outline" size="sm" onClick={() => setChatOpen(!chatOpen)} disabled={!html || !canRefineProp}>
-          <Edit3 className="mr-2 h-4 w-4" /> {!canRefineProp ? "Upgrade to Refine" : chatOpen ? "Hide Chat" : "Refine with AI"}
-        </Button>
-        <Button data-tutorial="generate-btn" variant="outline" size="sm" onClick={handleGenerate} disabled={isWorking}>
-          {isWorking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-          {html ? "Regenerate" : "Generate"}
-        </Button>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span>
+                <Button
+                  data-tutorial="refine-ai-btn"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setChatOpen(!chatOpen)}
+                  disabled={!html || !canRefineProp || isDownloaded}
+                >
+                  <Edit3 className="mr-2 h-4 w-4" />
+                  {isDownloaded ? "Locked" : !canRefineProp ? "Upgrade to Refine" : chatOpen ? "Hide Chat" : "Refine with AI"}
+                </Button>
+              </span>
+            </TooltipTrigger>
+            {isDownloaded && (
+              <TooltipContent>Asset locked after download</TooltipContent>
+            )}
+          </Tooltip>
+        </TooltipProvider>
+
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span>
+                <Button
+                  data-tutorial="generate-btn"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleGenerate}
+                  disabled={isWorking || isDownloaded}
+                >
+                  {isWorking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+                  {html ? "Regenerate" : "Generate"}
+                </Button>
+              </span>
+            </TooltipTrigger>
+            {isDownloaded && (
+              <TooltipContent>Asset locked after download</TooltipContent>
+            )}
+          </Tooltip>
+        </TooltipProvider>
+
         {html && (
           <>
             <Button data-tutorial="download-btn" variant="outline" size="sm" onClick={handleDownloadPdf}>
@@ -226,7 +312,7 @@ export default function DynamicAssetTab({
       </div>
 
       {/* Refine Chat */}
-      {chatOpen && (
+      {chatOpen && !isDownloaded && (
         <Card>
           <CardContent className="pt-4 space-y-3">
             {isWorking && (

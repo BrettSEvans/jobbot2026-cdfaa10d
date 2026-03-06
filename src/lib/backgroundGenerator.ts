@@ -7,7 +7,6 @@
 import {
   scrapeCompanyBranding,
   analyzeCompany,
-  streamDashboardGeneration,
   saveJobApplication,
   searchCompanyIcon,
 } from "@/lib/api/jobApplication";
@@ -18,15 +17,14 @@ import { streamRaidLog } from "@/lib/api/raidLog";
 import { streamArchitectureDiagram } from "@/lib/api/architectureDiagram";
 import { streamRoadmap } from "@/lib/api/roadmap";
 import { streamResumeGeneration, getResumeStyle } from "@/lib/api/resume";
-import { parseLlmJsonOutput, assembleDashboardHtml } from "@/lib/dashboard/assembler";
 import { cleanHtml } from "@/lib/cleanHtml";
 
 export type GenerationJob = {
   applicationId: string;
-  status: "pending" | "scraping" | "analyzing" | "cover-letter" | "dashboard" | "generating-assets" | "executive-report" | "raid-log" | "architecture-diagram" | "roadmap" | "resume" | "generating-asset" | "refining-asset" | "complete" | "error";
+  status: "pending" | "scraping" | "analyzing" | "cover-letter" | "generating-assets" | "executive-report" | "raid-log" | "architecture-diagram" | "roadmap" | "resume" | "generating-asset" | "refining-asset" | "complete" | "error";
   progress: string;
   error?: string;
-  /** Tracks how many of the 4 parallel assets have finished (used by UI) */
+  /** Tracks how many of the parallel assets have finished (used by UI) */
   parallelCompleted?: number;
   parallelTotal?: number;
   /** Timestamp when the job started */
@@ -229,7 +227,7 @@ class BackgroundGenerationManager {
       if (!companyIconUrl) {
         companyIconUrl = brandingData?.logo || brandingData?.images?.logo || brandingData?.images?.favicon || null;
       }
-      // Inject icon into branding for dashboard template usage
+      // Inject icon into branding for template usage
       if (companyIconUrl && brandingData) {
         if (!brandingData.logo) brandingData.logo = companyIconUrl;
       } else if (companyIconUrl && !brandingData) {
@@ -267,50 +265,10 @@ class BackgroundGenerationManager {
         id: appId,
         job_url: jobUrl,
         cover_letter: coverLetter,
-        generation_status: "dashboard",
+        generation_status: "generating-assets",
       } as any);
 
-      // 5. Generate dashboard (now outputs JSON, assembled into HTML by templates)
-      this.updateJob(appId, { status: "dashboard", progress: "Generating dashboard..." });
-      let dashboardRaw = "";
-      await streamDashboardGeneration({
-        jobDescription: markdown,
-        branding: brandingData,
-        companyName,
-        jobTitle,
-        competitors,
-        customers,
-        products,
-        department,
-        onDelta: (text) => { dashboardRaw += text; },
-        onDone: () => {},
-      });
-
-      // Parse JSON and assemble HTML from templates
-      let dashboardHtml = "";
-      let dashboardData: any = null;
-      const parsed = parseLlmJsonOutput(dashboardRaw);
-      if (parsed) {
-        // Inject logoUrl from branding if LLM omitted it
-        if (!parsed.meta.logoUrl && brandingData) {
-          const logoUrl = brandingData.logo || brandingData.images?.logo || brandingData.images?.favicon;
-          if (logoUrl) parsed.meta.logoUrl = logoUrl;
-        }
-        dashboardData = parsed;
-        dashboardHtml = assembleDashboardHtml(parsed);
-      } else {
-        // Fallback: treat as raw HTML (backward compat with old prompt)
-        console.warn("Failed to parse dashboard JSON, falling back to raw HTML");
-        dashboardHtml = dashboardRaw;
-        const htmlStart = dashboardHtml.indexOf("<!DOCTYPE html>") !== -1
-          ? dashboardHtml.indexOf("<!DOCTYPE html>")
-          : dashboardHtml.indexOf("<!doctype html>");
-        if (htmlStart > 0) dashboardHtml = dashboardHtml.slice(htmlStart);
-        const htmlEnd = dashboardHtml.lastIndexOf("</html>");
-        if (htmlEnd !== -1) dashboardHtml = dashboardHtml.slice(0, htmlEnd + 7);
-      }
-
-      // 6-9. Generate assets IN PARALLEL (including resume)
+      // 5. Generate remaining assets IN PARALLEL (resume + reports)
       const totalAssets = 5;
       this.updateJob(appId, {
         status: "generating-assets",
@@ -456,12 +414,10 @@ class BackgroundGenerationManager {
       const roadmapHtml = roadmapResult.status === "fulfilled" ? roadmapResult.value : null;
       const resumeHtml = resumeResult.status === "fulfilled" ? resumeResult.value : null;
 
-      // 10. Single consolidated save
+      // 6. Single consolidated save (no dashboard)
       await saveJobApplication({
         id: appId,
         job_url: jobUrl,
-        dashboard_html: dashboardHtml,
-        dashboard_data: dashboardData,
         ...(execReportHtml ? { executive_report_html: execReportHtml } : {}),
         ...(raidLogHtml ? { raid_log_html: raidLogHtml } : {}),
         ...(archDiagramHtml ? { architecture_diagram_html: archDiagramHtml } : {}),
@@ -491,88 +447,6 @@ class BackgroundGenerationManager {
           generation_error: err.message,
         } as any);
       } catch (saveErr) { console.warn("Failed to save error status:", saveErr); }
-    }
-  }
-
-  /**
-   * Start a dashboard refinement in the background.
-   * Continues even if the user navigates away.
-   */
-  async startRefinement({
-    applicationId,
-    currentHtml,
-    currentDashboardData,
-    userMessage,
-    chatHistory,
-    jobUrl,
-  }: {
-    applicationId: string;
-    currentHtml: string;
-    currentDashboardData?: any;
-    userMessage: string;
-    chatHistory: Array<{ role: string; content: string }>;
-    jobUrl: string;
-  }): Promise<void> {
-    const job: GenerationJob = {
-      applicationId,
-      status: "dashboard",
-      progress: "Refining dashboard...",
-    };
-    this.jobs.set(applicationId, job);
-    this.notify();
-
-    this.runRefinement(applicationId, currentHtml, currentDashboardData, userMessage, chatHistory, jobUrl);
-  }
-
-  private async runRefinement(
-    appId: string,
-    currentHtml: string,
-    currentDashboardData: any | undefined,
-    userMessage: string,
-    chatHistory: Array<{ role: string; content: string }>,
-    jobUrl: string,
-  ) {
-    try {
-      const { streamDashboardRefinement } = await import("@/lib/api/jobApplication");
-
-      let accumulated = "";
-      await streamDashboardRefinement({
-        currentHtml,
-        currentDashboardData,
-        userMessage,
-        chatHistory,
-        onDelta: (text) => { accumulated += text; },
-        onDone: () => {
-          // Try parsing as JSON first (new format)
-          const parsed = parseLlmJsonOutput(accumulated);
-          if (parsed) {
-            accumulated = assembleDashboardHtml(parsed);
-          } else {
-            // Fallback: clean as raw HTML
-            let clean = accumulated;
-            const htmlStart = clean.indexOf("<!DOCTYPE html>");
-            const htmlStartAlt = clean.indexOf("<!doctype html>");
-            const start = htmlStart !== -1 ? htmlStart : htmlStartAlt;
-            if (start > 0) clean = clean.slice(start);
-            const htmlEnd = clean.lastIndexOf("</html>");
-            if (htmlEnd !== -1) clean = clean.slice(0, htmlEnd + 7);
-            accumulated = clean;
-          }
-        },
-      });
-
-      const updatedHistory = [...chatHistory, { role: "assistant", content: "✅ Dashboard updated!" }];
-      await saveJobApplication({
-        id: appId,
-        job_url: jobUrl,
-        dashboard_html: accumulated,
-        chat_history: updatedHistory,
-      } as any);
-
-      this.updateJob(appId, { status: "complete", progress: "Refinement complete!" });
-    } catch (err: any) {
-      console.error("Background refinement error:", err);
-      this.updateJob(appId, { status: "error", progress: "Refinement failed", error: err.message });
     }
   }
 

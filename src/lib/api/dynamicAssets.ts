@@ -18,8 +18,21 @@ export interface GeneratedAsset {
   html: string;
   generation_status: string;
   generation_error: string | null;
+  downloaded_at: string | null;
   created_at: string;
   updated_at: string;
+}
+
+// --- Mark an asset as downloaded (locks regen/refine/swap) ---
+export async function markAssetDownloaded(assetId: string) {
+  const { data, error } = await (supabase as any)
+    .from('generated_assets')
+    .update({ downloaded_at: new Date().toISOString() })
+    .eq('id', assetId)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return data as GeneratedAsset;
 }
 
 // --- Propose 6 asset types via AI ---

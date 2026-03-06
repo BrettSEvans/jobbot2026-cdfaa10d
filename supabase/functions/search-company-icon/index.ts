@@ -18,6 +18,30 @@ function extractDomain(companyUrl?: string, companyName?: string): string {
   return '';
 }
 
+/**
+ * Check if a URL is relevant to the company name using word-boundary matching.
+ * Prevents false positives like "appen" matching "append".
+ */
+function isRelevantUrl(url: string, companyName: string): boolean {
+  const mLower = url.toLowerCase();
+  const nameLower = companyName.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const nameWords = companyName.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+
+  // For the full concatenated name, use word boundary regex
+  const fullNameRegex = new RegExp(`(^|[^a-z])${escapeRegex(nameLower)}([^a-z]|$)`);
+  if (fullNameRegex.test(mLower)) return true;
+
+  // For individual words, also use word boundary checks
+  return nameWords.some(w => {
+    const wordRegex = new RegExp(`(^|[^a-z])${escapeRegex(w)}([^a-z]|$)`);
+    return wordRegex.test(mLower);
+  });
+}
+
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 async function tryClearbit(domain: string): Promise<string | null> {
   if (!domain) return null;
   const url = `https://logo.clearbit.com/${domain}`;
@@ -42,17 +66,10 @@ async function tryIconIcons(companyName: string, firecrawlKey?: string): Promise
     const markdown = await scrapePageMarkdown(searchUrl, firecrawlKey);
     if (!markdown) return null;
 
-    // Look for image URLs in markdown that point to icon assets
     const imgRegex = /https?:\/\/[^\s\)\"]+\.(png|svg|ico)(?:\?[^\s\)\"]*)?/gi;
     const matches = markdown.match(imgRegex);
     if (matches) {
-      // Filter: require the company name (or a significant substring) in the URL or surrounding text
-      const nameLower = companyName.toLowerCase().replace(/[^a-z0-9]/g, '');
-      const nameWords = companyName.toLowerCase().split(/\s+/).filter(w => w.length > 2);
-      const relevantMatch = matches.find(m => {
-        const mLower = m.toLowerCase();
-        return nameWords.some(w => mLower.includes(w)) || mLower.includes(nameLower);
-      });
+      const relevantMatch = matches.find(m => isRelevantUrl(m, companyName));
       if (relevantMatch) return relevantMatch;
     }
   } catch (e) {
@@ -67,17 +84,13 @@ async function trySvgRepo(companyName: string, firecrawlKey?: string): Promise<s
     const markdown = await scrapePageMarkdown(searchUrl, firecrawlKey);
     if (!markdown) return null;
 
-    // Look for SVG URLs
     const imgRegex = /https?:\/\/[^\s\)\"]+\.(svg|png)(?:\?[^\s\)\"]*)?/gi;
     const matches = markdown.match(imgRegex);
     if (matches) {
-      // Filter: require the company name in the URL to avoid generic results
-      const nameWords = companyName.toLowerCase().split(/\s+/).filter(w => w.length > 2);
       const relevantMatch = matches.find(m => {
         const mLower = m.toLowerCase();
-        // Skip svgrepo's own logo
         if (mLower.includes('svgrepo.com/logo')) return false;
-        return nameWords.some(w => mLower.includes(w));
+        return isRelevantUrl(m, companyName);
       });
       if (relevantMatch) return relevantMatch;
     }

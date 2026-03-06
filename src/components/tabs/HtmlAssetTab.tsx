@@ -2,18 +2,20 @@
  * Generic tab for HTML-based assets (Executive Report, RAID Log, Architecture Diagram, Roadmap, Resume).
  * Generate and refine operations run as background jobs that survive navigation.
  */
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { downloadHtmlAsDocx, buildDocxFilename } from "@/lib/docxExport";
 import { useSubscription } from "@/hooks/useSubscription";
 import {
-  Edit3, RefreshCw, Loader2, Download, Sparkles, FileDown, Check, X,
+  Edit3, RefreshCw, Loader2, Download, Sparkles, FileDown, Check, X, AlertTriangle,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { Link } from "react-router-dom";
 import WysiwygEditor from "@/components/WysiwygEditor";
 import SaveAsTemplate from "@/components/SaveAsTemplate";
 import AssetRevisions from "@/components/AssetRevisions";
@@ -57,6 +59,19 @@ export default function HtmlAssetTab({
 
   const assetJob = useAssetJob(appId, assetType);
   const isAssetJobActive = !!(assetJob && !["complete", "error"].includes(assetJob.status));
+
+  // Check if resume text is available (only relevant for resume asset type)
+  const [missingResumeText, setMissingResumeText] = useState(false);
+  useEffect(() => {
+    if (assetType !== "resume") return;
+    let cancelled = false;
+    import("@/lib/api/profile").then(({ getProfile }) =>
+      getProfile().then((p) => {
+        if (!cancelled) setMissingResumeText(!p?.resume_text?.trim());
+      })
+    ).catch(() => {});
+    return () => { cancelled = true; };
+  }, [assetType]);
 
   const handleGenerate = async () => {
     if (!jobDescription.trim()) {
@@ -149,6 +164,19 @@ export default function HtmlAssetTab({
 
   return (
     <div className="space-y-4">
+      {assetType === "resume" && missingResumeText && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>No baseline resume found</AlertTitle>
+          <AlertDescription>
+            Your profile doesn't have resume text yet. Without it, the AI will fabricate a resume instead of tailoring yours.{" "}
+            <Link to="/profile" className="underline font-medium">
+              Upload a PDF on your Profile page
+            </Link>{" "}
+            to get accurate, personalized results.
+          </AlertDescription>
+        </Alert>
+      )}
       <div className="flex flex-wrap gap-2">
         <Button data-tutorial="refine-ai-btn" variant="outline" size="sm" onClick={() => setChatOpen(!chatOpen)} disabled={!canRefineProp}>
           <Edit3 className="mr-2 h-4 w-4" /> {!canRefineProp ? "Upgrade to Refine" : chatOpen ? "Hide Chat" : "Refine with AI"}

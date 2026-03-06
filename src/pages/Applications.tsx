@@ -27,6 +27,7 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
+  AlertCircle,
   Sparkles,
   Zap,
   FileCheck,
@@ -88,6 +89,30 @@ const Applications = () => {
   const [backfilling, setBackfilling] = useState(false);
 
   const activeJobCount = useActiveJobCount();
+
+  // 48-hour bookmarked prompt: find oldest bookmarked app that's been sitting > 48h and not dismissed
+  const staleBookmarkedApp = useMemo(() => {
+    const FORTY_EIGHT_HOURS = 48 * 60 * 60 * 1000;
+    const now = Date.now();
+    const dismissed: string[] = JSON.parse(localStorage.getItem('dismissed_bookmarked_prompts') || '[]');
+    return applications
+      .filter((app) => {
+        const stage = (app as any).pipeline_stage || 'bookmarked';
+        if (stage !== 'bookmarked') return false;
+        if (dismissed.includes(app.id)) return false;
+        const changedAt = (app as any).stage_changed_at || app.created_at;
+        return now - new Date(changedAt).getTime() > FORTY_EIGHT_HOURS;
+      })
+      .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())[0] || null;
+  }, [applications]);
+
+  const dismissBookmarkedPrompt = useCallback((appId: string) => {
+    const dismissed: string[] = JSON.parse(localStorage.getItem('dismissed_bookmarked_prompts') || '[]');
+    dismissed.push(appId);
+    localStorage.setItem('dismissed_bookmarked_prompts', JSON.stringify(dismissed));
+    // Force re-render by updating applications reference
+    setApplications((prev) => [...prev]);
+  }, []);
 
   // Check if any apps are missing icons
   const needsBackfill = useMemo(
@@ -291,6 +316,26 @@ const Applications = () => {
         </div>
 
         <ProUsageBar />
+
+        {/* 48-hour bookmarked nudge */}
+        {staleBookmarkedApp && (
+          <div className="flex items-center justify-between gap-3 rounded-lg border border-yellow-500/30 bg-yellow-500/5 px-4 py-3">
+            <div className="flex items-center gap-2 text-sm">
+              <AlertCircle className="h-4 w-4 text-yellow-600 dark:text-yellow-400 shrink-0" />
+              <p className="text-foreground">
+                Have you applied to <strong>{staleBookmarkedApp.company_name || 'this job'}</strong>? It's been bookmarked for over 48 hours.
+              </p>
+            </div>
+            <div className="flex gap-2 shrink-0">
+              <Button size="sm" variant="outline" onClick={() => dismissBookmarkedPrompt(staleBookmarkedApp.id)}>
+                Dismiss
+              </Button>
+              <Button size="sm" onClick={() => navigate(`/applications/${staleBookmarkedApp.id}`)}>
+                Update Status
+              </Button>
+            </div>
+          </div>
+        )}
 
         {loading ? (
           <div className="rounded-md border">

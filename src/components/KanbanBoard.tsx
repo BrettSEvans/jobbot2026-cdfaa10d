@@ -47,10 +47,10 @@ export default function KanbanBoard({ applications, onStageChanged }: KanbanBoar
 
   const columns = useMemo(() => {
     const map: Record<PipelineStage, JobApplication[]> = {
-      bookmarked: [], applied: [], interviewing: [], offer: [], accepted: [], rejected: [],
+      bookmarked: [], applied: [], interviewing: [], offer: [], accepted: [], declined: [], rejected: [],
     };
     for (const app of applications) {
-      const stage = ((app as any).pipeline_stage || 'applied') as PipelineStage;
+      const stage = ((app as any).pipeline_stage || 'bookmarked') as PipelineStage;
       if (map[stage]) map[stage].push(app);
       else map.applied.push(app);
     }
@@ -77,7 +77,7 @@ export default function KanbanBoard({ applications, onStageChanged }: KanbanBoar
     const app = applications.find((a) => a.id === appId);
     if (!app) return;
 
-    const fromStage = ((app as any).pipeline_stage || 'applied') as PipelineStage;
+    const fromStage = ((app as any).pipeline_stage || 'bookmarked') as PipelineStage;
     if (fromStage === toStage) return;
 
     if (isIllogicalTransition(fromStage, toStage)) {
@@ -111,6 +111,7 @@ export default function KanbanBoard({ applications, onStageChanged }: KanbanBoar
 
   // Filter out rejected for main flow, show separately
   const mainStages = PIPELINE_STAGES.filter((s) => s !== 'rejected') as PipelineStage[];
+  // Default to 'bookmarked' for apps without a stage
 
   return (
     <>

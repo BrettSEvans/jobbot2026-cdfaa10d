@@ -2,11 +2,12 @@
  * Generic tab for HTML-based assets (Executive Report, RAID Log, Architecture Diagram, Roadmap, Resume).
  * Generate and refine operations run as background jobs that survive navigation.
  */
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { downloadHtmlAsDocx, buildDocxFilename } from "@/lib/docxExport";
 import { useSubscription } from "@/hooks/useSubscription";

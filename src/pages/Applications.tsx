@@ -618,6 +618,7 @@ const Applications = () => {
             </TabsContent>
 
             <TabsContent value="pipeline" className="space-y-4">
+              <PipelineAnalytics applications={applications} />
               <KanbanBoard applications={applications} onStageChanged={loadApplications} />
             </TabsContent>
 

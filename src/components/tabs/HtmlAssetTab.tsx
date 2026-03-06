@@ -8,6 +8,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { downloadHtmlAsDocx, buildDocxFilename } from "@/lib/docxExport";
+import { useSubscription } from "@/hooks/useSubscription";
 import {
   Edit3, RefreshCw, Loader2, Download, Sparkles, FileDown, Check, X,
 } from "lucide-react";
@@ -43,6 +45,7 @@ export default function HtmlAssetTab({
   generateFn, saveRevisionFn, emptyIcon: EmptyIcon, refinePlaceholder, canRefine: canRefineProp = true,
 }: HtmlAssetTabProps) {
   const { toast } = useToast();
+  const { tier } = useSubscription();
   const { app, jobDescription, companyName, jobTitle, saveField, handleCopy } = state;
 
   const [chatOpen, setChatOpen] = useState(false);
@@ -132,6 +135,18 @@ export default function HtmlAssetTab({
     toast({ title: "PDF export", description: "Print dialog opened — save as PDF." });
   };
 
+  const handleDownloadDocx = async () => {
+    const filename = buildDocxFilename(assetType, companyName, jobTitle);
+    try {
+      await downloadHtmlAsDocx(html, filename);
+      toast({ title: "DOCX export", description: "Download started." });
+    } catch (err: any) {
+      toast({ title: "Export failed", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const showDocx = (assetType === "resume" || (assetType as string) === "cover_letter") && tier !== "free";
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-2">
@@ -155,8 +170,13 @@ export default function HtmlAssetTab({
               defaultJobFunction={jobTitle} defaultDepartment=""
             />
             <Button variant="outline" size="sm" onClick={handleDownloadPdf}>
-              <FileDown className="mr-2 h-4 w-4" /> Download PDF
+              <FileDown className="mr-2 h-4 w-4" /> PDF
             </Button>
+            {showDocx && (
+              <Button variant="outline" size="sm" onClick={handleDownloadDocx}>
+                <FileDown className="mr-2 h-4 w-4" /> DOCX
+              </Button>
+            )}
           </>
         )}
       </div>

@@ -21,6 +21,7 @@ import AppHeader from "./components/AppHeader";
 import HelpButton from "./components/HelpButton";
 import TutorialOverlay from "./components/tutorial/TutorialOverlay";
 import TutorialDemo from "./pages/TutorialDemo";
+import ImportJob from "./pages/ImportJob";
 import { useAuth } from "./hooks/useAuth";
 import { useTutorial } from "./hooks/useTutorial";
 import { NavigationGuardProvider } from "./hooks/useNavigationGuard";
@@ -100,6 +101,7 @@ function AuthenticatedApp() {
               <Route path="/admin" element={<><AppHeader onSignOut={signOut} /><main id="main-content"><Admin /></main></>} />
               <Route path="/pricing" element={<><AppHeader onSignOut={signOut} /><main id="main-content"><Pricing /></main></>} />
               <Route path="/tutorial-demo" element={<><AppHeader onSignOut={signOut} /><main id="main-content"><TutorialDemo /></main></>} />
+              <Route path="/import" element={<><AppHeader onSignOut={signOut} /><main id="main-content"><ImportJob /></main></>} />
               <Route path="*" element={<NotFound />} />
             </>
           )}

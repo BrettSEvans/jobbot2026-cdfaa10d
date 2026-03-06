@@ -65,3 +65,12 @@ verify_jwt = false
 
 [functions.refine-dynamic-asset]
 verify_jwt = false
+
+[functions.score-ats-match]
+verify_jwt = false
+
+[functions.export-docx]
+verify_jwt = false
+
+[functions.import-job-external]
+verify_jwt = false

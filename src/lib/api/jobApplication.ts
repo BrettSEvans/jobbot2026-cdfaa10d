@@ -141,6 +141,8 @@ const ALLOWED_JOB_APP_FIELDS = [
   "executive_report_html", "raid_log_html", "architecture_diagram_html",
   "roadmap_html", "resume_html", "resume_style_id", "company_icon_url",
   "source_resume_id", "persona_id", "deleted_at", "deleted_by",
+  "ats_score", "ats_scored_at", "pipeline_stage", "stage_changed_at",
+  "selected_assets",
 ] as const;
 
 function pickAllowed(input: Record<string, unknown>): Record<string, unknown> {

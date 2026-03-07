@@ -1,8 +1,8 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { LogOut, Moon, Sun, Zap, ArrowRightLeft, Menu } from "lucide-react";
-import { BRAND } from "@/lib/branding";
+import { LogOut, Moon, Sun, ArrowRightLeft, Menu } from "lucide-react";
+import BrandLogo from "@/components/BrandLogo";
 import { useTheme } from "@/hooks/useTheme";
 import { useNavigationGuard } from "@/hooks/useNavigationGuard";
 import { useImpersonation } from "@/contexts/ImpersonationContext";

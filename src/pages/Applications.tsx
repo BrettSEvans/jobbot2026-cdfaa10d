@@ -703,9 +703,6 @@ const Applications = () => {
 };
 
 
-export default Applications;
-
-  if (isActive) {
     return (
       <Badge variant="secondary" className="flex items-center gap-1.5 w-fit">
         <Loader2 className="h-3 w-3 animate-spin" />

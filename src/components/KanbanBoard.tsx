@@ -37,7 +37,8 @@ import {
 } from "@/lib/pipelineStages";
 import type { JobApplication } from "@/hooks/useApplicationDetail";
 import { useToast } from "@/hooks/use-toast";
-import { Clock, CheckSquare, X, ArrowRight } from "lucide-react";
+import { Clock, CheckSquare, X, ArrowRight, MoveRight } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface KanbanBoardProps {
   applications: JobApplication[];
@@ -69,6 +70,7 @@ function DaysInStageBadge({ stageChangedAt, createdAt }: { stageChangedAt?: stri
 export default function KanbanBoard({ applications, onStageChanged }: KanbanBoardProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const [pendingMove, setPendingMove] = useState<{
     appId: string;
     from: PipelineStage;
@@ -189,13 +191,23 @@ export default function KanbanBoard({ applications, onStageChanged }: KanbanBoar
 
   const mainStages = PIPELINE_STAGES.filter((s) => s !== "rejected") as PipelineStage[];
 
-  const renderCard = (app: JobApplication, dimmed = false) => (
+  const handleMobileMove = async (appId: string, toStage: PipelineStage) => {
+    const app = applications.find((a) => a.id === appId);
+    if (!app) return;
+    const fromStage = ((app as any).pipeline_stage || "bookmarked") as PipelineStage;
+    if (fromStage === toStage) return;
+    await executeMove(appId, fromStage, toStage);
+  };
+
+  const renderCard = (app: JobApplication, dimmed = false) => {
+    const appStage = ((app as any).pipeline_stage || "bookmarked") as PipelineStage;
+    return (
     <Card
       key={app.id}
-      draggable={!isBulkMode}
+      draggable={!isBulkMode && !isMobile}
       onDragStart={(e) => handleDragStart(e, app.id)}
       onDragEnd={() => setDraggedId(null)}
-      className={`cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow ${
+      className={`${isMobile ? "cursor-pointer" : "cursor-grab active:cursor-grabbing"} hover:shadow-md transition-shadow ${
         draggedId === app.id ? "opacity-50" : ""
       } ${dimmed ? "opacity-70" : ""} ${
         selectedIds.has(app.id) ? "ring-2 ring-primary" : ""
@@ -244,9 +256,30 @@ export default function KanbanBoard({ applications, onStageChanged }: KanbanBoar
             </Badge>
           )}
         </div>
+        {/* Mobile touch-friendly move dropdown */}
+        {isMobile && !isBulkMode && (
+          <div className="pt-1" onClick={(e) => e.stopPropagation()}>
+            <Select onValueChange={(v) => handleMobileMove(app.id, v as PipelineStage)}>
+              <SelectTrigger className="h-7 text-xs w-full">
+                <div className="flex items-center gap-1">
+                  <MoveRight className="h-3 w-3" />
+                  <span>Move to…</span>
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                {PIPELINE_STAGES.filter((s) => s !== appStage).map((s) => (
+                  <SelectItem key={s} value={s} className="text-xs">
+                    {STAGE_LABELS[s]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
       </CardContent>
     </Card>
-  );
+    );
+  };
 
   const renderColumn = (stage: PipelineStage, borderClass = "border-border/50", bgClass = "bg-muted/20") => (
     <div
@@ -271,7 +304,7 @@ export default function KanbanBoard({ applications, onStageChanged }: KanbanBoar
     <>
       {/* Bulk action bar */}
       {isBulkMode && (
-        <div className="flex items-center gap-3 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3 mb-3">
+        <div className="flex flex-wrap items-center gap-3 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3 mb-3">
           <CheckSquare className="h-4 w-4 text-primary shrink-0" />
           <span className="text-sm font-medium">{selectedIds.size} selected</span>
           <ArrowRight className="h-4 w-4 text-muted-foreground" />

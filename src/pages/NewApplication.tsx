@@ -30,7 +30,9 @@ import {
   Edit3,
   Layers,
   FileUser,
+  ChevronDown,
 } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -207,97 +209,104 @@ const NewApplication = () => {
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Globe className="h-5 w-5" /> Company Website URL (optional)
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Input
-                    type="url"
-                    placeholder="https://example.com"
-                    value={companyUrl}
-                    onChange={(e) => setCompanyUrl(e.target.value)}
-                  />
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Used to scrape branding (fonts, colors, design) for your assets
-                  </p>
-                </CardContent>
-              </Card>
+              <Collapsible defaultOpen className="sm:!block space-y-4">
+                <CollapsibleTrigger className="flex items-center justify-between w-full text-sm font-medium text-muted-foreground sm:hidden py-2">
+                  <span>Advanced Options</span>
+                  <ChevronDown className="h-4 w-4 transition-transform [[data-state=open]>&]:rotate-180" />
+                </CollapsibleTrigger>
+                <CollapsibleContent className="space-y-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Globe className="h-5 w-5" /> Company Website URL (optional)
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <Input
+                        type="url"
+                        placeholder="https://example.com"
+                        value={companyUrl}
+                        onChange={(e) => setCompanyUrl(e.target.value)}
+                      />
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Used to scrape branding (fonts, colors, design) for your assets
+                      </p>
+                    </CardContent>
+                  </Card>
 
-              {resumeStyles.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <FileUser className="h-5 w-5" /> Resume Style
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <Select value={selectedResumeStyleId} onValueChange={setSelectedResumeStyleId}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a resume style" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {resumeStyles.map((style) => (
-                          <SelectItem key={style.id} value={style.id}>
-                            <div>
-                              <span>{style.label}</span>
-                              {style.description && (
-                                <span className="text-xs text-muted-foreground ml-2">— {style.description}</span>
-                              )}
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <p className="text-xs text-muted-foreground mt-2">
-                      Controls the AI-generated resume style and format
-                    </p>
-                  </CardContent>
-                </Card>
-              )}
+                  {resumeStyles.length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <FileUser className="h-5 w-5" /> Resume Style
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <Select value={selectedResumeStyleId} onValueChange={setSelectedResumeStyleId}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a resume style" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {resumeStyles.map((style) => (
+                              <SelectItem key={style.id} value={style.id}>
+                                <div>
+                                  <span>{style.label}</span>
+                                  {style.description && (
+                                    <span className="text-xs text-muted-foreground ml-2">— {style.description}</span>
+                                  )}
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          Controls the AI-generated resume style and format
+                        </p>
+                      </CardContent>
+                    </Card>
+                  )}
 
-              {/* Source Resume selector */}
-              {userResumes.length > 0 ? (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <FileText className="h-5 w-5" /> Source Resume
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <Select value={selectedSourceResumeId} onValueChange={setSelectedSourceResumeId}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a source resume" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {userResumes.map((r) => (
-                          <SelectItem key={r.id} value={r.id}>
-                            <span>{r.file_name}</span>
-                            {r.is_active && <span className="text-xs text-primary ml-2">★</span>}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <p className="text-xs text-muted-foreground mt-2">
-                      The uploaded resume PDF used as the base template for AI generation
-                    </p>
-                  </CardContent>
-                </Card>
-              ) : (
-                <Card>
-                  <CardContent className="py-4">
-                    <p className="text-sm text-muted-foreground">
-                      No source resumes uploaded.{" "}
-                      <a href="/profile" className="text-primary underline underline-offset-2">
-                        Upload a resume on your Profile page
-                      </a>{" "}
-                      for better AI-generated results.
-                    </p>
-                  </CardContent>
-                </Card>
-              )}
+                  {userResumes.length > 0 ? (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <FileText className="h-5 w-5" /> Source Resume
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <Select value={selectedSourceResumeId} onValueChange={setSelectedSourceResumeId}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a source resume" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {userResumes.map((r) => (
+                              <SelectItem key={r.id} value={r.id}>
+                                <span>{r.file_name}</span>
+                                {r.is_active && <span className="text-xs text-primary ml-2">★</span>}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          The uploaded resume PDF used as the base template for AI generation
+                        </p>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    <Card>
+                      <CardContent className="py-4">
+                        <p className="text-sm text-muted-foreground">
+                          No source resumes uploaded.{" "}
+                          <a href="/profile" className="text-primary underline underline-offset-2">
+                            Upload a resume on your Profile page
+                          </a>{" "}
+                          for better AI-generated results.
+                        </p>
+                      </CardContent>
+                    </Card>
+                  )}
+                </CollapsibleContent>
+              </Collapsible>
 
               <Button
                 onClick={handleAnalyze}

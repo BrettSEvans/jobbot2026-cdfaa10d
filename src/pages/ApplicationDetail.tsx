@@ -229,20 +229,20 @@ const ApplicationDetail = () => {
       <div className="max-w-5xl mx-auto p-4 md:p-8 space-y-4">
         <ImpersonationNotice />
         {/* Header */}
-        <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="space-y-3">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" onClick={() => navigate("/applications")}>
-              <ArrowLeft className="h-4 w-4 mr-1" /> Back
+            <Button variant="ghost" size="sm" onClick={() => navigate("/applications")} className="h-10 w-10 sm:h-8 sm:w-auto p-0 sm:px-3">
+              <ArrowLeft className="h-4 w-4 sm:mr-1" />
+              <span className="hidden sm:inline">Back</span>
             </Button>
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight font-heading">
+            <div className="min-w-0">
+              <h1 className="text-lg sm:text-2xl font-bold tracking-tight font-heading truncate">
                 {state.companyName || "Unknown Company"} — {state.jobTitle || "Unknown Role"}
               </h1>
               <p className="text-xs text-muted-foreground truncate max-w-md">{state.app.job_url}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            {/* Pipeline stage dropdown */}
+          <div className="flex flex-wrap items-center gap-2">
             <Select value={currentStage} onValueChange={handleStageChange}>
               <SelectTrigger className="w-[140px] h-8 text-xs">
                 <SelectValue />
@@ -259,15 +259,16 @@ const ApplicationDetail = () => {
               data-tutorial="pipeline-link"
               variant="link"
               size="sm"
-              className="text-xs text-muted-foreground px-1 h-8"
+              className="text-xs text-muted-foreground px-1 h-8 hidden sm:inline-flex"
               onClick={() => navigate("/?view=pipeline")}
             >
               View all stages →
             </Button>
             <Sheet>
               <SheetTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Info className="h-4 w-4 mr-1.5" /> Info
+                <Button variant="outline" size="sm" className="h-10 w-10 sm:h-8 sm:w-auto p-0 sm:px-3">
+                  <Info className="h-4 w-4 sm:mr-1.5" />
+                  <span className="hidden sm:inline">Info</span>
                 </Button>
               </SheetTrigger>
               <SheetContent className="w-full sm:max-w-lg overflow-y-auto">

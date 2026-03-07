@@ -71,6 +71,7 @@ import { useTutorial } from "@/hooks/useTutorial";
 import { BookOpen } from "lucide-react";
 import { BRAND } from "@/lib/branding";
 import { ImageIcon } from "lucide-react";
+import ApplicationCard from "@/components/ApplicationCard";
 type SortKey = "company_name" | "job_title" | "status" | "created_at" | "updated_at";
 type SortDir = "asc" | "desc";
 const Applications = () => {
@@ -389,18 +390,18 @@ const Applications = () => {
 
         {/* 48-hour bookmarked nudge */}
         {staleBookmarkedApp && (
-          <div className="flex items-center justify-between gap-3 rounded-lg border border-yellow-500/30 bg-yellow-500/5 px-4 py-3">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-lg border border-yellow-500/30 bg-yellow-500/5 px-4 py-3">
             <div className="flex items-center gap-2 text-sm">
               <AlertCircle className="h-4 w-4 text-yellow-600 dark:text-yellow-400 shrink-0" />
               <p className="text-foreground">
                 Have you applied to <strong>{staleBookmarkedApp.company_name || 'this job'}</strong>? It's been bookmarked for over 48 hours.
               </p>
             </div>
-            <div className="flex gap-2 shrink-0">
-              <Button size="sm" variant="outline" onClick={() => dismissBookmarkedPrompt(staleBookmarkedApp.id)}>
+            <div className="flex gap-2 shrink-0 w-full sm:w-auto">
+              <Button size="sm" variant="outline" onClick={() => dismissBookmarkedPrompt(staleBookmarkedApp.id)} className="flex-1 sm:flex-initial">
                 Dismiss
               </Button>
-              <Button size="sm" onClick={() => navigate(`/applications/${staleBookmarkedApp.id}`)}>
+              <Button size="sm" onClick={() => navigate(`/applications/${staleBookmarkedApp.id}`)} className="flex-1 sm:flex-initial">
                 Update Status
               </Button>
             </div>
@@ -512,7 +513,24 @@ const Applications = () => {
                 </Card>
               ) : (
                 <>
-                  <div data-tutorial="app-table" className="relative overflow-hidden rounded-md border min-h-[400px]">
+                  {/* Mobile card list */}
+                  <div className="md:hidden space-y-3" data-tutorial="app-table">
+                    {sorted.map((app) => (
+                      <ApplicationCard
+                        key={app.id}
+                        app={app}
+                        onDelete={handleSoftDelete}
+                        onCopyCoverLetter={handleCopyCoverLetter}
+                        onCopyHtml={handleCopyHtml}
+                        onPreview={(id) => { setIsClosing(false); setPreviewId(id); }}
+                        statusCell={
+                          <ApplicationStatusCell appId={app.id} dbStatus={app.status} generationStatus={app.generation_status} />
+                        }
+                      />
+                    ))}
+                  </div>
+                  {/* Desktop table */}
+                  <div data-tutorial="app-table" className="relative overflow-hidden rounded-md border min-h-[400px] hidden md:block">
                     <Table>
                       <TableHeader>
                         <TableRow>

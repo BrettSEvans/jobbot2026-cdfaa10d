@@ -477,13 +477,13 @@ export default function Profile() {
                 {resumes.map((r) => (
                   <div
                     key={r.id}
-                    className={`flex items-center gap-3 rounded-lg border p-3 transition-colors ${
+                    className={`flex items-center gap-2 sm:gap-3 rounded-lg border p-2.5 sm:p-3 transition-colors ${
                       r.is_active ? "border-primary/50 bg-primary/5" : "border-border"
                     }`}
                   >
                     <button
                       onClick={() => handleSetActive(r.id)}
-                      className="shrink-0"
+                      className="shrink-0 h-10 w-10 sm:h-8 sm:w-8 flex items-center justify-center rounded-md hover:bg-muted transition-colors"
                       title={r.is_active ? "Active resume" : "Set as active"}
                     >
                       <Star
@@ -499,15 +499,15 @@ export default function Profile() {
                           <Input
                             value={renameValue}
                             onChange={(e) => setRenameValue(e.target.value)}
-                            className="h-7 text-sm"
+                            className="h-8 text-sm"
                             onKeyDown={(e) => e.key === "Enter" && handleRename(r.id)}
                             autoFocus
                           />
-                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => handleRename(r.id)}>
-                            <Check className="h-3 w-3" />
+                          <Button size="sm" variant="ghost" className="h-10 w-10 sm:h-8 sm:w-8 p-0" onClick={() => handleRename(r.id)}>
+                            <Check className="h-3.5 w-3.5" />
                           </Button>
-                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => setRenamingId(null)}>
-                            <X className="h-3 w-3" />
+                          <Button size="sm" variant="ghost" className="h-10 w-10 sm:h-8 sm:w-8 p-0" onClick={() => setRenamingId(null)}>
+                            <X className="h-3.5 w-3.5" />
                           </Button>
                         </div>
                       ) : (
@@ -521,28 +521,28 @@ export default function Profile() {
                     </div>
 
                     {r.is_active && (
-                      <Badge variant="secondary" className="shrink-0 text-xs bg-primary/10 text-primary">Active</Badge>
+                      <Badge variant="secondary" className="shrink-0 text-xs bg-primary/10 text-primary hidden sm:inline-flex">Active</Badge>
                     )}
 
                     {renamingId !== r.id && (
-                      <div className="flex items-center gap-1 shrink-0">
+                      <div className="flex items-center gap-0.5 shrink-0">
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-7 w-7 p-0"
+                          className="h-10 w-10 sm:h-8 sm:w-8 p-0"
                           onClick={() => { setRenamingId(r.id); setRenameValue(r.file_name); }}
                           title="Rename"
                         >
-                          <Pencil className="h-3 w-3" />
+                          <Pencil className="h-3.5 w-3.5" />
                         </Button>
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                          className="h-10 w-10 sm:h-8 sm:w-8 p-0 text-destructive hover:text-destructive"
                           onClick={() => setDeleteConfirmId(r.id)}
                           title="Delete"
                         >
-                          <Trash2 className="h-3 w-3" />
+                          <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                       </div>
                     )}

@@ -701,7 +701,6 @@ const Applications = () => {
                       </div>
                     )}
                   </div>
-                  </div>
                 </>
               )}
             </TabsContent>

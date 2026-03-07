@@ -21,15 +21,10 @@ import {
 import type { JobApplication } from "@/hooks/useApplicationDetail";
 import {
   Plus,
-  FileText,
   Trash2,
-  Eye,
-  Copy,
   Loader2,
   LayoutTemplate,
   ArrowUpDown,
-  ArrowUp,
-  ArrowDown,
   AlertCircle,
   Sparkles,
   Zap,
@@ -62,6 +57,13 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { backgroundGenerator } from "@/lib/backgroundGenerator";
 import { useActiveJobCount } from "@/hooks/useBackgroundJob";
 import BatchModePrompt from "@/components/BatchModePrompt";
@@ -71,7 +73,7 @@ import { useTutorial } from "@/hooks/useTutorial";
 import { BookOpen } from "lucide-react";
 import { BRAND } from "@/lib/branding";
 import { ImageIcon } from "lucide-react";
-import ApplicationCard from "@/components/ApplicationCard";
+import ApplicationCommandCard from "@/components/ApplicationCommandCard";
 type SortKey = "company_name" | "job_title" | "status" | "created_at" | "updated_at";
 type SortDir = "asc" | "desc";
 const Applications = () => {
@@ -317,15 +319,6 @@ const Applications = () => {
     toast({ title: "Copied!", description: "Cover letter copied to clipboard." });
   };
 
-  const toggleSort = (key: SortKey) => {
-    if (sortKey === key) {
-      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
-    } else {
-      setSortKey(key);
-      setSortDir("asc");
-    }
-  };
-
   const sorted = useMemo(() => {
     return [...applications].sort((a, b) => {
       const aVal = (a[sortKey] || "").toString().toLowerCase();
@@ -334,11 +327,6 @@ const Applications = () => {
       return sortDir === "asc" ? cmp : -cmp;
     });
   }, [applications, sortKey, sortDir]);
-
-  const SortIcon = ({ col }: { col: SortKey }) => {
-    if (sortKey !== col) return <ArrowUpDown className="h-3 w-3 ml-1 opacity-40" />;
-    return sortDir === "asc" ? <ArrowUp className="h-3 w-3 ml-1" /> : <ArrowDown className="h-3 w-3 ml-1" />;
-  };
 
   const previewApp = applications.find((a) => a.id === previewId);
 
@@ -363,8 +351,8 @@ const Applications = () => {
         )}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Job Applications</h1>
-            <p className="text-muted-foreground text-sm">Your saved applications and dashboards</p>
+            <h1 className="text-2xl font-heading font-bold tracking-tight">Job Applications</h1>
+            <p className="text-muted-foreground text-sm">Your career command center</p>
           </div>
           <div className="flex gap-2">
             {needsBackfill && (
@@ -409,33 +397,29 @@ const Applications = () => {
         )}
 
         {loading ? (
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Company</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead className="hidden md:table-cell">Updated</TableHead>
-                  <TableHead className="hidden md:table-cell">Assets</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <TableRow key={i}>
-                    <TableCell><div className="h-4 w-24 bg-muted animate-pulse rounded" /></TableCell>
-                    <TableCell><div className="h-4 w-32 bg-muted animate-pulse rounded" /></TableCell>
-                    <TableCell><div className="h-5 w-16 bg-muted animate-pulse rounded-full" /></TableCell>
-                    <TableCell><div className="h-4 w-20 bg-muted animate-pulse rounded" /></TableCell>
-                    <TableCell className="hidden md:table-cell"><div className="h-4 w-20 bg-muted animate-pulse rounded" /></TableCell>
-                    <TableCell className="hidden md:table-cell"><div className="flex gap-1">{Array.from({ length: 6 }).map((_, j) => <div key={j} className="h-2.5 w-2.5 rounded-full bg-muted animate-pulse" />)}</div></TableCell>
-                    <TableCell><div className="h-8 w-20 bg-muted animate-pulse rounded ml-auto" /></TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Card key={i} className="animate-pulse">
+                <CardContent className="p-4 space-y-3">
+                  <div className="flex items-start gap-3">
+                    <div className="h-12 w-12 rounded-lg bg-muted" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-4 w-28 bg-muted rounded" />
+                      <div className="h-3 w-36 bg-muted rounded" />
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    {Array.from({ length: 4 }).map((_, j) => (
+                      <div key={j} className="flex items-center gap-1">
+                        <div className="h-2 w-2 rounded-full bg-muted" />
+                        <div className="h-2 w-10 bg-muted rounded" />
+                      </div>
+                    ))}
+                  </div>
+                  <div className="h-1.5 rounded-full bg-muted" />
+                </CardContent>
+              </Card>
+            ))}
           </div>
         ) : applications.length === 0 && activeView === "active" && deletedApps.length === 0 ? (
           <Card className="border-dashed">
@@ -513,162 +497,63 @@ const Applications = () => {
                 </Card>
               ) : (
                 <>
-                  {/* Mobile card list */}
-                  <div className="md:hidden space-y-3" data-tutorial="app-table">
-                    {sorted.map((app) => (
-                      <ApplicationCard
-                        key={app.id}
-                        app={app}
-                        onDelete={handleSoftDelete}
-                        onCopyCoverLetter={handleCopyCoverLetter}
-                        onCopyHtml={handleCopyHtml}
-                        onPreview={(id) => { setIsClosing(false); setPreviewId(id); }}
-                        statusCell={
-                          <ApplicationStatusCell appId={app.id} dbStatus={app.status} generationStatus={app.generation_status} />
-                        }
-                      />
-                    ))}
+                  {/* Summary stats + sort */}
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <Badge variant="secondary" className="text-xs gap-1">
+                        {applications.length} Total
+                      </Badge>
+                      <Badge variant="secondary" className="text-xs gap-1 border-green-500/30 text-green-700 dark:text-green-400">
+                        {applications.filter((a) => a.status === "complete" || a.generation_status === "complete").length} Complete
+                      </Badge>
+                      {applications.filter((a) => a.generation_status && !["complete", "error", "idle", "pending"].includes(a.generation_status)).length > 0 && (
+                        <Badge variant="secondary" className="text-xs gap-1 border-primary/30 text-primary">
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                          {applications.filter((a) => a.generation_status && !["complete", "error", "idle", "pending"].includes(a.generation_status)).length} In Progress
+                        </Badge>
+                      )}
+                    </div>
+                    <Select
+                      value={`${sortKey}-${sortDir}`}
+                      onValueChange={(v) => {
+                        const [key, dir] = v.split("-") as [SortKey, SortDir];
+                        setSortKey(key);
+                        setSortDir(dir);
+                      }}
+                    >
+                      <SelectTrigger className="w-[180px] h-8 text-xs">
+                        <ArrowUpDown className="h-3 w-3 mr-1" />
+                        <SelectValue placeholder="Sort by..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="created_at-desc">Newest First</SelectItem>
+                        <SelectItem value="created_at-asc">Oldest First</SelectItem>
+                        <SelectItem value="company_name-asc">Company A-Z</SelectItem>
+                        <SelectItem value="company_name-desc">Company Z-A</SelectItem>
+                        <SelectItem value="updated_at-desc">Recently Updated</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                  {/* Desktop table */}
-                  <div data-tutorial="app-table" className="relative overflow-hidden rounded-md border min-h-[400px] hidden md:block">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("company_name")}>
-                            <div className="flex items-center">Company <SortIcon col="company_name" /></div>
-                          </TableHead>
-                          <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("job_title")}>
-                            <div className="flex items-center">Role <SortIcon col="job_title" /></div>
-                          </TableHead>
-                          <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("status")}>
-                            <div className="flex items-center">Status <SortIcon col="status" /></div>
-                          </TableHead>
-                          <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("created_at")}>
-                            <div className="flex items-center">Created <SortIcon col="created_at" /></div>
-                          </TableHead>
-                          <TableHead className="cursor-pointer select-none hidden md:table-cell" onClick={() => toggleSort("updated_at")}>
-                            <div className="flex items-center">Updated <SortIcon col="updated_at" /></div>
-                          </TableHead>
-                          <TableHead className="hidden md:table-cell">Assets</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {sorted.map((app) => (
-                          <TableRow
-                            key={app.id}
-                            className="cursor-pointer hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
-                            onClick={() => navigate(`/applications/${app.id}`)}
-                            tabIndex={0}
-                            role="link"
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter" || e.key === " ") {
-                                e.preventDefault();
-                                navigate(`/applications/${app.id}`);
-                              }
-                            }}
-                          >
-                            <TableCell className="font-medium">
-                              <div className="flex items-center gap-2">
-                                <CompanyIcon iconUrl={(app as any).company_icon_url} companyName={app.company_name} size={20} />
-                                {app.company_name || "Unknown"}
-                              </div>
-                            </TableCell>
-                            <TableCell>{app.job_title || "Unknown"}</TableCell>
-                            <TableCell>
-                              <ApplicationStatusCell appId={app.id} dbStatus={app.status} generationStatus={app.generation_status} />
-                            </TableCell>
-                            <TableCell className="text-sm text-muted-foreground">
-                              {new Date(app.created_at).toLocaleDateString()}
-                            </TableCell>
-                            <TableCell className="text-sm text-muted-foreground hidden md:table-cell">
-                              {new Date(app.updated_at).toLocaleDateString()}
-                            </TableCell>
-                            <TableCell className="hidden md:table-cell">
-                              <AssetDots app={app} />
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex gap-1 justify-end" onClick={(e) => e.stopPropagation()}>
-                                {app.cover_letter && (
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Button size="sm" variant="ghost" aria-label="Copy cover letter" onClick={(e) => handleCopyCoverLetter(app.cover_letter, e)}>
-                                        <FileText className="h-4 w-4" />
-                                      </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>Copy cover letter</TooltipContent>
-                                  </Tooltip>
-                                )}
-                                {app.dashboard_html && (
-                                  <>
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <Button
-                                          size="sm"
-                                          variant="ghost"
-                                          aria-label="Preview dashboard"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            if (previewId === app.id) {
-                                              handleClosePreview();
-                                            } else {
-                                              setIsClosing(false);
-                                              setPreviewId(app.id);
-                                            }
-                                          }}
-                                        >
-                                          <Eye className="h-4 w-4" />
-                                        </Button>
-                                      </TooltipTrigger>
-                                      <TooltipContent>Preview dashboard</TooltipContent>
-                                    </Tooltip>
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <Button size="sm" variant="ghost" aria-label="Copy dashboard HTML" onClick={(e) => handleCopyHtml(app.dashboard_html, e)}>
-                                          <Copy className="h-4 w-4" />
-                                        </Button>
-                                      </TooltipTrigger>
-                                      <TooltipContent>Copy HTML</TooltipContent>
-                                    </Tooltip>
-                                  </>
-                                )}
-                                <AlertDialog>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <AlertDialogTrigger asChild>
-                                        <Button size="sm" variant="ghost" aria-label="Move to trash">
-                                          <Trash2 className="h-4 w-4 text-destructive" />
-                                        </Button>
-                                      </AlertDialogTrigger>
-                                    </TooltipTrigger>
-                                    <TooltipContent>Move to trash</TooltipContent>
-                                  </Tooltip>
-                                  <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                      <AlertDialogTitle>Move to trash?</AlertDialogTitle>
-                                      <AlertDialogDescription>
-                                        <strong>{app.company_name || "This application"}</strong> will be moved to trash. You can recover it within 30 days.
-                                      </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                      <AlertDialogAction onClick={() => handleSoftDelete(app.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                                        Move to Trash
-                                      </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                  </AlertDialogContent>
-                                </AlertDialog>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
 
-                    {/* Slide-in preview panel */}
+                  {/* Card grid */}
+                  <div data-tutorial="app-table" className="relative">
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                      {sorted.map((app) => (
+                        <ApplicationCommandCard
+                          key={app.id}
+                          app={app}
+                          onDelete={handleSoftDelete}
+                          onCopyCoverLetter={handleCopyCoverLetter}
+                          onCopyHtml={handleCopyHtml}
+                          onPreview={(id) => { setIsClosing(false); setPreviewId(id); }}
+                        />
+                      ))}
+                    </div>
+
+                    {/* Slide-in preview panel (desktop) */}
                     {previewApp?.dashboard_html && (
                       <div
-                        className={`absolute inset-0 z-10 bg-background flex flex-col w-full md:w-[70%] md:left-auto md:right-0 md:border-l ${
+                        className={`fixed inset-y-0 right-0 z-50 bg-background flex flex-col w-full md:w-[50%] border-l shadow-lg ${
                           isClosing ? "animate-slide-out-right" : "animate-slide-in-right"
                         }`}
                         onClick={(e) => e.stopPropagation()}
@@ -824,81 +709,5 @@ const Applications = () => {
   );
 };
 
-/** Per-row status cell that reacts to background generation state */
-function ApplicationStatusCell({ appId, dbStatus, generationStatus }: { appId: string; dbStatus: string; generationStatus: string }) {
-  const bgJob = backgroundGenerator.getJob(appId);
-  const isActive = bgJob && !["complete", "error"].includes(bgJob.status);
-
-  if (isActive) {
-    return (
-      <Badge variant="secondary" className="flex items-center gap-1.5 w-fit">
-        <Loader2 className="h-3 w-3 animate-spin" />
-        Generating...
-      </Badge>
-    );
-  }
-
-  // Determine display status: trust dbStatus first, fall back to generation_status
-  const isComplete = dbStatus === "complete" || generationStatus === "complete";
-  const isError = dbStatus === "error" || generationStatus === "error";
-  const isGenerating = !isComplete && !isError && generationStatus && !["idle", "pending"].includes(generationStatus);
-
-  if (isGenerating) {
-    return (
-      <Badge variant="secondary" className="flex items-center gap-1.5 w-fit">
-        <Loader2 className="h-3 w-3 animate-spin" />
-        Generating...
-      </Badge>
-    );
-  }
-
-  const label = isComplete ? "Complete" : isError ? "Error" : dbStatus === "draft" ? "Draft" : dbStatus;
-
-  return (
-    <Badge variant={isComplete ? "default" : isError ? "destructive" : "secondary"}>
-      {label}
-    </Badge>
-  );
-}
-
-const ASSET_FIELDS = [
-  { key: "dashboard_html", label: "Dashboard", assetType: "dashboard" },
-  { key: "cover_letter", label: "Cover Letter", assetType: "cover-letter" },
-  { key: "executive_report_html", label: "Executive Report", assetType: "executive-report" },
-  { key: "raid_log_html", label: "RAID Log", assetType: "raid-log" },
-  { key: "architecture_diagram_html", label: "Architecture", assetType: "architecture-diagram" },
-  { key: "roadmap_html", label: "Roadmap", assetType: "roadmap" },
-] as const;
-
-function AssetDots({ app }: { app: JobApplication }) {
-  const activeTypes = backgroundGenerator.getActiveAssetTypesForApp(app.id);
-
-  return (
-    <div className="flex items-center gap-1">
-      {ASSET_FIELDS.map((f) => {
-        const has = !!(app as any)[f.key];
-        const isActive = activeTypes.includes(f.assetType);
-        return (
-          <Tooltip key={f.key}>
-            <TooltipTrigger asChild>
-              <div
-                className={`h-2.5 w-2.5 rounded-full ${
-                  isActive
-                    ? "bg-primary animate-pulse"
-                    : has
-                    ? "bg-primary"
-                    : "bg-muted-foreground/25"
-                }`}
-              />
-            </TooltipTrigger>
-            <TooltipContent side="top" className="text-xs">
-              {f.label}: {isActive ? "⏳ Generating..." : has ? "✓" : "—"}
-            </TooltipContent>
-          </Tooltip>
-        );
-      })}
-    </div>
-  );
-}
 
 export default Applications;

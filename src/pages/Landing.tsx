@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { BRAND } from "@/lib/branding";
+import BrandLogo from "@/components/BrandLogo";
 import mockupResume from "@/assets/mockup-resume.jpg";
 import mockupCoverLetter from "@/assets/mockup-cover-letter.jpg";
 import mockupDashboard from "@/assets/mockup-dashboard.jpg";
@@ -21,7 +22,6 @@ import {
   Download,
   Check,
   ArrowRight,
-  Zap,
 } from "lucide-react";
 
 /* ------------------------------------------------------------------ */
@@ -31,16 +31,14 @@ import {
 function LandingNav() {
   const navigate = useNavigate();
   return (
-    <nav className="sticky top-0 z-50 border-b border-border/60 bg-background/80 backdrop-blur-md">
+    <nav className="sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-md">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
-        <span className="font-heading text-xl font-bold tracking-tight text-foreground">
-          {BRAND.name.replace(/([A-Z][a-z]+)$/, '')}<span className="text-primary">{BRAND.name.match(/[A-Z][a-z]+$/)?.[0] ?? ''}</span>
-        </span>
+        <BrandLogo size="md" />
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" onClick={() => navigate("/auth")}>
             Sign In
           </Button>
-          <Button size="sm" onClick={() => navigate("/auth")}>
+          <Button size="sm" className="shadow-[var(--shadow-warm)]" onClick={() => navigate("/auth")}>
             Get Started Free
           </Button>
         </div>
@@ -60,32 +58,39 @@ function Hero() {
   };
 
   return (
-    <section className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-background to-accent/30 py-20 sm:py-28">
-      {/* decorative blur blobs */}
-      <div className="pointer-events-none absolute -left-40 -top-40 h-80 w-80 rounded-full bg-primary/20 blur-3xl" />
-      <div className="pointer-events-none absolute -right-32 bottom-0 h-72 w-72 rounded-full bg-accent/30 blur-3xl" />
+    <section className="relative overflow-hidden py-24 sm:py-32 noise-texture">
+      {/* Warm gradient background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/8 via-background to-accent/8" />
+      {/* Decorative orbs */}
+      <div className="pointer-events-none absolute -left-32 -top-32 h-96 w-96 rounded-full bg-primary/15 blur-[100px]" />
+      <div className="pointer-events-none absolute -right-24 bottom-0 h-80 w-80 rounded-full bg-accent/15 blur-[100px]" />
 
-      <div className="relative mx-auto max-w-4xl px-4 text-center sm:px-6">
-        <Badge variant="secondary" className="mb-4 text-xs uppercase tracking-wide">
-          AI-Powered Career Toolkit
+      <div className="relative z-10 mx-auto max-w-4xl px-4 text-center sm:px-6">
+        <Badge variant="outline" className="mb-6 text-xs uppercase tracking-widest border-primary/30 text-primary font-body">
+          Sorry not sorry
         </Badge>
-        <h1 className="font-heading text-4xl font-extrabold leading-tight tracking-tight text-foreground sm:text-5xl lg:text-6xl">
-          Land Your Dream Job with{" "}
-          <span className="text-primary">AI‑Crafted Assets</span>
+        <h1 className="font-heading text-4xl font-bold leading-tight tracking-tight text-foreground sm:text-5xl lg:text-6xl">
+          Using this isn't fair to the{" "}
+          <span className="relative inline-block">
+            <span className="relative z-10">other applicants</span>
+            <span className="absolute bottom-1 left-0 right-0 h-3 bg-primary/20 -skew-x-3 rounded-sm" />
+          </span>
         </h1>
-        <p className="mx-auto mt-5 max-w-2xl text-lg text-muted-foreground sm:text-xl">
-          Paste a job URL and let {BRAND.name} generate a tailored resume, cover
-          letter, executive dashboard, and more — all branded to the company
-          you're applying to.
+        <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground sm:text-xl leading-relaxed">
+          Paste a job URL. Get a full suite of AI-crafted, company-branded application
+          materials — resume, cover letter, executive dashboard, and more — in minutes.
         </p>
-        <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-          <Button size="lg" className="gap-2" onClick={() => navigate("/auth")}>
-            Get Started Free <ArrowRight className="h-4 w-4" />
+        <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
+          <Button size="lg" className="gap-2 shadow-[var(--shadow-warm)] text-base px-8" onClick={() => navigate("/auth")}>
+            Start for Free <ArrowRight className="h-4 w-4" />
           </Button>
-          <Button size="lg" variant="outline" onClick={scrollToPricing}>
+          <Button size="lg" variant="outline" className="text-base" onClick={scrollToPricing}>
             See Pricing
           </Button>
         </div>
+        <p className="mt-4 text-xs text-muted-foreground">
+          No credit card required · Free tier forever
+        </p>
       </div>
     </section>
   );
@@ -140,9 +145,9 @@ function Features() {
         </div>
         <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {FEATURES.map((f) => (
-            <Card key={f.title} className="group transition-shadow hover:shadow-md">
+            <Card key={f.title} className="group transition-all hover:shadow-[var(--shadow-elevated)] hover:-translate-y-0.5">
               <CardContent className="flex flex-col gap-3 p-6">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
                   <f.icon className="h-5 w-5" />
                 </div>
                 <h3 className="font-heading text-lg font-semibold text-foreground">{f.title}</h3>
@@ -181,15 +186,16 @@ const STEPS = [
 
 function HowItWorks() {
   return (
-    <section className="border-y border-border bg-muted/40 py-20 sm:py-24">
-      <div className="mx-auto max-w-5xl px-4 sm:px-6">
+    <section className="relative border-y border-border/60 py-20 sm:py-24 noise-texture">
+      <div className="absolute inset-0 bg-muted/40" />
+      <div className="relative z-10 mx-auto max-w-5xl px-4 sm:px-6">
         <h2 className="text-center font-heading text-3xl font-bold text-foreground sm:text-4xl">
           How It Works
         </h2>
         <div className="mt-14 grid gap-10 sm:grid-cols-3">
           {STEPS.map((s) => (
             <div key={s.num} className="flex flex-col items-center text-center">
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground text-xl font-bold shadow-lg">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground text-xl font-bold shadow-[var(--shadow-warm)]">
                 {s.num}
               </div>
               <h3 className="mt-5 font-heading text-lg font-semibold text-foreground">{s.title}</h3>
@@ -224,7 +230,7 @@ function ExampleAssets() {
         </p>
         <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-5">
           {EXAMPLES.map((ex) => (
-            <Card key={ex.label} className="overflow-hidden group transition-shadow hover:shadow-md">
+            <Card key={ex.label} className="overflow-hidden group transition-all hover:shadow-[var(--shadow-elevated)] hover:-translate-y-0.5">
               <div className="overflow-hidden">
                 <img
                   src={ex.img}
@@ -250,12 +256,12 @@ function PricingCard({ config }: { config: TierConfig }) {
   const navigate = useNavigate();
   return (
     <Card
-      className={`relative flex flex-col ${
-        config.highlighted ? "border-primary shadow-lg ring-2 ring-primary/20" : ""
+      className={`relative flex flex-col transition-all ${
+        config.highlighted ? "border-primary shadow-[var(--shadow-warm)] ring-2 ring-primary/20 -translate-y-1" : ""
       }`}
     >
       {config.highlighted && (
-        <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground">
+        <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground shadow-sm">
           Most Popular
         </Badge>
       )}
@@ -279,7 +285,7 @@ function PricingCard({ config }: { config: TierConfig }) {
           ))}
         </ul>
         <Button
-          className="w-full"
+          className={`w-full ${config.highlighted ? "shadow-[var(--shadow-warm)]" : ""}`}
           variant={config.highlighted ? "default" : "outline"}
           onClick={() => navigate("/auth")}
         >
@@ -293,8 +299,9 @@ function PricingCard({ config }: { config: TierConfig }) {
 function Pricing() {
   const tiers = Object.values(TIER_CONFIGS);
   return (
-    <section id="pricing" className="border-t border-border bg-muted/40 py-20 sm:py-24">
-      <div className="mx-auto max-w-5xl px-4 sm:px-6">
+    <section id="pricing" className="relative border-t border-border/60 py-20 sm:py-24 noise-texture">
+      <div className="absolute inset-0 bg-muted/40" />
+      <div className="relative z-10 mx-auto max-w-5xl px-4 sm:px-6">
         <h2 className="text-center font-heading text-3xl font-bold text-foreground sm:text-4xl">
           Simple, Transparent Pricing
         </h2>
@@ -334,11 +341,11 @@ const TESTIMONIALS = [
 
 function TestimonialCard({ t }: { t: typeof TESTIMONIALS[number] }) {
   return (
-    <Card className="min-w-[320px] max-w-[360px] shrink-0">
+    <Card className="min-w-[320px] max-w-[360px] shrink-0 border-border/60">
       <CardContent className="p-5 flex flex-col gap-3">
         <p className="text-sm leading-relaxed text-muted-foreground italic">"{t.quote}"</p>
         <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-bold">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/15 text-primary text-xs font-bold">
             {t.name.charAt(0)}
           </div>
           <div>
@@ -356,7 +363,7 @@ const ROW2 = TESTIMONIALS.slice(8);
 
 function Testimonials() {
   return (
-    <section className="border-t border-border bg-muted/40 py-16 overflow-hidden">
+    <section className="border-t border-border/60 py-16 overflow-hidden">
       <div className="mx-auto max-w-6xl px-4 sm:px-6 mb-10 text-center">
         <h2 className="font-heading text-3xl font-bold text-foreground sm:text-4xl">
           Loved by Job Seekers Everywhere
@@ -388,17 +395,18 @@ function Testimonials() {
 function CtaFooter() {
   const navigate = useNavigate();
   return (
-    <section className="py-20 sm:py-24">
-      <div className="mx-auto max-w-3xl px-4 text-center sm:px-6">
-        <Zap className="mx-auto h-10 w-10 text-primary" />
-        <h2 className="mt-4 font-heading text-3xl font-bold text-foreground sm:text-4xl">
-          Ready to Stand Out?
+    <section className="relative py-24 sm:py-28 noise-texture">
+      <div className="absolute inset-0 bg-gradient-to-t from-primary/5 via-background to-background" />
+      <div className="relative z-10 mx-auto max-w-3xl px-4 text-center sm:px-6">
+        <BrandLogo size="lg" className="justify-center mb-4" />
+        <h2 className="font-heading text-3xl font-bold text-foreground sm:text-4xl">
+          Ready to Make It Unfair?
         </h2>
         <p className="mx-auto mt-3 max-w-lg text-muted-foreground">
           Join professionals who use {BRAND.name} to create compelling, AI‑crafted
           application materials in minutes.
         </p>
-        <Button size="lg" className="mt-8 gap-2" onClick={() => navigate("/auth")}>
+        <Button size="lg" className="mt-8 gap-2 shadow-[var(--shadow-warm)] text-base px-8" onClick={() => navigate("/auth")}>
           Get Started Free <ArrowRight className="h-4 w-4" />
         </Button>
       </div>
@@ -421,7 +429,7 @@ export default function Landing() {
       <Pricing />
       <Testimonials />
       <CtaFooter />
-      <footer className="border-t border-border py-6 text-center text-xs text-muted-foreground">
+      <footer className="border-t border-border/60 py-6 text-center text-xs text-muted-foreground">
         {BRAND.copyright(new Date().getFullYear())}
       </footer>
     </div>

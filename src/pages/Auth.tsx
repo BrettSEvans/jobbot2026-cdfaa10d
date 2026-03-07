@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Zap, BarChart3, FileCheck, Sparkles, Shield, Clock } from "lucide-react";
+import { Loader2, BarChart3, FileCheck, Sparkles, Shield, Clock } from "lucide-react";
 import { BRAND } from "@/lib/branding";
+import BrandLogo from "@/components/BrandLogo";
 
 type Mode = "login" | "signup" | "forgot";
 
@@ -95,15 +96,15 @@ export default function Auth() {
   return (
     <div className="min-h-screen flex bg-background">
       {/* Left — Hero / Value Proposition */}
-      <div className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 bg-primary/5 relative overflow-hidden">
+      <div className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 relative overflow-hidden noise-texture">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/8 via-background to-accent/8" />
         {/* Decorative background elements */}
-        <div className="absolute -top-24 -left-24 w-96 h-96 rounded-full bg-primary/10 blur-3xl" />
-        <div className="absolute -bottom-32 -right-32 w-[30rem] h-[30rem] rounded-full bg-primary/8 blur-3xl" />
+        <div className="absolute -top-24 -left-24 w-96 h-96 rounded-full bg-primary/12 blur-[100px]" />
+        <div className="absolute -bottom-32 -right-32 w-[30rem] h-[30rem] rounded-full bg-accent/10 blur-[100px]" />
 
         <div className="relative z-10">
-          <div className="flex items-center gap-2 mb-12">
-            <Zap className="h-7 w-7 fill-primary text-primary" />
-            <span className="text-2xl font-heading font-bold tracking-tight text-primary">{BRAND.name}</span>
+          <div className="mb-12">
+            <BrandLogo size="lg" />
           </div>
 
           <h1 className="text-4xl font-heading font-bold tracking-tight leading-tight mb-4 text-foreground">
@@ -142,9 +143,8 @@ export default function Auth() {
       <div className="w-full lg:w-1/2 flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-sm space-y-6">
           {/* Mobile-only branding */}
-          <div className="flex items-center justify-center gap-2 lg:hidden mb-4">
-            <Zap className="h-6 w-6 fill-primary text-primary" />
-            <span className="text-xl font-heading font-bold tracking-tight text-primary">{BRAND.name}</span>
+          <div className="flex items-center justify-center lg:hidden mb-4">
+            <BrandLogo size="md" />
           </div>
 
           <Card className="border-0 shadow-none lg:border lg:shadow-sm">

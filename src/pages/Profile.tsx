@@ -398,20 +398,20 @@ export default function Profile() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-2xl mx-auto p-4 md:p-8 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight font-heading">
+      <div className="max-w-2xl mx-auto p-4 md:p-8 space-y-4 md:space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight font-heading truncate">
               {isImpersonating ? `${activePersona?.first_name} ${activePersona?.last_name}'s Profile` : "My Profile"}
             </h1>
-            <p className="text-muted-foreground text-sm">
+            <p className="text-muted-foreground text-xs sm:text-sm">
               {isImpersonating
                 ? "Editing test user profile — changes will personalize AI outputs when impersonating this user."
                 : "Your background and preferences personalize cover letters and executive reports."}
             </p>
           </div>
           {hasUnsavedChanges && (
-            <Badge variant="secondary" className="bg-primary/10 text-primary animate-pulse">
+            <Badge variant="secondary" className="bg-primary/10 text-primary animate-pulse self-start sm:self-auto shrink-0">
               Unsaved changes
             </Badge>
           )}
@@ -426,7 +426,7 @@ export default function Profile() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label htmlFor="firstName">First Name <span className="text-destructive">*</span></Label>
                 <Input id="firstName" value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="First name" />
@@ -477,13 +477,13 @@ export default function Profile() {
                 {resumes.map((r) => (
                   <div
                     key={r.id}
-                    className={`flex items-center gap-3 rounded-lg border p-3 transition-colors ${
+                    className={`flex items-center gap-2 sm:gap-3 rounded-lg border p-2.5 sm:p-3 transition-colors ${
                       r.is_active ? "border-primary/50 bg-primary/5" : "border-border"
                     }`}
                   >
                     <button
                       onClick={() => handleSetActive(r.id)}
-                      className="shrink-0"
+                      className="shrink-0 h-10 w-10 sm:h-8 sm:w-8 flex items-center justify-center rounded-md hover:bg-muted transition-colors"
                       title={r.is_active ? "Active resume" : "Set as active"}
                     >
                       <Star
@@ -499,15 +499,15 @@ export default function Profile() {
                           <Input
                             value={renameValue}
                             onChange={(e) => setRenameValue(e.target.value)}
-                            className="h-7 text-sm"
+                            className="h-8 text-sm"
                             onKeyDown={(e) => e.key === "Enter" && handleRename(r.id)}
                             autoFocus
                           />
-                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => handleRename(r.id)}>
-                            <Check className="h-3 w-3" />
+                          <Button size="sm" variant="ghost" className="h-10 w-10 sm:h-8 sm:w-8 p-0" onClick={() => handleRename(r.id)}>
+                            <Check className="h-3.5 w-3.5" />
                           </Button>
-                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => setRenamingId(null)}>
-                            <X className="h-3 w-3" />
+                          <Button size="sm" variant="ghost" className="h-10 w-10 sm:h-8 sm:w-8 p-0" onClick={() => setRenamingId(null)}>
+                            <X className="h-3.5 w-3.5" />
                           </Button>
                         </div>
                       ) : (
@@ -521,28 +521,28 @@ export default function Profile() {
                     </div>
 
                     {r.is_active && (
-                      <Badge variant="secondary" className="shrink-0 text-xs bg-primary/10 text-primary">Active</Badge>
+                      <Badge variant="secondary" className="shrink-0 text-xs bg-primary/10 text-primary hidden sm:inline-flex">Active</Badge>
                     )}
 
                     {renamingId !== r.id && (
-                      <div className="flex items-center gap-1 shrink-0">
+                      <div className="flex items-center gap-0.5 shrink-0">
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-7 w-7 p-0"
+                          className="h-10 w-10 sm:h-8 sm:w-8 p-0"
                           onClick={() => { setRenamingId(r.id); setRenameValue(r.file_name); }}
                           title="Rename"
                         >
-                          <Pencil className="h-3 w-3" />
+                          <Pencil className="h-3.5 w-3.5" />
                         </Button>
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                          className="h-10 w-10 sm:h-8 sm:w-8 p-0 text-destructive hover:text-destructive"
                           onClick={() => setDeleteConfirmId(r.id)}
                           title="Delete"
                         >
-                          <Trash2 className="h-3 w-3" />
+                          <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                       </div>
                     )}
@@ -646,7 +646,7 @@ export default function Profile() {
                   onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addTag(skills, setSkills, newSkill, setNewSkill))}
                   className="flex-1"
                 />
-                <Button variant="outline" size="sm" onClick={() => addTag(skills, setSkills, newSkill, setNewSkill)}>
+                <Button variant="outline" className="h-10 w-10 p-0 shrink-0" onClick={() => addTag(skills, setSkills, newSkill, setNewSkill)}>
                   <Plus className="h-4 w-4" />
                 </Button>
               </div>
@@ -672,7 +672,7 @@ export default function Profile() {
                   onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addTag(industries, setIndustries, newIndustry, setNewIndustry))}
                   className="flex-1"
                 />
-                <Button variant="outline" size="sm" onClick={() => addTag(industries, setIndustries, newIndustry, setNewIndustry)}>
+                <Button variant="outline" className="h-10 w-10 p-0 shrink-0" onClick={() => addTag(industries, setIndustries, newIndustry, setNewIndustry)}>
                   <Plus className="h-4 w-4" />
                 </Button>
               </div>
@@ -733,8 +733,8 @@ export default function Profile() {
 
         {/* Global save — only shows when there are changes */}
         {hasUnsavedChanges && (
-          <div className="flex justify-end">
-            <Button onClick={doSave} disabled={saving} size="lg">
+          <div className="flex justify-end sticky bottom-4 z-10">
+            <Button onClick={doSave} disabled={saving} size="lg" className="w-full sm:w-auto shadow-lg">
               {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Save All Changes
             </Button>

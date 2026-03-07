@@ -319,28 +319,7 @@ const Applications = () => {
     toast({ title: "Copied!", description: "Cover letter copied to clipboard." });
   };
 
-  const toggleSort = (key: SortKey) => {
-    if (sortKey === key) {
-      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
-    } else {
-      setSortKey(key);
-      setSortDir("asc");
-    }
-  };
-
   const sorted = useMemo(() => {
-    return [...applications].sort((a, b) => {
-      const aVal = (a[sortKey] || "").toString().toLowerCase();
-      const bVal = (b[sortKey] || "").toString().toLowerCase();
-      const cmp = aVal.localeCompare(bVal);
-      return sortDir === "asc" ? cmp : -cmp;
-    });
-  }, [applications, sortKey, sortDir]);
-
-  const SortIcon = ({ col }: { col: SortKey }) => {
-    if (sortKey !== col) return <ArrowUpDown className="h-3 w-3 ml-1 opacity-40" />;
-    return sortDir === "asc" ? <ArrowUp className="h-3 w-3 ml-1" /> : <ArrowDown className="h-3 w-3 ml-1" />;
-  };
 
   const previewApp = applications.find((a) => a.id === previewId);
 

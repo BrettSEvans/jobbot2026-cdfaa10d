@@ -76,10 +76,9 @@ export default function AppHeader({ onSignOut }: AppHeaderProps) {
           <div className="flex items-center gap-4">
             <button
               onClick={() => guardedNavigate(() => navigate("/"))}
-              className="flex items-center gap-1.5 font-heading text-base font-bold tracking-tight text-primary hover:opacity-80 transition-opacity"
+              className="hover:opacity-80 transition-opacity"
             >
-              <Zap className="h-5 w-5 fill-primary text-primary" />
-              {BRAND.name}
+              <BrandLogo size="sm" />
             </button>
             {/* Desktop nav — hidden on mobile */}
             <nav className="hidden md:flex items-center gap-1">
@@ -144,9 +143,8 @@ export default function AppHeader({ onSignOut }: AppHeaderProps) {
               </SheetTrigger>
               <SheetContent side="right" className="w-[280px] p-0">
                 <SheetHeader className="p-4 border-b">
-                  <SheetTitle className="flex items-center gap-1.5 font-heading text-base font-bold text-primary">
-                    <Zap className="h-5 w-5 fill-primary text-primary" />
-                    {BRAND.name}
+                  <SheetTitle>
+                    <BrandLogo size="sm" />
                   </SheetTitle>
                 </SheetHeader>
                 <nav className="flex flex-col p-2">

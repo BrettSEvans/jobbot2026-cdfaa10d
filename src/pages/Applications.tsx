@@ -702,10 +702,8 @@ const Applications = () => {
   );
 };
 
-/** Per-row status cell that reacts to background generation state */
-function ApplicationStatusCell({ appId, dbStatus, generationStatus }: { appId: string; dbStatus: string; generationStatus: string }) {
-  const bgJob = backgroundGenerator.getJob(appId);
-  const isActive = bgJob && !["complete", "error"].includes(bgJob.status);
+
+export default Applications;
 
   if (isActive) {
     return (

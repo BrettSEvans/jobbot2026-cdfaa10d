@@ -320,6 +320,13 @@ const Applications = () => {
   };
 
   const sorted = useMemo(() => {
+    return [...applications].sort((a, b) => {
+      const aVal = (a[sortKey] || "").toString().toLowerCase();
+      const bVal = (b[sortKey] || "").toString().toLowerCase();
+      const cmp = aVal.localeCompare(bVal);
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+  }, [applications, sortKey, sortDir]);
 
   const previewApp = applications.find((a) => a.id === previewId);
 

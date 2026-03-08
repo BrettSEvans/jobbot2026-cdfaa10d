@@ -388,8 +388,142 @@ registerHelp({
 });
 
 registerHelp({
+  slug: 'pricing',
+  title: 'Pricing & Subscriptions',
+  summary:
+    'View available subscription tiers — Free, Pro, and Premium — and their feature lists. Upgrade your plan to unlock additional generation limits and premium features.',
+  route: '/pricing',
+  keywords: ['pricing', 'subscription', 'tier', 'free', 'pro', 'premium', 'upgrade', 'plan'],
+  relatedSlugs: ['upgrade-gate'],
+});
+
+registerHelp({
+  slug: 'reset-password',
+  title: 'Password Reset',
+  summary:
+    'Reset your account password by requesting a reset link via email. Click the link to set a new password.',
+  steps: [
+    'Click "Forgot password?" on the sign-in page.',
+    'Enter your email address and submit.',
+    'Open the reset link from your inbox.',
+    'Enter and confirm your new password.',
+  ],
+  route: '/reset-password',
+  keywords: ['password', 'reset', 'forgot', 'change password'],
+  relatedSlugs: ['auth'],
+});
+
+registerHelp({
+  slug: 'import-job',
+  title: 'Import Job (Chrome Extension)',
+  summary:
+    'Import a job posting from LinkedIn or Indeed using the Chrome Extension. The extension sends job data directly into the app via a deep link.',
+  steps: [
+    'Install the Chrome Extension from the documentation link.',
+    'Navigate to a job posting on LinkedIn or Indeed.',
+    'Click the extension icon to import the job.',
+  ],
+  tips: [
+    'The import endpoint is rate-limited to 10 imports per hour.',
+    'You must be signed in for the import to work.',
+  ],
+  route: '/import',
+  keywords: ['import', 'chrome', 'extension', 'linkedin', 'indeed', 'deep link'],
+  relatedSlugs: ['new-application'],
+});
+
+registerHelp({
+  slug: 'ats-score',
+  title: 'ATS Score Scanning',
+  summary:
+    'Scan your resume against the job description to get an ATS (Applicant Tracking System) compatibility score. The score shows keyword match percentage and suggestions for improvement.',
+  tips: [
+    'Higher scores indicate better keyword alignment with the job posting.',
+    'Refine your resume based on the score breakdown to improve match rate.',
+  ],
+  keywords: ['ats', 'score', 'scan', 'keywords', 'match', 'applicant tracking'],
+  relatedSlugs: ['resume-tab', 'application-detail'],
+});
+
+registerHelp({
+  slug: 'wysiwyg-editor',
+  title: 'WYSIWYG Editor',
+  summary:
+    'Edit cover letters and resumes inline with a rich-text editor. Supports bold, italic, lists, and other formatting without leaving the application detail page.',
+  tips: [
+    'Changes made in the editor create a new revision automatically.',
+    'Use the toolbar for formatting options.',
+  ],
+  keywords: ['wysiwyg', 'editor', 'rich text', 'inline', 'edit', 'format'],
+  relatedSlugs: ['cover-letter-tab', 'resume-tab'],
+});
+
+registerHelp({
+  slug: 'upgrade-gate',
+  title: 'Upgrade Gate',
+  summary:
+    'Certain features are locked behind paid subscription tiers. An upgrade prompt will appear when you try to access a gated feature on the free plan.',
+  tips: [
+    'Visit the Pricing page to compare tier features.',
+    'Pro and Premium tiers unlock higher generation limits and additional asset types.',
+  ],
+  keywords: ['upgrade', 'gate', 'locked', 'tier', 'paywall', 'premium'],
+  relatedSlugs: ['pricing'],
+});
+
+registerHelp({
+  slug: 'onboarding-wizard',
+  title: 'Onboarding Wizard',
+  summary:
+    'A guided setup flow for new users to enter their name, upload a resume, and specify key skills and target industries. Completing onboarding ensures the best AI-generated results.',
+  steps: [
+    'After approval, you will be guided through the onboarding wizard.',
+    'Enter your name and years of experience.',
+    'Upload or paste your resume text.',
+    'Add key skills and target industries.',
+  ],
+  keywords: ['onboarding', 'wizard', 'setup', 'first time', 'new user'],
+  relatedSlugs: ['profile'],
+});
+
+registerHelp({
+  slug: 'export-downloads',
+  title: 'PDF & DOCX Export',
+  summary:
+    'Download your generated cover letters, resumes, and dashboards as PDF or DOCX files for use in applications.',
+  tips: [
+    'PDF export preserves the visual layout exactly as shown.',
+    'DOCX export is editable in Microsoft Word or Google Docs.',
+  ],
+  keywords: ['pdf', 'docx', 'export', 'download', 'word', 'file'],
+  relatedSlugs: ['cover-letter-tab', 'resume-tab', 'dashboard-tab'],
+});
+
+registerHelp({
   slug: 'theme-toggle',
   title: 'Dark / Light Mode',
+  summary:
+    'Toggle between dark and light themes using the sun/moon icon in the header. Your preference is saved automatically.',
+  keywords: ['dark', 'light', 'theme', 'mode', 'toggle'],
+});
+
+registerHelp({
+  slug: 'navigation',
+  title: 'Navigation',
+  summary:
+    'Use the top navigation bar to move between Applications, Templates, and Profile. Admin users also see a link to the Admin panel.',
+  keywords: ['nav', 'menu', 'header', 'navigate'],
+  relatedSlugs: ['applications-list', 'templates', 'profile', 'admin-panel'],
+});
+
+registerHelp({
+  slug: 'tutorial-walkthrough',
+  title: 'Interactive Tutorial',
+  summary:
+    'A guided walkthrough that shows you how to create applications, upload your resume, generate assets, and download them as PDFs.',
+  keywords: ['tutorial', 'walkthrough', 'tour', 'guide', 'onboarding', 'help'],
+  relatedSlugs: ['applications-list', 'new-application', 'profile'],
+});
   summary:
     'Toggle between dark and light themes using the sun/moon icon in the header. Your preference is saved automatically.',
   keywords: ['dark', 'light', 'theme', 'mode', 'toggle'],

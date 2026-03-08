@@ -18,7 +18,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  ArrowLeft, Edit3, Plus, Trash2, Loader2, Shield, FileText, Users, BookOpen, ScrollText, RotateCcw, ChevronDown, Gauge, FileCode, UserCheck, CreditCard,
+  ArrowLeft, Edit3, Plus, Trash2, Loader2, Shield, FileText, Users, BookOpen, ScrollText, RotateCcw, ChevronDown, Gauge, FileCode, UserCheck, CreditCard, FlaskConical,
 } from "lucide-react";
 import ApprovalQueue from "@/components/ApprovalQueue";
 import {
@@ -37,6 +37,7 @@ import AdminGenerationGuideTab from "@/components/admin/AdminGenerationGuideTab"
 import AdminRateLimitsTab from "@/components/admin/AdminRateLimitsTab";
 import AdminAuditTab from "@/components/admin/AdminAuditTab";
 import AdminSubscriptionsTab from "@/components/admin/AdminSubscriptionsTab";
+import AdminQATab from "@/components/admin/AdminQATab";
 
 // Protected founder admin — cannot be removed via UI
 const PROTECTED_ADMIN_ID = "f8182de6-de8e-4c12-9009-88fb5c4e66b8";
@@ -208,7 +209,7 @@ export default function Admin() {
         </div>
 
         <Tabs defaultValue="approvals">
-          <TabsList className="w-full grid grid-cols-8">
+          <TabsList className="w-full grid grid-cols-9">
             <TabsTrigger value="approvals" className="flex items-center gap-1.5">
               <UserCheck className="h-3.5 w-3.5" /> Approvals
             </TabsTrigger>
@@ -232,6 +233,9 @@ export default function Admin() {
             </TabsTrigger>
             <TabsTrigger value="guide" className="flex items-center gap-1.5">
               <BookOpen className="h-3.5 w-3.5" /> Guide
+            </TabsTrigger>
+            <TabsTrigger value="qa" className="flex items-center gap-1.5">
+              <FlaskConical className="h-3.5 w-3.5" /> QA
             </TabsTrigger>
           </TabsList>
 
@@ -442,6 +446,10 @@ export default function Admin() {
                 <AdminGuideTab />
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="qa">
+            <AdminQATab />
           </TabsContent>
         </Tabs>
 

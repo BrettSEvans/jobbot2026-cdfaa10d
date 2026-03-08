@@ -460,7 +460,7 @@ const ApplicationDetail = () => {
 
           {/* Dynamic asset view */}
           {activeDynamicAsset && (
-            <UpgradeGate feature="Industry Materials" isLocked={!isAssetAllowed("dynamic")} requiredTier="premium">
+            <UpgradeGate feature="Industry Materials" isLocked={!isAssetAllowed("dynamic") && tier !== "free"} requiredTier="premium">
               <DynamicAssetTab
                 key={activeDynamicAsset.id}
                 asset={activeDynamicAsset}
@@ -471,6 +471,7 @@ const ApplicationDetail = () => {
                 branding={state.app?.branding}
                 onAssetUpdated={handleAssetUpdated}
                 canRefine={canRefine}
+                isPreviewOnly={tier === "free"}
               />
             </UpgradeGate>
           )}

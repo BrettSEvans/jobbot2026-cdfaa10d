@@ -499,7 +499,7 @@ export default function DynamicAssetTab({
         <Card className="overflow-hidden">
           <div className="w-full" style={{ height: "70vh" }}>
             <iframe
-              srcDoc={previewHtml || html}
+              srcDoc={isPreviewOnly ? injectWatermark(previewHtml || html) : (previewHtml || html)}
               className="w-full h-full border-0"
               sandbox="allow-scripts"
               title={`${asset.asset_name} Preview`}

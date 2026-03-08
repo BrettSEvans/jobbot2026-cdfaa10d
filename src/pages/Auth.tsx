@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
@@ -36,6 +37,7 @@ const FEATURES = [
 ];
 
 export default function Auth() {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");
@@ -57,7 +59,9 @@ export default function Auth() {
           options: { emailRedirectTo: window.location.origin },
         });
         if (error) throw error;
-        toast({ title: "Check your email", description: "We sent you a verification link." });
+        // Redirect to verify-email page
+        navigate(`/verify-email?email=${encodeURIComponent(email)}`);
+        return;
       } else if (mode === "login") {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;

@@ -1,5 +1,5 @@
 /**
- * AssetProposalCard - Shows 6 AI-proposed assets, lets user select exactly 3.
+ * AssetProposalCard - Shows 6 AI-proposed document types, lets user select exactly 3.
  */
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -39,7 +39,7 @@ export default function AssetProposalCard({
 
   const handlePropose = async () => {
     if (!jobDescription.trim()) {
-      toast({ title: "Missing info", description: "A job description is needed to propose assets.", variant: "destructive" });
+      toast({ title: "Missing info", description: "A job description is needed to propose materials.", variant: "destructive" });
       return;
     }
     setLoading(true);
@@ -56,7 +56,7 @@ export default function AssetProposalCard({
       setProposals(results);
       setSelected(new Set());
       await saveProposedAssets(applicationId, results);
-      toast({ title: "Assets proposed!", description: "Select 3 document types to generate." });
+      toast({ title: "Materials proposed!", description: "Select 3 document types to generate." });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
@@ -72,7 +72,7 @@ export default function AssetProposalCard({
       } else if (next.size < 3) {
         next.add(name);
       } else {
-        toast({ title: "Limit reached", description: "You can select exactly 3 assets.", variant: "destructive" });
+        toast({ title: "Limit reached", description: "You can select exactly 3 documents.", variant: "destructive" });
       }
       return next;
     });
@@ -87,7 +87,7 @@ export default function AssetProposalCard({
     try {
       const assets = await confirmAssetSelection(applicationId, Array.from(selected));
       onAssetsConfirmed(assets);
-      toast({ title: "Assets confirmed!", description: "Generating your 3 documents..." });
+      toast({ title: "Selection confirmed!", description: "Generating your 3 documents..." });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
@@ -101,14 +101,14 @@ export default function AssetProposalCard({
         <CardContent className="py-10 text-center space-y-4">
           <FileText className="h-10 w-10 text-muted-foreground mx-auto" />
           <div>
-            <h3 className="font-semibold text-lg">Industry-Specific Assets</h3>
+            <h3 className="font-semibold text-lg">Industry-Specific Materials</h3>
             <p className="text-sm text-muted-foreground mt-1">
               Let AI analyze the job and propose 6 professional documents tailored to this role and industry.
             </p>
           </div>
           <Button onClick={handlePropose} disabled={loading}>
             {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-            Propose Assets
+            Propose Materials
           </Button>
         </CardContent>
       </Card>

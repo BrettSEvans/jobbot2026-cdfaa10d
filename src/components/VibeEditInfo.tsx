@@ -94,7 +94,7 @@ const GUIDES: Record<AssetKey, PromptGuide> = {
       '"Add a \'Security & Compliance Audit\' milestone at the end of Q2, before the production launch. Move the \'User Acceptance Testing\' phase to start two weeks earlier. Highlight the critical path in red."',
   },
   dynamic: {
-    intro: "This is a custom asset. Use the Role, Outcome, Design framework for best results.",
+    intro: "This is a custom document. Use the Role, Outcome, Design framework for best results.",
     tips: [
       'Role: "As a senior consultant presenting to the board..."',
       'Outcome: "...create a one-page competitive analysis."',

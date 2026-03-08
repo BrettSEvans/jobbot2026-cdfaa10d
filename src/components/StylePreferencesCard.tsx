@@ -128,7 +128,7 @@ export default function StylePreferencesCard() {
         {preferences.length === 0 ? (
           <div className="text-center py-4">
             <p className="text-sm text-muted-foreground">
-              No preferences learned yet. Use "Vibe Edit" on any asset — the AI will learn your style over time.
+              No preferences learned yet. Use "Vibe Edit" on any document — the AI will learn your style over time.
             </p>
           </div>
         ) : (

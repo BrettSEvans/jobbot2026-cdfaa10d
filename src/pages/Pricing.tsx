@@ -104,7 +104,7 @@ export default function Pricing() {
           Membership
         </h1>
         <p className="text-muted-foreground max-w-lg mx-auto">
-          Supercharge your job search with AI-generated assets tailored to every
+          Supercharge your job search with AI-generated materials tailored to every
           application.
         </p>
         {currentTier !== "free" && (

@@ -119,7 +119,7 @@ const NewApplication = () => {
       setApplicationId(appId);
 
       // Navigate to the application detail page — generation continues in background
-      toast({ title: "Application created!", description: "Your assets are being generated in the background." });
+      toast({ title: "Application created!", description: "Your materials are being generated in the background." });
       navigate(`/applications/${appId}`);
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
@@ -229,7 +229,7 @@ const NewApplication = () => {
                         onChange={(e) => setCompanyUrl(e.target.value)}
                       />
                       <p className="text-xs text-muted-foreground mt-2">
-                        Used to scrape branding (fonts, colors, design) for your assets
+                        Used to scrape branding (fonts, colors, design) for your materials
                       </p>
                     </CardContent>
                   </Card>

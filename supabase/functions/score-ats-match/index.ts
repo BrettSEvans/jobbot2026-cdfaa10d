@@ -1,4 +1,4 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -6,7 +6,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-Deno.serve(async (req) => {
+serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -18,6 +18,14 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({ error: "jobDescription and resumeHtml are required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
+      return new Response(
+        JSON.stringify({ error: "LOVABLE_API_KEY is not configured" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -52,19 +60,14 @@ Return ONLY valid JSON with this exact schema:
 
     const userPrompt = `JOB DESCRIPTION:\n${jobDescription.slice(0, 8000)}\n\nRESUME:\n${resumeText.slice(0, 8000)}`;
 
-    const gatewayUrl = Deno.env.get("AI_GATEWAY_URL");
-    if (!gatewayUrl) {
-      return new Response(
-        JSON.stringify({ error: "AI gateway not configured" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    const aiResp = await fetch(gatewayUrl, {
+    const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "google/gemini-3-flash-preview",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
@@ -76,7 +79,21 @@ Return ONLY valid JSON with this exact schema:
 
     if (!aiResp.ok) {
       const errText = await aiResp.text();
-      console.error("AI gateway error:", errText);
+      console.error("AI gateway error:", aiResp.status, errText);
+
+      if (aiResp.status === 429) {
+        return new Response(
+          JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      if (aiResp.status === 402) {
+        return new Response(
+          JSON.stringify({ error: "AI credits exhausted. Please add funds to continue." }),
+          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
       return new Response(
         JSON.stringify({ error: "AI scoring failed", code: "AI_ERROR" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -115,7 +132,7 @@ Return ONLY valid JSON with this exact schema:
   } catch (err) {
     console.error("score-ats-match error:", err);
     return new Response(
-      JSON.stringify({ error: err.message, code: "INTERNAL_ERROR" }),
+      JSON.stringify({ error: err instanceof Error ? err.message : "Unknown error", code: "INTERNAL_ERROR" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

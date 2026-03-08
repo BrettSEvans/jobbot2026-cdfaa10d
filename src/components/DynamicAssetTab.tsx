@@ -256,8 +256,21 @@ export default function DynamicAssetTab({
         </div>
       )}
 
+      {/* Preview Mode Banner */}
+      {isPreviewOnly && (
+        <div className="flex items-center gap-2 p-3 rounded-lg border border-primary/30 bg-primary/5 text-sm">
+          <Crown className="h-4 w-4 text-primary shrink-0" />
+          <span className="text-foreground">
+            Preview mode — upgrade to Pro or Premium to edit, download, and remove the watermark.
+          </span>
+          <Button size="sm" variant="default" className="ml-auto" onClick={() => navigate("/pricing")}>
+            Upgrade
+          </Button>
+        </div>
+      )}
+
       {/* Dashboard Hosting Help */}
-      {isDashboardType && html && (
+      {isDashboardType && html && !isPreviewOnly && (
         <div className="flex items-start gap-2 p-3 rounded-lg border border-accent bg-accent/30 text-sm">
           <HelpCircle className="h-4 w-4 text-primary shrink-0 mt-0.5" />
           <span className="text-foreground">
@@ -276,59 +289,102 @@ export default function DynamicAssetTab({
 
       {/* Action Bar */}
       <div className="flex flex-wrap gap-2">
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span>
-                <Button
-                  data-tutorial="refine-ai-btn"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setChatOpen(!chatOpen)}
-                  disabled={!html || !canRefineProp || isDownloaded}
-                >
-  <Edit3 className="mr-2 h-4 w-4" />
-                  {isDownloaded ? "Locked" : !canRefineProp ? "Upgrade to Vibe Edit" : chatOpen ? "Hide Chat" : "Vibe Edit"}
-                </Button>
-              </span>
-            </TooltipTrigger>
-            {isDownloaded && (
-              <TooltipContent>Asset locked after download</TooltipContent>
-            )}
-          </Tooltip>
-        </TooltipProvider>
-        <VibeEditInfo assetType="dynamic" />
+        {/* Vibe Edit Button */}
+        {isPreviewOnly ? (
+          <UpgradePopover>
+            <Button variant="outline" size="sm" disabled className="opacity-60">
+              <Edit3 className="mr-2 h-4 w-4" />
+              Vibe Edit
+              <Lock className="ml-2 h-3 w-3" />
+            </Button>
+          </UpgradePopover>
+        ) : (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span>
+                  <Button
+                    data-tutorial="refine-ai-btn"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setChatOpen(!chatOpen)}
+                    disabled={!html || !canRefineProp || isDownloaded}
+                  >
+                    <Edit3 className="mr-2 h-4 w-4" />
+                    {isDownloaded ? "Locked" : !canRefineProp ? "Upgrade to Vibe Edit" : chatOpen ? "Hide Chat" : "Vibe Edit"}
+                  </Button>
+                </span>
+              </TooltipTrigger>
+              {isDownloaded && (
+                <TooltipContent>Asset locked after download</TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
+        )}
+        {!isPreviewOnly && <VibeEditInfo assetType="dynamic" />}
 
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span>
-                <Button
-                  data-tutorial="generate-btn"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleGenerate}
-                  disabled={isWorking || isDownloaded}
-                >
-                  {isWorking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-                  {html ? "Regenerate" : "Generate"}
-                </Button>
-              </span>
-            </TooltipTrigger>
-            {isDownloaded && (
-              <TooltipContent>Asset locked after download</TooltipContent>
-            )}
-          </Tooltip>
-        </TooltipProvider>
+        {/* Regenerate Button */}
+        {isPreviewOnly ? (
+          <UpgradePopover>
+            <Button variant="outline" size="sm" disabled className="opacity-60">
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Regenerate
+              <Lock className="ml-2 h-3 w-3" />
+            </Button>
+          </UpgradePopover>
+        ) : (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span>
+                  <Button
+                    data-tutorial="generate-btn"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleGenerate}
+                    disabled={isWorking || isDownloaded}
+                  >
+                    {isWorking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+                    {html ? "Regenerate" : "Generate"}
+                  </Button>
+                </span>
+              </TooltipTrigger>
+              {isDownloaded && (
+                <TooltipContent>Asset locked after download</TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
+        )}
 
         {html && (
           <>
-            <Button data-tutorial="download-btn" variant="outline" size="sm" onClick={handleDownloadPdf}>
-              <FileDown className="mr-2 h-4 w-4" /> PDF Download
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleCopyText}>
-              <Copy className="mr-2 h-4 w-4" /> Copy to Text
-            </Button>
+            {/* PDF Download Button */}
+            {isPreviewOnly ? (
+              <UpgradePopover>
+                <Button variant="outline" size="sm" disabled className="opacity-60">
+                  <FileDown className="mr-2 h-4 w-4" /> PDF Download
+                  <Lock className="ml-2 h-3 w-3" />
+                </Button>
+              </UpgradePopover>
+            ) : (
+              <Button data-tutorial="download-btn" variant="outline" size="sm" onClick={handleDownloadPdf}>
+                <FileDown className="mr-2 h-4 w-4" /> PDF Download
+              </Button>
+            )}
+
+            {/* Copy to Text Button */}
+            {isPreviewOnly ? (
+              <UpgradePopover>
+                <Button variant="outline" size="sm" disabled className="opacity-60">
+                  <Copy className="mr-2 h-4 w-4" /> Copy to Text
+                  <Lock className="ml-2 h-3 w-3" />
+                </Button>
+              </UpgradePopover>
+            ) : (
+              <Button variant="outline" size="sm" onClick={handleCopyText}>
+                <Copy className="mr-2 h-4 w-4" /> Copy to Text
+              </Button>
+            )}
           </>
         )}
       </div>

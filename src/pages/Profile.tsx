@@ -113,7 +113,7 @@ export default function Profile() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const fileRef = useRef<HTMLInputElement>(null);
-  const { isAdmin } = useAdminRole();
+  const { isAdmin } = useUserRoles();
   const { activePersona, isImpersonating, refreshRoot, updateActivePersona } = useImpersonation();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);

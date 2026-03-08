@@ -31,7 +31,7 @@ async function logAudit(action: string, targetId: string, metadata: Record<strin
     if (!user) return;
     await supabase
       .from('admin_audit_log')
-      .insert({ admin_id: user.id, action, target_id: targetId, metadata });
+      .insert({ admin_id: user.id, action, target_id: targetId, metadata: metadata as unknown as Record<string, unknown> });
   } catch (err) {
     console.warn('[audit] Failed to log action:', action, err);
   }
@@ -164,5 +164,5 @@ export async function getAuditLog(limit = 50): Promise<AuditLogEntry[]> {
     .order('created_at', { ascending: false })
     .limit(limit);
   if (error) throw new Error(error.message);
-  return data;
+  return data as unknown as AuditLogEntry[];
 }

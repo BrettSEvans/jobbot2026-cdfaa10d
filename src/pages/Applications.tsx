@@ -135,10 +135,10 @@ const Applications = () => {
     const dismissed: string[] = JSON.parse(localStorage.getItem('dismissed_ghost_interview_prompts') || '[]');
     return applications
       .filter((app) => {
-        const stage = (app as any).pipeline_stage || 'bookmarked';
+        const stage = app.pipeline_stage || 'bookmarked';
         if (stage !== 'interviewing') return false;
         if (dismissed.includes(app.id)) return false;
-        const changedAt = (app as any).stage_changed_at || app.created_at;
+        const changedAt = app.stage_changed_at || app.created_at;
         return now - new Date(changedAt).getTime() > SEVEN_DAYS;
       })
       .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())[0] || null;
@@ -189,7 +189,7 @@ const Applications = () => {
 
   // Check if any apps are missing icons
   const needsBackfill = useMemo(
-    () => applications.some((a) => a.company_name && !(a as any).company_icon_url),
+    () => applications.some((a) => a.company_name && !a.company_icon_url),
     [applications]
   );
 
@@ -560,7 +560,7 @@ const Applications = () => {
                       >
                         <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/50 shrink-0">
                           <div className="flex items-center gap-2 min-w-0">
-                            <CompanyIcon iconUrl={(previewApp as any).company_icon_url} companyName={previewApp.company_name} size={18} />
+                            <CompanyIcon iconUrl={previewApp.company_icon_url} companyName={previewApp.company_name} size={18} />
                             <span className="text-sm font-medium text-muted-foreground truncate">
                               {previewApp.company_name} — {previewApp.job_title}
                             </span>

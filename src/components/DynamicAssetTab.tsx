@@ -41,7 +41,7 @@ interface DynamicAssetTabProps {
   jobDescription: string;
   companyName?: string;
   jobTitle?: string;
-  branding?: any;
+  branding?: import('@/integrations/supabase/types').Json;
   onAssetUpdated: (updated: GeneratedAsset) => void;
   canRefine?: boolean;
 }
@@ -104,7 +104,7 @@ export default function DynamicAssetTab({
 
     setGenerating(true);
     try {
-      await updateGeneratedAsset(asset.id, { generation_status: 'generating' } as any);
+      await updateGeneratedAsset(asset.id, { generation_status: 'generating' });
 
       let resumeText = "";
       try { resumeText = await getActiveResumeText(); } catch { }
@@ -128,7 +128,7 @@ export default function DynamicAssetTab({
       const updated = await updateGeneratedAsset(asset.id, {
         html: cleaned,
         generation_status: 'complete',
-      } as any);
+      });
       onAssetUpdated(updated);
 
       // Save revision
@@ -138,9 +138,10 @@ export default function DynamicAssetTab({
       } catch { }
 
       toast({ title: "Generated!", description: `${asset.asset_name} has been generated.` });
-    } catch (err: any) {
-      await updateGeneratedAsset(asset.id, { generation_status: 'error', generation_error: err.message } as any);
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      await updateGeneratedAsset(asset.id, { generation_status: 'error', generation_error: message });
+      toast({ title: "Error", description: message, variant: "destructive" });
     } finally {
       setGenerating(false);
     }
@@ -179,7 +180,7 @@ export default function DynamicAssetTab({
       extractStyleSignalsFromMessage(msg);
 
       const cleaned = cleanHtml(accumulated);
-      const updated = await updateGeneratedAsset(asset.id, { html: cleaned } as any);
+      const updated = await updateGeneratedAsset(asset.id, { html: cleaned });
       onAssetUpdated(updated);
 
       try {

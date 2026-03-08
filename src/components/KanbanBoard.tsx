@@ -87,10 +87,11 @@ export default function KanbanBoard({ applications, onStageChanged }: KanbanBoar
   const isBulkMode = selectedIds.size > 0;
 
   const columns = useMemo(() => {
-    const map: Record<PipelineStage, JobApplication[]> = {} as any;
-    for (const stage of PIPELINE_STAGES) map[stage] = [];
+    const map: Record<PipelineStage, JobApplication[]> = Object.fromEntries(
+      PIPELINE_STAGES.map((s) => [s, []])
+    ) as Record<PipelineStage, JobApplication[]>;
     for (const app of applications) {
-      const stage = ((app as any).pipeline_stage || "bookmarked") as PipelineStage;
+      const stage = (app.pipeline_stage || "bookmarked") as PipelineStage;
       if (map[stage]) map[stage].push(app);
       else map.bookmarked.push(app);
     }
@@ -120,7 +121,7 @@ export default function KanbanBoard({ applications, onStageChanged }: KanbanBoar
       for (const appId of selectedIds) {
         const app = applications.find((a) => a.id === appId);
         if (!app) continue;
-        const fromStage = ((app as any).pipeline_stage || "bookmarked") as PipelineStage;
+        const fromStage = (app.pipeline_stage || "bookmarked") as PipelineStage;
         if (fromStage === bulkTarget) continue;
         await updatePipelineStage(appId, fromStage, bulkTarget as PipelineStage);
         moved++;
@@ -131,8 +132,9 @@ export default function KanbanBoard({ applications, onStageChanged }: KanbanBoar
       });
       clearSelection();
       onStageChanged();
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      toast({ title: "Error", description: message, variant: "destructive" });
     } finally {
       setBulkMoving(false);
     }
@@ -157,7 +159,7 @@ export default function KanbanBoard({ applications, onStageChanged }: KanbanBoar
       if (!appId) return;
       const app = applications.find((a) => a.id === appId);
       if (!app) return;
-      const fromStage = ((app as any).pipeline_stage || "bookmarked") as PipelineStage;
+      const fromStage = (app.pipeline_stage || "bookmarked") as PipelineStage;
       if (fromStage === toStage) return;
       if (isIllogicalTransition(fromStage, toStage)) {
         setPendingMove({
@@ -178,8 +180,9 @@ export default function KanbanBoard({ applications, onStageChanged }: KanbanBoar
       await updatePipelineStage(appId, from, to);
       toast({ title: "Stage updated", description: `Moved to ${STAGE_LABELS[to]}` });
       onStageChanged();
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      toast({ title: "Error", description: message, variant: "destructive" });
     }
   };
 
@@ -194,13 +197,14 @@ export default function KanbanBoard({ applications, onStageChanged }: KanbanBoar
   const handleMobileMove = async (appId: string, toStage: PipelineStage) => {
     const app = applications.find((a) => a.id === appId);
     if (!app) return;
-    const fromStage = ((app as any).pipeline_stage || "bookmarked") as PipelineStage;
+    const fromStage = (app.pipeline_stage || "bookmarked") as PipelineStage;
     if (fromStage === toStage) return;
     await executeMove(appId, fromStage, toStage);
   };
 
   const renderCard = (app: JobApplication, dimmed = false) => {
-    const appStage = ((app as any).pipeline_stage || "bookmarked") as PipelineStage;
+    const appStage = (app.pipeline_stage || "bookmarked") as PipelineStage;
+    const atsScore = app.ats_score as Record<string, unknown> | null;
     return (
     <Card
       key={app.id}
@@ -238,7 +242,7 @@ export default function KanbanBoard({ applications, onStageChanged }: KanbanBoar
             />
           )}
           <CompanyIcon
-            iconUrl={(app as any).company_icon_url}
+            iconUrl={app.company_icon_url}
             companyName={app.company_name}
             size={18}
           />
@@ -247,12 +251,12 @@ export default function KanbanBoard({ applications, onStageChanged }: KanbanBoar
         <p className="text-xs text-muted-foreground truncate">{app.job_title || "Unknown Role"}</p>
         <div className="flex items-center gap-2 flex-wrap">
           <DaysInStageBadge
-            stageChangedAt={(app as any).stage_changed_at}
+            stageChangedAt={app.stage_changed_at}
             createdAt={app.created_at}
           />
-          {(app as any).ats_score?.score != null && (
+          {atsScore?.score != null && (
             <Badge variant="outline" className="text-xs">
-              ATS: {(app as any).ats_score.score}
+              ATS: {String(atsScore.score)}
             </Badge>
           )}
         </div>

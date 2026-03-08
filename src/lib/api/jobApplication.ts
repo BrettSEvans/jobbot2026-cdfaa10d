@@ -2,7 +2,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { getActivePersonaSnapshot } from '@/contexts/ImpersonationContext';
 import { streamFromEdgeFunction, processSSEStream } from './streamUtils';
 import { getStyleContextForPrompt } from './stylePreferences';
-import type { Json } from '@/integrations/supabase/types';
+import type { Json, TablesInsert } from '@/integrations/supabase/types';
 
 // --- Search for company icon (three-tier fallback) ---
 export async function searchCompanyIcon(companyName?: string, companyUrl?: string): Promise<{ iconUrl: string | null; source: string | null }> {
@@ -212,12 +212,12 @@ export async function saveJobApplication(app: SaveJobApplicationInput) {
     const activePersona = getActivePersonaSnapshot();
     const personaId = activePersona?.isTestUser ? activePersona.id : null;
 
-    const insertPayload = { ...safeFields, user_id: user.id, persona_id: personaId };
-    const { data, error } = await (supabase
+    const insertPayload = { ...safeFields, user_id: user.id, persona_id: personaId } as TablesInsert<'job_applications'>;
+    const { data, error } = await supabase
       .from('job_applications')
-      .insert(insertPayload as any)
+      .insert(insertPayload)
       .select()
-      .single());
+      .single();
     if (error) throw new Error(error.message);
     return data;
   }

@@ -4,9 +4,7 @@
  */
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import CompanyIcon from "@/components/CompanyIcon";
 import { FileText, Eye, Copy, Trash2 } from "lucide-react";
 import {
@@ -49,7 +47,7 @@ export default function ApplicationCard({
       <CardContent className="p-4 space-y-2">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">
-            <CompanyIcon iconUrl={(app as any).company_icon_url} companyName={app.company_name} size={24} />
+            <CompanyIcon iconUrl={app.company_icon_url} companyName={app.company_name} size={24} />
             <div className="min-w-0">
               <p className="text-sm font-medium truncate">{app.company_name || "Unknown"}</p>
               <p className="text-xs text-muted-foreground truncate">{app.job_title || "Unknown Role"}</p>
@@ -61,7 +59,7 @@ export default function ApplicationCard({
           <span>{new Date(app.created_at).toLocaleDateString()}</span>
           <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
             {app.cover_letter && (
-              <Button size="sm" variant="ghost" className="h-8 w-8 p-0" aria-label="Copy cover letter" onClick={(e) => onCopyCoverLetter(app.cover_letter, e)}>
+              <Button size="sm" variant="ghost" className="h-8 w-8 p-0" aria-label="Copy cover letter" onClick={(e) => onCopyCoverLetter(app.cover_letter!, e)}>
                 <FileText className="h-3.5 w-3.5" />
               </Button>
             )}
@@ -70,7 +68,7 @@ export default function ApplicationCard({
                 <Button size="sm" variant="ghost" className="h-8 w-8 p-0" aria-label="Preview" onClick={(e) => { e.stopPropagation(); onPreview(app.id); }}>
                   <Eye className="h-3.5 w-3.5" />
                 </Button>
-                <Button size="sm" variant="ghost" className="h-8 w-8 p-0" aria-label="Copy HTML" onClick={(e) => onCopyHtml(app.dashboard_html, e)}>
+                <Button size="sm" variant="ghost" className="h-8 w-8 p-0" aria-label="Copy HTML" onClick={(e) => onCopyHtml(app.dashboard_html!, e)}>
                   <Copy className="h-3.5 w-3.5" />
                 </Button>
               </>

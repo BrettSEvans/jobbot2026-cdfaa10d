@@ -26,8 +26,9 @@ export default function AdminAuditTab() {
     setLoading(true);
     try {
       setEntries(await getAuditLog(50));
-    } catch (err: any) {
-      toast({ title: 'Error loading audit log', description: err.message, variant: 'destructive' });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      toast({ title: 'Error loading audit log', description: message, variant: 'destructive' });
     } finally {
       setLoading(false);
     }

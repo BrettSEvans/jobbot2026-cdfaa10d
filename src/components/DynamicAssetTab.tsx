@@ -84,6 +84,31 @@ export default function DynamicAssetTab({
   const isDownloaded = !!asset.downloaded_at;
   const isDashboardType = asset.asset_name.toLowerCase().includes("dashboard");
 
+  // Upgrade popover component for locked actions
+  const UpgradePopover = ({ children }: { children: React.ReactNode }) => (
+    <Popover>
+      <PopoverTrigger asChild>
+        <span className="cursor-pointer">{children}</span>
+      </PopoverTrigger>
+      <PopoverContent className="w-64 p-4" align="start">
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Crown className="h-5 w-5 text-primary" />
+            <span className="font-medium">Upgrade Required</span>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            This feature is available with a Pro or Premium subscription. Would you like access?
+          </p>
+          <div className="flex gap-2">
+            <Button size="sm" onClick={() => navigate("/pricing")}>
+              View Plans
+            </Button>
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+
   useEffect(() => {
     if (asset.html) loadRevisions();
   }, [asset.id, revisionTrigger]);

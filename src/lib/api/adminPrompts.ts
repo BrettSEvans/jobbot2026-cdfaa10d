@@ -29,9 +29,9 @@ async function logAudit(action: string, targetId: string, metadata: Record<strin
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    await (supabase as any)
+    await supabase
       .from('admin_audit_log')
-      .insert({ admin_id: user.id, action, target_id: targetId, metadata });
+      .insert([{ admin_id: user.id, action, target_id: targetId, metadata: metadata as unknown as import('@/integrations/supabase/types').Json }]);
   } catch (err) {
     console.warn('[audit] Failed to log action:', action, err);
   }
@@ -40,7 +40,7 @@ async function logAudit(action: string, targetId: string, metadata: Record<strin
 // ---- Prompt Styles ----
 
 export async function getAllResumeStyles(): Promise<ResumePromptStyle[]> {
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('resume_prompt_styles')
     .select('*')
     .order('sort_order', { ascending: true });
@@ -57,7 +57,7 @@ export async function createResumeStyle(style: {
   sort_order?: number;
 }): Promise<ResumePromptStyle> {
   const { data: { user } } = await supabase.auth.getUser();
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('resume_prompt_styles')
     .insert({ ...style, created_by: user?.id })
     .select()
@@ -71,7 +71,7 @@ export async function updateResumeStyle(
   id: string,
   updates: Partial<Pick<ResumePromptStyle, 'label' | 'slug' | 'system_prompt' | 'description' | 'is_active' | 'sort_order'>>
 ): Promise<ResumePromptStyle> {
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('resume_prompt_styles')
     .update({ ...updates, updated_at: new Date().toISOString() })
     .eq('id', id)
@@ -84,12 +84,12 @@ export async function updateResumeStyle(
 
 /** Soft-delete a prompt style (moves to trash). */
 export async function deleteResumeStyle(id: string): Promise<void> {
-  const { data: existing } = await (supabase as any)
+  const { data: existing } = await supabase
     .from('resume_prompt_styles')
     .select('label, slug')
     .eq('id', id)
     .maybeSingle();
-  const { error } = await (supabase as any)
+  const { error } = await supabase
     .from('resume_prompt_styles')
     .update({ deleted_at: new Date().toISOString() })
     .eq('id', id);
@@ -99,7 +99,7 @@ export async function deleteResumeStyle(id: string): Promise<void> {
 
 /** Restore a soft-deleted prompt style. */
 export async function restoreResumeStyle(id: string): Promise<void> {
-  const { error } = await (supabase as any)
+  const { error } = await supabase
     .from('resume_prompt_styles')
     .update({ deleted_at: null })
     .eq('id', id);
@@ -109,12 +109,12 @@ export async function restoreResumeStyle(id: string): Promise<void> {
 
 /** Permanently delete a prompt style (hard delete). */
 export async function hardDeleteResumeStyle(id: string): Promise<void> {
-  const { data: existing } = await (supabase as any)
+  const { data: existing } = await supabase
     .from('resume_prompt_styles')
     .select('label, slug')
     .eq('id', id)
     .maybeSingle();
-  const { error } = await (supabase as any)
+  const { error } = await supabase
     .from('resume_prompt_styles')
     .delete()
     .eq('id', id);
@@ -125,7 +125,7 @@ export async function hardDeleteResumeStyle(id: string): Promise<void> {
 // ---- Admin Users ----
 
 export async function getAdminUsers(): Promise<Array<{ id: string; user_id: string; role: string }>> {
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('user_roles')
     .select('*')
     .eq('role', 'admin');
@@ -134,7 +134,7 @@ export async function getAdminUsers(): Promise<Array<{ id: string; user_id: stri
 }
 
 export async function addAdminRole(userId: string): Promise<void> {
-  const { error } = await (supabase as any)
+  const { error } = await supabase
     .from('user_roles')
     .insert({ user_id: userId, role: 'admin' });
   if (error) throw new Error(error.message);
@@ -142,7 +142,7 @@ export async function addAdminRole(userId: string): Promise<void> {
 }
 
 export async function removeAdminRole(userId: string): Promise<void> {
-  const { error } = await (supabase as any)
+  const { error } = await supabase
     .from('user_roles')
     .delete()
     .eq('user_id', userId)
@@ -158,11 +158,11 @@ export async function lookupUserByEmail(email: string): Promise<string | null> {
 // ---- Audit Log ----
 
 export async function getAuditLog(limit = 50): Promise<AuditLogEntry[]> {
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('admin_audit_log')
     .select('*')
     .order('created_at', { ascending: false })
     .limit(limit);
   if (error) throw new Error(error.message);
-  return data;
+  return data as unknown as AuditLogEntry[];
 }

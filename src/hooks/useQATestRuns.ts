@@ -32,7 +32,7 @@ export function useQATestRuns() {
   const [loading, setLoading] = useState(true);
 
   const loadRuns = useCallback(async () => {
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from("qa_test_runs")
       .select("*")
       .order("created_at", { ascending: false });
@@ -49,7 +49,7 @@ export function useQATestRuns() {
   }, [activeRunId, toast]);
 
   const loadResults = useCallback(async (runId: string) => {
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from("qa_test_results")
       .select("*")
       .eq("run_id", runId);
@@ -73,7 +73,7 @@ export function useQATestRuns() {
   const createRun = async (buildLabel: string, buildTimestamp: string, notes?: string) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    const { error } = await (supabase as any).from("qa_test_runs").insert({
+    const { error } = await supabase.from("qa_test_runs").insert({
       build_label: buildLabel,
       build_timestamp: buildTimestamp,
       notes: notes || null,
@@ -88,7 +88,7 @@ export function useQATestRuns() {
   };
 
   const completeRun = async (runId: string) => {
-    const { error } = await (supabase as any)
+    const { error } = await supabase
       .from("qa_test_runs")
       .update({ status: "completed" })
       .eq("id", runId);
@@ -107,7 +107,7 @@ export function useQATestRuns() {
   ) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    const { error } = await (supabase as any).from("qa_test_results").upsert(
+    const { error } = await supabase.from("qa_test_results").upsert(
       {
         run_id: runId,
         test_case_id: testCaseId,
@@ -125,7 +125,7 @@ export function useQATestRuns() {
   };
 
   const updateFailureNotes = async (runId: string, testCaseId: string, notes: string) => {
-    const { error } = await (supabase as any)
+    const { error } = await supabase
       .from("qa_test_results")
       .update({ failure_notes: notes })
       .eq("run_id", runId)
@@ -136,7 +136,7 @@ export function useQATestRuns() {
   };
 
   const fixRegression = async (runId: string, testCaseId: string) => {
-    const { error } = await (supabase as any)
+    const { error } = await supabase
       .from("qa_test_results")
       .update({ regression_fixed_at: new Date().toISOString() })
       .eq("run_id", runId)
@@ -149,7 +149,7 @@ export function useQATestRuns() {
   };
 
   const fixAllRegressions = async (runId: string) => {
-    const { error } = await (supabase as any)
+    const { error } = await supabase
       .from("qa_test_results")
       .update({ regression_fixed_at: new Date().toISOString() })
       .eq("run_id", runId)

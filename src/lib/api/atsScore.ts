@@ -3,6 +3,7 @@
  */
 import { supabase } from '@/integrations/supabase/client';
 import { saveJobApplication } from './jobApplication';
+import type { Json } from '@/integrations/supabase/types';
 
 export interface AtsScoreResult {
   score: number;
@@ -10,6 +11,7 @@ export interface AtsScoreResult {
   missingKeywords: string[];
   suggestions: string[];
   keywordGroups: Record<string, string[]>;
+  _inputHash?: string;
 }
 
 /**
@@ -43,7 +45,7 @@ export function isCacheValid(
 
   // Check if inputs changed (stored hash in score)
   const currentHash = simpleHash(currentResumeHtml + currentJd);
-  if ((atsScore as any)._inputHash && (atsScore as any)._inputHash !== currentHash) return false;
+  if (atsScore._inputHash && atsScore._inputHash !== currentHash) return false;
 
   return true;
 }
@@ -78,10 +80,10 @@ export async function scoreAtsMatch(
   // Persist to DB
   await saveJobApplication({
     id: applicationId,
-    job_url: '', // Will be ignored since id is provided
-    ats_score: scoreWithHash as any,
+    job_url: '',
+    ats_score: scoreWithHash as unknown as Json,
     ats_scored_at: new Date().toISOString(),
-  } as any);
+  });
 
   return result;
 }

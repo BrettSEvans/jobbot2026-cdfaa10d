@@ -11,7 +11,7 @@ export interface PendingUser {
 }
 
 export async function fetchUsersByApprovalStatus(status: string): Promise<PendingUser[]> {
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from("profiles")
     .select("id, email, first_name, last_name, display_name, approval_status, created_at")
     .eq("approval_status", status)
@@ -22,7 +22,7 @@ export async function fetchUsersByApprovalStatus(status: string): Promise<Pendin
 }
 
 export async function approveUser(userId: string): Promise<void> {
-  const { error } = await (supabase as any)
+  const { error } = await supabase
     .from("profiles")
     .update({ approval_status: "approved" })
     .eq("id", userId);
@@ -31,7 +31,7 @@ export async function approveUser(userId: string): Promise<void> {
 }
 
 export async function rejectUser(userId: string): Promise<void> {
-  const { error } = await (supabase as any)
+  const { error } = await supabase
     .from("profiles")
     .update({ approval_status: "rejected" })
     .eq("id", userId);
@@ -40,7 +40,7 @@ export async function rejectUser(userId: string): Promise<void> {
 }
 
 export async function softDeleteUser(userId: string): Promise<void> {
-  const { error } = await (supabase as any).rpc("admin_soft_delete_user", {
+  const { error } = await supabase.rpc("admin_soft_delete_user", {
     _target_user_id: userId,
   });
   if (error) throw error;

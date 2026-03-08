@@ -121,7 +121,7 @@ class BackgroundGenerationManager {
         company_url: companyUrl,
         status: "generating",
         generation_status: "pending",
-      } as any);
+      });
       appId = saved.id;
     } else {
       await saveJobApplication({
@@ -129,7 +129,7 @@ class BackgroundGenerationManager {
         job_url: jobUrl,
         status: "generating",
         generation_status: "pending",
-      } as any);
+      });
     }
 
     const now = Date.now();
@@ -169,7 +169,7 @@ class BackgroundGenerationManager {
       let markdown = manualDescription || "";
       if (!useManualInput && jobUrl) {
         this.updateJob(appId, { status: "scraping", progress: "Scraping job posting..." });
-        await saveJobApplication({ id: appId, job_url: jobUrl, generation_status: "scraping" } as any);
+        await saveJobApplication({ id: appId, job_url: jobUrl, generation_status: "scraping" });
         const result = await scrapeJob(jobUrl);
         markdown = result.markdown;
       }
@@ -191,7 +191,7 @@ class BackgroundGenerationManager {
 
       // 3. Analyze company
       this.updateJob(appId, { status: "analyzing", progress: "Analyzing company & market..." });
-      await saveJobApplication({ id: appId, job_url: jobUrl, generation_status: "analyzing" } as any);
+      await saveJobApplication({ id: appId, job_url: jobUrl, generation_status: "analyzing" });
       let companyName = "", jobTitle = "", department = "";
       let competitors: string[] = [], customers: string[] = [], products: string[] = [];
       try {
@@ -249,7 +249,7 @@ class BackgroundGenerationManager {
         generation_status: "cover-letter",
         company_icon_url: companyIconUrl,
         ...(sourceResumeId ? { source_resume_id: sourceResumeId } : {}),
-      } as any);
+      });
 
       // 4. Generate cover letter
       this.updateJob(appId, { status: "cover-letter", progress: "Generating cover letter..." });
@@ -266,7 +266,7 @@ class BackgroundGenerationManager {
         job_url: jobUrl,
         cover_letter: coverLetter,
         generation_status: "generating-assets",
-      } as any);
+      });
 
       // 5. Generate remaining assets IN PARALLEL (resume + reports)
       const totalAssets = 5;
@@ -425,7 +425,7 @@ class BackgroundGenerationManager {
         ...(resumeHtml ? { resume_html: resumeHtml } : {}),
         status: "complete",
         generation_status: "complete",
-      } as any);
+      });
 
       this.abortControllers.delete(appId);
       this.updateJob(appId, { status: "complete", progress: "Done!" });
@@ -445,7 +445,7 @@ class BackgroundGenerationManager {
           status: "error",
           generation_status: "error",
           generation_error: err.message,
-        } as any);
+        });
       } catch (saveErr) { console.warn("Failed to save error status:", saveErr); }
     }
   }
@@ -544,7 +544,7 @@ class BackgroundGenerationManager {
         id: appId,
         job_url: app.job_url,
         ...savePayload,
-      } as any);
+      });
 
       // Save revision if provided
       if (saveRevisionFn && revisionLabel) {

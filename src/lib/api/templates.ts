@@ -19,7 +19,7 @@ export async function getTemplates(filters?: {
   personaId?: string | null;
 }): Promise<DashboardTemplate[]> {
   let query = supabase
-    .from("dashboard_templates" as any)
+    .from("dashboard_templates")
     .select("*")
     .order("created_at", { ascending: false });
 
@@ -30,7 +30,6 @@ export async function getTemplates(filters?: {
   } else if (personaId === null) {
     query = query.is("persona_id", null);
   }
-  // If personaId is undefined (not passed), show all (backward compat)
 
   if (filters?.job_function) {
     query = query.ilike("job_function", `%${filters.job_function}%`);
@@ -60,7 +59,7 @@ export async function saveTemplate(template: {
   const personaId = activePersona?.isTestUser ? activePersona.id : null;
 
   const { data, error } = await supabase
-    .from("dashboard_templates" as any)
+    .from("dashboard_templates")
     .insert({
       ...template,
       asset_type: template.asset_type || "dashboard",
@@ -75,7 +74,7 @@ export async function saveTemplate(template: {
 
 export async function deleteTemplate(id: string) {
   const { error } = await supabase
-    .from("dashboard_templates" as any)
+    .from("dashboard_templates")
     .delete()
     .eq("id", id);
   if (error) throw new Error(error.message);

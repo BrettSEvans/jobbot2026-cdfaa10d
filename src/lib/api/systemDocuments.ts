@@ -15,7 +15,7 @@ export interface SystemDocument {
  */
 export async function getSystemDocument(slug: string): Promise<SystemDocument | null> {
   try {
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from('system_documents')
       .select('*')
       .eq('slug', slug)
@@ -39,7 +39,7 @@ export async function updateSystemDocument(
   updates: { title?: string; content?: string }
 ): Promise<SystemDocument> {
   const { data: { user } } = await supabase.auth.getUser();
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('system_documents')
     .update({
       ...updates,

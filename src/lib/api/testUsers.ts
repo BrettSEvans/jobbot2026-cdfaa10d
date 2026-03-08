@@ -17,7 +17,7 @@ export interface TestUserRow {
 }
 
 export async function fetchTestUsers(): Promise<TestUserRow[]> {
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from("test_users")
     .select("*")
     .order("created_at", { ascending: false });
@@ -34,7 +34,7 @@ export async function createTestUser(input: {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from("test_users")
     .insert({
       admin_id: user.id,
@@ -53,7 +53,7 @@ export async function updateTestUser(
   id: string,
   updates: Partial<Omit<TestUserRow, "id" | "admin_id" | "created_at">>
 ): Promise<TestUserRow> {
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from("test_users")
     .update(updates)
     .eq("id", id)
@@ -65,7 +65,7 @@ export async function updateTestUser(
 }
 
 export async function getTestUser(id: string): Promise<TestUserRow | null> {
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from("test_users")
     .select("*")
     .eq("id", id)
@@ -76,7 +76,7 @@ export async function getTestUser(id: string): Promise<TestUserRow | null> {
 }
 
 export async function deleteTestUser(id: string): Promise<void> {
-  const { error } = await (supabase as any)
+  const { error } = await supabase
     .from("test_users")
     .delete()
     .eq("id", id);

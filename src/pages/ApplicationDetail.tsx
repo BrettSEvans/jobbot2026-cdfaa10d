@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -26,7 +26,6 @@ import {
 } from "@/lib/api/dynamicAssets";
 import { getActiveResumeText } from "@/lib/api/profile";
 import { cleanHtml } from "@/lib/cleanHtml";
-// DashboardTab removed — dashboard is now a Premium industry asset
 import CoverLetterTab from "@/components/tabs/CoverLetterTab";
 import HtmlAssetTab from "@/components/tabs/HtmlAssetTab";
 import JobDescriptionTab from "@/components/tabs/JobDescriptionTab";
@@ -42,7 +41,7 @@ import {
 import ImpersonationNotice from "@/components/ImpersonationNotice";
 import { useSubscription } from "@/hooks/useSubscription";
 import AtsScoreCard from "@/components/AtsScoreCard";
-import { scoreAtsMatch, isCacheValid, type AtsScoreResult } from "@/lib/api/atsScore";
+import { scoreAtsMatch, scoreBaselineResume, type AtsScoreResult } from "@/lib/api/atsScore";
 import {
   Select,
   SelectContent,
@@ -53,8 +52,6 @@ import {
 import {
   PIPELINE_STAGES,
   STAGE_LABELS,
-  STAGE_COLORS,
-  isIllogicalTransition,
   updatePipelineStage,
   type PipelineStage,
 } from "@/lib/pipelineStages";
@@ -79,6 +76,10 @@ const ApplicationDetail = () => {
   const [atsScore, setAtsScore] = useState<AtsScoreResult | null>(null);
   const [atsLoading, setAtsLoading] = useState(false);
 
+  // Auto-trigger tracking
+  const prevResumeHtmlRef = useRef<string>("");
+  const atsAutoTriggered = useRef(false);
+
   // Pipeline stage
   const currentStage = (state.app?.pipeline_stage || 'applied') as PipelineStage;
 
@@ -90,11 +91,30 @@ const ApplicationDetail = () => {
     }
   }, [state.app]);
 
+  // Auto-trigger ATS scan when resume generation completes
+  useEffect(() => {
+    const prevHtml = prevResumeHtmlRef.current;
+    const currentHtml = state.resumeHtml;
+    prevResumeHtmlRef.current = currentHtml;
+
+    // Detect resume appearing (was empty, now populated)
+    if (!prevHtml && currentHtml && currentHtml.length > 100 && state.jobDescription && !atsAutoTriggered.current) {
+      atsAutoTriggered.current = true;
+      handleAtsRescan();
+    }
+  }, [state.resumeHtml, state.jobDescription]);
+
   const handleAtsRescan = async () => {
     if (!id || !state.resumeHtml || !state.jobDescription) return;
     setAtsLoading(true);
     try {
-      const result = await scoreAtsMatch(id, state.jobDescription, state.resumeHtml);
+      // Get baseline score if we don't have one yet
+      let baselineScore = atsScore?._baselineScore;
+      if (baselineScore == null) {
+        baselineScore = (await scoreBaselineResume(state.jobDescription)) ?? undefined;
+      }
+
+      const result = await scoreAtsMatch(id, state.jobDescription, state.resumeHtml, baselineScore);
       setAtsScore(result);
     } catch (err: any) {
       console.warn("ATS scoring failed:", err);
@@ -133,8 +153,6 @@ const ApplicationDetail = () => {
   const handleAssetsConfirmed = async (assets: GeneratedAsset[]) => {
     setDynamicAssets(assets);
     setShowProposalDialog(false);
-
-    // Auto-generate all 3 assets
     for (const asset of assets) {
       generateDynamicAsset(asset);
     }
@@ -371,7 +389,6 @@ const ApplicationDetail = () => {
                       jobTitle={state.jobTitle}
                       onAssetReplaced={(updated) => {
                         handleAssetUpdated(updated);
-                        // Auto-generate the new asset
                         generateDynamicAsset(updated);
                       }}
                     >

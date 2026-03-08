@@ -1,12 +1,16 @@
 /**
- * ATS Match Score card — circular gauge with keyword analysis.
- * Uses plain React state instead of Collapsible for reliability.
+ * Resume Health Dashboard — multi-section ATS analysis card.
+ * Collapsed by default showing score bar + delta; expandable to full dashboard.
  */
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { RefreshCw, Loader2, ChevronDown, Target, Zap } from "lucide-react";
+import {
+  RefreshCw, Loader2, ChevronDown, Target, Zap,
+  CheckCircle2, AlertTriangle, XCircle,
+  TrendingUp, TrendingDown, BarChart3, FileSearch, Repeat2, Shield,
+} from "lucide-react";
 import type { AtsScoreResult } from "@/lib/api/atsScore";
 
 interface AtsScoreCardProps {
@@ -15,6 +19,8 @@ interface AtsScoreCardProps {
   onRescan: () => void;
   disabled?: boolean;
 }
+
+type DashboardSection = "ats" | "impact" | "repetition" | "format";
 
 function getScoreColor(score: number): string {
   if (score >= 80) return "text-green-600 dark:text-green-400";
@@ -28,6 +34,12 @@ function getScoreStroke(score: number): string {
   return "stroke-red-500";
 }
 
+function getScoreBg(score: number): string {
+  if (score >= 80) return "bg-green-500";
+  if (score >= 50) return "bg-yellow-500";
+  return "bg-red-500";
+}
+
 function getScoreLabel(score: number): string {
   if (score >= 80) return "Strong Match";
   if (score >= 60) return "Good Match";
@@ -35,13 +47,226 @@ function getScoreLabel(score: number): string {
   return "Low Match";
 }
 
+/* ── Delta Badge ── */
+function DeltaBadge({ score, baseline }: { score: number; baseline?: number }) {
+  if (baseline == null) return null;
+  const delta = score - baseline;
+  if (delta === 0) return <Badge variant="outline" className="text-xs">— vs base</Badge>;
+  return (
+    <Badge
+      variant="outline"
+      className={`text-xs gap-0.5 ${delta > 0 ? "text-green-600 border-green-300 dark:text-green-400 dark:border-green-700" : "text-red-600 border-red-300 dark:text-red-400 dark:border-red-700"}`}
+    >
+      {delta > 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+      {delta > 0 ? "+" : ""}{delta} vs base
+    </Badge>
+  );
+}
+
+/* ── Mini progress bar ── */
+function MiniBar({ value, max = 100 }: { value: number; max?: number }) {
+  const pct = Math.min(100, (value / max) * 100);
+  return (
+    <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+      <div
+        className={`h-full rounded-full transition-all duration-500 ${getScoreBg(value)}`}
+        style={{ width: `${pct}%` }}
+      />
+    </div>
+  );
+}
+
+/* ── Section: ATS Match ── */
+function AtsMatchSection({ score }: { score: AtsScoreResult }) {
+  return (
+    <div className="space-y-3">
+      {score.matchedKeywords.length > 0 && (
+        <div>
+          <p className="text-xs font-medium text-muted-foreground mb-1.5 flex items-center gap-1">
+            <CheckCircle2 className="h-3 w-3 text-green-500" /> Matched Keywords
+          </p>
+          <div className="flex flex-wrap gap-1">
+            {score.matchedKeywords.map((kw) => (
+              <Badge key={kw} variant="default" className="text-xs">{kw}</Badge>
+            ))}
+          </div>
+        </div>
+      )}
+      {score.missingKeywords.length > 0 && (
+        <div>
+          <p className="text-xs font-medium text-muted-foreground mb-1.5 flex items-center gap-1">
+            <XCircle className="h-3 w-3 text-red-500" /> Missing Keywords
+          </p>
+          <div className="flex flex-wrap gap-1">
+            {score.missingKeywords.map((kw) => (
+              <Badge key={kw} variant="destructive" className="text-xs">{kw}</Badge>
+            ))}
+          </div>
+        </div>
+      )}
+      {score.suggestions.length > 0 && (
+        <div>
+          <p className="text-xs font-medium text-muted-foreground mb-1.5">Suggestions</p>
+          <ul className="text-xs space-y-1 text-muted-foreground">
+            {score.suggestions.map((s, i) => (
+              <li key={i} className="flex gap-1.5">
+                <span className="text-primary shrink-0">•</span> {s}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Section: Impact Analysis ── */
+function ImpactSection({ score }: { score: AtsScoreResult }) {
+  const { impactAnalysis } = score;
+  if (!impactAnalysis) return <p className="text-xs text-muted-foreground">No impact data available.</p>;
+  const total = impactAnalysis.strongBullets + impactAnalysis.weakBullets;
+  const pct = total > 0 ? Math.round((impactAnalysis.strongBullets / total) * 100) : 0;
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-3 gap-2 text-center">
+        <div className="rounded-lg border p-2">
+          <p className="text-lg font-bold text-green-600 dark:text-green-400">{impactAnalysis.strongBullets}</p>
+          <p className="text-[10px] text-muted-foreground">Strong</p>
+        </div>
+        <div className="rounded-lg border p-2">
+          <p className="text-lg font-bold text-red-600 dark:text-red-400">{impactAnalysis.weakBullets}</p>
+          <p className="text-[10px] text-muted-foreground">Weak</p>
+        </div>
+        <div className="rounded-lg border p-2">
+          <p className="text-lg font-bold text-foreground">{pct}%</p>
+          <p className="text-[10px] text-muted-foreground">Impact Rate</p>
+        </div>
+      </div>
+      {impactAnalysis.weakExamples?.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+            <AlertTriangle className="h-3 w-3 text-yellow-500" /> Bullets to Improve
+          </p>
+          {impactAnalysis.weakExamples.map((ex, i) => (
+            <div key={i} className="rounded-lg border border-yellow-200 dark:border-yellow-900 bg-yellow-50/50 dark:bg-yellow-950/20 p-2 space-y-1">
+              <p className="text-xs text-muted-foreground line-through">{ex.text}</p>
+              <p className="text-xs text-foreground font-medium">→ {ex.suggestion}</p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Section: Repetition Audit ── */
+function RepetitionSection({ score }: { score: AtsScoreResult }) {
+  const words = score.repetitionAudit?.overusedWords || [];
+  if (words.length === 0) {
+    return (
+      <div className="flex items-center gap-2 text-xs text-green-600 dark:text-green-400">
+        <CheckCircle2 className="h-4 w-4" />
+        No overused verbs detected. Nice variety!
+      </div>
+    );
+  }
+  return (
+    <div className="space-y-2">
+      {words.map((w) => (
+        <div key={w.word} className="rounded-lg border p-2">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-sm font-medium text-foreground">"{w.word}"</span>
+            <Badge variant="outline" className="text-xs text-yellow-600 dark:text-yellow-400">×{w.count}</Badge>
+          </div>
+          <div className="flex flex-wrap gap-1">
+            {w.synonyms.map((syn) => (
+              <Badge key={syn} variant="secondary" className="text-xs">{syn}</Badge>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ── Section: Formatting & Professionalism ── */
+function FormatSection({ score }: { score: AtsScoreResult }) {
+  return (
+    <div className="space-y-3">
+      {/* Parse Rate */}
+      <div>
+        <div className="flex items-center justify-between mb-1">
+          <span className="text-xs font-medium text-muted-foreground">Section Parse Rate</span>
+          <span className={`text-sm font-bold ${getScoreColor(score.parseRate || 0)}`}>{score.parseRate ?? 0}%</span>
+        </div>
+        <MiniBar value={score.parseRate || 0} />
+      </div>
+      {/* Parsed Sections */}
+      {(score.parsedSections?.length > 0 || score.missingSections?.length > 0) && (
+        <div className="grid grid-cols-2 gap-2">
+          {score.parsedSections?.length > 0 && (
+            <div>
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Found</p>
+              {score.parsedSections.map((s) => (
+                <div key={s} className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
+                  <CheckCircle2 className="h-3 w-3" /> {s}
+                </div>
+              ))}
+            </div>
+          )}
+          {score.missingSections?.length > 0 && (
+            <div>
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Missing</p>
+              {score.missingSections.map((s) => (
+                <div key={s} className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
+                  <XCircle className="h-3 w-3" /> {s}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+      {/* Professionalism Flags */}
+      {score.professionalismFlags?.length > 0 && (
+        <div>
+          <p className="text-xs font-medium text-muted-foreground mb-1.5">Issues</p>
+          <ul className="space-y-1">
+            {score.professionalismFlags.map((flag, i) => (
+              <li key={i} className="flex items-start gap-1.5 text-xs text-yellow-600 dark:text-yellow-400">
+                <AlertTriangle className="h-3 w-3 mt-0.5 shrink-0" /> {flag}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {(!score.professionalismFlags || score.professionalismFlags.length === 0) && (
+        <div className="flex items-center gap-2 text-xs text-green-600 dark:text-green-400">
+          <CheckCircle2 className="h-4 w-4" /> No professionalism issues found.
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Sidebar nav items ── */
+const SECTIONS: { id: DashboardSection; label: string; icon: typeof Target }[] = [
+  { id: "ats", label: "ATS Match", icon: FileSearch },
+  { id: "impact", label: "Impact", icon: BarChart3 },
+  { id: "repetition", label: "Repetition", icon: Repeat2 },
+  { id: "format", label: "Formatting", icon: Shield },
+];
+
+/* ══════════════════════════════════════════════════════════════
+   Main Component
+   ══════════════════════════════════════════════════════════════ */
 export default function AtsScoreCard({ score, loading, onRescan, disabled }: AtsScoreCardProps) {
   const [expanded, setExpanded] = useState(false);
+  const [activeSection, setActiveSection] = useState<DashboardSection>("ats");
 
   const circumference = 2 * Math.PI * 40;
   const dashOffset = score ? circumference - (score.score / 100) * circumference : circumference;
 
-  /* ── No score yet: show a prominent scan CTA ── */
+  /* ── No score yet: prominent scan CTA ── */
   if (!score && !loading) {
     return (
       <Card>
@@ -49,16 +274,10 @@ export default function AtsScoreCard({ score, loading, onRescan, disabled }: Ats
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Target className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-semibold">ATS Match Score</span>
+              <span className="text-sm font-semibold">Resume Health Score</span>
             </div>
-            <Button
-              size="sm"
-              onClick={onRescan}
-              disabled={disabled}
-              className="gap-1.5"
-            >
-              <Zap className="h-3.5 w-3.5" />
-              Scan
+            <Button size="sm" onClick={onRescan} disabled={disabled} className="gap-1.5">
+              <Zap className="h-3.5 w-3.5" /> Scan
             </Button>
           </div>
         </CardContent>
@@ -69,6 +288,7 @@ export default function AtsScoreCard({ score, loading, onRescan, disabled }: Ats
   /* ── Loading or has score ── */
   return (
     <Card className="overflow-hidden">
+      {/* ── Header bar (always visible) ── */}
       <CardContent className="pt-4 pb-3">
         <div className="flex items-center gap-4">
           {/* Circular gauge */}
@@ -99,19 +319,27 @@ export default function AtsScoreCard({ score, loading, onRescan, disabled }: Ats
 
           {/* Info */}
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <Target className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-semibold">ATS Match Score</span>
+              <span className="text-sm font-semibold">Resume Health Score</span>
               {score && (
                 <Badge variant="outline" className="text-xs">
                   {getScoreLabel(score.score)}
                 </Badge>
               )}
+              {score && <DeltaBadge score={score.score} baseline={score._baselineScore} />}
             </div>
             {score && (
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {score.matchedKeywords.length} matched · {score.missingKeywords.length} missing
-              </p>
+              <div className="flex items-center gap-3 mt-1">
+                <p className="text-xs text-muted-foreground">
+                  {score.matchedKeywords.length} matched · {score.missingKeywords.length} missing
+                </p>
+                {score.parseRate != null && (
+                  <p className="text-xs text-muted-foreground">
+                    Parse: {score.parseRate}%
+                  </p>
+                )}
+              </div>
             )}
           </div>
 
@@ -121,11 +349,7 @@ export default function AtsScoreCard({ score, loading, onRescan, disabled }: Ats
               {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
             </Button>
             {score && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setExpanded((prev) => !prev)}
-              >
+              <Button variant="ghost" size="sm" onClick={() => setExpanded((prev) => !prev)}>
                 <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${expanded ? "rotate-180" : ""}`} />
               </Button>
             )}
@@ -133,46 +357,36 @@ export default function AtsScoreCard({ score, loading, onRescan, disabled }: Ats
         </div>
       </CardContent>
 
-      {/* Expandable details — plain conditional render */}
+      {/* ── Expanded Dashboard ── */}
       {expanded && score && (
-        <div className="border-t px-4 py-3 space-y-3 animate-in fade-in slide-in-from-top-1 duration-200">
-          {/* Matched Keywords */}
-          {score.matchedKeywords.length > 0 && (
-            <div>
-              <p className="text-xs font-medium text-muted-foreground mb-1.5">Matched Keywords</p>
-              <div className="flex flex-wrap gap-1">
-                {score.matchedKeywords.map((kw) => (
-                  <Badge key={kw} variant="default" className="text-xs">{kw}</Badge>
-                ))}
-              </div>
+        <div className="border-t animate-in fade-in slide-in-from-top-1 duration-200">
+          <div className="flex min-h-[260px]">
+            {/* Sidebar */}
+            <div className="w-[130px] shrink-0 border-r bg-muted/30 p-1.5 space-y-0.5">
+              {SECTIONS.map((sec) => (
+                <button
+                  key={sec.id}
+                  onClick={() => setActiveSection(sec.id)}
+                  className={`w-full flex items-center gap-1.5 px-2 py-2 rounded-md text-xs font-medium transition-colors ${
+                    activeSection === sec.id
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                  }`}
+                >
+                  <sec.icon className="h-3.5 w-3.5 shrink-0" />
+                  {sec.label}
+                </button>
+              ))}
             </div>
-          )}
 
-          {/* Missing Keywords */}
-          {score.missingKeywords.length > 0 && (
-            <div>
-              <p className="text-xs font-medium text-muted-foreground mb-1.5">Missing Keywords</p>
-              <div className="flex flex-wrap gap-1">
-                {score.missingKeywords.map((kw) => (
-                  <Badge key={kw} variant="destructive" className="text-xs">{kw}</Badge>
-                ))}
-              </div>
+            {/* Content */}
+            <div className="flex-1 p-3 overflow-y-auto max-h-[400px]">
+              {activeSection === "ats" && <AtsMatchSection score={score} />}
+              {activeSection === "impact" && <ImpactSection score={score} />}
+              {activeSection === "repetition" && <RepetitionSection score={score} />}
+              {activeSection === "format" && <FormatSection score={score} />}
             </div>
-          )}
-
-          {/* Suggestions */}
-          {score.suggestions.length > 0 && (
-            <div>
-              <p className="text-xs font-medium text-muted-foreground mb-1.5">Suggestions</p>
-              <ul className="text-xs space-y-1 text-muted-foreground">
-                {score.suggestions.map((s, i) => (
-                  <li key={i} className="flex gap-1.5">
-                    <span className="text-primary">•</span> {s}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+          </div>
         </div>
       )}
     </Card>

@@ -73,6 +73,9 @@ export const mockSubscription = {
 
 export const mockAtsScore = {
   score: 78,
+  parseRate: 80,
+  parsedSections: ["Contact", "Experience", "Education"],
+  missingSections: ["Skills"],
   matchedKeywords: ["React", "TypeScript", "Node.js"],
   missingKeywords: ["Kubernetes", "Terraform", "Go"],
   suggestions: [
@@ -83,6 +86,19 @@ export const mockAtsScore = {
     React: ["React", "React.js", "ReactJS"],
     TypeScript: ["TypeScript", "TS"],
   },
+  impactAnalysis: {
+    strongBullets: 5,
+    weakBullets: 2,
+    weakExamples: [
+      { text: "Managed projects", suggestion: "Led 8 cross-functional projects delivering $1.5M in revenue" },
+    ],
+  },
+  repetitionAudit: {
+    overusedWords: [
+      { word: "Managed", count: 4, synonyms: ["Orchestrated", "Directed", "Oversaw"] },
+    ],
+  },
+  professionalismFlags: ["No LinkedIn URL detected"],
 };
 
 export const PIPELINE_STAGES = ["bookmarked", "applied", "interviewing", "offer", "accepted", "withdrawn", "ghosted", "rejected"] as const;

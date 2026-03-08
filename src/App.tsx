@@ -102,6 +102,7 @@ function AuthenticatedApp() {
               <Route path="/pricing" element={<Landing />} />
               <Route path="/terms" element={<Terms />} />
               <Route path="/privacy" element={<Privacy />} />
+              <Route path="/cookies" element={<CookiePolicy />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </>
           ) : (
@@ -119,6 +120,7 @@ function AuthenticatedApp() {
               <Route path="/import" element={<><AppHeader onSignOut={signOut} /><main id="main-content"><ImportJob /></main></>} />
               <Route path="/terms" element={<Terms />} />
               <Route path="/privacy" element={<Privacy />} />
+              <Route path="/cookies" element={<CookiePolicy />} />
               <Route path="*" element={<NotFound />} />
             </>
           )}
@@ -127,6 +129,7 @@ function AuthenticatedApp() {
       {user && <HelpButton />}
       {user && isTutorialActive && <TutorialOverlay onDismiss={dismissTutorial} tutorialMode={tutorialMode} />}
       <BackgroundJobsBanner />
+      <CookieConsentBanner />
     </BrowserRouter>
   );
 }

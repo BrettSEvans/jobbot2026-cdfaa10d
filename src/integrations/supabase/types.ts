@@ -591,6 +591,80 @@ export type Database = {
           },
         ]
       }
+      qa_test_results: {
+        Row: {
+          created_at: string
+          failure_notes: string | null
+          id: string
+          regression_fixed_at: string | null
+          regression_ticket: string | null
+          result: string
+          run_id: string
+          test_case_id: string
+          tested_by: string
+        }
+        Insert: {
+          created_at?: string
+          failure_notes?: string | null
+          id?: string
+          regression_fixed_at?: string | null
+          regression_ticket?: string | null
+          result?: string
+          run_id: string
+          test_case_id: string
+          tested_by: string
+        }
+        Update: {
+          created_at?: string
+          failure_notes?: string | null
+          id?: string
+          regression_fixed_at?: string | null
+          regression_ticket?: string | null
+          result?: string
+          run_id?: string
+          test_case_id?: string
+          tested_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "qa_test_results_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "qa_test_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      qa_test_runs: {
+        Row: {
+          build_label: string
+          build_timestamp: string
+          created_at: string
+          created_by: string
+          id: string
+          notes: string | null
+          status: string
+        }
+        Insert: {
+          build_label: string
+          build_timestamp?: string
+          created_at?: string
+          created_by: string
+          id?: string
+          notes?: string | null
+          status?: string
+        }
+        Update: {
+          build_label?: string
+          build_timestamp?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          notes?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       raid_log_revisions: {
         Row: {
           application_id: string

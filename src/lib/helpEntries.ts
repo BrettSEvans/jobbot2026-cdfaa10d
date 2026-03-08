@@ -308,7 +308,7 @@ registerHelp({
   slug: 'background-jobs',
   title: 'Background Jobs',
   summary:
-    'When assets are generating in the background, a banner appears at the top of the screen showing progress. You can continue using the app while generation runs.',
+    'When materials are generating in the background, a banner appears at the top of the screen showing progress. You can continue using the app while generation runs.',
   keywords: ['background', 'jobs', 'progress', 'banner', 'generating'],
   relatedSlugs: ['batch-mode'],
 });

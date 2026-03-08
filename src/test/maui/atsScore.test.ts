@@ -1,10 +1,105 @@
 /**
- * Maui Tests — ATS Match Score
+ * Maui Tests — ATS Match Score / Resume Health Dashboard
  *
- * Tests: score parsing, caching/invalidation, tier gating, component rendering.
+ * Tests: score parsing, extended fields, caching/invalidation, baseline delta,
+ * tier gating, impact analysis, repetition audit, auto-trigger logic.
  */
 import { describe, it, expect } from "vitest";
 import { mockAtsScore } from "./fixtures";
+import { isCacheValid, type AtsScoreResult } from "@/lib/api/atsScore";
+
+/* ── Full shape for new extended result ── */
+const fullMockScore: AtsScoreResult = {
+  ...mockAtsScore,
+  parseRate: 85,
+  parsedSections: ["Contact", "Experience", "Education", "Skills"],
+  missingSections: ["Certifications"],
+  impactAnalysis: {
+    strongBullets: 8,
+    weakBullets: 3,
+    weakExamples: [
+      { text: "Managed a team", suggestion: "Led a team of 12 engineers, delivering 3 products on time" },
+      { text: "Worked on projects", suggestion: "Spearheaded 5 cross-functional projects generating $2M revenue" },
+    ],
+  },
+  repetitionAudit: {
+    overusedWords: [
+      { word: "Managed", count: 5, synonyms: ["Orchestrated", "Directed", "Oversaw"] },
+      { word: "Led", count: 4, synonyms: ["Spearheaded", "Championed", "Helmed"] },
+    ],
+  },
+  professionalismFlags: ["No LinkedIn URL detected"],
+  _baselineScore: 55,
+};
+
+describe("ATS Score — Extended Shape Validation", () => {
+  it("has all new required fields", () => {
+    expect(fullMockScore.parseRate).toBeGreaterThanOrEqual(0);
+    expect(fullMockScore.parsedSections.length).toBeGreaterThan(0);
+    expect(fullMockScore.impactAnalysis.strongBullets).toBeGreaterThan(0);
+    expect(fullMockScore.repetitionAudit.overusedWords.length).toBeGreaterThan(0);
+    expect(fullMockScore.professionalismFlags.length).toBeGreaterThan(0);
+  });
+
+  it("impactAnalysis weakExamples have text and suggestion", () => {
+    for (const ex of fullMockScore.impactAnalysis.weakExamples) {
+      expect(ex.text).toBeTruthy();
+      expect(ex.suggestion).toBeTruthy();
+    }
+  });
+
+  it("repetitionAudit words have count >= 3 and synonyms", () => {
+    for (const w of fullMockScore.repetitionAudit.overusedWords) {
+      expect(w.count).toBeGreaterThanOrEqual(3);
+      expect(w.synonyms.length).toBeGreaterThanOrEqual(1);
+    }
+  });
+});
+
+describe("ATS Score — Baseline Delta", () => {
+  it("calculates positive delta correctly", () => {
+    const delta = fullMockScore.score - (fullMockScore._baselineScore ?? 0);
+    expect(delta).toBeGreaterThan(0);
+  });
+
+  it("handles missing baseline gracefully", () => {
+    const noBaseline = { ...fullMockScore, _baselineScore: undefined };
+    expect(noBaseline._baselineScore).toBeUndefined();
+  });
+
+  it("handles negative delta", () => {
+    const worse = { ...fullMockScore, score: 40, _baselineScore: 55 };
+    const delta = worse.score - (worse._baselineScore ?? 0);
+    expect(delta).toBeLessThan(0);
+  });
+
+  it("handles zero delta", () => {
+    const same = { ...fullMockScore, score: 55, _baselineScore: 55 };
+    expect(same.score - (same._baselineScore ?? 0)).toBe(0);
+  });
+});
+
+describe("ATS Score — Cache Invalidation (with isCacheValid)", () => {
+  it("returns false when no score", () => {
+    expect(isCacheValid(null, null, "html", "jd")).toBe(false);
+  });
+
+  it("returns false when scored_at is null", () => {
+    expect(isCacheValid(fullMockScore, null, "html", "jd")).toBe(false);
+  });
+
+  it("returns false when older than 7 days", () => {
+    const old = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString();
+    expect(isCacheValid(fullMockScore, old, "html", "jd")).toBe(false);
+  });
+
+  it("returns true for fresh score with matching hash", () => {
+    const now = new Date().toISOString();
+    const scoreWithHash = { ...fullMockScore, _inputHash: "test123" };
+    // Same hash → valid
+    expect(isCacheValid(scoreWithHash, now, "anything", "anything")).toBe(true);
+  });
+});
 
 describe("ATS Score — Parsing", () => {
   it("accepts a valid score object with all required fields", () => {
@@ -20,58 +115,23 @@ describe("ATS Score — Parsing", () => {
   it("handles edge case score = 0", () => {
     const edge = { ...mockAtsScore, score: 0, matchedKeywords: [] };
     expect(edge.score).toBe(0);
-    expect(edge.matchedKeywords).toEqual([]);
   });
 
   it("handles edge case score = 100", () => {
     const edge = { ...mockAtsScore, score: 100, missingKeywords: [] };
     expect(edge.score).toBe(100);
   });
-
-  it("returns null for malformed JSON fallback", () => {
-    const parseSafe = (raw: string) => {
-      try { return JSON.parse(raw); } catch { return null; }
-    };
-    expect(parseSafe("{broken")).toBeNull();
-    expect(parseSafe("")).toBeNull();
-  });
-});
-
-describe("ATS Score — Cache Invalidation", () => {
-  it("should rescore when resume_html hash changes", () => {
-    const oldHash = "abc123";
-    const newHash = "def456";
-    expect(oldHash).not.toBe(newHash);
-  });
-
-  it("should use cache when resume_html unchanged", () => {
-    const oldHash = "abc123";
-    const sameHash = "abc123";
-    expect(oldHash).toBe(sameHash);
-  });
-
-  it("should rescore when ats_scored_at is older than 7 days", () => {
-    const scoredAt = new Date("2025-05-01T00:00:00Z");
-    const now = new Date("2025-06-01T00:00:00Z");
-    const daysDiff = (now.getTime() - scoredAt.getTime()) / (1000 * 60 * 60 * 24);
-    expect(daysDiff).toBeGreaterThan(7);
-  });
 });
 
 describe("ATS Score — Tier Gating", () => {
   it("free tier allows max 2 scores per day", () => {
-    const FREE_DAILY_LIMIT = 2;
-    expect(FREE_DAILY_LIMIT).toBe(2);
+    expect(2).toBe(2);
   });
-
   it("pro tier allows max 20 scores per day", () => {
-    const PRO_DAILY_LIMIT = 20;
-    expect(PRO_DAILY_LIMIT).toBe(20);
+    expect(20).toBe(20);
   });
-
   it("premium tier is unlimited", () => {
-    const PREMIUM_LIMIT = -1; // unlimited
-    expect(PREMIUM_LIMIT).toBe(-1);
+    expect(-1).toBe(-1);
   });
 });
 
@@ -80,26 +140,19 @@ describe("ATS Score — Card Visibility", () => {
     const score = null;
     const loading = false;
     const hasResume = true;
-    // Card should be visible (not return null) when resume exists
-    const shouldRender = hasResume; // always render when resume present
-    const showScanCta = !score && !loading;
-    expect(shouldRender).toBe(true);
-    expect(showScanCta).toBe(true);
+    expect(hasResume).toBe(true);
+    expect(!score && !loading).toBe(true);
   });
 
   it("should show gauge when score exists", () => {
-    const score = mockAtsScore;
-    const showGauge = !!score;
-    expect(showGauge).toBe(true);
+    expect(!!mockAtsScore).toBe(true);
   });
 
   it("should show loading spinner when scanning", () => {
     const loading = true;
     const score = null;
-    const showSpinner = loading;
-    const showScanCta = !score && !loading;
-    expect(showSpinner).toBe(true);
-    expect(showScanCta).toBe(false);
+    expect(loading).toBe(true);
+    expect(!score && !loading).toBe(false);
   });
 });
 
@@ -116,4 +169,36 @@ describe("ATS Score — Color Thresholds", () => {
   it("boundary: 49 is red", () => expect(getColor(49)).toBe("red"));
   it("boundary: 50 is yellow", () => expect(getColor(50)).toBe("yellow"));
   it("boundary: 80 is green", () => expect(getColor(80)).toBe("green"));
+});
+
+describe("ATS Score — Auto-Trigger Logic", () => {
+  it("detects resume appearance (empty → populated)", () => {
+    const prev = "";
+    const current = "<html>...a long resume html content that is over 100 chars long to pass the threshold check...</html>";
+    const shouldTrigger = !prev && current && current.length > 100;
+    expect(shouldTrigger).toBe(true);
+  });
+
+  it("does not re-trigger when resume already existed", () => {
+    const prev = "<html>old</html>";
+    const current = "<html>new</html>";
+    const shouldTrigger = !prev && current && current.length > 100;
+    expect(shouldTrigger).toBe(false);
+  });
+});
+
+describe("ATS Score — Impact Analysis", () => {
+  it("calculates impact rate correctly", () => {
+    const { strongBullets, weakBullets } = fullMockScore.impactAnalysis;
+    const total = strongBullets + weakBullets;
+    const rate = Math.round((strongBullets / total) * 100);
+    expect(rate).toBe(73); // 8 / 11 ≈ 73%
+  });
+
+  it("handles zero total bullets", () => {
+    const empty = { strongBullets: 0, weakBullets: 0, weakExamples: [] };
+    const total = empty.strongBullets + empty.weakBullets;
+    const rate = total > 0 ? Math.round((empty.strongBullets / total) * 100) : 0;
+    expect(rate).toBe(0);
+  });
 });

@@ -29,6 +29,7 @@ export default function AppHeader({ onSignOut }: AppHeaderProps) {
   const { guardedNavigate } = useNavigationGuard();
   const { activePersona, isImpersonating, switchToSelf } = useImpersonation();
   const { tier, isLoading: subLoading } = useSubscription();
+  const { hasAnyRole, loading: rolesLoading } = useUserRoles();
 
   const displayName = activePersona
     ? [activePersona.first_name, activePersona.last_name].filter(Boolean).join(" ") ||

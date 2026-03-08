@@ -13,6 +13,7 @@ import {
   ArrowLeft, Loader2,
   Info, FileText, Mail, FileUser, Sparkles, ArrowLeftRight,
 } from "lucide-react";
+import GenerationErrorBanner from "@/components/GenerationErrorBanner";
 import { useApplicationDetail } from "@/hooks/useApplicationDetail";
 import { streamResumeGeneration } from "@/lib/api/resume";
 import { saveResumeRevision } from "@/lib/api/resumeRevisions";
@@ -329,6 +330,15 @@ const ApplicationDetail = () => {
           </div>
         </div>
 
+        {/* Top-level generation error */}
+        {(state.app.generation_status === "error" || state.app.generation_status === "failed") && (
+          <GenerationErrorBanner
+            error={state.app.generation_error}
+            status={state.app.generation_status}
+            onRetry={() => state.reload()}
+            assetLabel="Application"
+          />
+        )}
 
         {/* Primary Tab Triggers */}
         <div data-tutorial="asset-tabs" className="flex items-center gap-1 border-b border-border pb-0 overflow-x-auto">

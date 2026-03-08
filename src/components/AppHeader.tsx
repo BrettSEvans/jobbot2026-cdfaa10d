@@ -42,6 +42,7 @@ export default function AppHeader({ onSignOut }: AppHeaderProps) {
     { to: "/templates", label: "Templates", match: (p: string) => p === "/templates" },
     { to: "/pricing", label: "Membership", match: (p: string) => p === "/pricing" },
     { to: "/profile", label: "Profile", match: (p: string) => p === "/profile" },
+    ...(!rolesLoading && hasAnyRole ? [{ to: "/admin", label: "Admin", match: (p: string) => p === "/admin" }] : []),
   ];
 
   return (

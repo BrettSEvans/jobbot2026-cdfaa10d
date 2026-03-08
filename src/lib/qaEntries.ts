@@ -1042,3 +1042,70 @@ registerTest({
   requiresAuth: false,
   requiresAdmin: false,
 });
+
+registerTest({
+  id: 'qa-ats-auto-scan',
+  title: 'ATS score auto-triggers after resume generation',
+  area: 'ATS',
+  route: '/applications/:id',
+  helpSlug: 'resume-health-dashboard',
+  steps: [
+    'Create a new application with a job URL.',
+    'Wait for background generation to complete (resume appears).',
+    'Observe the Resume Health Score card.',
+  ],
+  expectedResults: [
+    'ATS scan triggers automatically when resume first appears.',
+    'Score gauge displays with a value 0–100.',
+    'Delta badge shows improvement vs baseline (▲+N).',
+  ],
+  tags: ['smoke', 'regression'],
+  estimatedMinutes: 5,
+  requiresAuth: true,
+  requiresAdmin: false,
+});
+
+registerTest({
+  id: 'qa-ats-dashboard-sections',
+  title: 'Resume Health Dashboard sections render correctly',
+  area: 'ATS',
+  route: '/applications/:id',
+  helpSlug: 'resume-health-dashboard',
+  steps: [
+    'Navigate to an application with an ATS score.',
+    'Click the expand chevron on the Resume Health Score card.',
+    'Click each sidebar tab: ATS Match, Impact, Repetition, Formatting.',
+  ],
+  expectedResults: [
+    'ATS Match tab shows matched (green) and missing (red) keyword badges.',
+    'Impact tab shows strong/weak bullet counts and weak bullet rewrite suggestions.',
+    'Repetition tab shows overused verbs with synonym pills.',
+    'Formatting tab shows parse rate bar, found/missing sections, and professionalism flags.',
+  ],
+  tags: ['regression'],
+  estimatedMinutes: 4,
+  requiresAuth: true,
+  requiresAdmin: false,
+});
+
+registerTest({
+  id: 'qa-ats-manual-rescan',
+  title: 'Manual ATS rescan updates score',
+  area: 'ATS',
+  route: '/applications/:id',
+  helpSlug: 'resume-health-dashboard',
+  steps: [
+    'Navigate to an application with an existing ATS score.',
+    'Click the refresh icon on the Resume Health Score card.',
+    'Wait for the loading spinner to complete.',
+  ],
+  expectedResults: [
+    'Loading spinner appears during scan.',
+    'Score updates after scan completes.',
+    'All dashboard sections update with new data.',
+  ],
+  tags: ['regression'],
+  estimatedMinutes: 3,
+  requiresAuth: true,
+  requiresAdmin: false,
+});

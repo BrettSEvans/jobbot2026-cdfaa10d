@@ -635,3 +635,25 @@ registerHelp({
   keywords: ['tutorial', 'walkthrough', 'tour', 'guide', 'onboarding', 'help'],
   relatedSlugs: ['applications-list', 'new-application', 'profile'],
 });
+
+registerHelp({
+  slug: 'resume-health-dashboard',
+  title: 'Resume Health Dashboard',
+  summary:
+    'An AI-powered analysis tool that scores your tailored resume against the job description across four dimensions: ATS keyword match, bullet impact, verb repetition, and formatting/professionalism.',
+  steps: [
+    'After your resume is generated, the Resume Health Score card appears automatically.',
+    'Click the expand chevron to open the full dashboard with four analysis sections.',
+    'Use the sidebar tabs (ATS Match, Impact, Repetition, Formatting) to explore each dimension.',
+    'The delta badge shows improvement compared to your original baseline resume.',
+    'Click the refresh icon to re-scan after editing your resume.',
+  ],
+  tips: [
+    'The score auto-triggers when your resume is first generated — no manual scan needed.',
+    'Weak bullet suggestions show you exactly how to add quantifiable impact.',
+    'Overused verbs are flagged with synonym alternatives you can swap in.',
+    'The baseline delta helps you see how much the AI tailoring improved your resume.',
+  ],
+  keywords: ['ats', 'score', 'health', 'keywords', 'impact', 'repetition', 'formatting', 'resume analysis'],
+  relatedSlugs: ['application-detail', 'resume-tab'],
+});

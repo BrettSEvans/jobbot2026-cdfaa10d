@@ -50,8 +50,12 @@ function AuthenticatedApp() {
     if (!user) {
       setApprovalStatus(null);
       setApprovalLoading(false);
+      analytics.reset();
       return;
     }
+    // Identify user in analytics
+    analytics.identify(user.id, { email: user.email });
+
     supabase
       .from("profiles")
       .select("approval_status")
@@ -92,7 +96,10 @@ function AuthenticatedApp() {
             <>
               <Route path="/" element={<Landing />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/verify-email" element={<VerifyEmail />} />
               <Route path="/pricing" element={<Landing />} />
+              <Route path="/terms" element={<Terms />} />
+              <Route path="/privacy" element={<Privacy />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </>
           ) : (

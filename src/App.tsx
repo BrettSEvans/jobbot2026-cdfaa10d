@@ -16,6 +16,9 @@ import ResetPassword from "./pages/ResetPassword";
 import PendingApproval from "./pages/PendingApproval";
 import Pricing from "./pages/Pricing";
 import Landing from "./pages/Landing";
+import VerifyEmail from "./pages/VerifyEmail";
+import Terms from "./pages/Terms";
+import Privacy from "./pages/Privacy";
 import BackgroundJobsBanner from "./components/BackgroundJobsBanner";
 import AppHeader from "./components/AppHeader";
 import HelpButton from "./components/HelpButton";
@@ -30,6 +33,7 @@ import { Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { BRAND } from "@/lib/branding";
+import { initAnalytics, analytics } from "@/lib/analytics";
 import "@/lib/helpEntries"; // register all help topics
 import "@/lib/qaEntries"; // register all QA test cases
 import "@/lib/tutorial/steps"; // register tutorial steps
@@ -46,8 +50,12 @@ function AuthenticatedApp() {
     if (!user) {
       setApprovalStatus(null);
       setApprovalLoading(false);
+      analytics.reset();
       return;
     }
+    // Identify user in analytics
+    analytics.identify(user.id, { email: user.email });
+
     supabase
       .from("profiles")
       .select("approval_status")
@@ -88,7 +96,10 @@ function AuthenticatedApp() {
             <>
               <Route path="/" element={<Landing />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/verify-email" element={<VerifyEmail />} />
               <Route path="/pricing" element={<Landing />} />
+              <Route path="/terms" element={<Terms />} />
+              <Route path="/privacy" element={<Privacy />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </>
           ) : (
@@ -104,6 +115,8 @@ function AuthenticatedApp() {
               <Route path="/pricing" element={<><AppHeader onSignOut={signOut} /><main id="main-content"><Pricing /></main></>} />
               <Route path="/tutorial-demo" element={<><AppHeader onSignOut={signOut} /><main id="main-content"><TutorialDemo /></main></>} />
               <Route path="/import" element={<><AppHeader onSignOut={signOut} /><main id="main-content"><ImportJob /></main></>} />
+              <Route path="/terms" element={<Terms />} />
+              <Route path="/privacy" element={<Privacy />} />
               <Route path="*" element={<NotFound />} />
             </>
           )}
@@ -119,6 +132,8 @@ function AuthenticatedApp() {
 const App = () => {
   useEffect(() => {
     document.title = `${BRAND.name} — ${BRAND.tagline}`;
+    // Initialize analytics (no-op without API key — debug mode in dev)
+    initAnalytics(import.meta.env.VITE_POSTHOG_KEY);
   }, []);
 
   return (

@@ -17,6 +17,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 import InlineHtmlEditor from "@/components/InlineHtmlEditor";
+import GenerationErrorBanner from "@/components/GenerationErrorBanner";
 import SaveAsTemplate from "@/components/SaveAsTemplate";
 import AssetRevisions from "@/components/AssetRevisions";
 import VibeEditInfo from "@/components/VibeEditInfo";
@@ -165,6 +166,17 @@ export default function HtmlAssetTab({
 
   return (
     <div className="space-y-4">
+      {/* Generation error banner */}
+      {assetJob?.status === "error" && (
+        <GenerationErrorBanner
+          error={assetJob.progress || null}
+          status="error"
+          onRetry={handleGenerate}
+          retrying={isAssetJobActive}
+          assetLabel={label}
+        />
+      )}
+
       {assetType === "resume" && missingResumeText && (
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />

@@ -19,6 +19,8 @@ import Landing from "./pages/Landing";
 import VerifyEmail from "./pages/VerifyEmail";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
+import CookiePolicy from "./pages/CookiePolicy";
+import CookieConsentBanner from "./components/CookieConsentBanner";
 import BackgroundJobsBanner from "./components/BackgroundJobsBanner";
 import AppHeader from "./components/AppHeader";
 import HelpButton from "./components/HelpButton";

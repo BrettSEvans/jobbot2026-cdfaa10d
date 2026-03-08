@@ -156,7 +156,7 @@ registerTest({
   expectedResults: [
     'Application card appears on the dashboard.',
     'Generation status shows "generating".',
-    'Assets begin populating.',
+    'Materials begin populating.',
   ],
   tags: ['smoke', 'regression'],
   estimatedMinutes: 5,
@@ -223,7 +223,7 @@ registerTest({
   ],
   expectedResults: [
     'Cards display in a responsive grid.',
-    'Each card shows company icon, job title, pipeline stage, and asset progress.',
+    'Each card shows company icon, job title, pipeline stage, and document progress.',
     'ATS score pill is visible when scored.',
   ],
   tags: ['smoke', 'regression'],
@@ -346,14 +346,14 @@ registerTest({
   area: 'Applications',
   route: '/',
   helpSlug: 'background-jobs',
-  preconditions: ['Trigger a generation (create new application or regenerate an asset).'],
+  preconditions: ['Trigger a generation (create new application or regenerate a document).'],
   steps: [
-    'Create a new application or regenerate an asset.',
+    'Create a new application or regenerate a document.',
     'Observe the background jobs banner at the top.',
     'Wait for generation to complete.',
   ],
   expectedResults: [
-    'Banner shows progress for each generating asset.',
+    'Banner shows progress for each generating document.',
     'Banner disappears when all jobs complete.',
   ],
   tags: ['smoke', 'regression'],
@@ -375,12 +375,12 @@ registerTest({
     'Open an application detail page.',
     'View the Dashboard tab.',
     'Click "Regenerate" to create a fresh version.',
-    'Use the AI chat to refine a section.',
+    'Use the Vibe Edit chat to refine a section.',
   ],
   expectedResults: [
     'Dashboard HTML renders correctly.',
     'Regeneration creates a new revision.',
-    'AI chat refinement updates the dashboard.',
+    'Vibe Edit refinement updates the dashboard.',
   ],
   tags: ['smoke', 'regression'],
   estimatedMinutes: 7,
@@ -398,7 +398,7 @@ registerTest({
   steps: [
     'Switch to the Cover Letter tab.',
     'Review the generated letter.',
-    'Refine via AI chat (e.g. "make it shorter").',
+    'Refine via Vibe Edit (e.g. "make it shorter").',
     'Download as PDF.',
   ],
   expectedResults: [
@@ -422,7 +422,7 @@ registerTest({
   steps: [
     'Switch to the Resume tab.',
     'Change the resume style from the dropdown.',
-    'Refine via AI chat.',
+    'Refine via Vibe Edit.',
     'Check revision history.',
   ],
   expectedResults: [
@@ -438,21 +438,21 @@ registerTest({
 
 registerTest({
   id: 'qa-industry-assets',
-  title: 'Industry assets: propose, generate, swap',
+  title: 'Industry materials: propose, generate, swap',
   area: 'Application Detail',
   route: '/applications/:id',
   helpSlug: 'dynamic-assets',
   preconditions: ['A completed application.'],
   steps: [
-    'Click "Propose Assets".',
-    'Review proposed assets.',
+    'Click "Propose Materials".',
+    'Review proposed documents.',
     'Confirm to generate them.',
-    'Swap one asset for a different type.',
+    'Swap one document for a different type.',
   ],
   expectedResults: [
-    'AI proposes 3 relevant assets.',
-    'Assets generate and display.',
-    'Swap replaces the asset and regenerates.',
+    'AI proposes 3 relevant documents.',
+    'Documents generate and display.',
+    'Swap replaces the document and regenerates.',
   ],
   tags: ['regression'],
   estimatedMinutes: 8,
@@ -490,9 +490,9 @@ registerTest({
   area: 'Application Detail',
   route: '/applications/:id',
   helpSlug: 'application-detail',
-  preconditions: ['An asset with 2+ revisions.'],
+  preconditions: ['A document with 2+ revisions.'],
   steps: [
-    'Open an asset tab with multiple revisions.',
+    'Open a document tab with multiple revisions.',
     'Open revision history.',
     'Select an older revision.',
     'Revert to it.',
@@ -513,7 +513,7 @@ registerTest({
   area: 'Application Detail',
   route: '/applications/:id',
   helpSlug: 'save-as-template',
-  preconditions: ['A completed dashboard or asset.'],
+  preconditions: ['A completed dashboard or document.'],
   steps: [
     'Open a completed application.',
     'Click "Save as Template".',
@@ -538,13 +538,13 @@ registerTest({
   helpSlug: 'wysiwyg-editor',
   preconditions: ['A generated cover letter or resume.'],
   steps: [
-    'Enable WYSIWYG editing mode on an asset.',
+    'Enable WYSIWYG editing mode on a document.',
     'Make text changes (bold, italic, add paragraph).',
     'Save changes.',
   ],
   expectedResults: [
     'Editor renders with toolbar.',
-    'Changes are saved and reflected in the asset.',
+    'Changes are saved and reflected in the document.',
     'A new revision is created.',
   ],
   tags: ['regression'],
@@ -706,7 +706,7 @@ registerTest({
   ],
   expectedResults: [
     'Template is applied to the new application.',
-    'Generated assets follow the template structure.',
+    'Generated documents follow the template structure.',
   ],
   tags: ['regression'],
   estimatedMinutes: 5,

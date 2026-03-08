@@ -102,32 +102,32 @@ const FEATURES = [
   {
     icon: LayoutDashboard,
     title: "Branded Dashboards",
-    desc: "Interactive KPI dashboards styled with the target company's branding.",
+    desc: "Sales pipeline trackers, patient outcome summaries, supply chain KPIs — whatever your field, beautifully styled to the company's brand.",
   },
   {
     icon: FileText,
     title: "Tailored Cover Letters",
-    desc: "Personalised cover letters that match the job description and your experience.",
+    desc: "From nursing leadership to financial analysis to marketing strategy — every letter is mapped to the JD and your unique experience.",
   },
   {
     icon: BarChart3,
-    title: "Executive Reports",
-    desc: "One-page strategic reports demonstrating domain expertise.",
+    title: "Strategic Reports",
+    desc: "Market entry analyses for product managers, cost-reduction plans for operations leads, clinical quality reviews for healthcare pros.",
   },
   {
     icon: ShieldAlert,
-    title: "RAID Logs",
-    desc: "Risks, Assumptions, Issues & Dependencies — ready for day-one delivery.",
+    title: "Risk & Readiness Logs",
+    desc: "Compliance checklists for finance, safety audits for manufacturing, vendor risk assessments for procurement — day-one deliverables for any role.",
   },
   {
     icon: Map,
     title: "90-Day Roadmaps",
-    desc: "Actionable onboarding plans that show you're ready to hit the ground running.",
+    desc: "Onboarding plans tailored to your function — territory ramp for sales, curriculum rollout for education, store launch for retail management.",
   },
   {
     icon: Network,
-    title: "Architecture Diagrams",
-    desc: "System design visuals that prove technical depth at a glance.",
+    title: "Industry-Specific Visuals",
+    desc: "Org charts, process flows, system diagrams, campaign blueprints — visual proof of expertise, whatever your domain.",
   },
 ];
 

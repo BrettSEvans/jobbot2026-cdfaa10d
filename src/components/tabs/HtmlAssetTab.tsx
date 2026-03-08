@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Link } from "react-router-dom";
-import WysiwygEditor from "@/components/WysiwygEditor";
+import InlineHtmlEditor from "@/components/InlineHtmlEditor";
 import SaveAsTemplate from "@/components/SaveAsTemplate";
 import AssetRevisions from "@/components/AssetRevisions";
 import VibeEditInfo from "@/components/VibeEditInfo";
@@ -257,7 +257,7 @@ export default function HtmlAssetTab({
                 <X className="mr-2 h-4 w-4" /> Discard
               </Button>
             </div>
-            <WysiwygEditor content={editHtml} onChange={setEditHtml} />
+            <InlineHtmlEditor html={editHtml} onChange={setEditHtml} />
           </CardContent>
         </Card>
       ) : (previewHtml || html) ? (

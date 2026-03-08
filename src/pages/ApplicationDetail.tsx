@@ -329,16 +329,6 @@ const ApplicationDetail = () => {
           </div>
         </div>
 
-        {/* ATS Score Card */}
-        {(state.resumeHtml || atsScore) && (
-          <AtsScoreCard
-            score={atsScore}
-            loading={atsLoading}
-            onRescan={handleAtsRescan}
-            onApplyFix={handleApplyBulletFix}
-            disabled={!state.resumeHtml || !state.jobDescription}
-          />
-        )}
 
         {/* Primary Tab Triggers */}
         <div data-tutorial="asset-tabs" className="flex items-center gap-1 border-b border-border pb-0 overflow-x-auto">
@@ -431,20 +421,31 @@ const ApplicationDetail = () => {
             <CoverLetterTab appId={id!} state={state} />
           )}
           {activeView === "resume" && (
-            <HtmlAssetTab
-              appId={id!}
-              state={state}
-              assetType="resume"
-              label="Resume"
-              dbField="resume_html"
-              html={state.resumeHtml}
-              setHtml={state.setResumeHtml}
-              generateFn={streamResumeGeneration}
-              saveRevisionFn={saveResumeRevision}
-              emptyIcon={FileUser}
-              refinePlaceholder='e.g. "Make it more concise" or "Emphasize leadership experience"'
-              canRefine={canRefine}
-            />
+            <div className="space-y-3">
+              {(state.resumeHtml || atsScore) && (
+                <AtsScoreCard
+                  score={atsScore}
+                  loading={atsLoading}
+                  onRescan={handleAtsRescan}
+                  onApplyFix={handleApplyBulletFix}
+                  disabled={!state.resumeHtml || !state.jobDescription}
+                />
+              )}
+              <HtmlAssetTab
+                appId={id!}
+                state={state}
+                assetType="resume"
+                label="Resume"
+                dbField="resume_html"
+                html={state.resumeHtml}
+                setHtml={state.setResumeHtml}
+                generateFn={streamResumeGeneration}
+                saveRevisionFn={saveResumeRevision}
+                emptyIcon={FileUser}
+                refinePlaceholder='e.g. "Make it more concise" or "Emphasize leadership experience"'
+                canRefine={canRefine}
+              />
+            </div>
           )}
 
           {/* Dynamic asset view */}

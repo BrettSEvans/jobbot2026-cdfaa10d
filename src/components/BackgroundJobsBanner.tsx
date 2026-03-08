@@ -32,12 +32,12 @@ export default function BackgroundJobsBanner() {
 
   const getLabel = () => {
     if (parallelInfo) {
-      return `Generating assets... (${parallelInfo.completed}/${parallelInfo.total} completed)`;
+      return `Generating materials... (${parallelInfo.completed}/${parallelInfo.total} completed)`;
     }
     if (assetJobLabels.length > 0) {
       return assetJobLabels.length === 1
         ? assetJobLabels[0]
-        : `${assetJobLabels.length} asset jobs running`;
+        : `${assetJobLabels.length} jobs running`;
     }
     return `${activeCount} generation${activeCount > 1 ? "s" : ""} running in background`;
   };

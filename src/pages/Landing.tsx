@@ -140,7 +140,7 @@ function Features() {
             Everything You Need to Stand Out
           </h2>
           <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
-            Six AI-generated assets, each tailored to the role and company you're targeting.
+            Six AI-generated materials, each tailored to the role and company you're targeting.
           </p>
         </div>
         <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -173,7 +173,7 @@ const STEPS = [
   {
     icon: Sparkles,
     num: "2",
-    title: "AI Generates Assets",
+    title: "AI Generates Your Materials",
     desc: "In minutes, receive a full suite of branded, role-specific documents — resume, cover letter, dashboard, and more.",
   },
   {

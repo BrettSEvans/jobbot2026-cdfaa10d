@@ -324,7 +324,7 @@ const ApplicationDetail = () => {
                 size="sm"
                 onClick={() => setShowProposalDialog(true)}
               >
-                <Sparkles className="mr-2 h-4 w-4" /> Propose Assets
+                <Sparkles className="mr-2 h-4 w-4" /> Propose Materials
               </Button>
             </div>
           )}
@@ -334,7 +334,7 @@ const ApplicationDetail = () => {
         {dynamicAssets.length > 0 && (
           <div className="space-y-1.5">
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Industry Assets
+              Industry Materials
             </span>
             <div data-tutorial="industry-assets-grid" className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               {dynamicAssets.map((asset) => (
@@ -375,7 +375,7 @@ const ApplicationDetail = () => {
                         generateDynamicAsset(updated);
                       }}
                     >
-                      <Button data-tutorial="change-asset-btn" variant="ghost" size="icon" className="h-8 w-8 shrink-0" title="Change asset type">
+                      <Button data-tutorial="change-asset-btn" variant="ghost" size="icon" className="h-8 w-8 shrink-0" title="Change document type">
                         <ArrowLeftRight className="h-3.5 w-3.5" />
                       </Button>
                     </ChangeAssetDialog>
@@ -410,7 +410,7 @@ const ApplicationDetail = () => {
 
           {/* Dynamic asset view */}
           {activeDynamicAsset && (
-            <UpgradeGate feature="Industry Assets" isLocked={!isAssetAllowed("dynamic")} requiredTier="premium">
+            <UpgradeGate feature="Industry Materials" isLocked={!isAssetAllowed("dynamic")} requiredTier="premium">
               <DynamicAssetTab
                 key={activeDynamicAsset.id}
                 asset={activeDynamicAsset}

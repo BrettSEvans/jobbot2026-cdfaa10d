@@ -142,7 +142,7 @@ const Templates = () => {
               <ArrowLeft className="h-4 w-4 mr-1" /> Back
             </Button>
             <div>
-              <h1 className="text-2xl font-bold tracking-tight">Asset Templates</h1>
+              <h1 className="text-2xl font-bold tracking-tight">Templates</h1>
               <p className="text-muted-foreground text-sm">
                 {allTemplates.length} template{allTemplates.length !== 1 ? "s" : ""} saved
               </p>
@@ -208,7 +208,7 @@ const Templates = () => {
                 <>
                   <h3 className="text-lg font-medium mb-2">No templates yet</h3>
                   <p className="text-muted-foreground mb-4">
-                    Generate an asset and save it as a template to get started.
+                    Generate a document and save it as a template to get started.
                   </p>
                 </>
               ) : (

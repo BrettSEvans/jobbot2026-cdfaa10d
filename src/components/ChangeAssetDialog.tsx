@@ -1,5 +1,5 @@
 /**
- * ChangeAssetDialog - Lets user swap one industry asset for a different AI-proposed type.
+ * ChangeAssetDialog - Lets user swap one industry document for a different AI-proposed type.
  */
 import { useState } from "react";
 import {
@@ -95,7 +95,7 @@ export default function ChangeAssetDialog({
         match.brief_description,
       );
       onAssetReplaced(updated);
-      toast({ title: "Asset swapped!", description: `Replaced with "${match.asset_name}". You can now generate it.` });
+      toast({ title: "Document swapped!", description: `Replaced with "${match.asset_name}". You can now generate it.` });
       setOpen(false);
       setSuggestions([]);
       setSelected(null);
@@ -111,7 +111,7 @@ export default function ChangeAssetDialog({
       <DialogTrigger asChild>
         {children || (
           <Button variant="outline" size="sm">
-            <ArrowLeftRight className="mr-2 h-4 w-4" /> Change Asset
+            <ArrowLeftRight className="mr-2 h-4 w-4" /> Change Document
           </Button>
         )}
       </DialogTrigger>
@@ -170,7 +170,7 @@ export default function ChangeAssetDialog({
               </Button>
               <Button size="sm" onClick={handleConfirm} disabled={!selected || replacing}>
                 {replacing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ArrowLeftRight className="mr-2 h-4 w-4" />}
-                Swap Asset
+                Swap Document
               </Button>
             </div>
           </div>

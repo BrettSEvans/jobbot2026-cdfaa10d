@@ -238,7 +238,7 @@ export default function DynamicAssetTab({
         <div className="flex items-center gap-2 p-3 rounded-lg border border-muted bg-muted/50 text-sm">
           <Lock className="h-4 w-4 text-muted-foreground shrink-0" />
           <span className="text-muted-foreground">
-            This asset has been downloaded. Create a new application to generate fresh assets.
+            This document has been downloaded. Create a new application to generate fresh materials.
           </span>
         </div>
       )}

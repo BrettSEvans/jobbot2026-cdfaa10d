@@ -301,7 +301,7 @@ const Applications = () => {
     try {
       await permanentlyDeleteJobApplication(id);
       setDeletedApps((prev) => prev.filter((a) => a.id !== id));
-      toast({ title: "Permanently deleted", description: "Application and all assets have been removed." });
+      toast({ title: "Permanently deleted", description: "Application and all materials have been removed." });
     } catch (err: unknown) {
       toast({ title: "Error", description: err instanceof Error ? err.message : "Unknown error", variant: "destructive" });
     }
@@ -451,7 +451,7 @@ const Applications = () => {
                 </div>
                 <div className="space-y-1">
                   <p className="text-sm font-medium">3. Vibe Edit with AI chat</p>
-                  <p className="text-sm text-muted-foreground">Iterate on any asset with conversational AI</p>
+                  <p className="text-sm text-muted-foreground">Iterate on any document with conversational AI</p>
                 </div>
               </div>
             </CardContent>

@@ -84,20 +84,38 @@ export default function AdminRolesTab() {
     }
   };
 
+  const isUuid = (val: string) =>
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
+
   const handleAddRole = async () => {
-    if (!addEmail.trim()) return;
+    const input = addEmail.trim();
+    if (!input) return;
     setAdding(true);
     try {
-      // Look up user by email in profiles
-      const { data: profile, error: profileErr } = await (supabase as any)
-        .from("profiles")
-        .select("id, email")
-        .ilike("email", addEmail.trim())
-        .maybeSingle();
+      let profile: { id: string; email: string | null } | null = null;
 
-      if (profileErr) throw new Error(profileErr.message);
+      if (isUuid(input)) {
+        // Look up by user ID
+        const { data, error } = await (supabase as any)
+          .from("profiles")
+          .select("id, email")
+          .eq("id", input)
+          .maybeSingle();
+        if (error) throw new Error(error.message);
+        profile = data;
+      } else {
+        // Look up by email
+        const { data, error } = await (supabase as any)
+          .from("profiles")
+          .select("id, email")
+          .ilike("email", input)
+          .maybeSingle();
+        if (error) throw new Error(error.message);
+        profile = data;
+      }
+
       if (!profile) {
-        toast({ title: "User not found", description: "No user with that email address.", variant: "destructive" });
+        toast({ title: "User not found", description: "No user with that email or ID.", variant: "destructive" });
         setAdding(false);
         return;
       }
@@ -112,7 +130,7 @@ export default function AdminRolesTab() {
           throw new Error(error.message);
         }
       } else {
-        toast({ title: "Role added", description: `${addRole} role granted to ${profile.email}.` });
+        toast({ title: "Role added", description: `${addRole} role granted to ${profile.email || profile.id}.` });
         setAddEmail("");
         loadData();
       }
@@ -220,7 +238,7 @@ export default function AdminRolesTab() {
           <div className="flex gap-2 items-end pt-2 border-t border-border">
             <div className="flex-1">
               <Input
-                placeholder="User email address"
+                placeholder="Email address or user ID"
                 value={addEmail}
                 onChange={(e) => setAddEmail(e.target.value)}
               />

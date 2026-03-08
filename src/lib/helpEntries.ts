@@ -437,10 +437,19 @@ registerHelp({
   title: 'ATS Score Scanning',
   summary:
     'Scan your resume against the job description to get an ATS (Applicant Tracking System) compatibility score. The score shows keyword match percentage and suggestions for improvement.',
+  steps: [
+    'Open any application from your Applications list.',
+    'Generate a resume first — the ATS card only appears once a resume exists.',
+    'Find the "ATS Match Score" card below the resume section.',
+    'Click the refresh/rescan button to score your resume against the job description.',
+    'Expand the card (chevron) to see matched keywords, missing keywords, and improvement suggestions.',
+    'Refine your resume using the suggestions, then rescan to see your updated score.',
+  ],
   tips: [
     'Higher scores indicate better keyword alignment with the job posting.',
     'Refine your resume based on the score breakdown to improve match rate.',
   ],
+  route: '/applications/:id',
   keywords: ['ats', 'score', 'scan', 'keywords', 'match', 'applicant tracking'],
   relatedSlugs: ['resume-tab', 'application-detail'],
 });

@@ -8,8 +8,8 @@ const corsHeaders = {
 
 const TIER_LIMITS: Record<string, { perHour: number; perDay: number }> = {
   free: { perHour: 5, perDay: 15 },
-  pro: { perHour: 20, perDay: 100 },
-  premium: { perHour: 50, perDay: 250 },
+  pro: { perHour: -1, perDay: 100 },
+  premium: { perHour: -1, perDay: 250 },
 };
 const DEFAULT_LIMITS = TIER_LIMITS.free;
 async function checkRateLimit(req: Request, assetType: string, edgeFunction: string): Promise<Response | null> {

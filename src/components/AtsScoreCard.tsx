@@ -7,6 +7,7 @@ import { Check, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import {
   RefreshCw, Loader2, ChevronDown, Zap,
@@ -48,12 +49,26 @@ function getScoreLabel(score: number): string {
 function DeltaBadge({ score, baseline }: { score: number; baseline?: number }) {
   if (baseline == null) return null;
   const delta = score - baseline;
-  if (delta === 0) return <span className="text-[11px] text-muted-foreground">— vs base</span>;
+  const label = delta === 0
+    ? "— vs base"
+    : `${delta > 0 ? "+" : ""}${delta}`;
   return (
-    <span className={`inline-flex items-center gap-0.5 text-[11px] font-medium ${delta > 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
-      {delta > 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-      {delta > 0 ? "+" : ""}{delta}
-    </span>
+    <TooltipProvider delayDuration={200}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className={`inline-flex items-center gap-0.5 text-[11px] font-medium cursor-help ${
+            delta === 0 ? "text-muted-foreground" : delta > 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
+          }`}>
+            {delta > 0 && <TrendingUp className="h-3 w-3" />}
+            {delta < 0 && <TrendingDown className="h-3 w-3" />}
+            {label}
+          </span>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-[220px] text-xs">
+          Compared to your base profile resume before it was tailored for this job.
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }
 
@@ -320,6 +335,9 @@ export default function AtsScoreCard({ score, loading, onRescan, onApplyFix, dis
     <Card className="overflow-hidden">
       <CardContent className="py-2.5 px-3">
         <div className="flex items-center gap-3">
+          {/* Label */}
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider shrink-0">Resume Health</span>
+
           {/* Score pill */}
           {loading ? (
             <Loader2 className="h-4 w-4 animate-spin text-muted-foreground shrink-0" />

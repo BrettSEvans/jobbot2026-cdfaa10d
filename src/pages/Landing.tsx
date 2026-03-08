@@ -77,7 +77,7 @@ function Hero() {
           </span>
         </h1>
         <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground sm:text-xl leading-relaxed">
-          More than a resume writer — ResuVibe is complete portfolio builder. Paste a job URL and get AI-vibed, company-branded documents: tailored resume, cover letter, and multiple job specific documents.
+          More than a resume writer — it's a complete portfolio builder. Paste a job URL and get AI-vibed, company-branded documents: tailored resume, cover letter, executive dashboard, 90-day roadmap, and other custom industry assets.
         </p>
         <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Button size="lg" className="gap-2 shadow-[var(--shadow-warm)] text-base px-8" onClick={() => navigate("/auth")}>

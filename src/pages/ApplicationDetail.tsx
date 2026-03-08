@@ -123,6 +123,27 @@ const ApplicationDetail = () => {
     }
   };
 
+  /** Apply a suggested bullet fix directly into the resume HTML */
+  const handleApplyBulletFix = async (originalText: string, newText: string): Promise<boolean> => {
+    if (!id || !state.resumeHtml) return false;
+    try {
+      const escaped = originalText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      let updated = state.resumeHtml;
+      if (updated.includes(originalText)) {
+        updated = updated.replace(originalText, newText);
+      } else {
+        const fuzzyPattern = new RegExp(escaped.replace(/\s+/g, '\\s+'), 'i');
+        updated = updated.replace(fuzzyPattern, newText);
+      }
+      if (updated === state.resumeHtml) return false;
+      state.setResumeHtml(updated);
+      await state.saveField({ resume_html: updated });
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
   const handleStageChange = async (newStage: string) => {
     if (!id) return;
     try {

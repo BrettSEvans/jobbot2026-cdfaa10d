@@ -103,10 +103,10 @@ const Applications = () => {
     const dismissed: string[] = JSON.parse(localStorage.getItem('dismissed_bookmarked_prompts') || '[]');
     return applications
       .filter((app) => {
-        const stage = (app as any).pipeline_stage || 'bookmarked';
+        const stage = app.pipeline_stage || 'bookmarked';
         if (stage !== 'bookmarked') return false;
         if (dismissed.includes(app.id)) return false;
-        const changedAt = (app as any).stage_changed_at || app.created_at;
+        const changedAt = app.stage_changed_at || app.created_at;
         return now - new Date(changedAt).getTime() > FORTY_EIGHT_HOURS;
       })
       .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())[0] || null;
@@ -119,10 +119,10 @@ const Applications = () => {
     const dismissed: string[] = JSON.parse(localStorage.getItem('dismissed_ghost_prompts') || '[]');
     return applications
       .filter((app) => {
-        const stage = (app as any).pipeline_stage || 'bookmarked';
+        const stage = app.pipeline_stage || 'bookmarked';
         if (stage !== 'applied') return false;
         if (dismissed.includes(app.id)) return false;
-        const changedAt = (app as any).stage_changed_at || app.created_at;
+        const changedAt = app.stage_changed_at || app.created_at;
         return now - new Date(changedAt).getTime() > TEN_DAYS;
       })
       .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())[0] || null;

@@ -53,10 +53,10 @@ export default function ApplicationCommandCard({
 }: ApplicationCommandCardProps) {
   const navigate = useNavigate();
   const activeTypes = backgroundGenerator.getActiveAssetTypesForApp(app.id);
-  const stage = ((app as any).pipeline_stage || "bookmarked") as PipelineStage;
-  const atsScore = (app as any).ats_score as { score?: number } | null;
+  const stage = (app.pipeline_stage || "bookmarked") as PipelineStage;
+  const atsScore = app.ats_score as unknown as { score?: number } | null;
 
-  const completedAssets = ASSET_FIELDS.filter((f) => !!(app as any)[f.key]).length;
+  const completedAssets = ASSET_FIELDS.filter((f) => !!app[f.key as keyof typeof app]).length;
   const totalAssets = ASSET_FIELDS.length;
   const progressPercent = Math.round((completedAssets / totalAssets) * 100);
 
@@ -72,7 +72,7 @@ export default function ApplicationCommandCard({
         {/* Header row: Logo + Company + Stage + ATS */}
         <div className="flex items-start gap-3">
           <CompanyIcon
-            iconUrl={(app as any).company_icon_url}
+            iconUrl={app.company_icon_url}
             companyName={app.company_name}
             size={48}
             className="rounded-lg"
@@ -116,7 +116,7 @@ export default function ApplicationCommandCard({
         {/* Asset dots row */}
         <div className="flex flex-wrap gap-x-3 gap-y-1.5">
           {ASSET_FIELDS.map((f) => {
-            const has = !!(app as any)[f.key];
+            const has = !!app[f.key as keyof typeof app];
             const isActive = activeTypes.includes(f.assetType);
             return (
               <Tooltip key={f.key}>
@@ -180,7 +180,7 @@ export default function ApplicationCommandCard({
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 {app.cover_letter && (
-                  <DropdownMenuItem onClick={(e) => onCopyCoverLetter(app.cover_letter, e as any)}>
+                  <DropdownMenuItem onClick={(e) => onCopyCoverLetter(app.cover_letter, e as React.MouseEvent)}>
                     <FileText className="mr-2 h-3.5 w-3.5" /> Copy Cover Letter
                   </DropdownMenuItem>
                 )}
@@ -189,7 +189,7 @@ export default function ApplicationCommandCard({
                     <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onPreview(app.id); }}>
                       <Eye className="mr-2 h-3.5 w-3.5" /> Preview Dashboard
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={(e) => onCopyHtml(app.dashboard_html, e as any)}>
+                    <DropdownMenuItem onClick={(e) => onCopyHtml(app.dashboard_html, e as React.MouseEvent)}>
                       <Copy className="mr-2 h-3.5 w-3.5" /> Copy HTML
                     </DropdownMenuItem>
                   </>

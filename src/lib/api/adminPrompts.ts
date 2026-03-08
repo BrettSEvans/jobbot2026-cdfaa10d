@@ -31,7 +31,7 @@ async function logAudit(action: string, targetId: string, metadata: Record<strin
     if (!user) return;
     await supabase
       .from('admin_audit_log')
-      .insert([{ admin_id: user.id, action, target_id: targetId, metadata: metadata as unknown as Record<string, unknown> }]);
+      .insert([{ admin_id: user.id, action, target_id: targetId, metadata: metadata as unknown as import('@/integrations/supabase/types').Json }]);
   } catch (err) {
     console.warn('[audit] Failed to log action:', action, err);
   }

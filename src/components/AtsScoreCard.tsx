@@ -49,12 +49,26 @@ function getScoreLabel(score: number): string {
 function DeltaBadge({ score, baseline }: { score: number; baseline?: number }) {
   if (baseline == null) return null;
   const delta = score - baseline;
-  if (delta === 0) return <span className="text-[11px] text-muted-foreground">— vs base</span>;
+  const label = delta === 0
+    ? "— vs base"
+    : `${delta > 0 ? "+" : ""}${delta}`;
   return (
-    <span className={`inline-flex items-center gap-0.5 text-[11px] font-medium ${delta > 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
-      {delta > 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-      {delta > 0 ? "+" : ""}{delta}
-    </span>
+    <TooltipProvider delayDuration={200}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className={`inline-flex items-center gap-0.5 text-[11px] font-medium cursor-help ${
+            delta === 0 ? "text-muted-foreground" : delta > 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
+          }`}>
+            {delta > 0 && <TrendingUp className="h-3 w-3" />}
+            {delta < 0 && <TrendingDown className="h-3 w-3" />}
+            {label}
+          </span>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-[220px] text-xs">
+          Compared to your base profile resume before it was tailored for this job.
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }
 

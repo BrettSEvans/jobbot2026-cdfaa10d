@@ -2,7 +2,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { getActivePersonaSnapshot } from '@/contexts/ImpersonationContext';
 import { streamFromEdgeFunction, processSSEStream } from './streamUtils';
 import { getStyleContextForPrompt } from './stylePreferences';
-import type { Json } from '@/integrations/supabase/types';
+import type { Json, TablesInsert } from '@/integrations/supabase/types';
 
 // --- Search for company icon (three-tier fallback) ---
 export async function searchCompanyIcon(companyName?: string, companyUrl?: string): Promise<{ iconUrl: string | null; source: string | null }> {

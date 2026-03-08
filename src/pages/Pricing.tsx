@@ -216,7 +216,7 @@ export default function Pricing() {
               <CardFooter className="flex-col gap-2">
                 <Button
                   className={cn("w-full", isDowngrade && "text-muted-foreground")}
-                  variant={buttonVariant as any}
+                  variant={buttonVariant as "default" | "outline" | "secondary" | "destructive" | "ghost" | "link"}
                   disabled={isCurrent || isUpgrading}
                   onClick={() => handleChangePlan(config.tier)}
                 >

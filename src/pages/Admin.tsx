@@ -39,14 +39,14 @@ export default function Admin() {
   }, [roleLoading, isAdmin, isQA]);
 
   useEffect(() => {
-    (supabase as any)
+    supabase
       .from("qa_test_runs")
       .select("build_label")
       .eq("status", "in_progress")
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle()
-      .then(({ data }: any) => {
+      .then(({ data }) => {
         if (data) setActiveBuildLabel(data.build_label);
       });
   }, []);

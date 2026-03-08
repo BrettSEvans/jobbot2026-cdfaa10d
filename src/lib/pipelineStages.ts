@@ -87,10 +87,10 @@ export async function updatePipelineStage(
     job_url: '',
     pipeline_stage: toStage,
     stage_changed_at: now,
-  } as any);
+  });
 
   // Insert history record
-  await (supabase as any)
+  await supabase
     .from('pipeline_stage_history')
     .insert({
       application_id: applicationId,

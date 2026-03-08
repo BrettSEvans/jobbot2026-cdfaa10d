@@ -418,7 +418,7 @@ const ApplicationDetail = () => {
                 jobDescription={state.jobDescription}
                 companyName={state.companyName}
                 jobTitle={state.jobTitle}
-                branding={state.app?.branding as any}
+                branding={state.app?.branding}
                 onAssetUpdated={handleAssetUpdated}
                 canRefine={canRefine}
               />

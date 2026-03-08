@@ -77,8 +77,7 @@ function Hero() {
           </span>
         </h1>
         <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground sm:text-xl leading-relaxed">
-          Paste a job URL. Get a full suite of AI-crafted, company-branded application
-          materials — resume, cover letter, executive dashboard, and more — in minutes.
+          More than a resume writer — it's a complete portfolio builder. Paste a job URL and get AI-vibed, company-branded documents: tailored resume, cover letter, executive dashboard, 90-day roadmap, RAID log, and custom industry assets.
         </p>
         <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Button size="lg" className="gap-2 shadow-[var(--shadow-warm)] text-base px-8" onClick={() => navigate("/auth")}>
@@ -89,7 +88,7 @@ function Hero() {
           </Button>
         </div>
         <p className="mt-4 text-xs text-muted-foreground">
-          No credit card required · Free tier forever
+          No credit card required · 6 documents per application · Free forever
         </p>
       </div>
     </section>
@@ -140,7 +139,7 @@ function Features() {
             Everything You Need to Stand Out
           </h2>
           <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
-            Six AI-generated materials, each tailored to the role and company you're targeting.
+            Not just a resume — a full portfolio that proves you're ready for day one.
           </p>
         </div>
         <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -173,8 +172,8 @@ const STEPS = [
   {
     icon: Sparkles,
     num: "2",
-    title: "AI Generates Your Materials",
-    desc: "In minutes, receive a full suite of branded, role-specific documents — resume, cover letter, dashboard, and more.",
+    title: "AI Builds Your Materials",
+    desc: "In minutes, receive a complete career portfolio — resume, cover letter, dashboard, roadmap, and custom assets — all branded to the company.",
   },
   {
     icon: Download,
@@ -223,10 +222,10 @@ function ExampleAssets() {
     <section className="py-20 sm:py-24">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <h2 className="text-center font-heading text-3xl font-bold text-foreground sm:text-4xl">
-          See What {BRAND.name} Creates
+          Your Portfolio, Visualized
         </h2>
         <p className="mx-auto mt-3 max-w-xl text-center text-muted-foreground">
-          Each document is generated in real-time and styled to the company's brand.
+          Multiple professional documents per application — not just another resume.
         </p>
         <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-5">
           {EXAMPLES.map((ex) => (
@@ -400,11 +399,10 @@ function CtaFooter() {
       <div className="relative z-10 mx-auto max-w-3xl px-4 text-center sm:px-6">
         <BrandLogo size="lg" className="justify-center mb-4" />
         <h2 className="font-heading text-3xl font-bold text-foreground sm:text-4xl">
-          Ready to Make It Unfair?
+          Ready to Build Your Portfolio?
         </h2>
         <p className="mx-auto mt-3 max-w-lg text-muted-foreground">
-          Join professionals who use {BRAND.name} to create compelling, AI‑crafted
-          application materials in minutes.
+          Join professionals who land interviews with complete career portfolios — not just resumes.
         </p>
         <Button size="lg" className="mt-8 gap-2 shadow-[var(--shadow-warm)] text-base px-8" onClick={() => navigate("/auth")}>
           Get Started Free <ArrowRight className="h-4 w-4" />

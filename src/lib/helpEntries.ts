@@ -564,15 +564,20 @@ registerHelp({
   slug: 'onboarding-wizard',
   title: 'Onboarding Wizard',
   summary:
-    'A guided setup flow for new users to enter their name, upload a resume, and specify key skills and target industries. Completing onboarding ensures the best AI-generated results.',
+    'A guided setup flow for new users to enter their name, upload a resume, and specify key skills and target industries. Completing onboarding ensures the best AI-generated results. You can also take the interactive tour anytime from the Help menu.',
   steps: [
     'After approval, you will be guided through the onboarding wizard.',
     'Enter your name and years of experience.',
     'Upload or paste your resume text.',
     'Add key skills and target industries.',
+    'Click "Start Tour" to launch the interactive tutorial walkthrough.',
   ],
-  keywords: ['onboarding', 'wizard', 'setup', 'first time', 'new user'],
-  relatedSlugs: ['profile'],
+  tips: [
+    'You can restart the tour anytime from the Help menu in the header.',
+    'The tour highlights key features and walks you through creating your first application.',
+  ],
+  keywords: ['onboarding', 'wizard', 'setup', 'first time', 'new user', 'tour'],
+  relatedSlugs: ['profile', 'tutorial-walkthrough'],
 });
 
 registerHelp({
@@ -624,16 +629,20 @@ registerHelp({
 
 registerHelp({
   slug: 'tutorial-walkthrough',
-  title: 'Interactive Tutorial',
+  title: 'Interactive Tutorial (The Tour)',
   summary:
-    'A guided walkthrough that shows you how to create applications, upload your resume, generate assets, and download them as PDFs.',
+    'A guided walkthrough that shows you how to create applications, upload your resume, generate assets, and download them as PDFs. Available during onboarding and anytime from the Help menu.',
   steps: [
-    'Click "Start Tutorial" from the help menu or onboarding prompt.',
+    'Click "Start Tour" from the onboarding wizard or "Take the Tour" from the Help menu.',
     'Follow the highlighted steps as the tutorial guides you through the app.',
     'Complete each step to advance — you can skip or exit at any time.',
   ],
+  tips: [
+    'The tour auto-launches for new users during onboarding.',
+    'You can restart the tour anytime via the Help button in the header.',
+  ],
   keywords: ['tutorial', 'walkthrough', 'tour', 'guide', 'onboarding', 'help'],
-  relatedSlugs: ['applications-list', 'new-application', 'profile'],
+  relatedSlugs: ['applications-list', 'new-application', 'profile', 'onboarding-wizard'],
 });
 
 registerHelp({

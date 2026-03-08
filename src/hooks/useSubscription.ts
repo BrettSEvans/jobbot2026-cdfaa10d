@@ -28,7 +28,7 @@ export function useSubscription() {
     queryKey: ["subscription", user?.id],
     queryFn: async (): Promise<UserSubscription> => {
       const { data, error } = await supabase
-        .from("user_subscriptions" as any)
+        .from("user_subscriptions")
         .select("*")
         .eq("user_id", user!.id)
         .single();
@@ -37,7 +37,7 @@ export function useSubscription() {
         // If no subscription exists, create a free one
         if (error.code === "PGRST116") {
           const { data: newSub, error: insertError } = await supabase
-            .from("user_subscriptions" as any)
+            .from("user_subscriptions")
             .insert({ user_id: user!.id, tier: "free", status: "active" })
             .select()
             .single();
@@ -55,7 +55,7 @@ export function useSubscription() {
   const upgradeMutation = useMutation({
     mutationFn: async (newTier: SubscriptionTier) => {
       const { error } = await supabase
-        .from("user_subscriptions" as any)
+        .from("user_subscriptions")
         .update({
           tier: newTier,
           status: "active",
@@ -64,7 +64,7 @@ export function useSubscription() {
             Date.now() + 30 * 24 * 60 * 60 * 1000
           ).toISOString(),
           updated_at: new Date().toISOString(),
-        } as any)
+        })
         .eq("user_id", user!.id);
       if (error) throw error;
     },

@@ -4,6 +4,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { streamFromEdgeFunction } from './streamUtils';
 import { getStyleContextForPrompt } from './stylePreferences';
+import type { Json } from '@/integrations/supabase/types';
 
 export interface ProposedAsset {
   asset_name: string;
@@ -25,7 +26,7 @@ export interface GeneratedAsset {
 
 // --- Mark an asset as downloaded (locks regen/refine/swap) ---
 export async function markAssetDownloaded(assetId: string) {
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('generated_assets')
     .update({ downloaded_at: new Date().toISOString() })
     .eq('id', assetId)
@@ -52,7 +53,6 @@ export async function proposeAssets({
   const { data, error } = await supabase.functions.invoke('propose-assets', {
     body: { jobDescription, resumeText, companyName, jobTitle, industry },
   });
-  // Check data.error first since supabase wraps non-2xx with generic error message
   if (data?.error) throw new Error(data.error);
   if (error) throw new Error(error.message);
   return data?.suggested_assets || [];
@@ -60,8 +60,7 @@ export async function proposeAssets({
 
 // --- Save proposed assets to DB ---
 export async function saveProposedAssets(applicationId: string, assets: ProposedAsset[]) {
-  // Clear existing proposals first
-  await (supabase as any).from('proposed_assets').delete().eq('application_id', applicationId);
+  await supabase.from('proposed_assets').delete().eq('application_id', applicationId);
 
   const rows = assets.map((a) => ({
     application_id: applicationId,
@@ -70,7 +69,7 @@ export async function saveProposedAssets(applicationId: string, assets: Proposed
     selected: false,
   }));
 
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('proposed_assets')
     .insert(rows)
     .select();
@@ -80,7 +79,7 @@ export async function saveProposedAssets(applicationId: string, assets: Proposed
 
 // --- Get proposed assets for an application ---
 export async function getProposedAssets(applicationId: string) {
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('proposed_assets')
     .select('*')
     .eq('application_id', applicationId)
@@ -91,31 +90,27 @@ export async function getProposedAssets(applicationId: string) {
 
 // --- Mark selected proposals and create generated_assets rows ---
 export async function confirmAssetSelection(applicationId: string, selectedNames: string[]) {
-  // Get all proposals
   const proposals = await getProposedAssets(applicationId);
   
-  // Update selected status
   for (const p of proposals) {
     const isSelected = selectedNames.includes(p.asset_name);
-    await (supabase as any)
+    await supabase
       .from('proposed_assets')
       .update({ selected: isSelected })
       .eq('id', p.id);
   }
 
-  // Create generated_assets rows for selected ones
-  const selectedProposals = proposals.filter((p: any) => selectedNames.includes(p.asset_name));
-  const rows = selectedProposals.map((p: any) => ({
+  const selectedProposals = proposals.filter((p) => selectedNames.includes(p.asset_name));
+  const rows = selectedProposals.map((p) => ({
     application_id: applicationId,
     asset_name: p.asset_name,
     brief_description: p.brief_description,
     generation_status: 'pending',
   }));
 
-  // Clear any existing generated assets first
-  await (supabase as any).from('generated_assets').delete().eq('application_id', applicationId);
+  await supabase.from('generated_assets').delete().eq('application_id', applicationId);
 
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('generated_assets')
     .insert(rows)
     .select();
@@ -125,7 +120,7 @@ export async function confirmAssetSelection(applicationId: string, selectedNames
 
 // --- Get generated assets for an application ---
 export async function getGeneratedAssets(applicationId: string): Promise<GeneratedAsset[]> {
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('generated_assets')
     .select('*')
     .eq('application_id', applicationId)
@@ -136,7 +131,7 @@ export async function getGeneratedAssets(applicationId: string): Promise<Generat
 
 // --- Update a generated asset ---
 export async function updateGeneratedAsset(assetId: string, fields: Partial<GeneratedAsset>) {
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('generated_assets')
     .update({ ...fields, updated_at: new Date().toISOString() })
     .eq('id', assetId)
@@ -165,7 +160,7 @@ export async function streamDynamicAssetGeneration({
   resumeText?: string;
   companyName?: string;
   jobTitle?: string;
-  branding?: any;
+  branding?: Json;
   layoutStyle?: { name: string; cssGuidance: string; structureGuidance: string };
   onDelta: (text: string) => void;
   onDone: () => void;
@@ -200,7 +195,7 @@ export async function streamRefineDynamicAsset({
   jobDescription?: string;
   companyName?: string;
   jobTitle?: string;
-  branding?: any;
+  branding?: Json;
   layoutStyle?: { name: string; cssGuidance: string; structureGuidance: string };
   onDelta: (text: string) => void;
   onDone: () => void;
@@ -218,17 +213,17 @@ export async function streamRefineDynamicAsset({
 
 // --- Revision CRUD for dynamic assets ---
 export async function saveDynamicAssetRevision(assetId: string, applicationId: string, html: string, label?: string) {
-  const { data: latest } = await (supabase as any)
+  const { data: latest } = await supabase
     .from('generated_asset_revisions')
     .select('revision_number')
     .eq('asset_id', assetId)
     .order('revision_number', { ascending: false })
     .limit(1)
-    .single();
+    .maybeSingle();
 
-  const nextRevision = ((latest as any)?.revision_number ?? 0) + 1;
+  const nextRevision = (latest?.revision_number ?? 0) + 1;
 
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('generated_asset_revisions')
     .insert({
       asset_id: assetId,
@@ -244,7 +239,7 @@ export async function saveDynamicAssetRevision(assetId: string, applicationId: s
 }
 
 export async function getDynamicAssetRevisions(assetId: string) {
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('generated_asset_revisions')
     .select('*')
     .eq('asset_id', assetId)
@@ -260,14 +255,12 @@ export async function replaceGeneratedAsset(
   newAssetName: string,
   newBriefDescription: string,
 ): Promise<GeneratedAsset> {
-  // Delete old revisions for this asset
-  await (supabase as any)
+  await supabase
     .from('generated_asset_revisions')
     .delete()
     .eq('asset_id', assetId);
 
-  // Update the asset row with new type
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('generated_assets')
     .update({
       asset_name: newAssetName,

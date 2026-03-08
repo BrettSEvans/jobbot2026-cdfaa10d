@@ -434,6 +434,8 @@ export default function Landing() {
           <a href="/terms" className="hover:text-foreground transition-colors">Terms of Service</a>
           <span className="text-border">·</span>
           <a href="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</a>
+          <span className="text-border">·</span>
+          <a href="/cookies" className="hover:text-foreground transition-colors">Cookie Policy</a>
         </div>
         <p>{BRAND.copyright(new Date().getFullYear())}</p>
       </footer>

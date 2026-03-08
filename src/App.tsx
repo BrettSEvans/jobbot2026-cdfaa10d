@@ -16,6 +16,9 @@ import ResetPassword from "./pages/ResetPassword";
 import PendingApproval from "./pages/PendingApproval";
 import Pricing from "./pages/Pricing";
 import Landing from "./pages/Landing";
+import VerifyEmail from "./pages/VerifyEmail";
+import Terms from "./pages/Terms";
+import Privacy from "./pages/Privacy";
 import BackgroundJobsBanner from "./components/BackgroundJobsBanner";
 import AppHeader from "./components/AppHeader";
 import HelpButton from "./components/HelpButton";
@@ -30,6 +33,7 @@ import { Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { BRAND } from "@/lib/branding";
+import { initAnalytics, analytics } from "@/lib/analytics";
 import "@/lib/helpEntries"; // register all help topics
 import "@/lib/qaEntries"; // register all QA test cases
 import "@/lib/tutorial/steps"; // register tutorial steps

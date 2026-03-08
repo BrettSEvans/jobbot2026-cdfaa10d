@@ -64,7 +64,7 @@ export default function AdminGuideTab() {
         <ul>
           <li><strong>Server-side enforcement:</strong> <code>has_role()</code> PostgreSQL function (<code>SECURITY DEFINER</code>). Cannot be bypassed from client.</li>
           <li><strong>RLS policies:</strong> Non-admins cannot modify <code>resume_prompt_styles</code> or <code>user_roles</code>.</li>
-          <li><strong>Frontend gating:</strong> <code>useAdminRole</code> hook is UI-only — enforcement is always at the database layer.</li>
+          <li><strong>Frontend gating:</strong> <code>useUserRoles</code> hook is UI-only — enforcement is always at the database layer.</li>
         </ul>
 
         <h3>5. Troubleshooting</h3>

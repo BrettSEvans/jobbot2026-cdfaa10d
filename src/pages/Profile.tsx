@@ -14,7 +14,7 @@ import { getProfile, updateProfile, uploadResumePdf, listUserResumes, setActiveR
 import { updateTestUser } from "@/lib/api/testUsers";
 import StylePreferencesCard from "@/components/StylePreferencesCard";
 import TestUserManager from "@/components/TestUserManager";
-import { useAdminRole } from "@/hooks/useAdminRole";
+import { useUserRoles } from "@/hooks/useUserRoles";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import {
   AlertDialog,
@@ -113,7 +113,7 @@ export default function Profile() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const fileRef = useRef<HTMLInputElement>(null);
-  const { isAdmin } = useAdminRole();
+  const { isAdmin } = useUserRoles();
   const { activePersona, isImpersonating, refreshRoot, updateActivePersona } = useImpersonation();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);

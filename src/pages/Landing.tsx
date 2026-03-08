@@ -226,7 +226,7 @@ function ExampleAssets() {
           See What {BRAND.name} Creates
         </h2>
         <p className="mx-auto mt-3 max-w-xl text-center text-muted-foreground">
-          Each asset is generated in real-time and styled to the company's brand.
+          Each document is generated in real-time and styled to the company's brand.
         </p>
         <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-5">
           {EXAMPLES.map((ex) => (

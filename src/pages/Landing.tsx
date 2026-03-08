@@ -180,7 +180,7 @@ const STEPS = [
     icon: Download,
     num: "3",
     title: "Download & Apply",
-    desc: "Review, refine with AI chat, then export as PDF. You're ready to apply with confidence.",
+    desc: "Review, vibe edit with AI chat, then export as PDF. You're ready to apply with confidence.",
   },
 ];
 

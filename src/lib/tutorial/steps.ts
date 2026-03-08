@@ -152,7 +152,7 @@ registerTutorialStep({
   id: "tour-refine-ai",
   helpSlug: "ai-chat",
   targetSelector: '[data-tutorial="refine-ai-btn"]',
-  title: "Refine with AI — Vibe Your Assets",
+  title: "Vibe Edit — Shape Your Assets",
   body: "This is your creative superpower. Click here and describe what you want changed in plain English — \"make it punchier\", \"add more metrics\", \"emphasize leadership\". The AI reshapes your asset while keeping everything else intact. Vibe it until it's perfect.",
   placement: "bottom",
   route: "/applications/:id",

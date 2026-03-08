@@ -450,7 +450,7 @@ const Applications = () => {
                   <p className="text-sm text-muted-foreground">Scrapes branding, competitors, market data</p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-sm font-medium">3. Refine with AI chat</p>
+                  <p className="text-sm font-medium">3. Vibe Edit with AI chat</p>
                   <p className="text-sm text-muted-foreground">Iterate on any asset with conversational AI</p>
                 </div>
               </div>

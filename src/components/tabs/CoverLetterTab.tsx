@@ -1,11 +1,13 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Copy, Edit3, Check, X, Loader2, RefreshCw, Download } from "lucide-react";
 import CoverLetterRevisions from "@/components/CoverLetterRevisions";
 import WysiwygEditor from "@/components/WysiwygEditor";
+import VibeEditInfo from "@/components/VibeEditInfo";
 import { streamTailoredLetter } from "@/lib/api/coverLetter";
 import { saveCoverLetterRevision } from "@/lib/api/coverLetterRevisions";
 import { downloadCoverLetterPdf, buildCoverLetterHtml, coverLetterBodyToHtml } from "@/lib/coverLetterPdf";
@@ -34,7 +36,11 @@ export default function CoverLetterTab({ appId, state }: CoverLetterTabProps) {
   const [footerText, setFooterText] = useState("");
   const [dateText, setDateText] = useState("");
 
-  // Build applicant name from activePersona
+  // Vibe Edit chat state
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatInput, setChatInput] = useState("");
+  const [isRefining, setIsRefining] = useState(false);
+
   const applicantName = activePersona
     ? [activePersona.first_name, activePersona.last_name].filter(Boolean).join(" ") || activePersona.display_name || undefined
     : undefined;
@@ -74,6 +80,41 @@ export default function CoverLetterTab({ appId, state }: CoverLetterTabProps) {
     }
   };
 
+  const handleVibeEdit = async () => {
+    if (!chatInput.trim() || !coverLetter.trim()) return;
+    const msg = chatInput.trim();
+    setChatInput("");
+
+    // Save current version as revision before refining
+    try {
+      await saveCoverLetterRevision(appId, coverLetter, `Before: ${msg.slice(0, 50)}`);
+      setRevisionTrigger((t) => t + 1);
+    } catch (e) { console.warn("Failed to save cover letter revision:", e); }
+
+    setIsRefining(true);
+    try {
+      let accumulated = "";
+      let profileContext = "";
+      try { profileContext = await getProfileContextForPrompt(); } catch { /* non-critical */ }
+      await streamTailoredLetter({
+        jobDescription,
+        customInstructions: msg,
+        profileContext,
+        onDelta: (text) => { accumulated += text; setCoverLetter(accumulated); },
+        onDone: () => {},
+      });
+      await saveField({ cover_letter: accumulated });
+      try {
+        await saveCoverLetterRevision(appId, accumulated, `Refined: ${msg.slice(0, 50)}`);
+        setRevisionTrigger((t) => t + 1);
+      } catch (e) { console.warn("Failed to save cover letter revision:", e); }
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setIsRefining(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-2">
@@ -98,7 +139,15 @@ export default function CoverLetterTab({ appId, state }: CoverLetterTabProps) {
             </Button>
           </>
         )}
-        <Button data-tutorial="refine-ai-btn" variant="outline" size="sm" onClick={() => {
+        {coverLetter && (
+          <>
+            <Button data-tutorial="refine-ai-btn" variant="outline" size="sm" onClick={() => setChatOpen(!chatOpen)}>
+              <Edit3 className="mr-2 h-4 w-4" /> {chatOpen ? "Hide Chat" : "Vibe Edit"}
+            </Button>
+            <VibeEditInfo assetType="cover_letter" />
+          </>
+        )}
+        <Button variant="outline" size="sm" onClick={() => {
           if (!editingCoverLetter) {
             setEditHtml(coverLetterBodyToHtml(coverLetter));
             setHeaderText(applicantName || "");
@@ -114,6 +163,26 @@ export default function CoverLetterTab({ appId, state }: CoverLetterTabProps) {
           Regenerate
         </Button>
       </div>
+
+      {chatOpen && (
+        <Card>
+          <CardContent className="pt-4 space-y-3">
+            {isRefining && (
+              <div className="text-sm p-2 rounded bg-muted flex items-center gap-2">
+                <Loader2 className="h-3 w-3 animate-spin" /> Refining cover letter...
+              </div>
+            )}
+            <div className="flex gap-2">
+              <Textarea
+                placeholder={"e.g. \"Make the opening more confident and mention the company's recent product launch.\""}
+                value={chatInput} onChange={(e) => setChatInput(e.target.value)} rows={2}
+                onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleVibeEdit(); } }}
+              />
+              <Button onClick={handleVibeEdit} disabled={!chatInput.trim() || isRefining} className="self-end">Send</Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {coverLetter && (
         <CoverLetterRevisions

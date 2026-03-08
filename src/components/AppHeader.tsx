@@ -1,12 +1,13 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { LogOut, Moon, Sun, ArrowRightLeft, Menu } from "lucide-react";
+import { LogOut, Moon, Sun, ArrowRightLeft, Menu, Shield } from "lucide-react";
 import BrandLogo from "@/components/BrandLogo";
 import { useTheme } from "@/hooks/useTheme";
 import { useNavigationGuard } from "@/hooks/useNavigationGuard";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { useSubscription } from "@/hooks/useSubscription";
+import { useUserRoles } from "@/hooks/useUserRoles";
 import { Badge } from "@/components/ui/badge";
 import {
   Sheet,
@@ -28,6 +29,7 @@ export default function AppHeader({ onSignOut }: AppHeaderProps) {
   const { guardedNavigate } = useNavigationGuard();
   const { activePersona, isImpersonating, switchToSelf } = useImpersonation();
   const { tier, isLoading: subLoading } = useSubscription();
+  const { hasAnyRole, loading: rolesLoading } = useUserRoles();
 
   const displayName = activePersona
     ? [activePersona.first_name, activePersona.last_name].filter(Boolean).join(" ") ||
@@ -40,6 +42,7 @@ export default function AppHeader({ onSignOut }: AppHeaderProps) {
     { to: "/templates", label: "Templates", match: (p: string) => p === "/templates" },
     { to: "/pricing", label: "Membership", match: (p: string) => p === "/pricing" },
     { to: "/profile", label: "Profile", match: (p: string) => p === "/profile" },
+    ...(!rolesLoading && hasAnyRole ? [{ to: "/admin", label: "Admin", match: (p: string) => p === "/admin" }] : []),
   ];
 
   return (

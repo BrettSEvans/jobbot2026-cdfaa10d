@@ -330,7 +330,7 @@ registerHelp({
   slug: 'save-as-template',
   title: 'Save as Template',
   summary:
-    'Save your current dashboard or asset as a reusable template. Templates preserve structure and styling for future applications.',
+    'Save your current dashboard or document as a reusable template. Templates preserve structure and styling for future applications.',
   keywords: ['save', 'template', 'reuse'],
   relatedSlugs: ['templates', 'template-selector'],
 });
@@ -339,7 +339,7 @@ registerHelp({
   slug: 'template-selector',
   title: 'Template Selector',
   summary:
-    'Choose from saved templates when generating assets. Templates provide a structural starting point that the AI fills with job-specific content.',
+    'Choose from saved templates when generating documents. Templates provide a structural starting point that the AI fills with job-specific content.',
   keywords: ['select', 'template', 'choose'],
   relatedSlugs: ['templates', 'save-as-template'],
 });

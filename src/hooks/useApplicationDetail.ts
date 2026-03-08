@@ -99,7 +99,7 @@ export function useApplicationDetail(id: string | undefined): ApplicationState {
           parsedDashData = parsed;
           html = assembleDashboardHtml(parsed);
           try {
-            await saveJobApplication({ id: appId, job_url: data.job_url, dashboard_html: html, dashboard_data: parsed });
+            await saveJobApplication({ id: appId, job_url: data.job_url, dashboard_html: html, dashboard_data: parsed as unknown as import('@/integrations/supabase/types').Json });
           } catch (e) { console.warn("Non-critical: failed to save migrated dashboard:", e); }
         }
       }

@@ -156,13 +156,12 @@ export default function Pricing() {
             ? `Switch to ${config.label}`
             : config.cta;
 
+          // Upgrade buttons always use primary amber color for better conversion
           const buttonVariant = isCurrent
             ? "outline"
             : isDowngrade
             ? "ghost"
-            : config.highlighted
-            ? "default"
-            : "outline";
+            : "default";
 
           return (
             <Card

@@ -169,7 +169,7 @@ export default function Profile() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-2xl mx-auto p-4 md:p-8 space-y-4 md:space-y-6">
+      <div className="max-w-4xl mx-auto p-4 md:p-8 space-y-4 md:space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <div className="min-w-0">
             <h1 className="text-xl sm:text-2xl font-bold tracking-tight font-heading truncate">
@@ -188,36 +188,43 @@ export default function Profile() {
           )}
         </div>
 
-        <IdentityCard
-          firstName={firstName} setFirstName={setFirstName}
-          middleName={middleName} setMiddleName={setMiddleName}
-          lastName={lastName} setLastName={setLastName}
-          displayName={displayName} setDisplayName={setDisplayName}
-          yearsExperience={yearsExperience} setYearsExperience={setYearsExperience}
-          isDirty={dirty.identity} saving={saving} savingCard={savingCard}
-          onSave={handleCardSave} cardBorderClass={cardBorderClass(dirty.identity)}
-        />
+        {/* Two-column layout on desktop */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+          <div className="space-y-4 md:space-y-6">
+            <IdentityCard
+              firstName={firstName} setFirstName={setFirstName}
+              middleName={middleName} setMiddleName={setMiddleName}
+              lastName={lastName} setLastName={setLastName}
+              displayName={displayName} setDisplayName={setDisplayName}
+              yearsExperience={yearsExperience} setYearsExperience={setYearsExperience}
+              isDirty={dirty.identity} saving={saving} savingCard={savingCard}
+              onSave={handleCardSave} cardBorderClass={cardBorderClass(dirty.identity)}
+            />
 
-        <ResumeCard
-          resumeText={resumeText} setResumeText={setResumeText}
-          resumes={resumes} setResumes={setResumes} resumesLoaded={resumesLoaded}
-          isImpersonating={isImpersonating}
-          isDirty={dirty.resume} saving={saving} savingCard={savingCard}
-          onSave={handleCardSave} cardBorderClass={cardBorderClass(dirty.resume)}
-        />
+            <SkillsCard
+              skills={skills} setSkills={setSkills} newSkill={newSkill} setNewSkill={setNewSkill}
+              industries={industries} setIndustries={setIndustries} newIndustry={newIndustry} setNewIndustry={setNewIndustry}
+              isDirty={dirty.skills} saving={saving} savingCard={savingCard}
+              onSave={handleCardSave} cardBorderClass={cardBorderClass(dirty.skills)}
+            />
 
-        <SkillsCard
-          skills={skills} setSkills={setSkills} newSkill={newSkill} setNewSkill={setNewSkill}
-          industries={industries} setIndustries={setIndustries} newIndustry={newIndustry} setNewIndustry={setNewIndustry}
-          isDirty={dirty.skills} saving={saving} savingCard={savingCard}
-          onSave={handleCardSave} cardBorderClass={cardBorderClass(dirty.skills)}
-        />
+            <ToneCard
+              preferredTone={preferredTone} setPreferredTone={setPreferredTone}
+              isDirty={dirty.tone} saving={saving} savingCard={savingCard}
+              onSave={handleCardSave} cardBorderClass={cardBorderClass(dirty.tone)}
+            />
+          </div>
 
-        <ToneCard
-          preferredTone={preferredTone} setPreferredTone={setPreferredTone}
-          isDirty={dirty.tone} saving={saving} savingCard={savingCard}
-          onSave={handleCardSave} cardBorderClass={cardBorderClass(dirty.tone)}
-        />
+          <div className="space-y-4 md:space-y-6">
+            <ResumeCard
+              resumeText={resumeText} setResumeText={setResumeText}
+              resumes={resumes} setResumes={setResumes} resumesLoaded={resumesLoaded}
+              isImpersonating={isImpersonating}
+              isDirty={dirty.resume} saving={saving} savingCard={savingCard}
+              onSave={handleCardSave} cardBorderClass={cardBorderClass(dirty.resume)}
+            />
+          </div>
+        </div>
 
         {!isImpersonating && <StylePreferencesCard />}
 

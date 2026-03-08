@@ -61,6 +61,14 @@ export default function CookieConsentBanner() {
     }
   }, []);
 
+  // Auto-dismiss after 500ms animation completes
+  const [dismissing, setDismissing] = useState(false);
+  
+  const dismissBanner = () => {
+    setDismissing(true);
+    setTimeout(() => setVisible(false), 300);
+  };
+
   if (!visible) return null;
 
   const handleAcceptAll = () => {
@@ -71,7 +79,7 @@ export default function CookieConsentBanner() {
       timestamp: new Date().toISOString(),
     };
     storeConsent(consent);
-    setVisible(false);
+    dismissBanner();
   };
 
   const handleRejectAll = () => {
@@ -82,7 +90,7 @@ export default function CookieConsentBanner() {
       timestamp: new Date().toISOString(),
     };
     storeConsent(consent);
-    setVisible(false);
+    dismissBanner();
   };
 
   const handleSavePreferences = () => {
@@ -93,12 +101,12 @@ export default function CookieConsentBanner() {
       timestamp: new Date().toISOString(),
     };
     storeConsent(consent);
-    setVisible(false);
+    dismissBanner();
   };
 
   return (
-    <div className="fixed bottom-0 inset-x-0 z-[9998] p-4 sm:p-6 pointer-events-none">
-      <div className="pointer-events-auto mx-auto max-w-lg rounded-xl border border-border bg-card shadow-2xl animate-in slide-in-from-bottom-4 fade-in duration-500">
+    <div className={`fixed bottom-0 inset-x-0 z-[9998] p-4 sm:p-6 pointer-events-none transition-opacity duration-300 ${dismissing ? 'opacity-0' : 'opacity-100'}`}>
+      <div className={`pointer-events-auto mx-auto max-w-lg rounded-xl border border-border bg-card shadow-2xl transition-transform duration-300 ${dismissing ? 'translate-y-4' : 'animate-in slide-in-from-bottom-4 fade-in duration-500'}`}>
         <div className="p-5 space-y-4">
           {/* Header */}
           <div className="flex items-start gap-3">

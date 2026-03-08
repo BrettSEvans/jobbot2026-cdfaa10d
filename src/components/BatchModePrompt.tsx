@@ -16,7 +16,8 @@ export default function BatchModePrompt({ applicationCount }: BatchModePromptPro
     return localStorage.getItem(DISMISSED_KEY) === "true";
   });
 
-  if (dismissed || applicationCount < 2) return null;
+  // Only show after 3+ applications to reduce above-the-fold clutter
+  if (dismissed || applicationCount < 3) return null;
 
   const handleDismiss = () => {
     localStorage.setItem(DISMISSED_KEY, "true");

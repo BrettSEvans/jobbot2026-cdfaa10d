@@ -2,7 +2,7 @@
  * Banner shown when asset generation fails.
  * Displays the error message and offers a retry button.
  */
-import { AlertTriangle, RefreshCw, Loader2 } from "lucide-react";
+import { AlertTriangle, RefreshCw, Loader2, LifeBuoy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface GenerationErrorBannerProps {
@@ -22,6 +22,16 @@ export default function GenerationErrorBanner({
 }: GenerationErrorBannerProps) {
   if (status !== "error" && status !== "failed") return null;
 
+  // Detect AI-specific errors for better messaging
+  const isRateLimit = error?.includes("429") || error?.toLowerCase().includes("rate limit");
+  const isCredits = error?.includes("402") || error?.toLowerCase().includes("credits");
+
+  const friendlyMessage = isCredits
+    ? "AI credits have been exhausted. Please try again later or contact support."
+    : isRateLimit
+    ? "Too many requests — the AI service is temporarily throttled. Wait a moment and retry."
+    : error || "An unexpected error occurred during generation. Please try again.";
+
   return (
     <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-4 space-y-3">
       <div className="flex items-start gap-3">
@@ -33,11 +43,11 @@ export default function GenerationErrorBanner({
             {assetLabel} generation failed
           </p>
           <p className="text-xs text-muted-foreground">
-            {error || "An unexpected error occurred during generation. Please try again."}
+            {friendlyMessage}
           </p>
         </div>
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <Button
           size="sm"
           variant="outline"
@@ -53,7 +63,15 @@ export default function GenerationErrorBanner({
           Retry Generation
         </Button>
         <span className="text-[11px] text-muted-foreground">
-          If this persists, try refreshing the page.
+          If this persists, try refreshing the page or{" "}
+          <button
+            type="button"
+            onClick={() => window.open("mailto:support@resuvibe.com?subject=Generation%20Error&body=" + encodeURIComponent(`Asset: ${assetLabel}\nError: ${error || "Unknown"}`), "_blank")}
+            className="inline-flex items-center gap-0.5 text-primary hover:underline underline-offset-2 font-medium"
+          >
+            <LifeBuoy className="h-3 w-3" />
+            contact support
+          </button>.
         </span>
       </div>
     </div>

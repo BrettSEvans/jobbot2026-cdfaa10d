@@ -1,16 +1,17 @@
 /**
  * Resume Health Dashboard — multi-section ATS analysis card.
- * Collapsed by default showing score bar + delta; expandable to full dashboard.
+ * Collapsed by default showing compact score pill + delta; expandable to full dashboard.
  */
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { Check, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 import {
-  RefreshCw, Loader2, ChevronDown, Target, Zap,
+  RefreshCw, Loader2, ChevronDown, Zap,
   CheckCircle2, AlertTriangle, XCircle,
-  TrendingUp, TrendingDown, BarChart3, FileSearch, Repeat2, Shield,
+  TrendingUp, TrendingDown, FileSearch, Repeat2, Shield, BarChart3,
 } from "lucide-react";
 import type { AtsScoreResult } from "@/lib/api/atsScore";
 
@@ -30,12 +31,6 @@ function getScoreColor(score: number): string {
   return "text-red-600 dark:text-red-400";
 }
 
-function getScoreStroke(score: number): string {
-  if (score >= 80) return "stroke-green-500";
-  if (score >= 50) return "stroke-yellow-500";
-  return "stroke-red-500";
-}
-
 function getScoreBg(score: number): string {
   if (score >= 80) return "bg-green-500";
   if (score >= 50) return "bg-yellow-500";
@@ -43,25 +38,22 @@ function getScoreBg(score: number): string {
 }
 
 function getScoreLabel(score: number): string {
-  if (score >= 80) return "Strong Match";
-  if (score >= 60) return "Good Match";
-  if (score >= 30) return "Partial Match";
-  return "Low Match";
+  if (score >= 80) return "Strong";
+  if (score >= 60) return "Good";
+  if (score >= 30) return "Partial";
+  return "Low";
 }
 
 /* ── Delta Badge ── */
 function DeltaBadge({ score, baseline }: { score: number; baseline?: number }) {
   if (baseline == null) return null;
   const delta = score - baseline;
-  if (delta === 0) return <Badge variant="outline" className="text-xs">— vs base</Badge>;
+  if (delta === 0) return <span className="text-[11px] text-muted-foreground">— vs base</span>;
   return (
-    <Badge
-      variant="outline"
-      className={`text-xs gap-0.5 ${delta > 0 ? "text-green-600 border-green-300 dark:text-green-400 dark:border-green-700" : "text-red-600 border-red-300 dark:text-red-400 dark:border-red-700"}`}
-    >
+    <span className={`inline-flex items-center gap-0.5 text-[11px] font-medium ${delta > 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
       {delta > 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-      {delta > 0 ? "+" : ""}{delta} vs base
-    </Badge>
+      {delta > 0 ? "+" : ""}{delta}
+    </span>
   );
 }
 
@@ -69,7 +61,7 @@ function DeltaBadge({ score, baseline }: { score: number; baseline?: number }) {
 function MiniBar({ value, max = 100 }: { value: number; max?: number }) {
   const pct = Math.min(100, (value / max) * 100);
   return (
-    <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+    <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
       <div
         className={`h-full rounded-full transition-all duration-500 ${getScoreBg(value)}`}
         style={{ width: `${pct}%` }}
@@ -85,11 +77,11 @@ function AtsMatchSection({ score }: { score: AtsScoreResult }) {
       {score.matchedKeywords.length > 0 && (
         <div>
           <p className="text-xs font-medium text-muted-foreground mb-1.5 flex items-center gap-1">
-            <CheckCircle2 className="h-3 w-3 text-green-500" /> Matched Keywords
+            <CheckCircle2 className="h-3 w-3 text-green-500" /> Matched
           </p>
           <div className="flex flex-wrap gap-1">
             {score.matchedKeywords.map((kw) => (
-              <Badge key={kw} variant="default" className="text-xs">{kw}</Badge>
+              <Badge key={kw} variant="default" className="text-[11px] px-1.5 py-0">{kw}</Badge>
             ))}
           </div>
         </div>
@@ -97,18 +89,18 @@ function AtsMatchSection({ score }: { score: AtsScoreResult }) {
       {score.missingKeywords.length > 0 && (
         <div>
           <p className="text-xs font-medium text-muted-foreground mb-1.5 flex items-center gap-1">
-            <XCircle className="h-3 w-3 text-red-500" /> Missing Keywords
+            <XCircle className="h-3 w-3 text-red-500" /> Missing
           </p>
           <div className="flex flex-wrap gap-1">
             {score.missingKeywords.map((kw) => (
-              <Badge key={kw} variant="destructive" className="text-xs">{kw}</Badge>
+              <Badge key={kw} variant="destructive" className="text-[11px] px-1.5 py-0">{kw}</Badge>
             ))}
           </div>
         </div>
       )}
       {score.suggestions.length > 0 && (
         <div>
-          <p className="text-xs font-medium text-muted-foreground mb-1.5">Suggestions</p>
+          <p className="text-xs font-medium text-muted-foreground mb-1.5">Tips</p>
           <ul className="text-xs space-y-1 text-muted-foreground">
             {score.suggestions.map((s, i) => (
               <li key={i} className="flex gap-1.5">
@@ -139,6 +131,7 @@ function ImpactSection({ score, onApplyFix }: { score: AtsScoreResult; onApplyFi
       const success = await onApplyFix(originalText, suggestion);
       if (success) {
         setAppliedIndices((prev) => new Set(prev).add(index));
+        toast.success("Resume updated with improved bullet point");
       }
     } finally {
       setApplyingIndex(null);
@@ -149,16 +142,16 @@ function ImpactSection({ score, onApplyFix }: { score: AtsScoreResult; onApplyFi
     <div className="space-y-3">
       <div className="grid grid-cols-3 gap-2 text-center">
         <div className="rounded-lg border p-2">
-          <p className="text-lg font-bold text-green-600 dark:text-green-400">{impactAnalysis.strongBullets}</p>
+          <p className="text-base font-bold text-green-600 dark:text-green-400">{impactAnalysis.strongBullets}</p>
           <p className="text-[10px] text-muted-foreground">Strong</p>
         </div>
         <div className="rounded-lg border p-2">
-          <p className="text-lg font-bold text-red-600 dark:text-red-400">{impactAnalysis.weakBullets}</p>
+          <p className="text-base font-bold text-red-600 dark:text-red-400">{impactAnalysis.weakBullets}</p>
           <p className="text-[10px] text-muted-foreground">Weak</p>
         </div>
         <div className="rounded-lg border p-2">
-          <p className="text-lg font-bold text-foreground">{pct}%</p>
-          <p className="text-[10px] text-muted-foreground">Impact Rate</p>
+          <p className="text-base font-bold text-foreground">{pct}%</p>
+          <p className="text-[10px] text-muted-foreground">Impact</p>
         </div>
       </div>
       {impactAnalysis.weakExamples?.length > 0 && (
@@ -170,7 +163,7 @@ function ImpactSection({ score, onApplyFix }: { score: AtsScoreResult; onApplyFi
             const isApplied = appliedIndices.has(i);
             const isApplying = applyingIndex === i;
             return (
-              <div key={i} className={`rounded-lg border p-2 space-y-1.5 ${isApplied ? "border-green-300 dark:border-green-800 bg-green-50/50 dark:bg-green-950/20" : "border-yellow-200 dark:border-yellow-900 bg-yellow-50/50 dark:bg-yellow-950/20"}`}>
+              <div key={i} className={`rounded-lg border p-2.5 space-y-1.5 ${isApplied ? "border-green-300 dark:border-green-800 bg-green-50/50 dark:bg-green-950/20" : "border-border"}`}>
                 <p className="text-xs text-muted-foreground line-through">{ex.text}</p>
                 <p className="text-xs text-foreground font-medium">→ {ex.suggestion}</p>
                 {onApplyFix && (
@@ -219,11 +212,11 @@ function RepetitionSection({ score }: { score: AtsScoreResult }) {
         <div key={w.word} className="rounded-lg border p-2">
           <div className="flex items-center justify-between mb-1">
             <span className="text-sm font-medium text-foreground">"{w.word}"</span>
-            <Badge variant="outline" className="text-xs text-yellow-600 dark:text-yellow-400">×{w.count}</Badge>
+            <Badge variant="outline" className="text-[11px] text-yellow-600 dark:text-yellow-400">×{w.count}</Badge>
           </div>
           <div className="flex flex-wrap gap-1">
             {w.synonyms.map((syn) => (
-              <Badge key={syn} variant="secondary" className="text-xs">{syn}</Badge>
+              <Badge key={syn} variant="secondary" className="text-[11px]">{syn}</Badge>
             ))}
           </div>
         </div>
@@ -236,7 +229,6 @@ function RepetitionSection({ score }: { score: AtsScoreResult }) {
 function FormatSection({ score }: { score: AtsScoreResult }) {
   return (
     <div className="space-y-3">
-      {/* Parse Rate */}
       <div>
         <div className="flex items-center justify-between mb-1">
           <span className="text-xs font-medium text-muted-foreground">Section Parse Rate</span>
@@ -244,7 +236,6 @@ function FormatSection({ score }: { score: AtsScoreResult }) {
         </div>
         <MiniBar value={score.parseRate || 0} />
       </div>
-      {/* Parsed Sections */}
       {(score.parsedSections?.length > 0 || score.missingSections?.length > 0) && (
         <div className="grid grid-cols-2 gap-2">
           {score.parsedSections?.length > 0 && (
@@ -269,7 +260,6 @@ function FormatSection({ score }: { score: AtsScoreResult }) {
           )}
         </div>
       )}
-      {/* Professionalism Flags */}
       {score.professionalismFlags?.length > 0 && (
         <div>
           <p className="text-xs font-medium text-muted-foreground mb-1.5">Issues</p>
@@ -291,12 +281,12 @@ function FormatSection({ score }: { score: AtsScoreResult }) {
   );
 }
 
-/* ── Sidebar nav items ── */
-const SECTIONS: { id: DashboardSection; label: string; icon: typeof Target }[] = [
+/* ── Section nav items ── */
+const SECTIONS: { id: DashboardSection; label: string; icon: typeof FileSearch }[] = [
   { id: "ats", label: "ATS Match", icon: FileSearch },
   { id: "impact", label: "Impact", icon: BarChart3 },
   { id: "repetition", label: "Repetition", icon: Repeat2 },
-  { id: "format", label: "Formatting", icon: Shield },
+  { id: "format", label: "Format", icon: Shield },
 ];
 
 /* ══════════════════════════════════════════════════════════════
@@ -306,20 +296,17 @@ export default function AtsScoreCard({ score, loading, onRescan, onApplyFix, dis
   const [expanded, setExpanded] = useState(false);
   const [activeSection, setActiveSection] = useState<DashboardSection>("ats");
 
-  const circumference = 2 * Math.PI * 40;
-  const dashOffset = score ? circumference - (score.score / 100) * circumference : circumference;
-
-  /* ── No score yet: prominent scan CTA ── */
+  /* ── No score yet: compact scan CTA ── */
   if (!score && !loading) {
     return (
       <Card>
         <CardContent className="py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Target className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-semibold">Resume Health Score</span>
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold">Resume Health</p>
+              <p className="text-xs text-muted-foreground">Analyze your resume against the job description</p>
             </div>
-            <Button size="sm" onClick={onRescan} disabled={disabled} className="gap-1.5">
+            <Button size="sm" onClick={onRescan} disabled={disabled} className="gap-1.5 shrink-0">
               <Zap className="h-3.5 w-3.5" /> Scan
             </Button>
           </div>
@@ -328,71 +315,38 @@ export default function AtsScoreCard({ score, loading, onRescan, onApplyFix, dis
     );
   }
 
-  /* ── Loading or has score ── */
+  /* ── Collapsed header: compact score pill ── */
   return (
     <Card className="overflow-hidden">
-      {/* ── Header bar (always visible) ── */}
-      <CardContent className="pt-4 pb-3">
-        <div className="flex items-center gap-4">
-          {/* Circular gauge */}
-          <div className="relative h-16 w-16 shrink-0">
-            {loading ? (
-              <div className="flex items-center justify-center h-full w-full">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-              </div>
-            ) : score ? (
-              <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90">
-                <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" strokeWidth="8" className="text-muted/30" />
-                <circle
-                  cx="50" cy="50" r="40" fill="none" strokeWidth="8"
-                  strokeLinecap="round"
-                  className={getScoreStroke(score.score)}
-                  strokeDasharray={circumference}
-                  strokeDashoffset={dashOffset}
-                  style={{ transition: "stroke-dashoffset 0.6s ease" }}
-                />
-              </svg>
-            ) : null}
-            {score && !loading && (
-              <span className={`absolute inset-0 flex items-center justify-center text-lg font-bold ${getScoreColor(score.score)}`}>
-                {score.score}
-              </span>
-            )}
-          </div>
-
-          {/* Info */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <Target className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-semibold">Resume Health Score</span>
-              {score && (
-                <Badge variant="outline" className="text-xs">
-                  {getScoreLabel(score.score)}
-                </Badge>
-              )}
-              {score && <DeltaBadge score={score.score} baseline={score._baselineScore} />}
+      <CardContent className="py-2.5 px-3">
+        <div className="flex items-center gap-3">
+          {/* Score pill */}
+          {loading ? (
+            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground shrink-0" />
+          ) : score ? (
+            <div className={`flex items-center gap-1.5 shrink-0 ${getScoreColor(score.score)}`}>
+              <span className="text-lg font-bold leading-none">{score.score}</span>
+              <span className="text-[10px] font-medium uppercase tracking-wider">{getScoreLabel(score.score)}</span>
             </div>
-            {score && (
-              <div className="flex items-center gap-3 mt-1">
-                <p className="text-xs text-muted-foreground">
-                  {score.matchedKeywords.length} matched · {score.missingKeywords.length} missing
-                </p>
-                {score.parseRate != null && (
-                  <p className="text-xs text-muted-foreground">
-                    Parse: {score.parseRate}%
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
+          ) : null}
+
+          {/* Progress bar */}
+          {score && !loading && (
+            <div className="flex-1 min-w-0">
+              <MiniBar value={score.score} />
+            </div>
+          )}
+
+          {/* Delta */}
+          {score && !loading && <DeltaBadge score={score.score} baseline={score._baselineScore} />}
 
           {/* Actions */}
-          <div className="flex items-center gap-1">
-            <Button variant="ghost" size="sm" onClick={onRescan} disabled={loading || disabled}>
+          <div className="flex items-center gap-0.5 shrink-0 ml-auto">
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onRescan} disabled={loading || disabled}>
               {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
             </Button>
             {score && (
-              <Button variant="ghost" size="sm" onClick={() => setExpanded((prev) => !prev)}>
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setExpanded((prev) => !prev)}>
                 <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${expanded ? "rotate-180" : ""}`} />
               </Button>
             )}
@@ -403,14 +357,15 @@ export default function AtsScoreCard({ score, loading, onRescan, onApplyFix, dis
       {/* ── Expanded Dashboard ── */}
       {expanded && score && (
         <div className="border-t animate-in fade-in slide-in-from-top-1 duration-200">
-          <div className="flex min-h-[260px]">
-            {/* Sidebar */}
-            <div className="w-[130px] shrink-0 border-r bg-muted/30 p-1.5 space-y-0.5">
+          {/* Horizontal pill tabs (mobile-first), sidebar on sm+ */}
+          <div className="flex flex-col sm:flex-row min-h-[220px]">
+            {/* Nav — horizontal on mobile, vertical sidebar on sm+ */}
+            <div className="flex sm:flex-col sm:w-[120px] shrink-0 border-b sm:border-b-0 sm:border-r bg-muted/30 p-1 sm:p-1.5 gap-0.5 overflow-x-auto">
               {SECTIONS.map((sec) => (
                 <button
                   key={sec.id}
                   onClick={() => setActiveSection(sec.id)}
-                  className={`w-full flex items-center gap-1.5 px-2 py-2 rounded-md text-xs font-medium transition-colors ${
+                  className={`flex items-center gap-1.5 px-2.5 py-1.5 sm:py-2 rounded-md text-xs font-medium transition-colors whitespace-nowrap ${
                     activeSection === sec.id
                       ? "bg-primary/10 text-primary"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
@@ -423,7 +378,7 @@ export default function AtsScoreCard({ score, loading, onRescan, onApplyFix, dis
             </div>
 
             {/* Content */}
-            <div className="flex-1 p-3 overflow-y-auto max-h-[400px]">
+            <div className="flex-1 p-3 overflow-y-auto max-h-[360px]">
               {activeSection === "ats" && <AtsMatchSection score={score} />}
               {activeSection === "impact" && <ImpactSection score={score} onApplyFix={onApplyFix} />}
               {activeSection === "repetition" && <RepetitionSection score={score} />}

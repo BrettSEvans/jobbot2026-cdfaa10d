@@ -27,6 +27,7 @@ import { cleanHtml } from "@/lib/cleanHtml";
 import { downloadHtmlAsPdf, buildPdfFilename } from "@/lib/htmlToPdf";
 import { getActiveResumeText } from "@/lib/api/profile";
 import { getLayoutStyleForAsset } from "@/lib/assetLayoutStyles";
+import VibeEditInfo from "@/components/VibeEditInfo";
 import {
   Tooltip,
   TooltipContent,

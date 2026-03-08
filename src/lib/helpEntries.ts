@@ -33,6 +33,12 @@ registerHelp({
   title: 'Pending Approval',
   summary:
     'After registering, your account must be approved by an administrator. You will see a waiting screen until approval is granted.',
+  steps: [
+    'Sign up with your email or Google SSO.',
+    'You will be redirected to the Pending Approval screen automatically.',
+    'Wait for an administrator to approve your account.',
+    'Once approved, refresh the page or sign in again to access the app.',
+  ],
   tips: [
     'Contact your administrator if your approval is taking longer than expected.',
     'If your request is rejected you will see a different message on this screen.',
@@ -270,6 +276,7 @@ registerHelp({
     'Be specific about what to change for best results.',
     'You can refine multiple times — each revision is saved.',
   ],
+  route: '/applications/:id',
   keywords: ['refine', 'chat', 'improve', 'edit', 'change', 'ai'],
   relatedSlugs: ['dashboard-tab', 'cover-letter-tab', 'resume-tab'],
 });
@@ -279,6 +286,13 @@ registerHelp({
   title: 'Document Proposals',
   summary:
     'The AI analyzes the job posting and suggests 3 supplementary documents that would strengthen your application for that specific role and industry.',
+  steps: [
+    'Open an application from your Applications list.',
+    'Click "Propose Materials" in the Industry Materials section.',
+    'Review the 3 AI-suggested documents and their descriptions.',
+    'Confirm the proposals to begin generation.',
+  ],
+  route: '/applications/:id',
   keywords: ['propose', 'suggest', 'materials', 'documents'],
   relatedSlugs: ['dynamic-assets'],
 });
@@ -288,6 +302,13 @@ registerHelp({
   title: 'Change Document Type',
   summary:
     'Swap one of your industry documents for a different type. The AI will suggest alternatives and regenerate the new document automatically.',
+  steps: [
+    'Navigate to an application with generated Industry Materials.',
+    'Click the swap/change icon on the document you want to replace.',
+    'Select a new document type from the suggestions.',
+    'The replacement document will be generated automatically.',
+  ],
+  route: '/applications/:id',
   keywords: ['change', 'swap', 'replace', 'document'],
   relatedSlugs: ['dynamic-assets'],
 });
@@ -297,9 +318,17 @@ registerHelp({
   title: 'Batch Mode',
   summary:
     'Submit multiple job URLs at once. Each URL is processed as a separate application with all materials generated in the background.',
+  steps: [
+    'Go to "+ New Application" from the Applications page.',
+    'Toggle "Batch Mode" on.',
+    'Paste multiple job URLs, one per line.',
+    'Click "Create All" to submit them together.',
+    'Each URL becomes a separate application processed in the background.',
+  ],
   tips: [
     'Background jobs banner shows progress for all batch items.',
   ],
+  route: '/applications/new',
   keywords: ['batch', 'multiple', 'bulk', 'urls'],
   relatedSlugs: ['new-application', 'background-jobs'],
 });
@@ -309,6 +338,12 @@ registerHelp({
   title: 'Background Jobs',
   summary:
     'When materials are generating in the background, a banner appears at the top of the screen showing progress. You can continue using the app while generation runs.',
+  steps: [
+    'Submit one or more applications (single or batch mode).',
+    'A progress banner appears at the top of the screen.',
+    'Continue browsing or editing while generation runs.',
+    'The banner updates in real-time and disappears when all jobs finish.',
+  ],
   keywords: ['background', 'jobs', 'progress', 'banner', 'generating'],
   relatedSlugs: ['batch-mode'],
 });
@@ -318,10 +353,17 @@ registerHelp({
   title: 'Style Preferences',
   summary:
     'The system learns your writing style preferences over time from your refinement requests. These preferences are automatically applied to future generations.',
+  steps: [
+    'Use Vibe Edit to refine your documents — the system learns from each request.',
+    'Go to your Profile page to view the Style Preferences card.',
+    'Review learned preferences grouped by category (tone, formatting, etc.).',
+    'Delete any preferences you no longer want applied.',
+  ],
   tips: [
     'View and manage learned preferences from the style preferences card.',
     'Preferences include tone, formatting, vocabulary, and emphasis patterns.',
   ],
+  route: '/profile',
   keywords: ['style', 'preferences', 'tone', 'learned', 'writing'],
   relatedSlugs: ['profile', 'ai-chat'],
 });
@@ -331,6 +373,13 @@ registerHelp({
   title: 'Save as Template',
   summary:
     'Save your current dashboard or document as a reusable template. Templates preserve structure and styling for future applications.',
+  steps: [
+    'Open an application with a generated document you want to save.',
+    'Click "Save as Template" on the document tab.',
+    'Give the template a label, department, and job function.',
+    'The template is now available when creating future applications.',
+  ],
+  route: '/applications/:id',
   keywords: ['save', 'template', 'reuse'],
   relatedSlugs: ['templates', 'template-selector'],
 });
@@ -340,6 +389,13 @@ registerHelp({
   title: 'Template Selector',
   summary:
     'Choose from saved templates when generating documents. Templates provide a structural starting point that the AI fills with job-specific content.',
+  steps: [
+    'Navigate to "+ New Application".',
+    'Look for the template selector dropdown.',
+    'Browse templates by department or job function.',
+    'Select a template — the AI will use its structure for generation.',
+  ],
+  route: '/applications/new',
   keywords: ['select', 'template', 'choose'],
   relatedSlugs: ['templates', 'save-as-template'],
 });
@@ -379,6 +435,12 @@ registerHelp({
   title: 'Impersonation Mode',
   summary:
     'When impersonating a test user, a banner appears at the top of the screen. All generations use the test persona\'s profile data instead of yours.',
+  steps: [
+    'Go to Admin → Test Users and click "Impersonate" on a persona.',
+    'A banner confirms you are now acting as that persona.',
+    'Create applications and generate materials — they use the persona\'s profile.',
+    'Click "Switch Back" in the banner to return to your own account.',
+  ],
   tips: [
     'Click "Switch Back" in the banner to return to your own account.',
     'You cannot sign out while impersonating.',
@@ -392,6 +454,11 @@ registerHelp({
   title: 'Pricing & Subscriptions',
   summary:
     'View available subscription tiers — Free, Pro, and Premium — and their feature lists. Upgrade your plan to unlock additional generation limits and premium features.',
+  steps: [
+    'Navigate to the Pricing page from the header or an upgrade prompt.',
+    'Compare Free, Pro, and Premium tier features side-by-side.',
+    'Click "Upgrade" on your desired plan to start the subscription flow.',
+  ],
   route: '/pricing',
   keywords: ['pricing', 'subscription', 'tier', 'free', 'pro', 'premium', 'upgrade', 'plan'],
   relatedSlugs: ['upgrade-gate'],
@@ -459,10 +526,17 @@ registerHelp({
   title: 'WYSIWYG Editor',
   summary:
     'Edit cover letters and resumes inline with a rich-text editor. Supports bold, italic, lists, and other formatting without leaving the application detail page.',
+  steps: [
+    'Open an application and switch to the Cover Letter or Resume tab.',
+    'Click the "Edit" toggle to activate the WYSIWYG editor.',
+    'Use the toolbar to apply bold, italic, lists, and other formatting.',
+    'Click "Save" — a new revision is created automatically.',
+  ],
   tips: [
     'Changes made in the editor create a new revision automatically.',
     'Use the toolbar for formatting options.',
   ],
+  route: '/applications/:id',
   keywords: ['wysiwyg', 'editor', 'rich text', 'inline', 'edit', 'format'],
   relatedSlugs: ['cover-letter-tab', 'resume-tab'],
 });
@@ -472,6 +546,12 @@ registerHelp({
   title: 'Upgrade Gate',
   summary:
     'Certain features are locked behind paid subscription tiers. An upgrade prompt will appear when you try to access a gated feature on the free plan.',
+  steps: [
+    'Try to use a feature that requires a paid tier.',
+    'An upgrade prompt appears explaining the required plan.',
+    'Click "Upgrade" to go to the Pricing page.',
+    'Select a plan to unlock the feature.',
+  ],
   tips: [
     'Visit the Pricing page to compare tier features.',
     'Pro and Premium tiers unlock higher generation limits and additional asset types.',
@@ -500,10 +580,17 @@ registerHelp({
   title: 'PDF & DOCX Export',
   summary:
     'Download your generated cover letters, resumes, and dashboards as PDF or DOCX files for use in applications.',
+  steps: [
+    'Open an application and navigate to the document you want to export.',
+    'Click the download button (PDF or DOCX icon) on the document tab.',
+    'Choose PDF for a pixel-perfect copy or DOCX for an editable version.',
+    'The file downloads to your device immediately.',
+  ],
   tips: [
     'PDF export preserves the visual layout exactly as shown.',
     'DOCX export is editable in Microsoft Word or Google Docs.',
   ],
+  route: '/applications/:id',
   keywords: ['pdf', 'docx', 'export', 'download', 'word', 'file'],
   relatedSlugs: ['cover-letter-tab', 'resume-tab', 'dashboard-tab'],
 });
@@ -513,6 +600,11 @@ registerHelp({
   title: 'Dark / Light Mode',
   summary:
     'Toggle between dark and light themes using the sun/moon icon in the header. Your preference is saved automatically.',
+  steps: [
+    'Find the sun/moon icon in the top-right corner of the header.',
+    'Click it to switch between dark and light mode.',
+    'Your preference is saved and persists across sessions.',
+  ],
   keywords: ['dark', 'light', 'theme', 'mode', 'toggle'],
 });
 
@@ -521,6 +613,11 @@ registerHelp({
   title: 'Navigation',
   summary:
     'Use the top navigation bar to move between Applications, Templates, and Profile. Admin users also see a link to the Admin panel.',
+  steps: [
+    'Use the top navigation bar to switch between Applications, Templates, and Profile.',
+    'Admin users will see an additional "Admin" link in the navigation.',
+    'Click your avatar or the sign-out button to manage your session.',
+  ],
   keywords: ['nav', 'menu', 'header', 'navigate'],
   relatedSlugs: ['applications-list', 'templates', 'profile', 'admin-panel'],
 });
@@ -530,6 +627,11 @@ registerHelp({
   title: 'Interactive Tutorial',
   summary:
     'A guided walkthrough that shows you how to create applications, upload your resume, generate assets, and download them as PDFs.',
+  steps: [
+    'Click "Start Tutorial" from the help menu or onboarding prompt.',
+    'Follow the highlighted steps as the tutorial guides you through the app.',
+    'Complete each step to advance — you can skip or exit at any time.',
+  ],
   keywords: ['tutorial', 'walkthrough', 'tour', 'guide', 'onboarding', 'help'],
   relatedSlugs: ['applications-list', 'new-application', 'profile'],
 });

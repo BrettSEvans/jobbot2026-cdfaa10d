@@ -429,8 +429,13 @@ export default function Landing() {
       <Pricing />
       <Testimonials />
       <CtaFooter />
-      <footer className="border-t border-border/60 py-6 text-center text-xs text-muted-foreground">
-        {BRAND.copyright(new Date().getFullYear())}
+      <footer className="border-t border-border/60 py-6 text-center text-xs text-muted-foreground space-y-2">
+        <div className="flex items-center justify-center gap-4">
+          <a href="/terms" className="hover:text-foreground transition-colors">Terms of Service</a>
+          <span className="text-border">·</span>
+          <a href="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</a>
+        </div>
+        <p>{BRAND.copyright(new Date().getFullYear())}</p>
       </footer>
     </div>
   );

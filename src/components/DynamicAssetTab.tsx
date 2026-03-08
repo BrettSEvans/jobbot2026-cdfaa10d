@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Edit3, RefreshCw, Loader2, FileDown, Sparkles, Copy, History, Eye, HelpCircle, Lock, Crown,
+  Edit3, RefreshCw, Loader2, FileDown, Sparkles, Copy, History, Eye, HelpCircle, Lock,
 } from "lucide-react";
 import {
   streamDynamicAssetGeneration,
@@ -37,11 +37,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 
 interface DynamicAssetTabProps {
   asset: GeneratedAsset;

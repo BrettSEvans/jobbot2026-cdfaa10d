@@ -402,7 +402,7 @@ const ApplicationDetail = () => {
                       title={asset.generation_status}
                     />
                   </button>
-                  {!asset.downloaded_at && (
+                  {!asset.downloaded_at && tier !== "free" && (
                     <ChangeAssetDialog
                       asset={asset}
                       otherAssetNames={dynamicAssets.filter((a) => a.id !== asset.id).map((a) => a.asset_name)}

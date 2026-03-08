@@ -284,6 +284,7 @@ export default function DynamicAssetTab({
             )}
           </Tooltip>
         </TooltipProvider>
+        <VibeEditInfo assetType="dynamic" />
 
         <TooltipProvider>
           <Tooltip>

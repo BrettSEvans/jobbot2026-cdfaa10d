@@ -1,297 +1,124 @@
-# JobBot Maui Plan — Architect-Reviewed Rewrite
 
-Based on competitive landscape analysis, product critique, and a critical architect review that identified 17 gaps across data model design, error handling, performance, security, and testing strategy.
 
----
+## Critical UX Analysis & Role-Based Access Control Plan
 
-## Feature Priority Matrix
+### UX Problems Identified
 
-| # | Update | Priority | Effort | Status |
-|---|--------|----------|--------|--------|
-| 1 | Subscription Infrastructure | CRITICAL | 1–2 weeks | ✅ DONE |
-| 2 | Public Landing Page | CRITICAL | 3–5 days | ✅ DONE |
-| 3 | ATS Match Score | HIGH | 3–5 days | 🔲 TODO |
-| 4 | Pipeline Stages (Kanban) | HIGH | 5–7 days | 🔲 TODO |
-| 5 | DOCX Export | HIGH | 2–3 days | 🔲 TODO |
-| 6 | Mobile Responsive UI | MEDIUM | 5–7 days | 🔲 TODO |
-| 7 | Selective Asset Generation | MEDIUM | 3–4 days | 🔲 TODO |
-| 8 | Onboarding Flow | MEDIUM | 3–4 days | 🔲 TODO |
-| 9 | Code Cleanup | LOW | 3–4 days | 🔲 TODO |
-| 10 | Chrome Extension (Infra) | LOW | 2–3 days | 🔲 TODO |
+**1. Tab bar is broken at 9 tabs across**
+The `grid-cols-9` TabsList is the most critical failure. On anything narrower than ~1200px, the tab labels compress into unreadable slivers. Even on full desktop, 9 equally-spaced triggers with icons + text is visually overwhelming. This is the single biggest usability problem -- the primary navigation for the entire admin experience is unusable on most screens.
 
----
+**2. No information hierarchy**
+All 9 tabs are presented as equally important. But "Approvals" (daily operational task) and "Guide" (reference doc read once) are given identical visual weight. There's no grouping or categorization -- the user has to scan 9 items to find what they need.
 
-## Phased Schedule
+**3. Admin page is a monolith**
+The `Admin.tsx` file is 638 lines with inline Prompts tab content, Users tab content, and 4 dialog definitions all living in the page component. The Prompts and Users tabs should be extracted like the other tabs were.
 
-### Phase 1 — Launch-Blocking (COMPLETE)
-- ✅ Subscription Infrastructure: 3-tier model, feature gating, rate limiting
-- ✅ Public Landing Page: Hero, features, pricing, CTA
+**4. No link to Admin from main nav**
+Admins/QA users currently have to navigate to `/admin` manually or know the URL. There's no nav entry in AppHeader for users with elevated roles.
 
-### Phase 2 — Competitive Parity
-Items 3–5. Close visible feature gaps vs Teal, Rezi, Swooped.
+**5. "Users" tab only manages admin roles via raw UUID**
+Adding an admin requires pasting a UUID. There's no user search, no email lookup, no role selection UI. The tab title says "Users" but it only manages admin role assignments.
 
-### Phase 3 — Retention & Polish
-Items 6–8. Mobile support, faster generation, onboarding.
+**6. QA tab accessible only to admins**
+QA testers need admin access just to run tests -- granting them full admin powers (delete users, change subscriptions, modify prompts) is a security and operational risk.
 
-### Phase 4 — Maintenance & Future
-Items 9–10. Tech debt cleanup, Chrome extension infra.
+### Proposed Solution
 
----
+#### A. Add `qa` role to the enum and update RBAC
 
-## Feature 1: ATS Match Score
+**Database migration:**
+- Add `'qa'` to the `app_role` enum
+- Create a new `has_any_role()` security definer function for checking multiple roles
+- Update `qa_test_runs` and `qa_test_results` RLS policies to allow both `admin` and `qa` roles
 
-### Database
-```sql
-ALTER TABLE job_applications
-  ADD COLUMN ats_score jsonb DEFAULT NULL,
-  ADD COLUMN ats_scored_at timestamptz DEFAULT NULL;
-```
-Add `ats_score` and `ats_scored_at` to `ALLOWED_JOB_APP_FIELDS`.
+**Hook changes (`useAdminRole.ts` → `useUserRoles.ts`):**
+- Fetch ALL roles for the current user (not just admin)
+- Return `{ roles: string[], isAdmin: boolean, isQA: boolean, hasAnyRole: boolean, loading }`
+- `isAdmin` = has admin role
+- `isQA` = has qa role (may or may not also have admin)
+- `hasAnyRole` = has admin OR qa (gates access to `/admin` route)
 
-### Edge Function: `score-ats-match/index.ts`
-- Input: `{ jobDescription, resumeHtml }`
-- Model: `google/gemini-2.5-flash` with tool-calling for structured output
-- Output schema:
-  ```json
-  {
-    "score": 78,
-    "matchedKeywords": ["React", "TypeScript"],
-    "missingKeywords": ["Kubernetes", "Terraform"],
-    "suggestions": ["Add cloud infrastructure experience"],
-    "keywordGroups": { "React": ["React", "React.js", "ReactJS"] }
-  }
-  ```
-- Keyword grouping: prompt instructs model to cluster synonyms
-- Score calibration rubric: 0–30 poor, 31–60 partial, 61–80 strong, 81–100 near-perfect
+#### B. Restructure the Admin Panel navigation
 
-### Caching & Invalidation
-- Store in `ats_score` column with `ats_scored_at` timestamp
-- Re-score only when: (a) user clicks "Rescan", (b) `resume_html` changes (hash comparison), (c) score > 7 days old
-- Tier gating: Free = 2 scores/day, Pro = 20/day, Premium = unlimited
+Replace the 9-tab horizontal bar with a **sidebar navigation** pattern (on desktop) or a **dropdown/select** (on mobile):
 
-### UI: `AtsScoreCard.tsx`
-- Circular gauge (0–100), color-coded (red < 50, yellow 50–79, green 80+)
-- Expandable keyword panel with matched/missing lists
-- "Rescan" button with cooldown indicator
-- Placed in ApplicationDetail header
-
-### Auto-trigger
-After resume generation completes in `backgroundGenerator.ts`, queue ATS scoring as non-blocking follow-up step.
-
-### Acceptance Criteria
-- Score latency < 5s for 95th percentile
-- Score variance ≤ ±5 points on identical inputs across 10 runs
-- Free tier enforces 2/day limit with upgrade gate
-
----
-
-## Feature 2: Application Pipeline Stages (Kanban)
-
-### Database
-```sql
-ALTER TABLE job_applications
-  ADD COLUMN pipeline_stage text NOT NULL DEFAULT 'applied',
-  ADD COLUMN stage_changed_at timestamptz DEFAULT now();
-
-CREATE TABLE pipeline_stage_history (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  application_id uuid NOT NULL REFERENCES job_applications(id) ON DELETE CASCADE,
-  from_stage text,
-  to_stage text NOT NULL,
-  changed_at timestamptz NOT NULL DEFAULT now(),
-  user_id uuid NOT NULL
-);
-ALTER TABLE pipeline_stage_history ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users can CRUD own stage history"
-  ON pipeline_stage_history FOR ALL
-  USING (user_id = auth.uid());
-```
-Add `pipeline_stage` and `stage_changed_at` to `ALLOWED_JOB_APP_FIELDS`.
-
-### Stage Definitions (`src/lib/pipelineStages.ts`)
-```
-bookmarked → applied → interviewing → offer → accepted
-                                    ↘ rejected
-```
-- All transitions allowed but "illogical" moves show confirmation dialog
-- `updatePipelineStage()` writes to both `job_applications` and `pipeline_stage_history`
-
-### UI: `KanbanBoard.tsx`
-- Uses `@hello-pangea/dnd` (maintained fork, touch support built-in)
-- Cards: company icon, role, days-in-stage badge, ATS score mini-badge
-- View toggle in `Applications.tsx` header: List (default) | Kanban
-- Stage dropdown in `ApplicationDetail.tsx` header
-- Mobile: horizontal scroll with CSS snap
-
-### Accessibility
-- Keyboard navigation: arrow keys between columns, Enter to drop
-- ARIA labels on all drag handles
-- Screen reader announcements for stage changes
-
----
-
-## Feature 3: DOCX Export
-
-### Edge Function: `export-docx/index.ts`
-- Uses `docx` npm package via Deno npm: specifier
-- Input: `{ html, assetType, filename }`
-- Output: binary blob, `Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document`
-- Limits: max 500KB input HTML, 60s timeout, graceful error on oversized input
-
-### Client: `src/lib/docxExport.ts`
-- `downloadAsDocx(html, filename)` — calls edge function, triggers blob download
-- Naming: `{asset-type}-{company}-{role}.docx`
-
-### UI
-- DOCX button alongside PDF in `HtmlAssetTab.tsx` for resume and cover letter only
-- `FileDown` icon with "DOCX" label
-- Tier gating: Free = PDF only, Pro/Premium = PDF + DOCX (upgrade gate for Free)
-
----
-
-## Feature 4: Mobile Responsive UI
-
-### Breakpoint Strategy
-| Breakpoint | Layout |
-|---|---|
-| `< 640px` (sm) | Single column, card layouts, hamburger nav, full-width inputs |
-| `640–1024px` (md) | Two-column where appropriate, condensed table |
-| `> 1024px` (lg) | Current desktop layout unchanged |
-
-### Component Changes
-| Component | Mobile behavior |
-|---|---|
-| `AppHeader` | Hamburger → `Sheet` drawer with nav links, theme toggle, sign out |
-| `Applications` table | Card list with company icon, role, status badge |
-| `ApplicationDetail` tabs | Horizontal scrollable tab bar, full-width iframe at 50vh |
-| `NewApplication` form | Single column, sticky "Generate" CTA at bottom |
-| `KanbanBoard` | Horizontal scroll with snap, sticky column headers |
-| `WysiwygEditor` | Simplified toolbar, larger touch targets |
-| `Profile` | Fix card padding |
-
-### Touch Audit
-- Asset preview iframes: `touch-action: pan-x pan-y` for pinch-to-zoom
-- Kanban: handled by `@hello-pangea/dnd` touch support
-- Disable hover-only interactions; add explicit tap targets
-
-### Accessibility
-- All new interactive elements get `aria-label`, keyboard-focusable, visible focus rings
-
----
-
-## Feature 5: Selective Asset Generation
-
-### Database
-```sql
-ALTER TABLE job_applications
-  ADD COLUMN selected_assets jsonb DEFAULT NULL;
-```
-Add `selected_assets` to `ALLOWED_JOB_APP_FIELDS`.
-
-### UI: `AssetSelector.tsx`
-- Checkbox grid in `NewApplication.tsx` before generation starts
-- Default selections per tier: Free = resume + cover_letter (locked), Pro = all core, Premium = all + dynamic
-- "Essentials Only" / "All Assets" quick buttons
-- Locked assets show tier badge + tooltip → pricing page
-- Selection persisted to `selected_assets` column
-
-### Pipeline Changes (`backgroundGenerator.ts`)
-- `startFullGeneration()` accepts `selectedAssets?: string[]`
-- `runPipeline()` filters parallel generation array based on selection
-- `totalAssets` calculated dynamically from selected count
-- Cover letter always generated (foundational)
-- Backward compat: null/undefined `selectedAssets` → generate all
-
----
-
-## Feature 6: Onboarding Flow
-
-### Database
-```sql
-ALTER TABLE profiles
-  ADD COLUMN onboarding_completed_at timestamptz DEFAULT NULL;
+```text
+┌─────────────────────────────────────────────────┐
+│ ← Back    Admin Panel    Build: v2.4            │
+├──────────┬──────────────────────────────────────┤
+│          │                                      │
+│ OPERATIONS │  [Active Section Content]          │
+│ ○ Approvals│                                    │
+│ ○ Subs     │                                    │
+│            │                                    │
+│ AI CONFIG  │                                    │
+│ ○ Prompts  │                                    │
+│ ○ Gen Guide│                                    │
+│            │                                    │
+│ ACCESS     │                                    │
+│ ○ Users    │                                    │
+│ ○ Limits   │                                    │
+│            │                                    │
+│ MONITORING │                                    │
+│ ○ Audit    │                                    │
+│ ○ QA       │                                    │
+│            │                                    │
+│ REFERENCE  │                                    │
+│ ○ Guide    │                                    │
+└──────────┴──────────────────────────────────────┘
 ```
 
-### UI: `src/components/onboarding/OnboardingWizard.tsx`
-- Full-screen modal, 4 steps:
-  1. **Welcome** — brand intro, value prop
-  2. **Profile basics** — first name, last name, experience level
-  3. **Resume upload** — drag-and-drop, auto-extract skills via `extract-style-signals`
-  4. **First application** — paste job URL, CTA to start
+- Sidebar groups provide information hierarchy
+- Items gated by role: QA-only users see only the QA section; admin+QA users see everything
+- On mobile (<768px), sidebar collapses to a Select dropdown at the top
+- Max width bumps from `max-w-3xl` to `max-w-5xl` to accommodate sidebar
 
-### Behavior
-- Progress dots, skip button on every step, animated transitions
-- Each step saves incrementally to `profiles` table
-- Completion: set `onboarding_completed_at`, navigate to `/applications/new`
-- Show conditions: authenticated AND `onboarding_completed_at IS NULL` AND 0 applications
-- Re-access: Help menu → "Restart Onboarding"
+#### C. Role management UI upgrade (Users tab → Roles tab)
 
----
+- Rename "Users" to "Roles & Access"
+- Show each user with their assigned roles as toggleable badges (admin, qa)
+- Admins can toggle roles on/off per user
+- Show user email alongside UUID (from profiles table join, since admins can read all profiles)
+- Add email search to find users instead of requiring raw UUIDs
+- QA-only users cannot see this tab
 
-## Feature 7: Code Cleanup
+#### D. AppHeader admin link
 
-### Phase 7a — Baseline tests BEFORE extraction
-Render `Profile.tsx`, `NewApplication.tsx`, `Applications.tsx` with mocked data → capture DOM snapshots as regression safety net.
+- If user has any role (admin or qa), show a shield icon link to `/admin` in the main nav
+- Keeps the nav clean for regular users
 
-### Phase 7b — Extract components
+### File Changes
 
-| Source | Extracted components |
-|---|---|
-| `Profile.tsx` (746 lines) | `IdentityCard`, `ResumeCard`, `SkillsCard`, `ToneCard`, `useProfileForm` hook |
-| `NewApplication.tsx` (787 lines) | `JobInputStep`, `AnalyzingStep`, `PreviewStep`, `useNewApplication` hook |
-| `Applications.tsx` (724 lines) | `ApplicationsTable`, `TrashTab`, `DashboardPreviewOverlay` |
+| File | Change |
+|------|--------|
+| `supabase/migrations/` | Add `qa` to `app_role` enum; create `has_any_role()` function; update QA table RLS to include qa role |
+| `src/hooks/useAdminRole.ts` → `src/hooks/useUserRoles.ts` | Fetch all roles, expose `isAdmin`, `isQA`, `hasAnyRole` |
+| `src/pages/Admin.tsx` | Replace tabs with sidebar layout; gate sections by role; extract Prompts/Users inline content to components; widen max-width |
+| `src/components/admin/AdminRolesTab.tsx` | New component: role management with email search, multi-role toggles |
+| `src/components/admin/AdminSidebar.tsx` | New component: grouped sidebar nav with role-based visibility |
+| `src/components/AppHeader.tsx` | Add conditional Admin link for users with any role |
+| `src/lib/api/adminPrompts.ts` | Update `getAdminUsers` to fetch all roles (not just admin); add role toggle functions |
+| `docs/PROMPT_LOG.md` | Log this prompt |
 
-### Phase 7c — Remove `as any` casts
-- Audit all files, replace with proper types from `types.ts`
-- For tables not in generated types, add manual type interfaces
+### Role Access Matrix
 
----
-
-## Feature 8: Chrome Extension (Infrastructure Only)
-
-### Edge Function: `import-job-external/index.ts`
-- Input: `{ source, url, jobTitle?, companyName?, jobDescription? }`
-- Requires valid JWT (verify_jwt = true)
-- Rate limited: 10 imports/hour per user
-- CORS restricted to app domain only
-- Creates `job_applications` row with `pipeline_stage = 'bookmarked'`
-
-### Import Page: `/import` route
-- Parses `?url=...&source=linkedin` query params
-- Confirmation card before creating application
-- Redirects to application detail on success
-
-### Documentation: `docs/CHROME_EXTENSION.md`
-
----
-
-## Cross-Cutting Requirements
-
-### Analytics Events
-Every feature ships with `trackEvent()`:
-`ats_score_generated`, `pipeline_stage_changed`, `docx_exported`, `asset_selection_changed`, `onboarding_step_completed`, `kanban_view_toggled`, `import_job_external`
-
-### Error Handling
-All edge functions return `{ error: string, code: string }`. Client-side toast for user-facing errors.
-
-### Accessibility
-WCAG 2.1 AA for all new components.
-
----
-
-## Test Suite: Maui Tests
-
-```
-src/test/maui/
-  fixtures/          — shared mock data
-  atsScore.test.ts
-  kanbanBoard.test.ts
-  docxExport.test.ts
-  mobileResponsive.test.ts
-  assetSelector.test.ts
-  onboardingWizard.test.ts
-  codeCleanup.test.ts
-  externalImport.test.ts
+```text
+Section          │ admin │ qa  │ admin+qa
+─────────────────┼───────┼─────┼─────────
+Approvals        │  ✓    │  ✗  │  ✓
+Prompts          │  ✓    │  ✗  │  ✓
+Gen Guide        │  ✓    │  ✗  │  ✓
+Roles & Access   │  ✓    │  ✗  │  ✓
+Subscriptions    │  ✓    │  ✗  │  ✓
+Rate Limits      │  ✓    │  ✗  │  ✓
+Audit Log        │  ✓    │  ✗  │  ✓
+Guide            │  ✓    │  ✗  │  ✓
+QA               │  ✗    │  ✓  │  ✓
 ```
 
-All tests use Vitest + React Testing Library. Run via `vitest --dir src/test/maui`.
+### Security Notes
+- QA role RLS uses the same `has_role()` pattern -- no client-side gating only
+- The `qa` value is added to the Postgres enum, so the `user_roles` table enforces valid values
+- QA users cannot see or modify any admin-only tables (prompt styles, audit log, etc.) -- RLS unchanged on those
+- Only admins can assign/remove roles (including QA)
+

@@ -132,7 +132,7 @@ export default function ChangeAssetDialog({
           </div>
         ) : (
           <div className="space-y-4">
-            <ScrollArea className="max-h-[50vh]">
+            <ScrollArea className="h-[min(50vh,360px)] overflow-y-auto">
               <div className="grid grid-cols-1 gap-2 pr-3">
                 {suggestions.map((s) => {
                   const isSelected = selected === s.asset_name;

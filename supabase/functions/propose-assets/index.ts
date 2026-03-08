@@ -26,8 +26,7 @@ serve(async (req) => {
   }
 
   try {
-    const rateLimitResponse = await checkRateLimit(req, 'asset-proposal', 'propose-assets');
-    if (rateLimitResponse) return rateLimitResponse;
+    await logUsage(req, 'asset-proposal', 'propose-assets');
 
     const { jobDescription, resumeText, companyName, jobTitle, industry } = await req.json();
 

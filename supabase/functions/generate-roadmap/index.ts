@@ -26,8 +26,7 @@ serve(async (req) => {
   }
 
   try {
-    const rateLimitResponse = await checkRateLimit(req, 'roadmap', 'generate-roadmap');
-    if (rateLimitResponse) return rateLimitResponse;
+    await logUsage(req, 'roadmap', 'generate-roadmap');
 
     const { jobDescription, companyName, jobTitle, competitors, customers, products, department, branding } = await req.json();
 

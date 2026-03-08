@@ -26,8 +26,7 @@ serve(async (req) => {
   }
 
   try {
-    const rateLimitResponse = await checkRateLimit(req, 'cover-letter', 'tailor-cover-letter');
-    if (rateLimitResponse) return rateLimitResponse;
+    await logUsage(req, 'cover-letter', 'tailor-cover-letter');
 
     const { jobDescription, customInstructions, profileContext, styleContext, generationGuide } = await req.json();
 

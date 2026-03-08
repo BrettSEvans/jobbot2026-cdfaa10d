@@ -26,8 +26,7 @@ serve(async (req) => {
   }
 
   try {
-    const rateLimitResponse = await checkRateLimit(req, 'raid-log', 'generate-raid-log');
-    if (rateLimitResponse) return rateLimitResponse;
+    await logUsage(req, 'raid-log', 'generate-raid-log');
 
     const { jobDescription, companyName, jobTitle, competitors, customers, products, department, branding } = await req.json();
 

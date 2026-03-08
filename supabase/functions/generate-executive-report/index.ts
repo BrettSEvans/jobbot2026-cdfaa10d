@@ -26,8 +26,7 @@ serve(async (req) => {
   }
 
   try {
-    const rateLimitResponse = await checkRateLimit(req, 'executive-report', 'generate-executive-report');
-    if (rateLimitResponse) return rateLimitResponse;
+    await logUsage(req, 'executive-report', 'generate-executive-report');
 
     const { jobDescription, companyName, jobTitle, competitors, customers, products, department, branding, profileContext } = await req.json();
 

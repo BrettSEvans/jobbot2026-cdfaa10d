@@ -26,8 +26,7 @@ serve(async (req) => {
   }
 
   try {
-    const rateLimitResponse = await checkRateLimit(req, 'dashboard', 'refine-dashboard');
-    if (rateLimitResponse) return rateLimitResponse;
+    await logUsage(req, 'dashboard', 'refine-dashboard');
 
     const { currentDashboardData, currentHtml, userMessage, chatHistory, styleContext } = await req.json();
 

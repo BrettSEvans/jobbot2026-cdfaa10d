@@ -26,8 +26,7 @@ serve(async (req) => {
   }
 
   try {
-    const rateLimitResponse = await checkRateLimit(req, 'architecture-diagram', 'generate-architecture-diagram');
-    if (rateLimitResponse) return rateLimitResponse;
+    await logUsage(req, 'architecture-diagram', 'generate-architecture-diagram');
 
     const { jobDescription, companyName, jobTitle, competitors, customers, products, department, branding } = await req.json();
 

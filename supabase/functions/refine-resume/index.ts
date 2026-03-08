@@ -24,8 +24,7 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
   try {
-    const rateLimitResponse = await checkRateLimit(req, 'resume', 'refine-resume');
-    if (rateLimitResponse) return rateLimitResponse;
+    await logUsage(req, 'resume', 'refine-resume');
 
     const { currentHtml, userMessage, jobDescription, companyName, jobTitle, branding, styleContext } = await req.json();
     if (!userMessage) {

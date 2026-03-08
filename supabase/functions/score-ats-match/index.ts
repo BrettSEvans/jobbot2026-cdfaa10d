@@ -27,8 +27,7 @@ serve(async (req) => {
   }
 
   try {
-    const rateLimitResponse = await checkRateLimit(req, 'ats-score', 'score-ats-match');
-    if (rateLimitResponse) return rateLimitResponse;
+    await logUsage(req, 'ats-score', 'score-ats-match');
 
     const { jobDescription, resumeHtml } = await req.json();
 

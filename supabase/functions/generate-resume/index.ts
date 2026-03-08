@@ -26,8 +26,7 @@ serve(async (req) => {
   }
 
   try {
-    const rateLimitResponse = await checkRateLimit(req, 'resume', 'generate-resume');
-    if (rateLimitResponse) return rateLimitResponse;
+    await logUsage(req, 'resume', 'generate-resume');
 
     const {
       jobDescription, resumeText, systemPrompt, companyName, jobTitle,

@@ -113,7 +113,7 @@ export default function TutorialDemo() {
               <RotateCcw className="h-4 w-4 mr-1.5" /> Regenerate
             </Button>
             <Button data-tutorial="refine-ai-btn" variant="outline" size="sm" disabled>
-              <Sparkles className="h-4 w-4 mr-1.5" /> Refine with AI
+              <Sparkles className="h-4 w-4 mr-1.5" /> Vibe Edit
             </Button>
             <Button data-tutorial="download-btn" variant="outline" size="sm" disabled>
               <Download className="h-4 w-4 mr-1.5" /> Download PDF

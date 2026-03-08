@@ -1,6 +1,6 @@
 /**
  * DynamicAssetTab - Renders a single dynamic (AI-proposed) asset with full feature parity:
- * Generate, Refine with AI, PDF Download, Copy Text, Revision History.
+ * Generate, Vibe Edit, PDF Download, Copy Text, Revision History.
  * After download, regeneration/refinement/swap are locked.
  */
 import { useState, useEffect } from "react";
@@ -273,8 +273,8 @@ export default function DynamicAssetTab({
                   onClick={() => setChatOpen(!chatOpen)}
                   disabled={!html || !canRefineProp || isDownloaded}
                 >
-                  <Edit3 className="mr-2 h-4 w-4" />
-                  {isDownloaded ? "Locked" : !canRefineProp ? "Upgrade to Refine" : chatOpen ? "Hide Chat" : "Refine with AI"}
+  <Edit3 className="mr-2 h-4 w-4" />
+                  {isDownloaded ? "Locked" : !canRefineProp ? "Upgrade to Vibe Edit" : chatOpen ? "Hide Chat" : "Vibe Edit"}
                 </Button>
               </span>
             </TooltipTrigger>

@@ -19,6 +19,7 @@ import { Link } from "react-router-dom";
 import WysiwygEditor from "@/components/WysiwygEditor";
 import SaveAsTemplate from "@/components/SaveAsTemplate";
 import AssetRevisions from "@/components/AssetRevisions";
+import VibeEditInfo from "@/components/VibeEditInfo";
 import { backgroundGenerator } from "@/lib/backgroundGenerator";
 import { streamRefineAsset, type RefinableAssetType } from "@/lib/api/refineAsset";
 import { extractStyleSignalsFromMessage } from "@/lib/api/stylePreferences";
@@ -179,8 +180,9 @@ export default function HtmlAssetTab({
       )}
       <div className="flex flex-wrap gap-2">
         <Button data-tutorial="refine-ai-btn" variant="outline" size="sm" onClick={() => setChatOpen(!chatOpen)} disabled={!canRefineProp}>
-          <Edit3 className="mr-2 h-4 w-4" /> {!canRefineProp ? "Upgrade to Refine" : chatOpen ? "Hide Chat" : "Refine with AI"}
+          <Edit3 className="mr-2 h-4 w-4" /> {!canRefineProp ? "Upgrade to Vibe Edit" : chatOpen ? "Hide Chat" : "Vibe Edit"}
         </Button>
+        <VibeEditInfo assetType={assetType} />
         {html && (
           <Button variant="outline" size="sm" onClick={() => { if (!editing) setEditHtml(html); setEditing(!editing); }}>
             <Edit3 className="mr-2 h-4 w-4" /> {editing ? "Cancel Edit" : "Edit"}

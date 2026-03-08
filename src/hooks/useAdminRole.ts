@@ -2,8 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 /**
- * Check if the current user has admin role.
- * Uses the user_roles table via RLS — non-admins simply get no rows.
+ * @deprecated Use useUserRoles instead for multi-role support.
  */
 export function useAdminRole() {
   const [isAdmin, setIsAdmin] = useState(false);

@@ -52,7 +52,7 @@ export default function DetailsTab({ state }: DetailsTabProps) {
             </div>
           ) : (
             <div className="space-y-2">
-              <InfoRow label="Company" value={companyName} iconUrl={(app as any).company_icon_url} />
+              <InfoRow label="Company" value={companyName} iconUrl={app.company_icon_url} />
               <InfoRow label="Job Title" value={jobTitle} />
               <InfoRow label="Job URL" value={app.job_url} isLink />
               <InfoRow label="Company URL" value={companyUrl} isLink />

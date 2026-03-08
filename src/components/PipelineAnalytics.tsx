@@ -22,19 +22,18 @@ interface PipelineAnalyticsProps {
 
 export default function PipelineAnalytics({ applications }: PipelineAnalyticsProps) {
   const stats = useMemo(() => {
-    const counts: Record<PipelineStage, number> = {} as any;
-    const totalDays: Record<PipelineStage, number[]> = {} as any;
-
-    for (const stage of PIPELINE_STAGES) {
-      counts[stage] = 0;
-      totalDays[stage] = [];
-    }
+    const counts = Object.fromEntries(
+      PIPELINE_STAGES.map((s) => [s, 0])
+    ) as Record<PipelineStage, number>;
+    const totalDays = Object.fromEntries(
+      PIPELINE_STAGES.map((s) => [s, [] as number[]])
+    ) as Record<PipelineStage, number[]>;
 
     for (const app of applications) {
-      const stage = ((app as any).pipeline_stage || "bookmarked") as PipelineStage;
+      const stage = (app.pipeline_stage || "bookmarked") as PipelineStage;
       if (counts[stage] !== undefined) {
         counts[stage]++;
-        const changedAt = (app as any).stage_changed_at || app.created_at;
+        const changedAt = app.stage_changed_at || app.created_at;
         if (changedAt) totalDays[stage].push(daysInStage(changedAt));
       }
     }
@@ -51,11 +50,12 @@ export default function PipelineAnalytics({ applications }: PipelineAnalyticsPro
       conversions[curr] = reachedPrev > 0 ? Math.round((reachedCurr / reachedPrev) * 100) : null;
     }
 
-    const avgDays: Record<PipelineStage, number | null> = {} as any;
-    for (const stage of PIPELINE_STAGES) {
-      const arr = totalDays[stage];
-      avgDays[stage] = arr.length > 0 ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : null;
-    }
+    const avgDays = Object.fromEntries(
+      PIPELINE_STAGES.map((s) => {
+        const arr = totalDays[s];
+        return [s, arr.length > 0 ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : null];
+      })
+    ) as Record<PipelineStage, number | null>;
 
     return { counts, maxCount, conversions, avgDays };
   }, [applications]);

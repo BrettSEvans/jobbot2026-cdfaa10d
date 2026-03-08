@@ -84,37 +84,69 @@ export default function Privacy() {
           30 days. Anonymized usage metrics may be retained for analytics purposes.
         </p>
 
-        <h2>7. Your Rights</h2>
-        <p>You have the right to:</p>
+        <h2>7. Your Rights Under GDPR</h2>
+        <p>
+          If you are located in the European Economic Area (EEA), United Kingdom, or Switzerland,
+          you have the following rights under the General Data Protection Regulation (GDPR):
+        </p>
         <ul>
-          <li>Access and download your personal data</li>
-          <li>Correct inaccurate information in your profile</li>
-          <li>Delete your account and associated data</li>
-          <li>Withdraw consent for optional data processing</li>
+          <li><strong>Right of Access</strong> — Request a copy of the personal data we hold about you</li>
+          <li><strong>Right to Rectification</strong> — Correct inaccurate or incomplete personal data</li>
+          <li><strong>Right to Erasure</strong> — Request deletion of your personal data ("right to be forgotten")</li>
+          <li><strong>Right to Restriction</strong> — Request that we restrict the processing of your data</li>
+          <li><strong>Right to Data Portability</strong> — Receive your data in a structured, machine-readable format</li>
+          <li><strong>Right to Object</strong> — Object to processing based on legitimate interests</li>
+          <li><strong>Right to Withdraw Consent</strong> — Withdraw consent at any time without affecting the lawfulness of prior processing</li>
+          <li><strong>Right to Lodge a Complaint</strong> — File a complaint with your national data protection authority</li>
+        </ul>
+        <p>
+          To exercise any of these rights, please contact us through the support channels available
+          within the application. We will respond within 30 days as required by the GDPR.
+        </p>
+
+        <h2>8. Legal Basis for Processing (GDPR)</h2>
+        <p>We process your personal data based on the following legal grounds:</p>
+        <ul>
+          <li><strong>Contract performance (Art. 6(1)(b))</strong> — Processing necessary to provide you with the Service</li>
+          <li><strong>Consent (Art. 6(1)(a))</strong> — For analytics cookies and optional data processing (you can withdraw consent at any time)</li>
+          <li><strong>Legitimate interest (Art. 6(1)(f))</strong> — For essential security measures and service improvement</li>
         </ul>
 
-        <h2>8. Cookies</h2>
+        <h2>9. International Data Transfers</h2>
         <p>
-          We use essential cookies for authentication and session management. We do not use
-          third-party advertising cookies.
+          Your data may be processed in countries outside the EEA. Where this occurs, we ensure
+          appropriate safeguards are in place, including Standard Contractual Clauses (SCCs)
+          approved by the European Commission, to protect your data in accordance with GDPR
+          requirements.
         </p>
 
-        <h2>9. Children's Privacy</h2>
+        <h2>10. Cookies</h2>
+        <p>
+          We use essential cookies for authentication and session management. Non-essential cookies
+          (analytics, functional) are only set after you provide explicit consent via our cookie
+          banner. For full details, see our{" "}
+          <a href="/cookies" className="text-primary hover:underline">Cookie Policy</a>.
+        </p>
+
+        <h2>11. Children's Privacy</h2>
         <p>
           The Service is not intended for users under 16 years of age. We do not knowingly collect
-          data from children.
+          data from children. If we learn that we have collected personal data from a child under
+          16, we will delete it promptly.
         </p>
 
-        <h2>10. Changes to This Policy</h2>
+        <h2>12. Data Protection Officer</h2>
+        <p>
+          For data protection inquiries or to exercise your GDPR rights, please reach out through
+          the support channels available within the application. We are committed to resolving any
+          concerns about your privacy.
+        </p>
+
+        <h2>13. Changes to This Policy</h2>
         <p>
           We may update this Privacy Policy from time to time. We will notify you of significant
-          changes through the Service or via email.
-        </p>
-
-        <h2>11. Contact</h2>
-        <p>
-          For privacy-related inquiries, please reach out through the support channels available
-          within the application.
+          changes through the Service or via email. The "Last updated" date at the top indicates
+          the most recent revision.
         </p>
       </article>
 

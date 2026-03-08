@@ -1,12 +1,14 @@
 /**
  * Lightweight analytics abstraction.
- * Uses PostHog when available, falls back to console in dev.
+ * Uses PostHog when available AND user has given cookie consent.
+ * Falls back to console in dev.
  * 
  * Usage:
  *   import { analytics } from "@/lib/analytics";
  *   analytics.track("generation_started", { assetType: "resume" });
  *   analytics.identify(userId, { email, tier });
  */
+import { hasAnalyticsConsent } from "@/components/CookieConsentBanner";
 
 interface AnalyticsClient {
   track: (event: string, properties?: Record<string, unknown>) => void;
@@ -21,8 +23,12 @@ function getPostHog(): any {
   return posthog;
 }
 
-/** Initialize PostHog — call once at app boot */
+let storedApiKey: string | undefined;
+
+/** Initialize PostHog — call once at app boot. Respects cookie consent. */
 export async function initAnalytics(apiKey?: string) {
+  storedApiKey = apiKey;
+
   if (!apiKey) {
     if (import.meta.env.DEV) {
       console.info("[analytics] No API key — running in debug mode");
@@ -30,6 +36,24 @@ export async function initAnalytics(apiKey?: string) {
     return;
   }
 
+  // Only init if user has consented to analytics cookies (GDPR)
+  if (!hasAnalyticsConsent()) {
+    if (import.meta.env.DEV) {
+      console.info("[analytics] Analytics cookies not accepted — deferring init");
+    }
+    // Listen for consent changes
+    window.addEventListener("cookie-consent-changed", () => {
+      if (hasAnalyticsConsent() && !posthog) {
+        loadPostHog(apiKey);
+      }
+    });
+    return;
+  }
+
+  await loadPostHog(apiKey);
+}
+
+async function loadPostHog(apiKey: string) {
   try {
     const ph = await import("posthog-js");
     ph.default.init(apiKey, {

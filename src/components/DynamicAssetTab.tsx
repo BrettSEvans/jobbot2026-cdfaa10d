@@ -2,8 +2,10 @@
  * DynamicAssetTab - Renders a single dynamic (AI-proposed) asset with full feature parity:
  * Generate, Vibe Edit, PDF Download, Copy Text, Revision History.
  * After download, regeneration/refinement/swap are locked.
+ * In preview mode (free tier), buttons are disabled with upgrade tooltips and content is watermarked.
  */
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Edit3, RefreshCw, Loader2, FileDown, Sparkles, Copy, History, Eye, HelpCircle, Lock,
+  Edit3, RefreshCw, Loader2, FileDown, Sparkles, Copy, History, Eye, HelpCircle, Lock, Crown,
 } from "lucide-react";
 import {
   streamDynamicAssetGeneration,
@@ -27,6 +29,7 @@ import { cleanHtml } from "@/lib/cleanHtml";
 import { downloadHtmlAsPdf, buildPdfFilename } from "@/lib/htmlToPdf";
 import { getActiveResumeText } from "@/lib/api/profile";
 import { getLayoutStyleForAsset } from "@/lib/assetLayoutStyles";
+import { injectWatermark } from "@/lib/watermarkHtml";
 import VibeEditInfo from "@/components/VibeEditInfo";
 import {
   Tooltip,
@@ -34,6 +37,11 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 interface DynamicAssetTabProps {
   asset: GeneratedAsset;
@@ -44,6 +52,8 @@ interface DynamicAssetTabProps {
   branding?: import('@/integrations/supabase/types').Json;
   onAssetUpdated: (updated: GeneratedAsset) => void;
   canRefine?: boolean;
+  /** When true, all edit actions are disabled and content is watermarked (free tier preview) */
+  isPreviewOnly?: boolean;
 }
 
 export default function DynamicAssetTab({
@@ -55,8 +65,10 @@ export default function DynamicAssetTab({
   branding,
   onAssetUpdated,
   canRefine: canRefineProp = true,
+  isPreviewOnly = false,
 }: DynamicAssetTabProps) {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [generating, setGenerating] = useState(false);
   const [refining, setRefining] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);

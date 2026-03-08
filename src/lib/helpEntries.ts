@@ -524,25 +524,3 @@ registerHelp({
   keywords: ['tutorial', 'walkthrough', 'tour', 'guide', 'onboarding', 'help'],
   relatedSlugs: ['applications-list', 'new-application', 'profile'],
 });
-  summary:
-    'Toggle between dark and light themes using the sun/moon icon in the header. Your preference is saved automatically.',
-  keywords: ['dark', 'light', 'theme', 'mode', 'toggle'],
-});
-
-registerHelp({
-  slug: 'navigation',
-  title: 'Navigation',
-  summary:
-    'Use the top navigation bar to move between Applications, Templates, and Profile. Admin users also see a link to the Admin panel.',
-  keywords: ['nav', 'menu', 'header', 'navigate'],
-  relatedSlugs: ['applications-list', 'templates', 'profile', 'admin-panel'],
-});
-
-registerHelp({
-  slug: 'tutorial-walkthrough',
-  title: 'Interactive Tutorial',
-  summary:
-    'A guided walkthrough that shows you how to create applications, upload your resume, generate assets, and download them as PDFs.',
-  keywords: ['tutorial', 'walkthrough', 'tour', 'guide', 'onboarding', 'help'],
-  relatedSlugs: ['applications-list', 'new-application', 'profile'],
-});

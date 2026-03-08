@@ -212,10 +212,10 @@ export async function saveJobApplication(app: SaveJobApplicationInput) {
     const activePersona = getActivePersonaSnapshot();
     const personaId = activePersona?.isTestUser ? activePersona.id : null;
 
-    const insertPayload = { ...safeFields, user_id: user.id, persona_id: personaId };
+    const insertPayload = { ...safeFields, user_id: user.id, persona_id: personaId } as TablesInsert<'job_applications'>;
     const { data, error } = await supabase
       .from('job_applications')
-      .insert(insertPayload as unknown as Parameters<ReturnType<typeof supabase.from<'job_applications'>>['insert']>[0])
+      .insert(insertPayload)
       .select()
       .single();
     if (error) throw new Error(error.message);

@@ -2,7 +2,8 @@
  * Resume Health Dashboard — multi-section ATS analysis card.
  * Collapsed by default showing score bar + delta; expandable to full dashboard.
  */
-import { useState } from "react";
+import { useState, useCallback } from "react";
+import { Check, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +18,7 @@ interface AtsScoreCardProps {
   score: AtsScoreResult | null;
   loading: boolean;
   onRescan: () => void;
+  onApplyFix?: (originalText: string, newText: string) => Promise<boolean>;
   disabled?: boolean;
 }
 
@@ -121,11 +123,28 @@ function AtsMatchSection({ score }: { score: AtsScoreResult }) {
 }
 
 /* ── Section: Impact Analysis ── */
-function ImpactSection({ score }: { score: AtsScoreResult }) {
+function ImpactSection({ score, onApplyFix }: { score: AtsScoreResult; onApplyFix?: (orig: string, fix: string) => Promise<boolean> }) {
+  const [appliedIndices, setAppliedIndices] = useState<Set<number>>(new Set());
+  const [applyingIndex, setApplyingIndex] = useState<number | null>(null);
+
   const { impactAnalysis } = score;
   if (!impactAnalysis) return <p className="text-xs text-muted-foreground">No impact data available.</p>;
   const total = impactAnalysis.strongBullets + impactAnalysis.weakBullets;
   const pct = total > 0 ? Math.round((impactAnalysis.strongBullets / total) * 100) : 0;
+
+  const handleApply = async (index: number, originalText: string, suggestion: string) => {
+    if (!onApplyFix || appliedIndices.has(index)) return;
+    setApplyingIndex(index);
+    try {
+      const success = await onApplyFix(originalText, suggestion);
+      if (success) {
+        setAppliedIndices((prev) => new Set(prev).add(index));
+      }
+    } finally {
+      setApplyingIndex(null);
+    }
+  };
+
   return (
     <div className="space-y-3">
       <div className="grid grid-cols-3 gap-2 text-center">
@@ -147,12 +166,36 @@ function ImpactSection({ score }: { score: AtsScoreResult }) {
           <p className="text-xs font-medium text-muted-foreground flex items-center gap-1">
             <AlertTriangle className="h-3 w-3 text-yellow-500" /> Bullets to Improve
           </p>
-          {impactAnalysis.weakExamples.map((ex, i) => (
-            <div key={i} className="rounded-lg border border-yellow-200 dark:border-yellow-900 bg-yellow-50/50 dark:bg-yellow-950/20 p-2 space-y-1">
-              <p className="text-xs text-muted-foreground line-through">{ex.text}</p>
-              <p className="text-xs text-foreground font-medium">→ {ex.suggestion}</p>
-            </div>
-          ))}
+          {impactAnalysis.weakExamples.map((ex, i) => {
+            const isApplied = appliedIndices.has(i);
+            const isApplying = applyingIndex === i;
+            return (
+              <div key={i} className={`rounded-lg border p-2 space-y-1.5 ${isApplied ? "border-green-300 dark:border-green-800 bg-green-50/50 dark:bg-green-950/20" : "border-yellow-200 dark:border-yellow-900 bg-yellow-50/50 dark:bg-yellow-950/20"}`}>
+                <p className="text-xs text-muted-foreground line-through">{ex.text}</p>
+                <p className="text-xs text-foreground font-medium">→ {ex.suggestion}</p>
+                {onApplyFix && (
+                  <div className="flex justify-end pt-0.5">
+                    {isApplied ? (
+                      <span className="inline-flex items-center gap-1 text-[11px] text-green-600 dark:text-green-400 font-medium">
+                        <Check className="h-3 w-3" /> Applied
+                      </span>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-6 text-[11px] px-2 gap-1"
+                        disabled={isApplying}
+                        onClick={() => handleApply(i, ex.text, ex.suggestion)}
+                      >
+                        {isApplying ? <Loader2 className="h-3 w-3 animate-spin" /> : <Wand2 className="h-3 w-3" />}
+                        Apply Fix
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
@@ -259,7 +302,7 @@ const SECTIONS: { id: DashboardSection; label: string; icon: typeof Target }[] =
 /* ══════════════════════════════════════════════════════════════
    Main Component
    ══════════════════════════════════════════════════════════════ */
-export default function AtsScoreCard({ score, loading, onRescan, disabled }: AtsScoreCardProps) {
+export default function AtsScoreCard({ score, loading, onRescan, onApplyFix, disabled }: AtsScoreCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [activeSection, setActiveSection] = useState<DashboardSection>("ats");
 
@@ -382,7 +425,7 @@ export default function AtsScoreCard({ score, loading, onRescan, disabled }: Ats
             {/* Content */}
             <div className="flex-1 p-3 overflow-y-auto max-h-[400px]">
               {activeSection === "ats" && <AtsMatchSection score={score} />}
-              {activeSection === "impact" && <ImpactSection score={score} />}
+              {activeSection === "impact" && <ImpactSection score={score} onApplyFix={onApplyFix} />}
               {activeSection === "repetition" && <RepetitionSection score={score} />}
               {activeSection === "format" && <FormatSection score={score} />}
             </div>

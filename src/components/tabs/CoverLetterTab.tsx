@@ -174,7 +174,7 @@ export default function CoverLetterTab({ appId, state }: CoverLetterTabProps) {
             )}
             <div className="flex gap-2">
               <Textarea
-                placeholder='e.g. "Make the opening more confident and mention the company\'s recent product launch."'
+                placeholder={"e.g. \"Make the opening more confident and mention the company's recent product launch.\""}
                 value={chatInput} onChange={(e) => setChatInput(e.target.value)} rows={2}
                 onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleVibeEdit(); } }}
               />

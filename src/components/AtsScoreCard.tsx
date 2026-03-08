@@ -1,16 +1,12 @@
 /**
  * ATS Match Score card — circular gauge with keyword analysis.
+ * Uses plain React state instead of Collapsible for reliability.
  */
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-import { RefreshCw, Loader2, ChevronDown, Target } from "lucide-react";
+import { RefreshCw, Loader2, ChevronDown, Target, Zap } from "lucide-react";
 import type { AtsScoreResult } from "@/lib/api/atsScore";
 
 interface AtsScoreCardProps {
@@ -42,120 +38,143 @@ function getScoreLabel(score: number): string {
 export default function AtsScoreCard({ score, loading, onRescan, disabled }: AtsScoreCardProps) {
   const [expanded, setExpanded] = useState(false);
 
-  if (!score && !loading) return null;
-
   const circumference = 2 * Math.PI * 40;
   const dashOffset = score ? circumference - (score.score / 100) * circumference : circumference;
 
-  return (
-    <Collapsible open={expanded} onOpenChange={setExpanded}>
-      <Card className="overflow-hidden">
-        <CardContent className="pt-4 pb-3">
-          <div className="flex items-center gap-4">
-            {/* Circular gauge */}
-            <div className="relative h-16 w-16 shrink-0">
-              {loading ? (
-                <div className="flex items-center justify-center h-full w-full">
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                </div>
-              ) : score ? (
-                <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90">
-                  <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" strokeWidth="8" className="text-muted/30" />
-                  <circle
-                    cx="50" cy="50" r="40" fill="none" strokeWidth="8"
-                    strokeLinecap="round"
-                    className={getScoreStroke(score.score)}
-                    strokeDasharray={circumference}
-                    strokeDashoffset={dashOffset}
-                    style={{ transition: "stroke-dashoffset 0.6s ease" }}
-                  />
-                </svg>
-              ) : null}
-              {score && !loading && (
-                <span className={`absolute inset-0 flex items-center justify-center text-lg font-bold ${getScoreColor(score.score)}`}>
-                  {score.score}
-                </span>
-              )}
+  /* ── No score yet: show a prominent scan CTA ── */
+  if (!score && !loading) {
+    return (
+      <Card>
+        <CardContent className="py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Target className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-semibold">ATS Match Score</span>
             </div>
-
-            {/* Info */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <Target className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-semibold">ATS Match Score</span>
-                {score && (
-                  <Badge variant="outline" className="text-xs">
-                    {getScoreLabel(score.score)}
-                  </Badge>
-                )}
-              </div>
-              {score && (
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  {score.matchedKeywords.length} matched · {score.missingKeywords.length} missing
-                </p>
-              )}
-            </div>
-
-            {/* Actions */}
-            <div className="flex items-center gap-1">
-              <Button variant="ghost" size="sm" onClick={onRescan} disabled={loading || disabled}>
-                {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
-              </Button>
-              {score && (
-                <CollapsibleTrigger asChild>
-                  <Button variant="ghost" size="sm">
-                    <ChevronDown className={`h-3.5 w-3.5 transition-transform ${expanded ? "rotate-180" : ""}`} />
-                  </Button>
-                </CollapsibleTrigger>
-              )}
-            </div>
+            <Button
+              size="sm"
+              onClick={onRescan}
+              disabled={disabled}
+              className="gap-1.5"
+            >
+              <Zap className="h-3.5 w-3.5" />
+              Scan
+            </Button>
           </div>
         </CardContent>
+      </Card>
+    );
+  }
 
-        <CollapsibleContent>
-          {score && (
-            <div className="border-t px-4 py-3 space-y-3">
-              {/* Matched Keywords */}
-              {score.matchedKeywords.length > 0 && (
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground mb-1.5">Matched Keywords</p>
-                  <div className="flex flex-wrap gap-1">
-                    {score.matchedKeywords.map((kw) => (
-                      <Badge key={kw} variant="default" className="text-xs">{kw}</Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
+  /* ── Loading or has score ── */
+  return (
+    <Card className="overflow-hidden">
+      <CardContent className="pt-4 pb-3">
+        <div className="flex items-center gap-4">
+          {/* Circular gauge */}
+          <div className="relative h-16 w-16 shrink-0">
+            {loading ? (
+              <div className="flex items-center justify-center h-full w-full">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : score ? (
+              <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90">
+                <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" strokeWidth="8" className="text-muted/30" />
+                <circle
+                  cx="50" cy="50" r="40" fill="none" strokeWidth="8"
+                  strokeLinecap="round"
+                  className={getScoreStroke(score.score)}
+                  strokeDasharray={circumference}
+                  strokeDashoffset={dashOffset}
+                  style={{ transition: "stroke-dashoffset 0.6s ease" }}
+                />
+              </svg>
+            ) : null}
+            {score && !loading && (
+              <span className={`absolute inset-0 flex items-center justify-center text-lg font-bold ${getScoreColor(score.score)}`}>
+                {score.score}
+              </span>
+            )}
+          </div>
 
-              {/* Missing Keywords */}
-              {score.missingKeywords.length > 0 && (
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground mb-1.5">Missing Keywords</p>
-                  <div className="flex flex-wrap gap-1">
-                    {score.missingKeywords.map((kw) => (
-                      <Badge key={kw} variant="destructive" className="text-xs">{kw}</Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Suggestions */}
-              {score.suggestions.length > 0 && (
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground mb-1.5">Suggestions</p>
-                  <ul className="text-xs space-y-1 text-muted-foreground">
-                    {score.suggestions.map((s, i) => (
-                      <li key={i} className="flex gap-1.5">
-                        <span className="text-primary">•</span> {s}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+          {/* Info */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <Target className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-semibold">ATS Match Score</span>
+              {score && (
+                <Badge variant="outline" className="text-xs">
+                  {getScoreLabel(score.score)}
+                </Badge>
               )}
             </div>
+            {score && (
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {score.matchedKeywords.length} matched · {score.missingKeywords.length} missing
+              </p>
+            )}
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="sm" onClick={onRescan} disabled={loading || disabled}>
+              {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+            </Button>
+            {score && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setExpanded((prev) => !prev)}
+              >
+                <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${expanded ? "rotate-180" : ""}`} />
+              </Button>
+            )}
+          </div>
+        </div>
+      </CardContent>
+
+      {/* Expandable details — plain conditional render */}
+      {expanded && score && (
+        <div className="border-t px-4 py-3 space-y-3 animate-in fade-in slide-in-from-top-1 duration-200">
+          {/* Matched Keywords */}
+          {score.matchedKeywords.length > 0 && (
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-1.5">Matched Keywords</p>
+              <div className="flex flex-wrap gap-1">
+                {score.matchedKeywords.map((kw) => (
+                  <Badge key={kw} variant="default" className="text-xs">{kw}</Badge>
+                ))}
+              </div>
+            </div>
           )}
-        </CollapsibleContent>
-      </Card>
-    </Collapsible>
+
+          {/* Missing Keywords */}
+          {score.missingKeywords.length > 0 && (
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-1.5">Missing Keywords</p>
+              <div className="flex flex-wrap gap-1">
+                {score.missingKeywords.map((kw) => (
+                  <Badge key={kw} variant="destructive" className="text-xs">{kw}</Badge>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Suggestions */}
+          {score.suggestions.length > 0 && (
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-1.5">Suggestions</p>
+              <ul className="text-xs space-y-1 text-muted-foreground">
+                {score.suggestions.map((s, i) => (
+                  <li key={i} className="flex gap-1.5">
+                    <span className="text-primary">•</span> {s}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+    </Card>
   );
 }

@@ -115,6 +115,8 @@ function AuthenticatedApp() {
               <Route path="/pricing" element={<><AppHeader onSignOut={signOut} /><main id="main-content"><Pricing /></main></>} />
               <Route path="/tutorial-demo" element={<><AppHeader onSignOut={signOut} /><main id="main-content"><TutorialDemo /></main></>} />
               <Route path="/import" element={<><AppHeader onSignOut={signOut} /><main id="main-content"><ImportJob /></main></>} />
+              <Route path="/terms" element={<Terms />} />
+              <Route path="/privacy" element={<Privacy />} />
               <Route path="*" element={<NotFound />} />
             </>
           )}
@@ -130,6 +132,8 @@ function AuthenticatedApp() {
 const App = () => {
   useEffect(() => {
     document.title = `${BRAND.name} — ${BRAND.tagline}`;
+    // Initialize analytics (no-op without API key — debug mode in dev)
+    initAnalytics(import.meta.env.VITE_POSTHOG_KEY);
   }, []);
 
   return (

@@ -314,6 +314,7 @@ const ApplicationDetail = () => {
             score={atsScore}
             loading={atsLoading}
             onRescan={handleAtsRescan}
+            onApplyFix={handleApplyBulletFix}
             disabled={!state.resumeHtml || !state.jobDescription}
           />
         )}

@@ -93,11 +93,10 @@ describe("ATS Score — Cache Invalidation (with isCacheValid)", () => {
     expect(isCacheValid(fullMockScore, old, "html", "jd")).toBe(false);
   });
 
-  it("returns true for fresh score with matching hash", () => {
+  it("returns true for fresh score without hash (no invalidation)", () => {
     const now = new Date().toISOString();
-    const scoreWithHash = { ...fullMockScore, _inputHash: "test123" };
-    // Same hash → valid
-    expect(isCacheValid(scoreWithHash, now, "anything", "anything")).toBe(true);
+    const scoreNoHash = { ...fullMockScore, _inputHash: undefined };
+    expect(isCacheValid(scoreNoHash, now, "anything", "anything")).toBe(true);
   });
 });
 

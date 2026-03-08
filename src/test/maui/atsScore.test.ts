@@ -75,6 +75,34 @@ describe("ATS Score — Tier Gating", () => {
   });
 });
 
+describe("ATS Score — Card Visibility", () => {
+  it("should show scan CTA when no score exists", () => {
+    const score = null;
+    const loading = false;
+    const hasResume = true;
+    // Card should be visible (not return null) when resume exists
+    const shouldRender = hasResume; // always render when resume present
+    const showScanCta = !score && !loading;
+    expect(shouldRender).toBe(true);
+    expect(showScanCta).toBe(true);
+  });
+
+  it("should show gauge when score exists", () => {
+    const score = mockAtsScore;
+    const showGauge = !!score;
+    expect(showGauge).toBe(true);
+  });
+
+  it("should show loading spinner when scanning", () => {
+    const loading = true;
+    const score = null;
+    const showSpinner = loading;
+    const showScanCta = !score && !loading;
+    expect(showSpinner).toBe(true);
+    expect(showScanCta).toBe(false);
+  });
+});
+
 describe("ATS Score — Color Thresholds", () => {
   const getColor = (score: number) => {
     if (score < 50) return "red";

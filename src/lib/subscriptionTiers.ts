@@ -9,8 +9,6 @@ export interface TierConfig {
     appsPerMonth: number; // -1 = unlimited
     allowedAssets: string[]; // asset type slugs allowed
     canRefine: boolean;
-    generationsPerHour: number;
-    generationsPerDay: number;
   };
   features: string[];
   cta: string;
@@ -27,14 +25,11 @@ export const TIER_CONFIGS: Record<SubscriptionTier, TierConfig> = {
       appsPerMonth: 2,
       allowedAssets: ["resume", "cover_letter"],
       canRefine: false,
-      generationsPerHour: 5,
-      generationsPerDay: 15,
     },
     features: [
       "2 applications per month",
       "Resume & cover letter",
       "ATS score analysis",
-      "15 generations per day",
     ],
     cta: "Current Plan",
   },
@@ -44,7 +39,7 @@ export const TIER_CONFIGS: Record<SubscriptionTier, TierConfig> = {
     price: 19,
     description: "For serious job seekers",
     limits: {
-      appsPerMonth: 15,
+      appsPerMonth: 20,
       allowedAssets: [
         "resume",
         "cover_letter",
@@ -54,16 +49,13 @@ export const TIER_CONFIGS: Record<SubscriptionTier, TierConfig> = {
         "architecture_diagram",
       ],
       canRefine: true,
-      generationsPerHour: -1,
-      generationsPerDay: 100,
     },
     features: [
       "Everything in Free +",
-      "15 applications per month",
+      "20 applications per month",
       "Executive reports & roadmaps",
       "AI refinement chat",
       "DOCX export",
-      "100 generations per day",
     ],
     cta: "Upgrade to Pro",
     highlighted: true,
@@ -86,15 +78,12 @@ export const TIER_CONFIGS: Record<SubscriptionTier, TierConfig> = {
         "dynamic",
       ],
       canRefine: true,
-      generationsPerHour: -1,
-      generationsPerDay: 250,
     },
     features: [
       "Everything in Pro +",
       "Unlimited applications",
       "Interactive dashboards",
       "Custom AI assets",
-      "250 generations per day",
     ],
     cta: "Go Premium",
   },

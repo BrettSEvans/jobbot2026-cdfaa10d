@@ -6,13 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
-const TIER_LIMITS: Record<string, { perHour: number; perDay: number }> = {
-  free: { perHour: 5, perDay: 15 },
-  pro: { perHour: -1, perDay: 100 },
-  premium: { perHour: -1, perDay: 250 },
-};
-const DEFAULT_LIMITS = TIER_LIMITS.free;
-async function checkRateLimit(req: Request, assetType: string, edgeFunction: string): Promise<Response | null> {
+async function logUsage(req: Request, assetType: string, edgeFunction: string): Promise<Response | null> {
   try {
     const authHeader = req.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
@@ -21,24 +15,8 @@ async function checkRateLimit(req: Request, assetType: string, edgeFunction: str
     const userId = data?.claims?.sub;
     if (!userId) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     const svc = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
-    const { data: override } = await svc.from('rate_limit_overrides').select('is_unlimited, per_hour, per_day').eq('user_id', userId).maybeSingle();
-    if (override?.is_unlimited) {
-      await svc.from('generation_usage').insert({ user_id: userId, asset_type: assetType, edge_function: edgeFunction });
-      return null;
-    }
-    const { data: sub } = await svc.from('user_subscriptions').select('tier').eq('user_id', userId).maybeSingle();
-    const tier = (sub?.tier as string) || 'free';
-    const tierDefaults = TIER_LIMITS[tier] || TIER_LIMITS.free;
-    const limits = { perHour: override?.per_hour ?? tierDefaults.perHour, perDay: override?.per_day ?? tierDefaults.perDay };
-    const now = Date.now();
-    const { count: hourCount } = await svc.from('generation_usage').select('*', { count: 'exact', head: true }).eq('user_id', userId).gte('created_at', new Date(now - 3600_000).toISOString());
-    const { count: dayCount } = await svc.from('generation_usage').select('*', { count: 'exact', head: true }).eq('user_id', userId).gte('created_at', new Date(now - 86400_000).toISOString());
-    if ((limits.perHour !== -1 && (hourCount ?? 0) >= limits.perHour) || (limits.perDay !== -1 && (dayCount ?? 0) >= limits.perDay)) {
-      const upgradeHint = tier !== 'premium' ? ` Upgrade to ${tier === 'free' ? 'Pro' : 'Premium'} for higher limits.` : '';
-      return new Response(JSON.stringify({ error: `Rate limit exceeded.${upgradeHint}`, retry_after_seconds: 60, tier }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-    }
     await svc.from('generation_usage').insert({ user_id: userId, asset_type: assetType, edge_function: edgeFunction });
-  } catch (e) { console.warn('Rate limit check failed, allowing request:', e); }
+  } catch (e) { console.warn('Usage logging failed, allowing request:', e); }
   return null;
 }
 
@@ -46,8 +24,7 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
   try {
-    const rateLimitResponse = await checkRateLimit(req, 'raid-log', 'refine-raid-log');
-    if (rateLimitResponse) return rateLimitResponse;
+    await logUsage(req, 'raid-log', 'refine-raid-log');
 
     const { currentHtml, userMessage, jobDescription, companyName, jobTitle, branding, styleContext } = await req.json();
     if (!userMessage) {

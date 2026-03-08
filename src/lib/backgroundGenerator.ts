@@ -436,6 +436,25 @@ class BackgroundGenerationManager {
         generation_status: "complete",
       });
 
+      // 7. Auto-generate preview assets for FREE tier users
+      try {
+        const { data: userData } = await supabase.auth.getUser();
+        if (userData?.user?.id) {
+          const { data: subscription } = await supabase
+            .from("user_subscriptions")
+            .select("tier")
+            .eq("user_id", userData.user.id)
+            .single();
+          
+          if (subscription?.tier === "free") {
+            this.updateJob(appId, { progress: "Generating preview materials..." });
+            await this.generateFreePreviewAssets(appId, markdown, companyName, jobTitle, brandingData);
+          }
+        }
+      } catch (previewErr) {
+        console.warn("Preview asset generation failed (non-critical):", previewErr);
+      }
+
       this.abortControllers.delete(appId);
       this.updateJob(appId, { status: "complete", progress: "Done!" });
     } catch (err: any) {

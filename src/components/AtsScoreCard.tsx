@@ -302,7 +302,7 @@ const SECTIONS: { id: DashboardSection; label: string; icon: typeof Target }[] =
 /* ══════════════════════════════════════════════════════════════
    Main Component
    ══════════════════════════════════════════════════════════════ */
-export default function AtsScoreCard({ score, loading, onRescan, disabled }: AtsScoreCardProps) {
+export default function AtsScoreCard({ score, loading, onRescan, onApplyFix, disabled }: AtsScoreCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [activeSection, setActiveSection] = useState<DashboardSection>("ats");
 
@@ -425,7 +425,7 @@ export default function AtsScoreCard({ score, loading, onRescan, disabled }: Ats
             {/* Content */}
             <div className="flex-1 p-3 overflow-y-auto max-h-[400px]">
               {activeSection === "ats" && <AtsMatchSection score={score} />}
-              {activeSection === "impact" && <ImpactSection score={score} />}
+              {activeSection === "impact" && <ImpactSection score={score} onApplyFix={onApplyFix} />}
               {activeSection === "repetition" && <RepetitionSection score={score} />}
               {activeSection === "format" && <FormatSection score={score} />}
             </div>

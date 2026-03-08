@@ -422,36 +422,56 @@ const Applications = () => {
             ))}
           </div>
         ) : applications.length === 0 && activeView === "active" && deletedApps.length === 0 ? (
-          <Card className="border-dashed">
-            <CardContent className="py-16 text-center space-y-6">
-              <div className="flex justify-center gap-4 text-muted-foreground">
-                <BarChart3 className="h-10 w-10" />
-                <FileCheck className="h-10 w-10" />
-                <Sparkles className="h-10 w-10" />
-              </div>
-              <div>
-                <h3 className="text-lg font-heading font-semibold mb-2">Welcome to {BRAND.name}</h3>
-                <p className="text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
-                  Paste a job URL and we'll generate a <strong>branded dashboard</strong>, <strong>tailored cover letter</strong>, and <strong>6 executive reports</strong> — all customized to the company's branding.
+          <Card className="border-dashed border-2">
+            <CardContent className="py-16 text-center space-y-8">
+              {/* Hero messaging - Portfolio Builder, not just resumes */}
+              <div className="space-y-3">
+                <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-sm text-primary font-medium">
+                  <Sparkles className="h-4 w-4" />
+                  More than a resume writer
+                </div>
+                <h3 className="text-2xl font-heading font-bold">Build Your Career Portfolio</h3>
+                <p className="text-muted-foreground max-w-lg mx-auto leading-relaxed">
+                  {BRAND.name} creates a complete <strong>job application portfolio</strong> for every role — 
+                  branded dashboards, tailored resumes, cover letters, roadmaps, executive reports, 
+                  and custom industry materials. All matched to the company's visual identity.
                 </p>
               </div>
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-                <Button onClick={() => navigate("/applications/new")} size="lg">
-                  <Zap className="mr-2 h-4 w-4" /> Create Your First Application
-                </Button>
+
+              {/* Visual proof - what you get */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 max-w-2xl mx-auto">
+                {[
+                  { icon: FileCheck, label: "Tailored Resume" },
+                  { icon: BarChart3, label: "Cover Letter" },
+                  { icon: Sparkles, label: "Brand Dashboard" },
+                  { icon: Zap, label: "90-Day Roadmap" },
+                  { icon: BarChart3, label: "Exec Reports" },
+                  { icon: Sparkles, label: "Custom Assets" },
+                ].map(({ icon: Icon, label }) => (
+                  <div key={label} className="flex flex-col items-center gap-1.5 p-3 rounded-lg bg-muted/50">
+                    <Icon className="h-5 w-5 text-primary" />
+                    <span className="text-xs text-muted-foreground text-center leading-tight">{label}</span>
+                  </div>
+                ))}
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-lg mx-auto text-left">
+
+              <Button onClick={() => navigate("/applications/new")} size="lg" className="shadow-lg">
+                <Zap className="mr-2 h-4 w-4" /> Create Your First Portfolio
+              </Button>
+
+              {/* How it works - simplified */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-xl mx-auto text-left pt-4 border-t border-border">
                 <div className="space-y-1">
-                  <p className="text-sm font-medium">1. Paste a job URL</p>
-                  <p className="text-sm text-muted-foreground">Or paste the description directly</p>
+                  <p className="text-sm font-semibold text-foreground">1. Paste a job URL</p>
+                  <p className="text-xs text-muted-foreground">Or paste the description directly</p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-sm font-medium">2. AI analyzes & builds</p>
-                  <p className="text-sm text-muted-foreground">Scrapes branding, competitors, market data</p>
+                  <p className="text-sm font-semibold text-foreground">2. AI builds your portfolio</p>
+                  <p className="text-xs text-muted-foreground">6+ branded documents in minutes</p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-sm font-medium">3. Vibe Edit with AI chat</p>
-                  <p className="text-sm text-muted-foreground">Iterate on any document with conversational AI</p>
+                  <p className="text-sm font-semibold text-foreground">3. Refine with AI chat</p>
+                  <p className="text-xs text-muted-foreground">Vibe Edit any document conversationally</p>
                 </div>
               </div>
             </CardContent>

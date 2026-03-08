@@ -53,8 +53,8 @@ registerHelp({
     'Switch to the Pipeline tab to see applications in a Kanban board by stage.',
   ],
   tips: [
-    'Applications show their generation status so you know when assets are ready.',
-    'Completed applications have all assets generated and available for download.',
+    'Applications show their generation status so you know when materials are ready.',
+    'Completed applications have all materials generated and available for download.',
     'Drag and drop cards in Pipeline view to move applications between stages.',
   ],
   route: '/',
@@ -89,7 +89,7 @@ registerHelp({
   slug: 'new-application',
   title: 'New Application',
   summary:
-    `Start a new job application by pasting the job posting URL. ${BRAND.name} will scrape the listing, research the company, and begin generating tailored assets.`,
+    `Start a new job application by pasting the job posting URL. ${BRAND.name} will scrape the listing, research the company, and begin generating tailored materials.`,
   steps: [
     'Paste the full URL of the job posting.',
     'Optionally select a template or resume style.',
@@ -108,18 +108,18 @@ registerHelp({
   slug: 'application-detail',
   title: 'Application Detail',
   summary:
-    'The detail view shows all generated assets for a job application. Navigate between Dashboard, Cover Letter, Resume, and any Industry Assets using the tabs.',
+    'The detail view shows all generated materials for a job application. Navigate between Cover Letter, Resume, and any Industry Materials using the tabs.',
   steps: [
-    'Use the top tabs to switch between Dashboard, Cover Letter, and Resume.',
+    'Use the top tabs to switch between Cover Letter and Resume.',
     'Click "Info" to view application details and the original job description.',
-    'Use the Industry Assets bar to view AI-proposed supplementary documents.',
+    'Use the Industry Materials bar to view AI-proposed supplementary documents.',
   ],
   tips: [
-    'Each asset can be refined using the AI chat — just describe what you want changed.',
+    'Each document can be refined using Vibe Edit — just describe what you want changed.',
     'Revision history is saved so you can revert to earlier versions.',
   ],
   route: '/applications/:id',
-  keywords: ['detail', 'tabs', 'view', 'assets', 'company'],
+  keywords: ['detail', 'tabs', 'view', 'materials', 'company'],
   relatedSlugs: ['dashboard-tab', 'cover-letter-tab', 'resume-tab', 'dynamic-assets'],
 });
 
@@ -127,7 +127,7 @@ registerHelp({
   slug: 'templates',
   title: 'Templates',
   summary:
-    'Save your best-performing dashboards and assets as reusable templates. Apply them to future applications to maintain a consistent style.',
+    'Save your best-performing dashboards and documents as reusable templates. Apply them to future applications to maintain a consistent style.',
   steps: [
     'Go to the Templates page from the navigation bar.',
     'Browse saved templates by department or job function.',
@@ -145,7 +145,7 @@ registerHelp({
   slug: 'profile',
   title: 'Profile',
   summary:
-    'Manage your personal information, resume text, key skills, and preferences. This data is used by the AI to tailor every generated asset to your background.',
+    'Manage your personal information, resume text, key skills, and preferences. This data is used by the AI to tailor every generated document to your background.',
   steps: [
     'Fill in your name, years of experience, and target industries.',
     'Paste or edit your master resume text — this feeds into all resume generations.',
@@ -182,7 +182,7 @@ registerHelp({
 
 registerHelp({
   slug: 'dashboard-tab',
-  title: 'Dashboard Asset',
+  title: 'Dashboard',
   summary:
     'An interactive HTML dashboard tailored to the job, showing company research, competitive analysis, and strategic insights. Can be regenerated or refined.',
   steps: [
@@ -239,17 +239,17 @@ registerHelp({
 
 registerHelp({
   slug: 'dynamic-assets',
-  title: 'Industry Assets (Dynamic)',
+  title: 'Industry Materials',
   summary:
     'AI-proposed supplementary documents specific to the job and industry — such as RAID logs, roadmaps, architecture diagrams, or executive reports.',
   steps: [
-    'Click "Propose Assets" to have the AI suggest relevant documents.',
-    'Review and confirm the proposed assets.',
-    'Each asset is auto-generated and appears in the Industry Assets bar.',
+    'Click "Propose Materials" to have the AI suggest relevant documents.',
+    'Review and confirm the proposed documents.',
+    'Each document is auto-generated and appears in the Industry Materials bar.',
   ],
   tips: [
-    'You can swap an asset for a different type using the change button.',
-    'Each dynamic asset has its own revision history and refinement chat.',
+    'You can swap a document for a different type using the change button.',
+    'Each industry document has its own revision history and Vibe Edit chat.',
   ],
   route: '/applications/:id',
   keywords: ['dynamic', 'industry', 'propose', 'raid', 'roadmap', 'architecture', 'executive'],
@@ -258,13 +258,13 @@ registerHelp({
 
 registerHelp({
   slug: 'ai-chat',
-  title: 'AI Chat Refinement',
+  title: 'Vibe Edit',
   summary:
-    'Refine any generated asset by describing what you want changed in natural language. The AI will update the asset while preserving context.',
+    'Refine any generated document by describing what you want changed in natural language. The AI will update the document while preserving context.',
   steps: [
-    'Navigate to the asset you want to refine.',
-    'Type your refinement request in the chat input (e.g. "Emphasize leadership").',
-    'The asset will be updated and a new revision saved automatically.',
+    'Navigate to the document you want to refine.',
+    'Click "Vibe Edit" and type your request (e.g. "Emphasize leadership").',
+    'The document will be updated and a new revision saved automatically.',
   ],
   tips: [
     'Be specific about what to change for best results.',
@@ -276,19 +276,19 @@ registerHelp({
 
 registerHelp({
   slug: 'asset-proposal',
-  title: 'Asset Proposals',
+  title: 'Document Proposals',
   summary:
     'The AI analyzes the job posting and suggests 3 supplementary documents that would strengthen your application for that specific role and industry.',
-  keywords: ['propose', 'suggest', 'assets', 'documents'],
+  keywords: ['propose', 'suggest', 'materials', 'documents'],
   relatedSlugs: ['dynamic-assets'],
 });
 
 registerHelp({
   slug: 'change-asset',
-  title: 'Change Asset Type',
+  title: 'Change Document Type',
   summary:
-    'Swap one of your industry assets for a different document type. The AI will suggest alternatives and regenerate the new asset automatically.',
-  keywords: ['change', 'swap', 'replace', 'asset'],
+    'Swap one of your industry documents for a different type. The AI will suggest alternatives and regenerate the new document automatically.',
+  keywords: ['change', 'swap', 'replace', 'document'],
   relatedSlugs: ['dynamic-assets'],
 });
 
@@ -296,7 +296,7 @@ registerHelp({
   slug: 'batch-mode',
   title: 'Batch Mode',
   summary:
-    'Submit multiple job URLs at once. Each URL is processed as a separate application with all assets generated in the background.',
+    'Submit multiple job URLs at once. Each URL is processed as a separate application with all materials generated in the background.',
   tips: [
     'Background jobs banner shows progress for all batch items.',
   ],

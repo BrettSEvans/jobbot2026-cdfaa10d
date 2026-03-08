@@ -28,8 +28,7 @@ serve(async (req) => {
   try {
     const { assetName, briefDescription, jobDescription, resumeText, companyName, jobTitle, branding, styleContext, layoutStyle } = await req.json();
 
-    const rateLimitResponse = await checkRateLimit(req, `dynamic-asset:${assetName}`, 'generate-dynamic-asset');
-    if (rateLimitResponse) return rateLimitResponse;
+    await logUsage(req, `dynamic-asset:${assetName}`, 'generate-dynamic-asset');
 
     if (!assetName || !jobDescription) {
       return new Response(

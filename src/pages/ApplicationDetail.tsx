@@ -402,7 +402,7 @@ const ApplicationDetail = () => {
                       title={asset.generation_status}
                     />
                   </button>
-                  {!asset.downloaded_at && (
+                  {!asset.downloaded_at && tier !== "free" && (
                     <ChangeAssetDialog
                       asset={asset}
                       otherAssetNames={dynamicAssets.filter((a) => a.id !== asset.id).map((a) => a.asset_name)}
@@ -460,7 +460,7 @@ const ApplicationDetail = () => {
 
           {/* Dynamic asset view */}
           {activeDynamicAsset && (
-            <UpgradeGate feature="Industry Materials" isLocked={!isAssetAllowed("dynamic")} requiredTier="premium">
+            <UpgradeGate feature="Industry Materials" isLocked={!isAssetAllowed("dynamic") && tier !== "free"} requiredTier="premium">
               <DynamicAssetTab
                 key={activeDynamicAsset.id}
                 asset={activeDynamicAsset}
@@ -471,6 +471,7 @@ const ApplicationDetail = () => {
                 branding={state.app?.branding}
                 onAssetUpdated={handleAssetUpdated}
                 canRefine={canRefine}
+                isPreviewOnly={tier === "free"}
               />
             </UpgradeGate>
           )}

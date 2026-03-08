@@ -2,8 +2,10 @@
  * DynamicAssetTab - Renders a single dynamic (AI-proposed) asset with full feature parity:
  * Generate, Vibe Edit, PDF Download, Copy Text, Revision History.
  * After download, regeneration/refinement/swap are locked.
+ * In preview mode (free tier), buttons are disabled with upgrade tooltips and content is watermarked.
  */
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Edit3, RefreshCw, Loader2, FileDown, Sparkles, Copy, History, Eye, HelpCircle, Lock,
+  Edit3, RefreshCw, Loader2, FileDown, Sparkles, Copy, History, Eye, HelpCircle, Lock, Crown,
 } from "lucide-react";
 import {
   streamDynamicAssetGeneration,
@@ -27,6 +29,7 @@ import { cleanHtml } from "@/lib/cleanHtml";
 import { downloadHtmlAsPdf, buildPdfFilename } from "@/lib/htmlToPdf";
 import { getActiveResumeText } from "@/lib/api/profile";
 import { getLayoutStyleForAsset } from "@/lib/assetLayoutStyles";
+import { injectWatermark } from "@/lib/watermarkHtml";
 import VibeEditInfo from "@/components/VibeEditInfo";
 import {
   Tooltip,
@@ -34,6 +37,11 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 interface DynamicAssetTabProps {
   asset: GeneratedAsset;
@@ -44,6 +52,8 @@ interface DynamicAssetTabProps {
   branding?: import('@/integrations/supabase/types').Json;
   onAssetUpdated: (updated: GeneratedAsset) => void;
   canRefine?: boolean;
+  /** When true, all edit actions are disabled and content is watermarked (free tier preview) */
+  isPreviewOnly?: boolean;
 }
 
 export default function DynamicAssetTab({
@@ -55,8 +65,10 @@ export default function DynamicAssetTab({
   branding,
   onAssetUpdated,
   canRefine: canRefineProp = true,
+  isPreviewOnly = false,
 }: DynamicAssetTabProps) {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [generating, setGenerating] = useState(false);
   const [refining, setRefining] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
@@ -71,6 +83,31 @@ export default function DynamicAssetTab({
 
   const isDownloaded = !!asset.downloaded_at;
   const isDashboardType = asset.asset_name.toLowerCase().includes("dashboard");
+
+  // Upgrade popover component for locked actions
+  const UpgradePopover = ({ children }: { children: React.ReactNode }) => (
+    <Popover>
+      <PopoverTrigger asChild>
+        <span className="cursor-pointer">{children}</span>
+      </PopoverTrigger>
+      <PopoverContent className="w-64 p-4" align="start">
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Crown className="h-5 w-5 text-primary" />
+            <span className="font-medium">Upgrade Required</span>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            This feature is available with a Pro or Premium subscription. Would you like access?
+          </p>
+          <div className="flex gap-2">
+            <Button size="sm" onClick={() => navigate("/pricing")}>
+              View Plans
+            </Button>
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
 
   useEffect(() => {
     if (asset.html) loadRevisions();
@@ -244,8 +281,21 @@ export default function DynamicAssetTab({
         </div>
       )}
 
+      {/* Preview Mode Banner */}
+      {isPreviewOnly && (
+        <div className="flex items-center gap-2 p-3 rounded-lg border border-primary/30 bg-primary/5 text-sm">
+          <Crown className="h-4 w-4 text-primary shrink-0" />
+          <span className="text-foreground">
+            Preview mode — upgrade to Pro or Premium to edit, download, and remove the watermark.
+          </span>
+          <Button size="sm" variant="default" className="ml-auto" onClick={() => navigate("/pricing")}>
+            Upgrade
+          </Button>
+        </div>
+      )}
+
       {/* Dashboard Hosting Help */}
-      {isDashboardType && html && (
+      {isDashboardType && html && !isPreviewOnly && (
         <div className="flex items-start gap-2 p-3 rounded-lg border border-accent bg-accent/30 text-sm">
           <HelpCircle className="h-4 w-4 text-primary shrink-0 mt-0.5" />
           <span className="text-foreground">
@@ -264,59 +314,102 @@ export default function DynamicAssetTab({
 
       {/* Action Bar */}
       <div className="flex flex-wrap gap-2">
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span>
-                <Button
-                  data-tutorial="refine-ai-btn"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setChatOpen(!chatOpen)}
-                  disabled={!html || !canRefineProp || isDownloaded}
-                >
-  <Edit3 className="mr-2 h-4 w-4" />
-                  {isDownloaded ? "Locked" : !canRefineProp ? "Upgrade to Vibe Edit" : chatOpen ? "Hide Chat" : "Vibe Edit"}
-                </Button>
-              </span>
-            </TooltipTrigger>
-            {isDownloaded && (
-              <TooltipContent>Asset locked after download</TooltipContent>
-            )}
-          </Tooltip>
-        </TooltipProvider>
-        <VibeEditInfo assetType="dynamic" />
+        {/* Vibe Edit Button */}
+        {isPreviewOnly ? (
+          <UpgradePopover>
+            <Button variant="outline" size="sm" disabled className="opacity-60">
+              <Edit3 className="mr-2 h-4 w-4" />
+              Vibe Edit
+              <Lock className="ml-2 h-3 w-3" />
+            </Button>
+          </UpgradePopover>
+        ) : (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span>
+                  <Button
+                    data-tutorial="refine-ai-btn"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setChatOpen(!chatOpen)}
+                    disabled={!html || !canRefineProp || isDownloaded}
+                  >
+                    <Edit3 className="mr-2 h-4 w-4" />
+                    {isDownloaded ? "Locked" : !canRefineProp ? "Upgrade to Vibe Edit" : chatOpen ? "Hide Chat" : "Vibe Edit"}
+                  </Button>
+                </span>
+              </TooltipTrigger>
+              {isDownloaded && (
+                <TooltipContent>Asset locked after download</TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
+        )}
+        {!isPreviewOnly && <VibeEditInfo assetType="dynamic" />}
 
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span>
-                <Button
-                  data-tutorial="generate-btn"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleGenerate}
-                  disabled={isWorking || isDownloaded}
-                >
-                  {isWorking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-                  {html ? "Regenerate" : "Generate"}
-                </Button>
-              </span>
-            </TooltipTrigger>
-            {isDownloaded && (
-              <TooltipContent>Asset locked after download</TooltipContent>
-            )}
-          </Tooltip>
-        </TooltipProvider>
+        {/* Regenerate Button */}
+        {isPreviewOnly ? (
+          <UpgradePopover>
+            <Button variant="outline" size="sm" disabled className="opacity-60">
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Regenerate
+              <Lock className="ml-2 h-3 w-3" />
+            </Button>
+          </UpgradePopover>
+        ) : (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span>
+                  <Button
+                    data-tutorial="generate-btn"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleGenerate}
+                    disabled={isWorking || isDownloaded}
+                  >
+                    {isWorking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+                    {html ? "Regenerate" : "Generate"}
+                  </Button>
+                </span>
+              </TooltipTrigger>
+              {isDownloaded && (
+                <TooltipContent>Asset locked after download</TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
+        )}
 
         {html && (
           <>
-            <Button data-tutorial="download-btn" variant="outline" size="sm" onClick={handleDownloadPdf}>
-              <FileDown className="mr-2 h-4 w-4" /> PDF Download
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleCopyText}>
-              <Copy className="mr-2 h-4 w-4" /> Copy to Text
-            </Button>
+            {/* PDF Download Button */}
+            {isPreviewOnly ? (
+              <UpgradePopover>
+                <Button variant="outline" size="sm" disabled className="opacity-60">
+                  <FileDown className="mr-2 h-4 w-4" /> PDF Download
+                  <Lock className="ml-2 h-3 w-3" />
+                </Button>
+              </UpgradePopover>
+            ) : (
+              <Button data-tutorial="download-btn" variant="outline" size="sm" onClick={handleDownloadPdf}>
+                <FileDown className="mr-2 h-4 w-4" /> PDF Download
+              </Button>
+            )}
+
+            {/* Copy to Text Button */}
+            {isPreviewOnly ? (
+              <UpgradePopover>
+                <Button variant="outline" size="sm" disabled className="opacity-60">
+                  <Copy className="mr-2 h-4 w-4" /> Copy to Text
+                  <Lock className="ml-2 h-3 w-3" />
+                </Button>
+              </UpgradePopover>
+            ) : (
+              <Button variant="outline" size="sm" onClick={handleCopyText}>
+                <Copy className="mr-2 h-4 w-4" /> Copy to Text
+              </Button>
+            )}
           </>
         )}
       </div>
@@ -406,7 +499,7 @@ export default function DynamicAssetTab({
         <Card className="overflow-hidden">
           <div className="w-full" style={{ height: "70vh" }}>
             <iframe
-              srcDoc={previewHtml || html}
+              srcDoc={isPreviewOnly ? injectWatermark(previewHtml || html) : (previewHtml || html)}
               className="w-full h-full border-0"
               sandbox="allow-scripts"
               title={`${asset.asset_name} Preview`}

@@ -18,6 +18,15 @@ import { streamArchitectureDiagram } from "@/lib/api/architectureDiagram";
 import { streamRoadmap } from "@/lib/api/roadmap";
 import { streamResumeGeneration, getResumeStyle } from "@/lib/api/resume";
 import { cleanHtml } from "@/lib/cleanHtml";
+import {
+  proposeAssets,
+  confirmAssetSelection,
+  streamDynamicAssetGeneration,
+  updateGeneratedAsset,
+  saveDynamicAssetRevision,
+} from "@/lib/api/dynamicAssets";
+import { supabase } from "@/integrations/supabase/client";
+import { injectWatermark } from "@/lib/watermarkHtml";
 
 export type GenerationJob = {
   applicationId: string;
@@ -427,6 +436,25 @@ class BackgroundGenerationManager {
         generation_status: "complete",
       });
 
+      // 7. Auto-generate preview assets for FREE tier users
+      try {
+        const { data: userData } = await supabase.auth.getUser();
+        if (userData?.user?.id) {
+          const { data: subscription } = await supabase
+            .from("user_subscriptions")
+            .select("tier")
+            .eq("user_id", userData.user.id)
+            .single();
+          
+          if (subscription?.tier === "free") {
+            this.updateJob(appId, { progress: "Generating preview materials..." });
+            await this.generateFreePreviewAssets(appId, markdown, companyName, jobTitle, brandingData);
+          }
+        }
+      } catch (previewErr) {
+        console.warn("Preview asset generation failed (non-critical):", previewErr);
+      }
+
       this.abortControllers.delete(appId);
       this.updateJob(appId, { status: "complete", progress: "Done!" });
     } catch (err: any) {
@@ -447,6 +475,91 @@ class BackgroundGenerationManager {
           generation_error: err.message,
         });
       } catch (saveErr) { console.warn("Failed to save error status:", saveErr); }
+    }
+  }
+
+  /**
+   * Generate 3 preview assets for free-tier users.
+   * These will be watermarked and view-only.
+   */
+  private async generateFreePreviewAssets(
+    appId: string,
+    jobDescription: string,
+    companyName: string,
+    jobTitle: string,
+    branding: any
+  ): Promise<void> {
+    try {
+      // Get 6 proposed assets, take first 3
+      const proposals = await proposeAssets({
+        jobDescription,
+        companyName,
+        jobTitle,
+      });
+      const selectedAssets = proposals.slice(0, 3);
+      if (selectedAssets.length === 0) return;
+
+      // Confirm selection and create generated_assets rows
+      const assets = await confirmAssetSelection(
+        appId,
+        selectedAssets.map((a) => a.asset_name)
+      );
+
+      // Get user's resume text
+      const { getActiveResumeText } = await import("@/lib/api/profile");
+      let resumeText = "";
+      try { resumeText = await getActiveResumeText(); } catch { }
+
+      // Generate each asset in parallel
+      await Promise.allSettled(
+        assets.map(async (asset) => {
+          try {
+            await updateGeneratedAsset(asset.id, { generation_status: "generating" });
+
+            const { getLayoutStyleForAsset } = await import("@/lib/assetLayoutStyles");
+            const layoutStyle = getLayoutStyleForAsset(
+              asset.asset_name,
+              assets.map((a) => a.asset_name)
+            );
+
+            let accumulated = "";
+            await streamDynamicAssetGeneration({
+              assetName: asset.asset_name,
+              briefDescription: asset.brief_description,
+              jobDescription,
+              resumeText,
+              companyName,
+              jobTitle,
+              branding,
+              layoutStyle,
+              onDelta: (text) => { accumulated += text; },
+              onDone: () => {},
+            });
+
+            // Clean and watermark the HTML for free tier
+            const cleaned = cleanHtml(accumulated);
+            const watermarked = injectWatermark(cleaned);
+            
+            await updateGeneratedAsset(asset.id, {
+              html: watermarked,
+              generation_status: "complete",
+            });
+
+            // Save initial revision
+            try {
+              await saveDynamicAssetRevision(asset.id, appId, watermarked, "Preview generated");
+            } catch { }
+          } catch (err: any) {
+            console.warn(`Preview asset generation failed for ${asset.asset_name}:`, err);
+            await updateGeneratedAsset(asset.id, {
+              generation_status: "error",
+              generation_error: err.message,
+            });
+          }
+        })
+      );
+    } catch (e) {
+      console.warn("Free preview asset generation failed:", e);
     }
   }
 

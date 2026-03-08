@@ -8,9 +8,10 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Edit3, Trash2, Shield, Users, RefreshCw, Gauge } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from "@/integrations/supabase/types";
 
 type TopUser = { user_id: string; count: number };
-type RateLimitOverride = { id: string; user_id: string; is_unlimited: boolean; per_hour: number; per_day: number; notes: string | null };
+type RateLimitOverride = Tables<'rate_limit_overrides'>;
 
 export default function AdminRateLimitsTab() {
   const [topUsers, setTopUsers] = useState<TopUser[]>([]);
@@ -33,7 +34,7 @@ export default function AdminRateLimitsTab() {
       const since = new Date(Date.now() - 86400_000).toISOString();
       const [usageRes, overridesRes] = await Promise.all([
         supabase.from('generation_usage').select('user_id, created_at').gte('created_at', since),
-        (supabase as any).from('rate_limit_overrides').select('*').order('created_at', { ascending: true }),
+        supabase.from('rate_limit_overrides').select('*').order('created_at', { ascending: true }),
       ]);
       if (usageRes.error) throw usageRes.error;
       const rows = usageRes.data || [];
@@ -44,8 +45,9 @@ export default function AdminRateLimitsTab() {
         Object.entries(counts).map(([user_id, count]) => ({ user_id, count })).sort((a, b) => b.count - a.count).slice(0, 5)
       );
       setOverrides(overridesRes.data || []);
-    } catch (err: any) {
-      toast({ title: 'Error loading data', description: err.message, variant: 'destructive' });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      toast({ title: 'Error loading data', description: message, variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -58,7 +60,7 @@ export default function AdminRateLimitsTab() {
     setSaving(true);
     try {
       if (editingId) {
-        const { error } = await (supabase as any).from('rate_limit_overrides').update({
+        const { error } = await supabase.from('rate_limit_overrides').update({
           is_unlimited: newUnlimited,
           per_hour: newPerHour,
           per_day: newPerDay,
@@ -68,7 +70,7 @@ export default function AdminRateLimitsTab() {
         if (error) throw error;
         toast({ title: 'Updated', description: 'Rate limit override updated.' });
       } else {
-        const { error } = await (supabase as any).from('rate_limit_overrides').insert({
+        const { error } = await supabase.from('rate_limit_overrides').insert({
           user_id: newUserId.trim(),
           is_unlimited: newUnlimited,
           per_hour: newPerHour,
@@ -80,8 +82,9 @@ export default function AdminRateLimitsTab() {
       }
       resetForm();
       load();
-    } catch (err: any) {
-      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      toast({ title: 'Error', description: message, variant: 'destructive' });
     } finally {
       setSaving(false);
     }
@@ -89,12 +92,13 @@ export default function AdminRateLimitsTab() {
 
   const handleDeleteOverride = async (id: string) => {
     try {
-      const { error } = await (supabase as any).from('rate_limit_overrides').delete().eq('id', id);
+      const { error } = await supabase.from('rate_limit_overrides').delete().eq('id', id);
       if (error) throw error;
       toast({ title: 'Removed', description: 'Override removed. User returns to default limits.' });
       load();
-    } catch (err: any) {
-      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      toast({ title: 'Error', description: message, variant: 'destructive' });
     }
   };
 

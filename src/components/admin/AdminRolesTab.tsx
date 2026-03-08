@@ -10,20 +10,17 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from "@/integrations/supabase/types";
 
 const PROTECTED_ADMIN_ID = "f8182de6-de8e-4c12-9009-88fb5c4e66b8";
 
-interface RoleEntry {
-  id: string;
-  user_id: string;
-  role: string;
-}
+type UserRole = Tables<'user_roles'>;
 
 interface UserWithRoles {
   user_id: string;
   email: string | null;
   display_name: string | null;
-  roles: RoleEntry[];
+  roles: UserRole[];
 }
 
 export default function AdminRolesTab() {
@@ -45,23 +42,20 @@ export default function AdminRolesTab() {
   const loadData = async () => {
     setLoading(true);
     try {
-      // Get all role entries
-      const { data: roleData, error: roleErr } = await (supabase as any)
+      const { data: roleData, error: roleErr } = await supabase
         .from("user_roles")
         .select("id, user_id, role");
       if (roleErr) throw new Error(roleErr.message);
 
-      // Get profiles for these users
-      const userIds = [...new Set((roleData || []).map((r: RoleEntry) => r.user_id))];
-      const { data: profiles } = await (supabase as any)
+      const userIds = [...new Set((roleData || []).map((r) => r.user_id))];
+      const { data: profiles } = await supabase
         .from("profiles")
         .select("id, email, display_name")
         .in("id", userIds);
 
       const profileMap = new Map<string, { email: string | null; display_name: string | null }>();
-      (profiles || []).forEach((p: any) => profileMap.set(p.id, { email: p.email, display_name: p.display_name }));
+      (profiles || []).forEach((p) => profileMap.set(p.id, { email: p.email, display_name: p.display_name }));
 
-      // Group by user
       const userMap = new Map<string, UserWithRoles>();
       for (const r of roleData || []) {
         if (!userMap.has(r.user_id)) {
@@ -77,8 +71,9 @@ export default function AdminRolesTab() {
       }
 
       setUsers([...userMap.values()]);
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      toast({ title: "Error", description: message, variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -95,8 +90,7 @@ export default function AdminRolesTab() {
       let profile: { id: string; email: string | null } | null = null;
 
       if (isUuid(input)) {
-        // Look up by user ID
-        const { data, error } = await (supabase as any)
+        const { data, error } = await supabase
           .from("profiles")
           .select("id, email")
           .eq("id", input)
@@ -104,8 +98,7 @@ export default function AdminRolesTab() {
         if (error) throw new Error(error.message);
         profile = data;
       } else {
-        // Look up by email
-        const { data, error } = await (supabase as any)
+        const { data, error } = await supabase
           .from("profiles")
           .select("id, email")
           .ilike("email", input)
@@ -120,7 +113,7 @@ export default function AdminRolesTab() {
         return;
       }
 
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from("user_roles")
         .insert({ user_id: profile.id, role: addRole });
       if (error) {
@@ -134,8 +127,9 @@ export default function AdminRolesTab() {
         setAddEmail("");
         loadData();
       }
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      toast({ title: "Error", description: message, variant: "destructive" });
     } finally {
       setAdding(false);
     }
@@ -143,16 +137,17 @@ export default function AdminRolesTab() {
 
   const handleRemoveRole = async (userId: string, role: string) => {
     try {
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from("user_roles")
         .delete()
         .eq("user_id", userId)
-        .eq("role", role);
+        .eq("role", role as "admin" | "qa" | "user");
       if (error) throw new Error(error.message);
       toast({ title: "Role removed" });
       loadData();
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      toast({ title: "Error", description: message, variant: "destructive" });
     }
   };
 

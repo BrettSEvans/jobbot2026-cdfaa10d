@@ -6,11 +6,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, CreditCard, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
+
+type SubscriptionTier = Database["public"]["Enums"]["subscription_tier"];
 
 type SubscriptionRow = {
   id: string;
   user_id: string;
-  tier: "free" | "pro" | "premium";
+  tier: SubscriptionTier;
   status: string;
   current_period_end: string;
 };
@@ -59,13 +62,14 @@ export default function AdminSubscriptionsTab() {
       });
 
       enriched.sort((a, b) => {
-        const order = { premium: 0, pro: 1, free: 2 };
+        const order: Record<SubscriptionTier, number> = { premium: 0, pro: 1, free: 2 };
         return (order[a.tier] ?? 3) - (order[b.tier] ?? 3) || a.email.localeCompare(b.email);
       });
 
       setSubs(enriched);
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      toast({ title: "Error", description: message, variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -79,17 +83,18 @@ export default function AdminSubscriptionsTab() {
       const { error } = await supabase
         .from("user_subscriptions")
         .update({
-          tier: newTier as any,
+          tier: newTier as SubscriptionTier,
           updated_at: new Date().toISOString(),
         })
         .eq("id", subId);
       if (error) throw error;
       toast({ title: "Updated", description: `Subscription changed to ${newTier}.` });
       setSubs((prev) =>
-        prev.map((s) => (s.id === subId ? { ...s, tier: newTier as any } : s))
+        prev.map((s) => (s.id === subId ? { ...s, tier: newTier as SubscriptionTier } : s))
       );
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      toast({ title: "Error", description: message, variant: "destructive" });
     } finally {
       setUpdatingId(null);
     }

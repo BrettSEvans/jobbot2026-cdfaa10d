@@ -80,12 +80,12 @@ const ApplicationDetail = () => {
   const [atsLoading, setAtsLoading] = useState(false);
 
   // Pipeline stage
-  const currentStage = ((state.app as any)?.pipeline_stage || 'applied') as PipelineStage;
+  const currentStage = (state.app?.pipeline_stage || 'applied') as PipelineStage;
 
   // Load ATS score from app data
   useEffect(() => {
-    if (state.app && (state.app as any).ats_score) {
-      const score = (state.app as any).ats_score;
+    if (state.app?.ats_score) {
+      const score = state.app.ats_score as unknown as AtsScoreResult;
       if (score.score != null) setAtsScore(score);
     }
   }, [state.app]);
@@ -142,7 +142,7 @@ const ApplicationDetail = () => {
 
   const generateDynamicAsset = async (asset: GeneratedAsset) => {
     try {
-      await updateGeneratedAsset(asset.id, { generation_status: 'generating' } as any);
+      await updateGeneratedAsset(asset.id, { generation_status: 'generating' });
       setDynamicAssets((prev) =>
         prev.map((a) => a.id === asset.id ? { ...a, generation_status: 'generating' } : a)
       );
@@ -171,7 +171,7 @@ const ApplicationDetail = () => {
       const updated = await updateGeneratedAsset(asset.id, {
         html: cleaned,
         generation_status: 'complete',
-      } as any);
+      });
 
       try {
         await saveDynamicAssetRevision(asset.id, asset.application_id, cleaned, "Initial generation");
@@ -184,7 +184,7 @@ const ApplicationDetail = () => {
       await updateGeneratedAsset(asset.id, {
         generation_status: 'error',
         generation_error: err.message,
-      } as any);
+      });
       setDynamicAssets((prev) =>
         prev.map((a) => a.id === asset.id ? { ...a, generation_status: 'error', generation_error: err.message } : a)
       );

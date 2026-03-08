@@ -110,7 +110,7 @@ export function useApplicationDetail(id: string | undefined): ApplicationState {
       setRaidLogHtml(data.raid_log_html || "");
       setArchDiagramHtml(data.architecture_diagram_html || "");
       setRoadmapHtml(data.roadmap_html || "");
-      setResumeHtml((data as any).resume_html || "");
+      setResumeHtml(data.resume_html || "");
       setChatHistory(Array.isArray(data.chat_history) ? data.chat_history as Array<{ role: string; content: string }> : []);
     } catch (err: unknown) {
       toast({ title: "Error", description: err instanceof Error ? err.message : "Unknown error", variant: "destructive" });
@@ -154,7 +154,7 @@ export function useApplicationDetail(id: string | undefined): ApplicationState {
     if (!id) return;
     setSaving(true);
     try {
-      const updated = await saveJobApplication({ id, job_url: app!.job_url, ...fields } as any);
+      const updated = await saveJobApplication({ id, job_url: app!.job_url, ...fields });
       setApp(updated);
       toast({ title: "Saved", description: "Changes saved." });
     } catch (err: unknown) {

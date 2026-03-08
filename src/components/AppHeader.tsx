@@ -1,12 +1,13 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { LogOut, Moon, Sun, ArrowRightLeft, Menu } from "lucide-react";
+import { LogOut, Moon, Sun, ArrowRightLeft, Menu, Shield } from "lucide-react";
 import BrandLogo from "@/components/BrandLogo";
 import { useTheme } from "@/hooks/useTheme";
 import { useNavigationGuard } from "@/hooks/useNavigationGuard";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { useSubscription } from "@/hooks/useSubscription";
+import { useUserRoles } from "@/hooks/useUserRoles";
 import { Badge } from "@/components/ui/badge";
 import {
   Sheet,

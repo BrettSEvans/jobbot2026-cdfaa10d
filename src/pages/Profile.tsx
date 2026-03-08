@@ -14,7 +14,7 @@ import { getProfile, updateProfile, uploadResumePdf, listUserResumes, setActiveR
 import { updateTestUser } from "@/lib/api/testUsers";
 import StylePreferencesCard from "@/components/StylePreferencesCard";
 import TestUserManager from "@/components/TestUserManager";
-import { useAdminRole } from "@/hooks/useAdminRole";
+import { useUserRoles } from "@/hooks/useUserRoles";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import {
   AlertDialog,

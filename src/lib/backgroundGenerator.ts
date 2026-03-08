@@ -18,6 +18,15 @@ import { streamArchitectureDiagram } from "@/lib/api/architectureDiagram";
 import { streamRoadmap } from "@/lib/api/roadmap";
 import { streamResumeGeneration, getResumeStyle } from "@/lib/api/resume";
 import { cleanHtml } from "@/lib/cleanHtml";
+import {
+  proposeAssets,
+  confirmAssetSelection,
+  streamDynamicAssetGeneration,
+  updateGeneratedAsset,
+  saveDynamicAssetRevision,
+} from "@/lib/api/dynamicAssets";
+import { supabase } from "@/integrations/supabase/client";
+import { injectWatermark } from "@/lib/watermarkHtml";
 
 export type GenerationJob = {
   applicationId: string;

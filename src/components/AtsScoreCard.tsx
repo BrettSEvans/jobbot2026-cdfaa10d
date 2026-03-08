@@ -335,6 +335,9 @@ export default function AtsScoreCard({ score, loading, onRescan, onApplyFix, dis
     <Card className="overflow-hidden">
       <CardContent className="py-2.5 px-3">
         <div className="flex items-center gap-3">
+          {/* Label */}
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider shrink-0">Resume Health</span>
+
           {/* Score pill */}
           {loading ? (
             <Loader2 className="h-4 w-4 animate-spin text-muted-foreground shrink-0" />

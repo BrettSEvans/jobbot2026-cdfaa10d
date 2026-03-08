@@ -84,30 +84,17 @@ export default function DynamicAssetTab({
   const isDownloaded = !!asset.downloaded_at;
   const isDashboardType = asset.asset_name.toLowerCase().includes("dashboard");
 
-  // Upgrade popover component for locked actions
-  const UpgradePopover = ({ children }: { children: React.ReactNode }) => (
-    <Popover>
-      <PopoverTrigger asChild>
-        <span className="cursor-pointer">{children}</span>
-      </PopoverTrigger>
-      <PopoverContent className="w-64 p-4" align="start">
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <Crown className="h-5 w-5 text-primary" />
-            <span className="font-medium">Upgrade Required</span>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            This feature is available with a Pro or Premium subscription. Would you like access?
-          </p>
-          <div className="flex gap-2">
-            <Button size="sm" onClick={() => navigate("/pricing")}>
-              View Plans
-            </Button>
-          </div>
-        </div>
-      </PopoverContent>
-    </Popover>
-  );
+  const showUpgradeToast = () => {
+    toast({
+      title: "Upgrade Required",
+      description: "This feature is available with a Pro or Premium subscription.",
+      action: (
+        <Button size="sm" variant="default" onClick={() => navigate("/pricing")}>
+          View Plans
+        </Button>
+      ),
+    });
+  };
 
   useEffect(() => {
     if (asset.html) loadRevisions();
@@ -316,13 +303,11 @@ export default function DynamicAssetTab({
       <div className="flex flex-wrap gap-2">
         {/* Vibe Edit Button */}
         {isPreviewOnly ? (
-          <UpgradePopover>
-            <Button variant="outline" size="sm" disabled className="opacity-60">
-              <Edit3 className="mr-2 h-4 w-4" />
-              Vibe Edit
-              <Lock className="ml-2 h-3 w-3" />
-            </Button>
-          </UpgradePopover>
+          <Button variant="outline" size="sm" className="opacity-75" onClick={showUpgradeToast}>
+            <Edit3 className="mr-2 h-4 w-4" />
+            Vibe Edit
+            <Lock className="ml-2 h-3 w-3" />
+          </Button>
         ) : (
           <TooltipProvider>
             <Tooltip>
@@ -350,13 +335,11 @@ export default function DynamicAssetTab({
 
         {/* Regenerate Button */}
         {isPreviewOnly ? (
-          <UpgradePopover>
-            <Button variant="outline" size="sm" disabled className="opacity-60">
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Regenerate
-              <Lock className="ml-2 h-3 w-3" />
-            </Button>
-          </UpgradePopover>
+          <Button variant="outline" size="sm" className="opacity-75" onClick={showUpgradeToast}>
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Regenerate
+            <Lock className="ml-2 h-3 w-3" />
+          </Button>
         ) : (
           <TooltipProvider>
             <Tooltip>
@@ -385,12 +368,10 @@ export default function DynamicAssetTab({
           <>
             {/* PDF Download Button */}
             {isPreviewOnly ? (
-              <UpgradePopover>
-                <Button variant="outline" size="sm" disabled className="opacity-60">
-                  <FileDown className="mr-2 h-4 w-4" /> PDF Download
-                  <Lock className="ml-2 h-3 w-3" />
-                </Button>
-              </UpgradePopover>
+              <Button variant="outline" size="sm" className="opacity-75" onClick={showUpgradeToast}>
+                <FileDown className="mr-2 h-4 w-4" /> PDF Download
+                <Lock className="ml-2 h-3 w-3" />
+              </Button>
             ) : (
               <Button data-tutorial="download-btn" variant="outline" size="sm" onClick={handleDownloadPdf}>
                 <FileDown className="mr-2 h-4 w-4" /> PDF Download
@@ -399,12 +380,10 @@ export default function DynamicAssetTab({
 
             {/* Copy to Text Button */}
             {isPreviewOnly ? (
-              <UpgradePopover>
-                <Button variant="outline" size="sm" disabled className="opacity-60">
-                  <Copy className="mr-2 h-4 w-4" /> Copy to Text
-                  <Lock className="ml-2 h-3 w-3" />
-                </Button>
-              </UpgradePopover>
+              <Button variant="outline" size="sm" className="opacity-75" onClick={showUpgradeToast}>
+                <Copy className="mr-2 h-4 w-4" /> Copy to Text
+                <Lock className="ml-2 h-3 w-3" />
+              </Button>
             ) : (
               <Button variant="outline" size="sm" onClick={handleCopyText}>
                 <Copy className="mr-2 h-4 w-4" /> Copy to Text

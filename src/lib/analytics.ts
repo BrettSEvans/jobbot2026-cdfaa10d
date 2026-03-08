@@ -69,7 +69,6 @@ async function loadPostHog(apiKey: string) {
   } catch (err) {
     console.warn("[analytics] PostHog failed to load:", err);
   }
-  }
 }
 
 export const analytics: AnalyticsClient = {

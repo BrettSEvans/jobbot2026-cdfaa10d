@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -69,10 +69,23 @@ export default function Admin() {
   const [hardDeleteConfirmSlug, setHardDeleteConfirmSlug] = useState("");
   const [trashOpen, setTrashOpen] = useState(false);
 
+  const [activeBuildLabel, setActiveBuildLabel] = useState<string | null>(null);
+
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       setCurrentUserId(user?.id || null);
     });
+    // Fetch latest active QA run build label
+    (supabase as any)
+      .from("qa_test_runs")
+      .select("build_label")
+      .eq("status", "in_progress")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }: any) => {
+        if (data) setActiveBuildLabel(data.build_label);
+      });
   }, []);
 
   useEffect(() => {
@@ -203,7 +216,14 @@ export default function Admin() {
             <ArrowLeft className="h-4 w-4 mr-1" /> Back
           </Button>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight font-heading">Admin Panel</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold tracking-tight font-heading">Admin Panel</h1>
+              {activeBuildLabel && (
+                <Badge variant="outline" className="text-xs font-mono">
+                  Build: {activeBuildLabel}
+                </Badge>
+              )}
+            </div>
             <p className="text-sm text-muted-foreground">Manage resume prompt styles, admin users, and view the user guide</p>
           </div>
         </div>

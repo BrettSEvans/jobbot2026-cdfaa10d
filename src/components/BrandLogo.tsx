@@ -19,9 +19,9 @@ export default function BrandLogo({ className, size = "md" }: BrandLogoProps) {
   };
 
   const imgSize = {
-    sm: "h-[2em] w-[2em]",
-    md: "h-[2em] w-[2em]",
-    lg: "h-[2em] w-[2em]",
+    sm: "h-[3em] w-[3em]",
+    md: "h-[3em] w-[3em]",
+    lg: "h-[3em] w-[3em]",
   };
 
   return (

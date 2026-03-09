@@ -104,7 +104,6 @@ function AuthenticatedApp() {
               <Route path="/terms" element={<Terms />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/cookies" element={<CookiePolicy />} />
-              <Route path="/logo-preview" element={<LogoPreview />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </>
           ) : (

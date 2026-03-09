@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import { BRAND } from "@/lib/branding";
+import logoImg from "@/assets/resuvibe-logo.png";
 
 interface BrandLogoProps {
   className?: string;
@@ -8,8 +9,7 @@ interface BrandLogoProps {
 
 /**
  * Custom wordmark logo for ResuVibe.
- * The "Resu" portion is in foreground, "Vibe" is in primary (amber/gold)
- * with a subtle underline accent.
+ * Logo mark + "Resu" in foreground + "Vibe" in primary (amber/gold).
  */
 export default function BrandLogo({ className, size = "md" }: BrandLogoProps) {
   const sizeClasses = {
@@ -18,16 +18,23 @@ export default function BrandLogo({ className, size = "md" }: BrandLogoProps) {
     lg: "text-3xl",
   };
 
+  const imgSize = {
+    sm: "h-5 w-5",
+    md: "h-7 w-7",
+    lg: "h-10 w-10",
+  };
+
   return (
     <span
       className={cn(
-        "font-heading font-bold tracking-tight inline-flex items-baseline gap-0",
+        "font-heading font-bold tracking-tight inline-flex items-center gap-1.5",
         sizeClasses[size],
         className
       )}
     >
+      <img src={logoImg} alt="ResuVibe logo" className={cn(imgSize[size], "object-contain")} />
       <span className="text-foreground">Resu</span>
-      <span className="relative text-primary">
+      <span className="relative text-primary" style={{ marginLeft: "-0.15em" }}>
         Vibe
         <span className="absolute -bottom-0.5 left-0 right-0 h-[2px] rounded-full bg-primary/60" />
       </span>

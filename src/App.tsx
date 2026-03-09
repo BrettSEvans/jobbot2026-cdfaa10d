@@ -27,6 +27,7 @@ import HelpButton from "./components/HelpButton";
 import TutorialOverlay from "./components/tutorial/TutorialOverlay";
 import TutorialDemo from "./pages/TutorialDemo";
 import ImportJob from "./pages/ImportJob";
+import LogoPreview from "./pages/LogoPreview";
 import { useAuth } from "./hooks/useAuth";
 import { useTutorial } from "./hooks/useTutorial";
 import { NavigationGuardProvider } from "./hooks/useNavigationGuard";
@@ -103,6 +104,7 @@ function AuthenticatedApp() {
               <Route path="/terms" element={<Terms />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/cookies" element={<CookiePolicy />} />
+              <Route path="/logo-preview" element={<LogoPreview />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </>
           ) : (
@@ -118,6 +120,7 @@ function AuthenticatedApp() {
               <Route path="/pricing" element={<><AppHeader onSignOut={signOut} /><main id="main-content"><Pricing /></main></>} />
               <Route path="/tutorial-demo" element={<><AppHeader onSignOut={signOut} /><main id="main-content"><TutorialDemo /></main></>} />
               <Route path="/import" element={<><AppHeader onSignOut={signOut} /><main id="main-content"><ImportJob /></main></>} />
+              <Route path="/logo-preview" element={<LogoPreview />} />
               <Route path="/terms" element={<Terms />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/cookies" element={<CookiePolicy />} />

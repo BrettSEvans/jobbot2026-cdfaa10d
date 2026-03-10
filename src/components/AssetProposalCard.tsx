@@ -87,7 +87,7 @@ export default function AssetProposalCard({
     try {
       const assets = await confirmAssetSelection(applicationId, Array.from(selected));
       onAssetsConfirmed(assets);
-      toast({ title: "Selection confirmed!", description: "Generating your 3 documents..." });
+      toast({ title: "Selection confirmed!", description: "Generating your selected documents..." });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {

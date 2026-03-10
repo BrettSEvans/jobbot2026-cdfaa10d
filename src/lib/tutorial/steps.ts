@@ -64,7 +64,7 @@ registerTutorialStep({
   body: "Paste or upload your master resume text here. This feeds into every cover letter and resume the AI generates — keep it detailed and up-to-date.",
   placement: "top",
   route: "/profile",
-  order: 5,
+  order: 6,
 });
 
 registerTutorialStep({

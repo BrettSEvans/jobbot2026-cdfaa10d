@@ -562,6 +562,39 @@ export type Database = {
         }
         Relationships: []
       }
+      prompt_log: {
+        Row: {
+          category: string
+          created_at: string
+          created_by: string | null
+          id: string
+          outcome: string
+          prompt: string
+          prompt_date: string
+          prompt_number: number
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          outcome?: string
+          prompt: string
+          prompt_date?: string
+          prompt_number?: number
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          outcome?: string
+          prompt?: string
+          prompt_date?: string
+          prompt_number?: number
+        }
+        Relationships: []
+      }
       proposed_assets: {
         Row: {
           application_id: string

@@ -17,6 +17,7 @@ import IdentityCard from "@/components/profile/IdentityCard";
 import ResumeCard from "@/components/profile/ResumeCard";
 import SkillsCard from "@/components/profile/SkillsCard";
 import ToneCard from "@/components/profile/ToneCard";
+import CoverLetterCard from "@/components/profile/CoverLetterCard";
 
 export default function Profile() {
   const { toast } = useToast();

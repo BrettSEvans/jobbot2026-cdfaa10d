@@ -1243,3 +1243,423 @@ registerTest({
   requiresAuth: true,
   requiresAdmin: false,
 });
+
+registerTest({
+  id: 'qa-job-search-type-filter',
+  title: 'Job search — job type filter (full-time/part-time)',
+  area: 'Job Search',
+  route: '/search-jobs',
+  steps: [
+    'Navigate to /search-jobs.',
+    'Enter a job query.',
+    'Expand Filters and select "Full-time" from Job Type.',
+    'Click Search.',
+    'Repeat with "Part-time", "Contract", "Internship".',
+  ],
+  expectedResults: [
+    'Results reflect the selected job type.',
+    'Changing the filter and re-searching updates results.',
+  ],
+  tags: ['regression'],
+  estimatedMinutes: 3,
+  requiresAuth: true,
+  requiresAdmin: false,
+});
+
+// ── Public Pages ──────────────────────────────────────
+
+registerTest({
+  id: 'qa-landing-page',
+  title: 'Landing page renders and CTAs work',
+  area: 'Public Pages',
+  route: '/',
+  steps: [
+    'Navigate to / while signed out.',
+    'Verify the hero section, feature highlights, and mockup images render.',
+    'Click the primary CTA ("Get Started" or "Sign Up").',
+  ],
+  expectedResults: [
+    'Landing page renders without errors.',
+    'All mockup images load.',
+    'CTA navigates to /auth.',
+  ],
+  tags: ['smoke', 'regression'],
+  estimatedMinutes: 2,
+  requiresAuth: false,
+  requiresAdmin: false,
+});
+
+registerTest({
+  id: 'qa-cookie-policy-page',
+  title: 'Cookie Policy page renders',
+  area: 'Public Pages',
+  route: '/cookies',
+  steps: [
+    'Navigate to /cookies.',
+    'Verify the page renders with policy content.',
+  ],
+  expectedResults: [
+    'Cookie Policy page loads without errors.',
+    'Content describes cookie categories and usage.',
+  ],
+  tags: ['regression'],
+  estimatedMinutes: 1,
+  requiresAuth: false,
+  requiresAdmin: false,
+});
+
+registerTest({
+  id: 'qa-privacy-page',
+  title: 'Privacy Policy page renders',
+  area: 'Public Pages',
+  route: '/privacy',
+  steps: [
+    'Navigate to /privacy.',
+    'Verify the page renders with privacy content.',
+  ],
+  expectedResults: [
+    'Privacy Policy page loads without errors.',
+    'Content covers data collection, retention, and user rights.',
+  ],
+  tags: ['regression'],
+  estimatedMinutes: 1,
+  requiresAuth: false,
+  requiresAdmin: false,
+});
+
+registerTest({
+  id: 'qa-terms-page',
+  title: 'Terms of Service page renders',
+  area: 'Public Pages',
+  route: '/terms',
+  steps: [
+    'Navigate to /terms.',
+    'Verify the page renders with terms content.',
+  ],
+  expectedResults: [
+    'Terms page loads without errors.',
+    'Content includes terms and conditions.',
+  ],
+  tags: ['regression'],
+  estimatedMinutes: 1,
+  requiresAuth: false,
+  requiresAdmin: false,
+});
+
+registerTest({
+  id: 'qa-404-page',
+  title: '404 / Not Found page renders for invalid routes',
+  area: 'Public Pages',
+  route: '/this-page-does-not-exist',
+  steps: [
+    'Navigate to a non-existent route (e.g. /this-page-does-not-exist).',
+    'Observe the 404 page.',
+  ],
+  expectedResults: [
+    '404 page renders with "Page not found" message.',
+    '"Return to Home" link navigates back to /.',
+  ],
+  tags: ['regression'],
+  estimatedMinutes: 1,
+  requiresAuth: false,
+  requiresAdmin: false,
+});
+
+// ── Auth (additional) ─────────────────────────────────
+
+registerTest({
+  id: 'qa-verify-email-page',
+  title: 'Verify Email page renders after signup',
+  area: 'Auth',
+  route: '/verify-email',
+  preconditions: ['User has just signed up and not yet verified.'],
+  steps: [
+    'Sign up with a new email.',
+    'Observe the redirect to the verify email page.',
+    'Verify the messaging instructs the user to check their inbox.',
+  ],
+  expectedResults: [
+    'Verify Email page renders without errors.',
+    'Clear instructions are displayed.',
+    'Resend link/button is available if applicable.',
+  ],
+  tags: ['regression'],
+  estimatedMinutes: 2,
+  requiresAuth: false,
+  requiresAdmin: false,
+});
+
+registerTest({
+  id: 'qa-reset-password-page',
+  title: 'Reset Password page renders and accepts new password',
+  area: 'Auth',
+  route: '/reset-password',
+  preconditions: ['User clicked the password reset link from email.'],
+  steps: [
+    'Click the reset password link from email.',
+    'Observe the /reset-password page renders.',
+    'Enter a new password and confirm.',
+    'Submit the form.',
+  ],
+  expectedResults: [
+    'Reset Password page renders with password fields.',
+    'Submitting updates the password.',
+    'Success message is displayed.',
+  ],
+  tags: ['regression'],
+  estimatedMinutes: 3,
+  requiresAuth: false,
+  requiresAdmin: false,
+});
+
+registerTest({
+  id: 'qa-campaign-auto-approve',
+  title: 'Campaign signup auto-approves user',
+  area: 'Auth',
+  route: '/auth',
+  preconditions: ['A campaign exists with auto-approve enabled.'],
+  steps: [
+    'Navigate to /auth with campaign UTM parameters (e.g. ?utm_campaign=test).',
+    'Sign up with a new email.',
+    'Verify email if required.',
+    'Attempt to sign in.',
+  ],
+  expectedResults: [
+    'User is auto-approved and skips the pending approval screen.',
+    'User lands directly on the applications dashboard.',
+  ],
+  tags: ['regression'],
+  estimatedMinutes: 5,
+  requiresAuth: false,
+  requiresAdmin: false,
+});
+
+// ── Cross-cutting (additional) ────────────────────────
+
+registerTest({
+  id: 'qa-tutorial-demo-page',
+  title: 'Tutorial Demo page renders',
+  area: 'Cross-cutting',
+  route: '/tutorial-demo',
+  steps: [
+    'Navigate to /tutorial-demo.',
+    'Verify the standalone tutorial demo loads.',
+    'Step through the tutorial.',
+  ],
+  expectedResults: [
+    'Tutorial demo page renders without errors.',
+    'Tutorial steps display with spotlight mask.',
+    'All steps can be navigated.',
+  ],
+  tags: ['regression'],
+  estimatedMinutes: 3,
+  requiresAuth: false,
+  requiresAdmin: false,
+});
+
+registerTest({
+  id: 'qa-cookie-consent-banner',
+  title: 'Cookie consent banner: accept, reject, customize',
+  area: 'Cross-cutting',
+  steps: [
+    'Clear localStorage cookie consent key.',
+    'Reload the page.',
+    'Observe the cookie consent banner appears.',
+    'Click "Customize preferences" and toggle analytics off.',
+    'Click "Save Preferences".',
+    'Reload and verify no banner appears.',
+  ],
+  expectedResults: [
+    'Banner appears for first-time visitors.',
+    'Customization panel shows essential (locked), functional, and analytics toggles.',
+    'Preferences are saved and banner does not reappear.',
+  ],
+  tags: ['regression'],
+  estimatedMinutes: 3,
+  requiresAuth: false,
+  requiresAdmin: false,
+});
+
+registerTest({
+  id: 'qa-navigation-guard',
+  title: 'Navigation guard blocks leaving with unsaved changes',
+  area: 'Cross-cutting',
+  steps: [
+    'Navigate to a page with editable content (e.g. Profile).',
+    'Make a change without saving.',
+    'Attempt to navigate away.',
+  ],
+  expectedResults: [
+    'A confirmation dialog appears warning about unsaved changes.',
+    'Cancelling stays on the page.',
+    'Confirming navigates away and discards changes.',
+  ],
+  tags: ['regression'],
+  estimatedMinutes: 3,
+  requiresAuth: true,
+  requiresAdmin: false,
+});
+
+registerTest({
+  id: 'qa-idle-session-timeout',
+  title: 'Idle session timeout warning and auto-logout',
+  area: 'Cross-cutting',
+  preconditions: ['User is signed in. Idle timeout is set to 30 minutes.'],
+  steps: [
+    'Sign in and remain idle.',
+    'After ~25 minutes, observe the session expiring warning toast.',
+    'Continue remaining idle for 5 more minutes.',
+  ],
+  expectedResults: [
+    'Warning toast appears at 25 minutes: "Session expiring soon".',
+    'User is auto-logged out at 30 minutes and redirected to /auth.',
+  ],
+  tags: ['regression'],
+  estimatedMinutes: 35,
+  requiresAuth: true,
+  requiresAdmin: false,
+});
+
+// ── Admin (additional) ────────────────────────────────
+
+registerTest({
+  id: 'qa-admin-roles-access',
+  title: 'Roles & Access: assign and remove roles',
+  area: 'Admin',
+  route: '/admin',
+  helpSlug: 'admin-panel',
+  steps: [
+    'Navigate to Admin → Roles & Access.',
+    'Enter a user UUID or email.',
+    'Assign the "qa" role.',
+    'Verify the role badge appears.',
+    'Remove the "qa" role.',
+  ],
+  expectedResults: [
+    'User is found by UUID or email.',
+    'Role is assigned and badge appears.',
+    'Role is removed and badge disappears.',
+    'Founder account role removal is blocked.',
+  ],
+  tags: ['regression', 'admin'],
+  estimatedMinutes: 4,
+  requiresAuth: true,
+  requiresAdmin: true,
+});
+
+registerTest({
+  id: 'qa-admin-prompt-log',
+  title: 'Prompt Log: view entries',
+  area: 'Admin',
+  route: '/admin',
+  helpSlug: 'admin-panel',
+  steps: [
+    'Navigate to Admin → Prompt Log.',
+    'Review the list of prompt entries.',
+    'Verify entries show prompt number, date, category, and outcome.',
+  ],
+  expectedResults: [
+    'Prompt log table loads with entries.',
+    'Entries are sorted by date descending.',
+    'Each entry shows relevant metadata.',
+  ],
+  tags: ['regression', 'admin'],
+  estimatedMinutes: 2,
+  requiresAuth: true,
+  requiresAdmin: true,
+});
+
+registerTest({
+  id: 'qa-admin-campaigns',
+  title: 'Campaigns: create and view attribution',
+  area: 'Admin',
+  route: '/admin',
+  helpSlug: 'admin-panel',
+  steps: [
+    'Navigate to Admin → Campaigns.',
+    'Create a new campaign with UTM parameters.',
+    'View the campaign list and attribution data.',
+  ],
+  expectedResults: [
+    'Campaign is created with all UTM fields.',
+    'Campaign appears in the list.',
+    'Attribution / signup counts are displayed.',
+  ],
+  tags: ['regression', 'admin'],
+  estimatedMinutes: 4,
+  requiresAuth: true,
+  requiresAdmin: true,
+});
+
+registerTest({
+  id: 'qa-admin-qa-suite',
+  title: 'QA Suite: create run, record results, export',
+  area: 'Admin',
+  route: '/admin',
+  helpSlug: 'admin-panel',
+  preconditions: ['User has QA or admin role.'],
+  steps: [
+    'Navigate to Admin → QA Suite.',
+    'Create a new test run with a build label.',
+    'Record pass/fail/skip results for several test cases.',
+    'Export the run as XLSX.',
+  ],
+  expectedResults: [
+    'Test run is created and selected.',
+    'Results are saved and progress bar updates.',
+    'XLSX export downloads with Summary and Results sheets.',
+  ],
+  tags: ['regression', 'admin'],
+  estimatedMinutes: 6,
+  requiresAuth: true,
+  requiresAdmin: true,
+});
+
+// ── Application Detail (additional) ───────────────────
+
+registerTest({
+  id: 'qa-job-description-tab',
+  title: 'Job Description tab: view and edit',
+  area: 'Application Detail',
+  route: '/applications/:id',
+  preconditions: ['An application with a scraped job description.'],
+  steps: [
+    'Open an application detail page.',
+    'Switch to the Job Description tab.',
+    'Click "Edit" and modify the job description text.',
+    'Click "Save".',
+    'Click "Discard" on a subsequent edit to test cancel.',
+  ],
+  expectedResults: [
+    'Job description markdown renders correctly.',
+    'Editing mode shows a textarea with the current content.',
+    'Saved changes persist after reload.',
+    'Discard reverts to the last saved version.',
+  ],
+  tags: ['regression'],
+  estimatedMinutes: 3,
+  requiresAuth: true,
+  requiresAdmin: false,
+});
+
+registerTest({
+  id: 'qa-details-tab-edit',
+  title: 'Details tab: edit application metadata',
+  area: 'Application Detail',
+  route: '/applications/:id',
+  steps: [
+    'Open an application detail page.',
+    'Switch to the Details tab.',
+    'Edit the company name, job title, or job URL.',
+    'Save the changes.',
+  ],
+  expectedResults: [
+    'Fields are editable inline.',
+    'Changes persist after save and reload.',
+    'Updated company name reflects in the header.',
+  ],
+  tags: ['regression'],
+  estimatedMinutes: 3,
+  requiresAuth: true,
+  requiresAdmin: false,
+});

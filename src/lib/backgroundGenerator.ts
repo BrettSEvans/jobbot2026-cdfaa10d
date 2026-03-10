@@ -253,8 +253,52 @@ class BackgroundGenerationManager {
         ...(sourceResumeId ? { source_resume_id: sourceResumeId } : {}),
       });
 
-      // 4. Generate cover letter
+      // 4. Generate resume
+      this.updateJob(appId, { status: "resume", progress: "Generating resume..." });
+      await saveJobApplication({ id: appId, job_url: jobUrl, generation_status: "resume" });
+      let resumeHtml: string | null = null;
+      try {
+        let systemPrompt: string | undefined;
+        if (resumeStyleId) {
+          try {
+            const style = await getResumeStyle(resumeStyleId);
+            systemPrompt = style.system_prompt;
+          } catch (e) {
+            console.warn("Failed to fetch resume style, using default:", e);
+          }
+        }
+
+        const { getActiveResumeText } = await import("@/lib/api/profile");
+        let resumeText = "";
+        try {
+          resumeText = await getActiveResumeText();
+        } catch (e) {
+          console.warn("Failed to fetch profile for resume:", e);
+        }
+
+        let accumulated = "";
+        await streamResumeGeneration({
+          jobDescription: markdown,
+          resumeText,
+          systemPrompt,
+          companyName,
+          jobTitle,
+          branding: brandingData,
+          competitors,
+          customers,
+          products,
+          profileContext,
+          onDelta: (text) => { accumulated += text; },
+          onDone: () => {},
+        });
+        resumeHtml = cleanHtml(accumulated);
+      } catch (e) {
+        console.warn("Resume generation failed:", e);
+      }
+
+      // 5. Generate cover letter
       this.updateJob(appId, { status: "cover-letter", progress: "Generating cover letter..." });
+      await saveJobApplication({ id: appId, job_url: jobUrl, generation_status: "cover-letter" });
       let coverLetter = "";
       await streamTailoredLetter({
         jobDescription: markdown,
@@ -263,190 +307,15 @@ class BackgroundGenerationManager {
         onDone: () => {},
       });
 
+      // 6. Single consolidated save
       await saveJobApplication({
         id: appId,
         job_url: jobUrl,
         cover_letter: coverLetter,
-        generation_status: "generating-assets",
-      });
-
-      // 5. Generate remaining assets IN PARALLEL (resume + reports)
-      const totalAssets = 5;
-      this.updateJob(appId, {
-        status: "generating-assets",
-        progress: `Generating additional assets... (0/${totalAssets} completed)`,
-        parallelCompleted: 0,
-        parallelTotal: totalAssets,
-      });
-
-      let parallelDone = 0;
-      const bumpCount = () => {
-        parallelDone++;
-        this.updateJob(appId, {
-          progress: `Generating additional assets... (${parallelDone}/${totalAssets} completed)`,
-          parallelCompleted: parallelDone,
-        });
-      };
-
-      const generateExecReport = async (): Promise<string | null> => {
-        try {
-          let accumulated = "";
-          await streamExecutiveReport({
-            jobDescription: markdown, companyName, jobTitle, competitors, customers, products, department, branding: brandingData, profileContext,
-            onDelta: (text) => { accumulated += text; },
-            onDone: () => {},
-          });
-          return cleanHtml(accumulated);
-        } catch (e) {
-          console.warn("Executive report generation failed:", e);
-          return null;
-        } finally {
-          bumpCount();
-        }
-      };
-
-      const generateRaidLog = async (): Promise<string | null> => {
-        try {
-          let accumulated = "";
-          await streamRaidLog({
-            jobDescription: markdown, companyName, jobTitle, competitors, customers, products, department, branding: brandingData,
-            onDelta: (text) => { accumulated += text; },
-            onDone: () => {},
-          });
-          return cleanHtml(accumulated);
-        } catch (e) {
-          console.warn("RAID log generation failed:", e);
-          return null;
-        } finally {
-          bumpCount();
-        }
-      };
-
-      const generateArchDiagram = async (): Promise<string | null> => {
-        try {
-          let accumulated = "";
-          await streamArchitectureDiagram({
-            jobDescription: markdown, companyName, jobTitle, competitors, customers, products, department, branding: brandingData,
-            onDelta: (text) => { accumulated += text; },
-            onDone: () => {},
-          });
-          return cleanHtml(accumulated);
-        } catch (e) {
-          console.warn("Architecture diagram generation failed:", e);
-          return null;
-        } finally {
-          bumpCount();
-        }
-      };
-
-      const generateRoadmap = async (): Promise<string | null> => {
-        try {
-          let accumulated = "";
-          await streamRoadmap({
-            jobDescription: markdown, companyName, jobTitle, competitors, customers, products, department, branding: brandingData,
-            onDelta: (text) => { accumulated += text; },
-            onDone: () => {},
-          });
-          return cleanHtml(accumulated);
-        } catch (e) {
-          console.warn("Roadmap generation failed:", e);
-          return null;
-        } finally {
-          bumpCount();
-        }
-      };
-
-      const generateResume = async (): Promise<string | null> => {
-        try {
-          // Fetch the selected resume style's system prompt
-          let systemPrompt: string | undefined;
-          if (resumeStyleId) {
-            try {
-              const style = await getResumeStyle(resumeStyleId);
-              systemPrompt = style.system_prompt;
-            } catch (e) {
-              console.warn("Failed to fetch resume style, using default:", e);
-            }
-          }
-
-          // Get user's baseline resume text from profile
-          const { getActiveResumeText } = await import("@/lib/api/profile");
-          let resumeText = "";
-          try {
-            resumeText = await getActiveResumeText();
-          } catch (e) {
-            console.warn("Failed to fetch profile for resume:", e);
-          }
-
-          let accumulated = "";
-          await streamResumeGeneration({
-            jobDescription: markdown,
-            resumeText,
-            systemPrompt,
-            companyName,
-            jobTitle,
-            branding: brandingData,
-            competitors,
-            customers,
-            products,
-            profileContext,
-            onDelta: (text) => { accumulated += text; },
-            onDone: () => {},
-          });
-          return cleanHtml(accumulated);
-        } catch (e) {
-          console.warn("Resume generation failed:", e);
-          return null;
-        } finally {
-          bumpCount();
-        }
-      };
-
-      const [execResult, raidResult, archResult, roadmapResult, resumeResult] = await Promise.allSettled([
-        generateExecReport(),
-        generateRaidLog(),
-        generateArchDiagram(),
-        generateRoadmap(),
-        generateResume(),
-      ]);
-
-      const execReportHtml = execResult.status === "fulfilled" ? execResult.value : null;
-      const raidLogHtml = raidResult.status === "fulfilled" ? raidResult.value : null;
-      const archDiagramHtml = archResult.status === "fulfilled" ? archResult.value : null;
-      const roadmapHtml = roadmapResult.status === "fulfilled" ? roadmapResult.value : null;
-      const resumeHtml = resumeResult.status === "fulfilled" ? resumeResult.value : null;
-
-      // 6. Single consolidated save (no dashboard)
-      await saveJobApplication({
-        id: appId,
-        job_url: jobUrl,
-        ...(execReportHtml ? { executive_report_html: execReportHtml } : {}),
-        ...(raidLogHtml ? { raid_log_html: raidLogHtml } : {}),
-        ...(archDiagramHtml ? { architecture_diagram_html: archDiagramHtml } : {}),
-        ...(roadmapHtml ? { roadmap_html: roadmapHtml } : {}),
         ...(resumeHtml ? { resume_html: resumeHtml } : {}),
         status: "complete",
         generation_status: "complete",
       });
-
-      // 7. Auto-generate preview assets for FREE tier users
-      try {
-        const { data: userData } = await supabase.auth.getUser();
-        if (userData?.user?.id) {
-          const { data: subscription } = await supabase
-            .from("user_subscriptions")
-            .select("tier")
-            .eq("user_id", userData.user.id)
-            .single();
-          
-          if (subscription?.tier === "free") {
-            this.updateJob(appId, { progress: "Generating preview materials..." });
-            await this.generateFreePreviewAssets(appId, markdown, companyName, jobTitle, brandingData);
-          }
-        }
-      } catch (previewErr) {
-        console.warn("Preview asset generation failed (non-critical):", previewErr);
-      }
 
       this.abortControllers.delete(appId);
       this.updateJob(appId, { status: "complete", progress: "Done!" });

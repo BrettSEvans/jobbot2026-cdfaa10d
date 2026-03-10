@@ -257,8 +257,8 @@ const ApplicationDetail = () => {
   }
 
   const primaryTabs = [
-    { id: "cover-letter" as const, label: "Cover Letter", icon: Mail },
     { id: "resume" as const, label: "Resume", icon: FileUser },
+    { id: "cover-letter" as const, label: "Cover Letter", icon: Mail },
   ];
 
   const isPrimaryView = ["cover-letter", "resume"].includes(activeView);

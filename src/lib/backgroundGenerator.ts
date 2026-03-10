@@ -11,6 +11,7 @@ import {
   searchCompanyIcon,
 } from "@/lib/api/jobApplication";
 import { scrapeJob, streamTailoredLetter } from "@/lib/api/coverLetter";
+import { addBlockedSite, removeSiteBlock } from "@/lib/blockedScrapeSites";
 import { getProfileContextForPrompt } from "@/lib/api/profile";
 import { streamResumeGeneration, getResumeStyle } from "@/lib/api/resume";
 import { cleanHtml } from "@/lib/cleanHtml";

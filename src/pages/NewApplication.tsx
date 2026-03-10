@@ -58,6 +58,7 @@ const NewApplication = () => {
   const [companyUrl, setCompanyUrl] = useState("");
   const [manualJobDescription, setManualJobDescription] = useState("");
   const [useManualInput, setUseManualInput] = useState(false);
+  const [blockedSiteMessage, setBlockedSiteMessage] = useState<string | null>(null);
 
   // State
   const [step, setStep] = useState<Step>("input");

@@ -24,7 +24,7 @@ import AdminSidebar, { getVisibleSections } from "@/components/admin/AdminSideba
 export default function Admin() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { isAdmin, isQA, hasAnyRole, loading: roleLoading } = useUserRoles();
+  const { isAdmin, isQA, isMarketing, hasAnyRole, loading: roleLoading } = useUserRoles();
   const [activeBuildLabel, setActiveBuildLabel] = useState<string | null>(null);
 
   // Determine default section based on role

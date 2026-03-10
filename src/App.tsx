@@ -60,16 +60,26 @@ function AuthenticatedApp() {
       return;
     }
     // Identify user in analytics
-    analytics.identify(user.id, { email: user.email });
+    const attribution = getStoredAttribution();
+    analytics.identify(user.id, { email: user.email, ...(attribution ?? {}) });
 
     supabase
       .from("profiles")
-      .select("approval_status")
+      .select("approval_status, referral_source")
       .eq("id", user.id)
       .single()
       .then(({ data }) => {
         setApprovalStatus(data?.approval_status ?? "pending");
         setApprovalLoading(false);
+
+        // Persist attribution to profile if not already stored
+        if (attribution && !data?.referral_source) {
+          supabase
+            .from("profiles")
+            .update({ referral_source: attribution as any })
+            .eq("id", user.id)
+            .then(() => clearAttribution());
+        }
       });
   }, [user]);
 

@@ -78,7 +78,20 @@ function AuthenticatedApp() {
             .from("profiles")
             .update({ referral_source: attribution as any })
             .eq("id", user.id)
-            .then(() => clearAttribution());
+            .then(() => {
+              clearAttribution();
+              // Auto-approve campaign users
+              const utmCampaign = (attribution as unknown as Record<string, string>).utm_campaign;
+              if (utmCampaign && data?.approval_status === "pending") {
+                supabase
+                  .rpc("campaign_auto_approve", { _user_id: user.id, _utm_campaign: utmCampaign })
+                  .then(({ data: approved }) => {
+                    if (approved) {
+                      setApprovalStatus("approved");
+                    }
+                  });
+              }
+            });
         }
       });
   }, [user]);

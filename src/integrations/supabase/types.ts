@@ -102,6 +102,7 @@ export type Database = {
           created_at: string
           created_by: string
           id: string
+          max_signups: number | null
           name: string
           ref_code: string | null
           utm_campaign: string
@@ -114,6 +115,7 @@ export type Database = {
           created_at?: string
           created_by: string
           id?: string
+          max_signups?: number | null
           name: string
           ref_code?: string | null
           utm_campaign: string
@@ -126,6 +128,7 @@ export type Database = {
           created_at?: string
           created_by?: string
           id?: string
+          max_signups?: number | null
           name?: string
           ref_code?: string | null
           utm_campaign?: string
@@ -1153,6 +1156,10 @@ export type Database = {
       admin_soft_delete_user: {
         Args: { _target_user_id: string }
         Returns: undefined
+      }
+      campaign_auto_approve: {
+        Args: { _user_id: string; _utm_campaign: string }
+        Returns: boolean
       }
       delete_and_reassign_resume: {
         Args: { p_resume_id: string }

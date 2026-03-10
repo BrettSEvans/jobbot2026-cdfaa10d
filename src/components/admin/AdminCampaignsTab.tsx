@@ -29,6 +29,7 @@ interface Campaign {
   utm_content: string | null;
   utm_term: string | null;
   ref_code: string | null;
+  max_signups: number | null;
   created_at: string;
 }
 
@@ -74,7 +75,7 @@ export default function AdminCampaignsTab() {
   // Create dialog state
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ name: "", utm_source: "", utm_medium: "", utm_campaign: "", utm_content: "", utm_term: "", ref_code: "" });
+  const [form, setForm] = useState({ name: "", utm_source: "", utm_medium: "", utm_campaign: "", utm_content: "", utm_term: "", ref_code: "", max_signups: "" });
 
   useEffect(() => {
     Promise.all([
@@ -122,6 +123,7 @@ export default function AdminCampaignsTab() {
         utm_content: form.utm_content.trim() || null,
         utm_term: form.utm_term.trim() || null,
         ref_code: form.ref_code.trim() || null,
+        max_signups: form.max_signups ? parseInt(form.max_signups, 10) : null,
         created_by: user.id,
       } as any)
       .select()
@@ -133,7 +135,7 @@ export default function AdminCampaignsTab() {
       return;
     }
     setCampaigns((prev) => [data as unknown as Campaign, ...prev]);
-    setForm({ name: "", utm_source: "", utm_medium: "", utm_campaign: "", utm_content: "", utm_term: "", ref_code: "" });
+    setForm({ name: "", utm_source: "", utm_medium: "", utm_campaign: "", utm_content: "", utm_term: "", ref_code: "", max_signups: "" });
     setOpen(false);
     toast.success("Campaign created");
   };
@@ -285,6 +287,11 @@ export default function AdminCampaignsTab() {
                     <Input placeholder="optional" value={form.ref_code} onChange={(e) => setForm((p) => ({ ...p, ref_code: e.target.value }))} />
                   </div>
                 </div>
+                <div>
+                  <Label>Max Signups</Label>
+                  <Input type="number" min="1" placeholder="Unlimited" value={form.max_signups} onChange={(e) => setForm((p) => ({ ...p, max_signups: e.target.value }))} />
+                  <p className="text-xs text-muted-foreground mt-1">Leave blank for unlimited</p>
+                </div>
               </div>
               <DialogFooter>
                 <Button onClick={handleCreate} disabled={saving}>
@@ -323,7 +330,13 @@ export default function AdminCampaignsTab() {
                           <CopyButton text={url} />
                         </div>
                       </TableCell>
-                      <TableCell className="text-center font-semibold">{signupCounts[c.utm_campaign] ?? 0}</TableCell>
+                      <TableCell className="text-center font-semibold">
+                        {signupCounts[c.utm_campaign] ?? 0}
+                        {c.max_signups != null ? ` / ${c.max_signups}` : " / ∞"}
+                        {c.max_signups != null && (signupCounts[c.utm_campaign] ?? 0) >= c.max_signups && (
+                          <Badge variant="destructive" className="ml-2 text-xs">Full</Badge>
+                        )}
+                      </TableCell>
                       <TableCell>{format(new Date(c.created_at), "MMM d, yyyy")}</TableCell>
                     </TableRow>
                   );

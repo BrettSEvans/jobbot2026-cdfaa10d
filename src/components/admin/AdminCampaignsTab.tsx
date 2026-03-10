@@ -328,8 +328,8 @@ export default function AdminCampaignsTab() {
                 </div>
               </div>
               <DialogFooter>
-                <Button onClick={handleCreate} disabled={saving}>
-                  {saving && <Loader2 className="h-4 w-4 animate-spin mr-1" />} Create
+                <Button onClick={handleSave} disabled={saving}>
+                  {saving && <Loader2 className="h-4 w-4 animate-spin mr-1" />} {editingCampaign ? "Save" : "Create"}
                 </Button>
               </DialogFooter>
             </DialogContent>

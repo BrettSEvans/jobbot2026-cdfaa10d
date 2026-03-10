@@ -265,9 +265,10 @@ export async function deleteJobApplication(id: string) {
 }
 
 export async function getDeletedJobApplications(personaId?: string | null) {
+  const LIST_COLUMNS = 'id, job_url, company_name, job_title, pipeline_stage, created_at, updated_at, generation_status, company_icon_url, ats_score, stage_changed_at, cover_letter, status, generation_error, persona_id, selected_assets, branding, company_url, deleted_at, deleted_by';
   let query = supabase
     .from('job_applications')
-    .select('*')
+    .select(LIST_COLUMNS)
     .not('deleted_at', 'is', null)
     .order('deleted_at', { ascending: false });
 

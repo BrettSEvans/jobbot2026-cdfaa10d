@@ -34,7 +34,7 @@ const SLUGS_REQUIRING_ROUTE = [
   "admin-panel", "pricing", "reset-password", "import-job",
   "ats-score", "ai-chat", "asset-proposal", "change-asset",
   "save-as-template", "wysiwyg-editor", "export-downloads",
-  "style-preferences",
+  "style-preferences", "master-cover-letter", "resume-health-dashboard",
 ];
 
 describe("Help Entries — Completeness", () => {

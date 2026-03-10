@@ -712,6 +712,7 @@ registerHelp({
     'Overused verbs are flagged with synonym alternatives you can swap in.',
     'The baseline delta helps you see how much the AI tailoring improved your resume.',
   ],
+  route: '/applications/:id',
   keywords: ['ats', 'score', 'health', 'keywords', 'impact', 'repetition', 'formatting', 'resume analysis'],
   relatedSlugs: ['application-detail', 'resume-tab'],
 });

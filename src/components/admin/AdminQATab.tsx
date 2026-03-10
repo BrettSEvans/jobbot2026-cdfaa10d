@@ -480,6 +480,9 @@ export default function AdminQATab() {
                 <Button variant="outline" size="sm" onClick={exportAsCsv}>
                   <Download className="h-3.5 w-3.5 mr-1" /> CSV
                 </Button>
+                <Button variant="outline" size="sm" onClick={exportAsXlsx}>
+                  <FileSpreadsheet className="h-3.5 w-3.5 mr-1" /> Spreadsheet
+                </Button>
               </div>
             </div>
 

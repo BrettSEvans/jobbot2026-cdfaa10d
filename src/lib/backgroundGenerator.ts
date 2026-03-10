@@ -46,6 +46,32 @@ class BackgroundGenerationManager {
   private jobs: Map<string, GenerationJob> = new Map();
   private abortControllers: Map<string, AbortController> = new Map();
   private listeners: Set<Listener> = new Set();
+  private cleanupInterval: ReturnType<typeof setInterval> | null = null;
+
+  constructor() {
+    // Auto-cleanup completed/errored jobs after 5 minutes
+    this.cleanupInterval = setInterval(() => this.cleanupStaleJobs(), 60_000);
+  }
+
+  /** Remove completed/errored jobs older than 5 minutes, reset orphaned generating jobs older than 10 minutes */
+  private cleanupStaleJobs() {
+    const now = Date.now();
+    for (const [key, job] of this.jobs.entries()) {
+      if (!job.startedAt) continue;
+      const age = now - job.startedAt;
+      if (["complete", "error"].includes(job.status) && age > 5 * 60_000) {
+        this.jobs.delete(key);
+      } else if (!["complete", "error"].includes(job.status) && age > 10 * 60_000) {
+        // Orphaned generating job — mark as error
+        job.status = "error";
+        job.error = "Generation timed out (orphaned job)";
+        job.progress = "Timed out";
+        this.abortControllers.get(key)?.abort();
+        this.abortControllers.delete(key);
+      }
+    }
+    if (this.jobs.size > 0) this.notify();
+  }
 
   subscribe(listener: Listener) {
     this.listeners.add(listener);

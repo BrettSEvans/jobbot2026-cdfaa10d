@@ -14,6 +14,7 @@ export interface UserProfile {
   target_industries: string[];
   key_skills: string[];
   preferred_tone: string;
+  master_cover_letter: string | null;
 }
 
 export interface UserResume {
@@ -49,13 +50,14 @@ export async function getProfile(): Promise<UserProfile | null> {
     target_industries: data.target_industries ?? [],
     key_skills: data.key_skills ?? [],
     preferred_tone: data.preferred_tone ?? "professional",
+    master_cover_letter: data.master_cover_letter ?? null,
   };
 }
 
 const ALLOWED_PROFILE_FIELDS = [
   "first_name", "middle_name", "last_name", "display_name",
   "resume_text", "years_experience", "target_industries",
-  "key_skills", "preferred_tone",
+  "key_skills", "preferred_tone", "master_cover_letter",
 ] as const;
 
 export async function updateProfile(updates: Partial<Omit<UserProfile, "id">>): Promise<void> {
@@ -202,6 +204,7 @@ function buildProfileContext(persona: PersonaProfile): string {
   if (persona.key_skills?.length) parts.push(`Key skills & strengths: ${persona.key_skills.join(", ")}`);
   if (persona.preferred_tone) parts.push(`Preferred writing tone: ${persona.preferred_tone}`);
   if (persona.resume_text) parts.push(`\nResume / background:\n${persona.resume_text}`);
+  if ((persona as any).master_cover_letter) parts.push(`\nMaster cover letter (use as voice/style reference — adapt content to the specific role):\n${(persona as any).master_cover_letter}`);
 
   if (parts.length === 0) return "";
   return `\n\nAPPLICANT PROFILE (use this to personalize the output):\n${parts.join("\n")}`;
@@ -236,7 +239,7 @@ export async function getProfileContextForPrompt(): Promise<string> {
     ]);
 
     if (profile) {
-      const persona: PersonaProfile = {
+      const persona: PersonaProfile & { master_cover_letter?: string | null } = {
         id: profile.id,
         first_name: profile.first_name,
         middle_name: profile.middle_name,
@@ -248,6 +251,7 @@ export async function getProfileContextForPrompt(): Promise<string> {
         key_skills: profile.key_skills,
         target_industries: profile.target_industries,
         isTestUser: false,
+        master_cover_letter: profile.master_cover_letter,
       };
       profileSection = buildProfileContext(persona);
     }

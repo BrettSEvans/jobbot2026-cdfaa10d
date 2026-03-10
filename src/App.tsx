@@ -30,6 +30,7 @@ import ImportJob from "./pages/ImportJob";
 
 import { useAuth } from "./hooks/useAuth";
 import { useTutorial } from "./hooks/useTutorial";
+import { useIdleTimeout } from "./hooks/useIdleTimeout";
 import { NavigationGuardProvider } from "./hooks/useNavigationGuard";
 import { ImpersonationProvider } from "./contexts/ImpersonationContext";
 import { Loader2 } from "lucide-react";
@@ -46,6 +47,7 @@ const queryClient = new QueryClient();
 function AuthenticatedApp() {
   const { user, loading, signOut } = useAuth();
   const { isTutorialActive, tutorialMode, dismissTutorial, stopTutorial } = useTutorial();
+  useIdleTimeout(!!user);
   const [approvalStatus, setApprovalStatus] = useState<string | null>(null);
   const [approvalLoading, setApprovalLoading] = useState(true);
 

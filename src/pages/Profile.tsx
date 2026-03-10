@@ -17,6 +17,7 @@ import IdentityCard from "@/components/profile/IdentityCard";
 import ResumeCard from "@/components/profile/ResumeCard";
 import SkillsCard from "@/components/profile/SkillsCard";
 import ToneCard from "@/components/profile/ToneCard";
+import CoverLetterCard from "@/components/profile/CoverLetterCard";
 
 export default function Profile() {
   const { toast } = useToast();
@@ -41,12 +42,12 @@ export default function Profile() {
   const [skills, setSkills] = useState<string[]>([]);
   const [newIndustry, setNewIndustry] = useState("");
   const [newSkill, setNewSkill] = useState("");
-
+  const [masterCoverLetter, setMasterCoverLetter] = useState("");
   // Saved values (snapshot from last load/save)
   const [saved, setSaved] = useState({
     firstName: "", middleName: "", lastName: "", displayName: "",
     resumeText: "", yearsExperience: "", preferredTone: "professional",
-    industries: [] as string[], skills: [] as string[],
+    industries: [] as string[], skills: [] as string[], masterCoverLetter: "",
   });
 
   // Compute dirty state per card
@@ -55,9 +56,10 @@ export default function Profile() {
     resume: resumeText !== saved.resumeText,
     skills: JSON.stringify(skills) !== JSON.stringify(saved.skills) || JSON.stringify(industries) !== JSON.stringify(saved.industries) || newSkill.trim() !== "" || newIndustry.trim() !== "",
     tone: preferredTone !== saved.preferredTone,
-  }), [displayName, resumeText, yearsExperience, preferredTone, industries, skills, saved, newSkill, newIndustry, middleName, firstName, lastName]);
+    coverLetter: masterCoverLetter !== saved.masterCoverLetter,
+  }), [displayName, resumeText, yearsExperience, preferredTone, industries, skills, saved, newSkill, newIndustry, middleName, firstName, lastName, masterCoverLetter]);
 
-  const hasUnsavedChanges = dirty.identity || dirty.resume || dirty.skills || dirty.tone;
+  const hasUnsavedChanges = dirty.identity || dirty.resume || dirty.skills || dirty.tone || dirty.coverLetter;
 
   // Populate form fields from a persona object
   const populateFromPersona = useCallback((p: {
@@ -70,11 +72,13 @@ export default function Profile() {
       displayName: p.display_name || "", resumeText: p.resume_text || "",
       yearsExperience: p.years_experience || "", preferredTone: p.preferred_tone || "professional",
       industries: p.target_industries || [], skills: p.key_skills || [],
+      masterCoverLetter: (p as any).master_cover_letter || "",
     };
     setFirstName(vals.firstName); setMiddleName(vals.middleName); setLastName(vals.lastName);
     setDisplayName(vals.displayName); setResumeText(vals.resumeText);
     setYearsExperience(vals.yearsExperience); setPreferredTone(vals.preferredTone);
-    setIndustries(vals.industries); setSkills(vals.skills); setSaved(vals);
+    setIndustries(vals.industries); setSkills(vals.skills);
+    setMasterCoverLetter(vals.masterCoverLetter); setSaved(vals);
   }, []);
 
   // Load profile
@@ -104,6 +108,7 @@ export default function Profile() {
     if (dirty.resume) sections.push("Resume / Background");
     if (dirty.skills) sections.push("Skills & Target Industries");
     if (dirty.tone) sections.push("Writing Preferences");
+    if (dirty.coverLetter) sections.push("Master Cover Letter");
     setDirtySections(sections);
     return () => { setHasUnsavedChanges(false); setDirtySections([]); };
   }, [hasUnsavedChanges, dirty, setHasUnsavedChanges, setDirtySections]);
@@ -116,6 +121,7 @@ export default function Profile() {
         last_name: lastName || null, display_name: displayName || null,
         resume_text: resumeText || null, years_experience: yearsExperience || null,
         target_industries: industries, key_skills: skills, preferred_tone: preferredTone,
+        master_cover_letter: masterCoverLetter || null,
       };
       if (isImpersonating && activePersona) {
         await updateTestUser(activePersona.id, updates);
@@ -131,7 +137,7 @@ export default function Profile() {
       }
       setSaved({
         firstName, middleName, lastName, displayName, resumeText, yearsExperience, preferredTone,
-        industries: [...industries], skills: [...skills],
+        industries: [...industries], skills: [...skills], masterCoverLetter,
       });
       toast({ title: "Profile saved", description: "Your preferences will personalize future AI outputs." });
     } catch (err: unknown) {
@@ -139,7 +145,7 @@ export default function Profile() {
     } finally {
       setSaving(false);
     }
-  }, [firstName, middleName, lastName, displayName, resumeText, yearsExperience, preferredTone, industries, skills, toast, refreshRoot, isImpersonating, activePersona, updateActivePersona]);
+  }, [firstName, middleName, lastName, displayName, resumeText, yearsExperience, preferredTone, industries, skills, masterCoverLetter, toast, refreshRoot, isImpersonating, activePersona, updateActivePersona]);
 
   const handleCardSave = async (cardName: string) => {
     setSavingCard(cardName);
@@ -222,6 +228,13 @@ export default function Profile() {
               isImpersonating={isImpersonating}
               isDirty={dirty.resume} saving={saving} savingCard={savingCard}
               onSave={handleCardSave} cardBorderClass={cardBorderClass(dirty.resume)}
+            />
+
+            <CoverLetterCard
+              masterCoverLetter={masterCoverLetter}
+              setMasterCoverLetter={setMasterCoverLetter}
+              isDirty={dirty.coverLetter} saving={saving} savingCard={savingCard}
+              onSave={handleCardSave} cardBorderClass={cardBorderClass(dirty.coverLetter)}
             />
           </div>
         </div>

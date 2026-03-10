@@ -513,6 +513,7 @@ export type Database = {
           id: string
           key_skills: string[] | null
           last_name: string | null
+          master_cover_letter: string | null
           middle_name: string | null
           onboarding_completed_at: string | null
           preferred_tone: string | null
@@ -531,6 +532,7 @@ export type Database = {
           id: string
           key_skills?: string[] | null
           last_name?: string | null
+          master_cover_letter?: string | null
           middle_name?: string | null
           onboarding_completed_at?: string | null
           preferred_tone?: string | null
@@ -549,6 +551,7 @@ export type Database = {
           id?: string
           key_skills?: string[] | null
           last_name?: string | null
+          master_cover_letter?: string | null
           middle_name?: string | null
           onboarding_completed_at?: string | null
           preferred_tone?: string | null

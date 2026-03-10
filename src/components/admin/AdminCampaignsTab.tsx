@@ -343,12 +343,13 @@ export default function AdminCampaignsTab() {
                 <TableHead>Tracking Link</TableHead>
                 <TableHead className="text-center">Signups</TableHead>
                 <TableHead>Created</TableHead>
+                <TableHead className="w-10"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {campaigns.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
                     No campaigns yet. Create one above.
                   </TableCell>
                 </TableRow>

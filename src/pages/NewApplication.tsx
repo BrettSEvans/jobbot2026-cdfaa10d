@@ -203,7 +203,7 @@ const NewApplication = () => {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => setUseManualInput(!useManualInput)}
+                      onClick={() => { setUseManualInput(!useManualInput); setBlockedSiteMessage(null); }}
                       className="text-xs"
                     >
                       {useManualInput ? "Use URL instead" : "Paste text instead"}

@@ -153,12 +153,12 @@ export default function DesignVariabilityCard({ appId, dynamicAssets, branding, 
                               : [`${value}% unique`, "Variety"]
                           }
                         />
-                        <Bar dataKey="similarity" stackId="a" radius={[0, 0, 0, 0]}>
+                        <Bar dataKey="variety" stackId="a" radius={[0, 0, 0, 0]}>
                           {chartData.map((_, idx) => (
                             <Cell key={idx} fill="hsl(36, 90%, 50%)" />
                           ))}
                         </Bar>
-                        <Bar dataKey="variety" stackId="a" radius={[0, 4, 4, 0]}>
+                        <Bar dataKey="similarity" stackId="a" radius={[0, 4, 4, 0]}>
                           {chartData.map((_, idx) => (
                             <Cell key={idx} fill="hsl(234, 18%, 28%)" />
                           ))}

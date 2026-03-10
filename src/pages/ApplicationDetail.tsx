@@ -43,7 +43,7 @@ import {
 import ImpersonationNotice from "@/components/ImpersonationNotice";
 import { useSubscription } from "@/hooks/useSubscription";
 import AtsScoreCard from "@/components/AtsScoreCard";
-import { scoreAtsMatch, scoreBaselineResume, type AtsScoreResult } from "@/lib/api/atsScore";
+import { scoreAtsMatch, scoreBaselineResume, isCacheValid, type AtsScoreResult } from "@/lib/api/atsScore";
 import {
   Select,
   SelectContent,
@@ -58,6 +58,8 @@ import {
   type PipelineStage,
 } from "@/lib/pipelineStages";
 import { downloadHtmlAsDocx, buildDocxFilename } from "@/lib/docxExport";
+import { useUserRoles } from "@/hooks/useUserRoles";
+import DesignVariabilityCard from "@/components/admin/DesignVariabilityCard";
 
 type ActiveView = "cover-letter" | "resume" | string;
 
@@ -66,6 +68,7 @@ const ApplicationDetail = () => {
   const navigate = useNavigate();
   const state = useApplicationDetail(id);
   const { isAssetAllowed, canRefine, tier } = useSubscription();
+  const { isAdmin } = useUserRoles();
   const [activeView, setActiveView] = useState<ActiveView>("resume");
 
   // Dynamic assets state
@@ -101,6 +104,13 @@ const ApplicationDetail = () => {
 
     // Detect resume appearing (was empty, now populated)
     if (!prevHtml && currentHtml && currentHtml.length > 100 && state.jobDescription && !atsAutoTriggered.current) {
+      // Check if cached score is still valid — skip rescan if so
+      const cachedScore = state.app?.ats_score as unknown as AtsScoreResult | null;
+      const cachedAt = state.app?.ats_scored_at ?? null;
+      if (cachedScore && cachedAt && isCacheValid(cachedScore, cachedAt, currentHtml, state.jobDescription)) {
+        atsAutoTriggered.current = true;
+        return;
+      }
       atsAutoTriggered.current = true;
       handleAtsRescan();
     }
@@ -429,6 +439,16 @@ const ApplicationDetail = () => {
               ))}
             </div>
           </div>
+        )}
+
+        {/* Admin: Design Variability Analysis */}
+        {isAdmin && dynamicAssets.length >= 2 && (
+          <DesignVariabilityCard
+            appId={id!}
+            dynamicAssets={dynamicAssets.map((a) => ({ id: a.id, asset_name: a.asset_name, html: a.html }))}
+            branding={(state.app?.branding as Record<string, unknown>) ?? null}
+            cachedVariability={(state.app as any)?.design_variability ?? null}
+          />
         )}
 
         {/* Content Area */}

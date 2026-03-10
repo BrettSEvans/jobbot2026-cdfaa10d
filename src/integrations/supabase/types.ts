@@ -362,6 +362,7 @@ export type Database = {
           dashboard_html: string | null
           deleted_at: string | null
           deleted_by: string | null
+          design_variability: Json | null
           executive_report_html: string | null
           generation_error: string | null
           generation_status: string
@@ -401,6 +402,7 @@ export type Database = {
           dashboard_html?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
+          design_variability?: Json | null
           executive_report_html?: string | null
           generation_error?: string | null
           generation_status?: string
@@ -440,6 +442,7 @@ export type Database = {
           dashboard_html?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
+          design_variability?: Json | null
           executive_report_html?: string | null
           generation_error?: string | null
           generation_status?: string

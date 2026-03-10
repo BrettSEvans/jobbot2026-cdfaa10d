@@ -155,7 +155,7 @@ registerTutorialStep({
   body: "Don't need this document? Click here to replace it with a different industry-relevant asset. The AI will propose fresh options based on the job context.",
   placement: "left",
   route: "/applications/:id",
-  order: 13,
+  order: 14,
 });
 
 registerTutorialStep({

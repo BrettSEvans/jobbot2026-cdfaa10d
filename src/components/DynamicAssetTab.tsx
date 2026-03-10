@@ -56,6 +56,7 @@ interface DynamicAssetTabProps {
 export default function DynamicAssetTab({
   asset,
   allAssetNames,
+  allAssets = [],
   jobDescription,
   companyName,
   jobTitle,

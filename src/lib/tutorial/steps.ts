@@ -202,6 +202,6 @@ registerTutorialStep({
   body: "The primary filled button on every document — click 'Download PDF' to export a professionally formatted file. It's always the most prominent action in the action bar.",
   placement: "bottom",
   route: "/applications/:id",
-  order: 17,
+  order: 18,
   prerequisiteSelector: '[data-tutorial="industry-assets-grid"] button',
 });

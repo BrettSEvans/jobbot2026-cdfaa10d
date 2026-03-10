@@ -114,19 +114,23 @@ registerHelp({
   slug: 'application-detail',
   title: 'Application Detail',
   summary:
-    'The detail view shows all generated materials for a job application. Navigate between Cover Letter, Resume, and any Industry Materials using the tabs.',
+    'The detail view shows all generated materials for a job application. A unified tab strip lets you navigate between Resume, Cover Letter, and Industry Materials in one row. Download PDF is the primary action on every document, with Vibe Edit and advanced options (Edit, Regenerate, Revision History) available via the action bar.',
   steps: [
-    'Use the top tabs to switch between Cover Letter and Resume.',
+    'Use the unified tab strip to switch between Resume, Cover Letter, and any Industry Materials.',
+    'Click "Download PDF" (the primary button) to export any document.',
+    'Click "Vibe Edit" to refine a document with natural language instructions.',
+    'Use the ⋯ menu for advanced actions: Edit HTML, Regenerate, Copy Text, Revision History, and Save as Template.',
     'Click "Info" to view application details and the original job description.',
-    'Use the Industry Materials bar to view AI-proposed supplementary documents.',
   ],
   tips: [
-    'Each document can be refined using Vibe Edit — just describe what you want changed.',
-    'Revision history is saved so you can revert to earlier versions.',
+    'The action bar sticks to the top of the page as you scroll the document preview.',
+    'Download PDF is always the most prominent action — DOCX export is available for Resume and Cover Letter on paid tiers.',
+    'Revision history is saved automatically with every generation and refinement.',
+    'Industry Materials appear in the same tab strip after a vertical separator.',
   ],
   route: '/applications/:id',
-  keywords: ['detail', 'tabs', 'view', 'materials', 'company'],
-  relatedSlugs: ['dashboard-tab', 'cover-letter-tab', 'resume-tab', 'dynamic-assets'],
+  keywords: ['detail', 'tabs', 'view', 'materials', 'company', 'download', 'action bar'],
+  relatedSlugs: ['cover-letter-tab', 'resume-tab', 'dynamic-assets', 'export-downloads'],
 });
 
 registerHelp({
@@ -247,38 +251,42 @@ registerHelp({
   slug: 'dynamic-assets',
   title: 'Industry Materials',
   summary:
-    'AI-proposed supplementary documents specific to the job and industry — such as RAID logs, roadmaps, architecture diagrams, or executive reports.',
+    'AI-proposed supplementary documents specific to the job and industry — such as RAID logs, roadmaps, architecture diagrams, or executive reports. They appear as tabs alongside Resume and Cover Letter in the unified tab strip.',
   steps: [
-    'Click "Propose Materials" to have the AI suggest relevant documents.',
+    'Click "+ Add Materials" at the end of the tab strip (or the "Propose Materials" CTA) to have the AI suggest relevant documents.',
     'Review and confirm the proposed documents.',
-    'Each document is auto-generated and appears in the Industry Materials bar.',
+    'Each document appears as a new tab in the unified tab strip with a status indicator dot.',
+    'Use the swap icon next to any industry tab to replace it with a different document type.',
   ],
   tips: [
-    'You can swap a document for a different type using the change button.',
-    'Each industry document has its own revision history and Vibe Edit chat.',
+    'Industry material tabs show colored status dots: green = complete, yellow = generating, red = error.',
+    'Each industry document has its own Vibe Edit chat, revision history, and PDF download via the shared action bar.',
+    'The ⋯ overflow menu provides access to Regenerate, Copy Text, and Revision History.',
   ],
   route: '/applications/:id',
-  keywords: ['dynamic', 'industry', 'propose', 'raid', 'roadmap', 'architecture', 'executive'],
-  relatedSlugs: ['asset-proposal', 'change-asset'],
+  keywords: ['dynamic', 'industry', 'propose', 'raid', 'roadmap', 'architecture', 'executive', 'tab'],
+  relatedSlugs: ['asset-proposal', 'change-asset', 'application-detail'],
 });
 
 registerHelp({
   slug: 'ai-chat',
   title: 'Vibe Edit',
   summary:
-    'Refine any generated document by describing what you want changed in natural language. The AI will update the document while preserving context.',
+    'Refine any generated document by describing what you want changed in natural language. Access it from the secondary action bar on any document tab.',
   steps: [
     'Navigate to the document you want to refine.',
-    'Click "Vibe Edit" and type your request (e.g. "Emphasize leadership").',
+    'Click "Vibe Edit" in the action bar to open the inline chat.',
+    'Type your request (e.g. "Emphasize leadership" or "Make it shorter").',
     'The document will be updated and a new revision saved automatically.',
   ],
   tips: [
     'Be specific about what to change for best results.',
     'You can refine multiple times — each revision is saved.',
+    'Vibe Edit is available on Resume, Cover Letter, and all Industry Materials.',
   ],
   route: '/applications/:id',
-  keywords: ['refine', 'chat', 'improve', 'edit', 'change', 'ai'],
-  relatedSlugs: ['dashboard-tab', 'cover-letter-tab', 'resume-tab'],
+  keywords: ['refine', 'chat', 'improve', 'edit', 'change', 'ai', 'vibe'],
+  relatedSlugs: ['cover-letter-tab', 'resume-tab', 'dynamic-assets'],
 });
 
 registerHelp({
@@ -584,20 +592,22 @@ registerHelp({
   slug: 'export-downloads',
   title: 'PDF & DOCX Export',
   summary:
-    'Download your generated cover letters, resumes, and dashboards as PDF or DOCX files for use in applications.',
+    'Download your generated documents as PDF or DOCX files. "Download PDF" is the primary action on every document tab — it\'s the large, filled button in the action bar. DOCX is available as a secondary option for Resume and Cover Letter on paid tiers.',
   steps: [
-    'Open an application and navigate to the document you want to export.',
-    'Click the download button (PDF or DOCX icon) on the document tab.',
-    'Choose PDF for a pixel-perfect copy or DOCX for an editable version.',
-    'The file downloads to your device immediately.',
+    'Open an application and navigate to any document tab.',
+    'Click the primary "Download PDF" button in the sticky action bar.',
+    'For Resume or Cover Letter, click "DOCX" for an editable Word format.',
+    'Files download with standardized names: {asset-type}-{company}-{role}.{ext}.',
   ],
   tips: [
-    'PDF export preserves the visual layout exactly as shown.',
-    'DOCX export is editable in Microsoft Word or Google Docs.',
+    'PDF export preserves the visual layout exactly as shown in the preview.',
+    'DOCX export is editable in Microsoft Word or Google Docs (Pro/Premium only).',
+    'The download button is always the most prominent action in the action bar.',
+    'For Industry Materials, downloading locks the asset from further regeneration.',
   ],
   route: '/applications/:id',
-  keywords: ['pdf', 'docx', 'export', 'download', 'word', 'file'],
-  relatedSlugs: ['cover-letter-tab', 'resume-tab', 'dashboard-tab'],
+  keywords: ['pdf', 'docx', 'export', 'download', 'word', 'file', 'primary action'],
+  relatedSlugs: ['cover-letter-tab', 'resume-tab', 'dynamic-assets', 'application-detail'],
 });
 
 registerHelp({

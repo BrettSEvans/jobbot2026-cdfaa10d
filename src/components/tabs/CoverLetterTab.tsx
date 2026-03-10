@@ -4,10 +4,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Copy, Edit3, Check, X, Loader2, RefreshCw, Download } from "lucide-react";
+import { Check, X, Loader2 } from "lucide-react";
 import CoverLetterRevisions from "@/components/CoverLetterRevisions";
 import WysiwygEditor from "@/components/WysiwygEditor";
-import VibeEditInfo from "@/components/VibeEditInfo";
+import AssetActionBar from "@/components/tabs/AssetActionBar";
 import { streamTailoredLetter } from "@/lib/api/coverLetter";
 import { saveCoverLetterRevision } from "@/lib/api/coverLetterRevisions";
 import { downloadCoverLetterPdf, buildCoverLetterHtml, coverLetterBodyToHtml } from "@/lib/coverLetterPdf";
@@ -36,6 +36,7 @@ export default function CoverLetterTab({ appId, state }: CoverLetterTabProps) {
   const [headerText, setHeaderText] = useState("");
   const [footerText, setFooterText] = useState("");
   const [dateText, setDateText] = useState("");
+  const [showRevisions, setShowRevisions] = useState(false);
 
   // Vibe Edit chat state
   const [chatOpen, setChatOpen] = useState(false);
@@ -86,7 +87,6 @@ export default function CoverLetterTab({ appId, state }: CoverLetterTabProps) {
     const msg = chatInput.trim();
     setChatInput("");
 
-    // Save current version as revision before refining
     try {
       await saveCoverLetterRevision(appId, coverLetter, `Before: ${msg.slice(0, 50)}`);
       setRevisionTrigger((t) => t + 1);
@@ -116,39 +116,26 @@ export default function CoverLetterTab({ appId, state }: CoverLetterTabProps) {
     }
   };
 
+  const handleDownloadPdf = () => {
+    downloadCoverLetterPdf(
+      coverLetter,
+      app?.company_name || "Company",
+      app?.job_title || "Position",
+      applicantName,
+    );
+  };
+
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap gap-2">
-        {coverLetter && (
-          <>
-            <Button variant="outline" size="sm" onClick={() => handleCopy(coverLetter, "Cover letter")}>
-              <Copy className="mr-2 h-4 w-4" /> Copy
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                downloadCoverLetterPdf(
-                  coverLetter,
-                  app?.company_name || "Company",
-                  app?.job_title || "Position",
-                  applicantName,
-                )
-              }
-            >
-              <Download className="mr-2 h-4 w-4" /> Download PDF
-            </Button>
-          </>
-        )}
-        {coverLetter && (
-          <>
-            <Button data-tutorial="refine-ai-btn" variant="outline" size="sm" onClick={() => setChatOpen(!chatOpen)}>
-              <Edit3 className="mr-2 h-4 w-4" /> {chatOpen ? "Hide Chat" : "Vibe Edit"}
-            </Button>
-            <VibeEditInfo assetType="cover_letter" />
-          </>
-        )}
-        <Button variant="outline" size="sm" onClick={() => {
+      {/* Unified Action Bar */}
+      <AssetActionBar
+        hasContent={!!coverLetter}
+        assetType="cover_letter"
+        label="Cover Letter"
+        onDownloadPdf={handleDownloadPdf}
+        onVibeEdit={() => setChatOpen(!chatOpen)}
+        vibeEditOpen={chatOpen}
+        onEdit={() => {
           if (!editingCoverLetter) {
             setEditHtml(coverLetterBodyToHtml(coverLetter));
             setHeaderText(applicantName || "");
@@ -156,15 +143,15 @@ export default function CoverLetterTab({ appId, state }: CoverLetterTabProps) {
             setDateText(new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }));
           }
           setEditingCoverLetter(!editingCoverLetter);
-        }}>
-          <Edit3 className="mr-2 h-4 w-4" /> {editingCoverLetter ? "Cancel Edit" : "Edit"}
-        </Button>
-        <Button variant="outline" size="sm" onClick={handleRegenerateCoverLetter} disabled={isRegenerating}>
-          {isRegenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-          Regenerate
-        </Button>
-      </div>
+        }}
+        isEditing={editingCoverLetter}
+        onRegenerate={handleRegenerateCoverLetter}
+        onCopy={() => handleCopy(coverLetter, "Cover letter")}
+        onToggleRevisions={() => setShowRevisions(!showRevisions)}
+        isGenerating={isRegenerating}
+      />
 
+      {/* Vibe Edit Chat */}
       {chatOpen && (
         <Card>
           <CardContent className="pt-4 space-y-3">
@@ -185,7 +172,8 @@ export default function CoverLetterTab({ appId, state }: CoverLetterTabProps) {
         </Card>
       )}
 
-      {coverLetter && (
+      {/* Revision History (toggled from overflow menu) */}
+      {showRevisions && coverLetter && (
         <CoverLetterRevisions
           applicationId={appId} currentCoverLetter={coverLetter}
           onPreviewRevision={(text) => setPreviewCoverLetter(text === coverLetter ? null : text)}

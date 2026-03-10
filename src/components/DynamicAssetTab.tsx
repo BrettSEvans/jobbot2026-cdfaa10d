@@ -7,13 +7,12 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Edit3, RefreshCw, Loader2, FileDown, Sparkles, Copy, History, Eye, HelpCircle, Lock, Crown,
+  Loader2, Sparkles, Lock, Crown, HelpCircle,
 } from "lucide-react";
 import {
   streamDynamicAssetGeneration,
@@ -31,13 +30,10 @@ import { downloadHtmlAsPdf, buildPdfFilename } from "@/lib/htmlToPdf";
 import { getActiveResumeText } from "@/lib/api/profile";
 import { getLayoutStyleForAsset } from "@/lib/assetLayoutStyles";
 import { injectWatermark } from "@/lib/watermarkHtml";
-import VibeEditInfo from "@/components/VibeEditInfo";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import AssetActionBar from "@/components/tabs/AssetActionBar";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { History, Eye } from "lucide-react";
+import { CardHeader, CardTitle } from "@/components/ui/card";
 
 interface DynamicAssetTabProps {
   asset: GeneratedAsset;
@@ -49,7 +45,6 @@ interface DynamicAssetTabProps {
   branding?: import('@/integrations/supabase/types').Json;
   onAssetUpdated: (updated: GeneratedAsset) => void;
   canRefine?: boolean;
-  /** When true, all edit actions are disabled and content is watermarked (free tier preview) */
   isPreviewOnly?: boolean;
 }
 
@@ -76,6 +71,7 @@ export default function DynamicAssetTab({
   // Revision history
   const [revisions, setRevisions] = useState<any[]>([]);
   const [revisionLoading, setRevisionLoading] = useState(false);
+  const [showRevisions, setShowRevisions] = useState(false);
   const [previewingId, setPreviewingId] = useState<string | null>(null);
   const [revisionTrigger, setRevisionTrigger] = useState(0);
 
@@ -116,7 +112,6 @@ export default function DynamicAssetTab({
       return;
     }
 
-    // Save current as revision before regenerating
     if (html.trim()) {
       try {
         await saveDynamicAssetRevision(asset.id, asset.application_id, html, "Before regeneration");
@@ -155,7 +150,6 @@ export default function DynamicAssetTab({
       });
       onAssetUpdated(updated);
 
-      // Save revision
       try {
         await saveDynamicAssetRevision(asset.id, asset.application_id, cleaned, "Generated");
         setRevisionTrigger((t) => t + 1);
@@ -226,7 +220,6 @@ export default function DynamicAssetTab({
     downloadHtmlAsPdf(html, filename);
     toast({ title: "PDF export", description: "Print dialog opened — save as PDF." });
 
-    // Mark as downloaded to lock regeneration/refinement
     if (!isDownloaded) {
       try {
         const updated = await markAssetDownloaded(asset.id);
@@ -236,7 +229,6 @@ export default function DynamicAssetTab({
   };
 
   const handleCopyText = async () => {
-    // Extract text from HTML
     const div = document.createElement("div");
     div.innerHTML = html;
     const text = div.textContent || div.innerText || "";
@@ -299,99 +291,23 @@ export default function DynamicAssetTab({
         </div>
       )}
 
-      {/* Action Bar */}
-      <div className="flex flex-wrap gap-2">
-        {/* Vibe Edit Button */}
-        {isPreviewOnly ? (
-          <Button variant="outline" size="sm" className="opacity-75" onClick={showUpgradeToast}>
-            <Edit3 className="mr-2 h-4 w-4" />
-            Vibe Edit
-            <Lock className="ml-2 h-3 w-3" />
-          </Button>
-        ) : (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span>
-                  <Button
-                    data-tutorial="refine-ai-btn"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setChatOpen(!chatOpen)}
-                    disabled={!html || !canRefineProp || isDownloaded}
-                  >
-                    <Edit3 className="mr-2 h-4 w-4" />
-                    {isDownloaded ? "Locked" : !canRefineProp ? "Upgrade to Vibe Edit" : chatOpen ? "Hide Chat" : "Vibe Edit"}
-                  </Button>
-                </span>
-              </TooltipTrigger>
-              {isDownloaded && (
-                <TooltipContent>Asset locked after download</TooltipContent>
-              )}
-            </Tooltip>
-          </TooltipProvider>
-        )}
-        {!isPreviewOnly && <VibeEditInfo assetType="dynamic" />}
-
-        {/* Regenerate Button */}
-        {isPreviewOnly ? (
-          <Button variant="outline" size="sm" className="opacity-75" onClick={showUpgradeToast}>
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Regenerate
-            <Lock className="ml-2 h-3 w-3" />
-          </Button>
-        ) : (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span>
-                  <Button
-                    data-tutorial="generate-btn"
-                    variant="outline"
-                    size="sm"
-                    onClick={handleGenerate}
-                    disabled={isWorking || isDownloaded}
-                  >
-                    {isWorking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-                    {html ? "Regenerate" : "Generate"}
-                  </Button>
-                </span>
-              </TooltipTrigger>
-              {isDownloaded && (
-                <TooltipContent>Asset locked after download</TooltipContent>
-              )}
-            </Tooltip>
-          </TooltipProvider>
-        )}
-
-        {html && (
-          <>
-            {/* PDF Download Button */}
-            {isPreviewOnly ? (
-              <Button variant="outline" size="sm" className="opacity-75" onClick={showUpgradeToast}>
-                <FileDown className="mr-2 h-4 w-4" /> PDF Download
-                <Lock className="ml-2 h-3 w-3" />
-              </Button>
-            ) : (
-              <Button data-tutorial="download-btn" variant="outline" size="sm" onClick={handleDownloadPdf}>
-                <FileDown className="mr-2 h-4 w-4" /> PDF Download
-              </Button>
-            )}
-
-            {/* Copy to Text Button */}
-            {isPreviewOnly ? (
-              <Button variant="outline" size="sm" className="opacity-75" onClick={showUpgradeToast}>
-                <Copy className="mr-2 h-4 w-4" /> Copy to Text
-                <Lock className="ml-2 h-3 w-3" />
-              </Button>
-            ) : (
-              <Button variant="outline" size="sm" onClick={handleCopyText}>
-                <Copy className="mr-2 h-4 w-4" /> Copy to Text
-              </Button>
-            )}
-          </>
-        )}
-      </div>
+      {/* Unified Action Bar */}
+      <AssetActionBar
+        hasContent={!!html}
+        assetType="dynamic"
+        label={asset.asset_name}
+        onDownloadPdf={handleDownloadPdf}
+        onVibeEdit={() => setChatOpen(!chatOpen)}
+        vibeEditOpen={chatOpen}
+        canRefine={canRefineProp}
+        onRegenerate={handleGenerate}
+        onCopy={handleCopyText}
+        onToggleRevisions={() => setShowRevisions(!showRevisions)}
+        isGenerating={isWorking}
+        isLocked={isDownloaded}
+        isPreviewOnly={isPreviewOnly}
+        onUpgradeClick={showUpgradeToast}
+      />
 
       {/* Refine Chat */}
       {chatOpen && !isDownloaded && (
@@ -420,8 +336,8 @@ export default function DynamicAssetTab({
         </Card>
       )}
 
-      {/* Revision History */}
-      {revisions.length > 0 && (
+      {/* Revision History (toggled from overflow menu) */}
+      {showRevisions && revisions.length > 0 && (
         <Card data-tutorial="revision-history">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium flex items-center gap-2">

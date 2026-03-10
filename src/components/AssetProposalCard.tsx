@@ -80,7 +80,7 @@ export default function AssetProposalCard({
 
   const handleConfirm = async () => {
     if (selected.size !== 3) {
-      toast({ title: "Select 3", description: "Please select exactly 3 document types.", variant: "destructive" });
+      toast({ title: "Selection required", description: "Please select the required number of document types.", variant: "destructive" });
       return;
     }
     setConfirming(true);

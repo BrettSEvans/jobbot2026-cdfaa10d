@@ -467,7 +467,7 @@ const Applications = () => {
                 </div>
                 <div className="space-y-1">
                   <p className="text-sm font-semibold text-foreground">2. AI builds your portfolio</p>
-                  <p className="text-xs text-muted-foreground">6+ branded documents in minutes</p>
+                  <p className="text-xs text-muted-foreground">Multiple branded documents in minutes</p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-sm font-semibold text-foreground">3. Refine with AI chat</p>

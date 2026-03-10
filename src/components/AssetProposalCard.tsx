@@ -1,5 +1,5 @@
 /**
- * AssetProposalCard - Shows 6 AI-proposed document types, lets user select exactly 3.
+ * AssetProposalCard - Shows AI-proposed document types for user selection.
  */
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -56,7 +56,7 @@ export default function AssetProposalCard({
       setProposals(results);
       setSelected(new Set());
       await saveProposedAssets(applicationId, results);
-      toast({ title: "Materials proposed!", description: "Select 3 document types to generate." });
+      toast({ title: "Materials proposed!", description: "Select the document types you'd like to generate." });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
@@ -72,7 +72,7 @@ export default function AssetProposalCard({
       } else if (next.size < 3) {
         next.add(name);
       } else {
-        toast({ title: "Limit reached", description: "You can select exactly 3 documents.", variant: "destructive" });
+        toast({ title: "Limit reached", description: "You've reached the selection limit.", variant: "destructive" });
       }
       return next;
     });
@@ -80,14 +80,14 @@ export default function AssetProposalCard({
 
   const handleConfirm = async () => {
     if (selected.size !== 3) {
-      toast({ title: "Select 3", description: "Please select exactly 3 document types.", variant: "destructive" });
+      toast({ title: "Selection required", description: "Please select the required number of document types.", variant: "destructive" });
       return;
     }
     setConfirming(true);
     try {
       const assets = await confirmAssetSelection(applicationId, Array.from(selected));
       onAssetsConfirmed(assets);
-      toast({ title: "Selection confirmed!", description: "Generating your 3 documents..." });
+      toast({ title: "Selection confirmed!", description: "Generating your selected documents..." });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
@@ -103,7 +103,7 @@ export default function AssetProposalCard({
           <div>
             <h3 className="font-semibold text-lg">Industry-Specific Materials</h3>
             <p className="text-sm text-muted-foreground mt-1">
-              Let AI analyze the job and propose 6 professional documents tailored to this role and industry.
+              Let AI analyze the job and propose professional documents tailored to this role and industry.
             </p>
           </div>
           <Button onClick={handlePropose} disabled={loading}>
@@ -119,10 +119,10 @@ export default function AssetProposalCard({
     <Card>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-base font-semibold">Select 3 Document Types</CardTitle>
-          <Badge variant="outline">{selected.size}/3 selected</Badge>
+          <CardTitle className="text-base font-semibold">Select Document Types</CardTitle>
+          <Badge variant="outline">{selected.size} selected</Badge>
         </div>
-        <p className="text-sm text-muted-foreground">Choose exactly 3 documents to generate for this application.</p>
+        <p className="text-sm text-muted-foreground">Choose which documents to generate for this application.</p>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

@@ -1143,12 +1143,12 @@ registerTest({
   steps: [
     'Navigate to /search-jobs.',
     'Enter "Product Manager" in the search bar.',
-    'Select "Google Careers" from the site filter dropdown.',
+    'Select "Jobs Google Found" from the site filter dropdown.',
     'Click "Search".',
   ],
   expectedResults: [
-    'Results are returned primarily from careers.google.com.',
-    'Result URLs reflect the filtered domain.',
+    'Results are filtered to jobs aggregated by Google.',
+    'Result URLs reflect the filtered source.',
   ],
   tags: ['regression'],
   estimatedMinutes: 2,

@@ -83,14 +83,17 @@ export default function TutorialBubble({
     };
   }, [calculate]);
 
-  // Handle ESC key
+  // Handle keyboard navigation
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") onSkip();
+      if (e.key === "Enter") onNext();
+      if (e.key === "Backspace" || e.key === "ArrowLeft") { if (!isFirst) onBack(); }
+      if (e.key === "ArrowRight") onNext();
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [onSkip]);
+  }, [onSkip, onNext, onBack, isFirst]);
 
   if (!position) return null;
 

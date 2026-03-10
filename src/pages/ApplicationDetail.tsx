@@ -43,7 +43,7 @@ import {
 import ImpersonationNotice from "@/components/ImpersonationNotice";
 import { useSubscription } from "@/hooks/useSubscription";
 import AtsScoreCard from "@/components/AtsScoreCard";
-import { scoreAtsMatch, scoreBaselineResume, type AtsScoreResult } from "@/lib/api/atsScore";
+import { scoreAtsMatch, scoreBaselineResume, isCacheValid, type AtsScoreResult } from "@/lib/api/atsScore";
 import {
   Select,
   SelectContent,

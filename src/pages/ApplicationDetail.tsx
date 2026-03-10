@@ -131,7 +131,7 @@ const ApplicationDetail = () => {
 
       const result = await scoreAtsMatch(id, state.jobDescription, state.resumeHtml, baselineScore);
       setAtsScore(result);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.warn("ATS scoring failed:", err);
     } finally {
       setAtsLoading(false);
@@ -164,7 +164,7 @@ const ApplicationDetail = () => {
     try {
       await updatePipelineStage(id, currentStage, newStage as PipelineStage);
       state.reload();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.warn("Stage update failed:", err);
     }
   };
@@ -240,13 +240,14 @@ const ApplicationDetail = () => {
       setDynamicAssets((prev) =>
         prev.map((a) => a.id === asset.id ? updated : a)
       );
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : "Unknown error";
       await updateGeneratedAsset(asset.id, {
         generation_status: 'error',
-        generation_error: err.message,
+        generation_error: errMsg,
       });
       setDynamicAssets((prev) =>
-        prev.map((a) => a.id === asset.id ? { ...a, generation_status: 'error', generation_error: err.message } : a)
+        prev.map((a) => a.id === asset.id ? { ...a, generation_status: 'error', generation_error: errMsg } : a)
       );
     }
   };

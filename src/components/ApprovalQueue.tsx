@@ -35,8 +35,8 @@ export default function ApprovalQueue() {
       setApproved(a);
       setRejected(r);
       setDeleted(d);
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      toast({ title: "Error", description: err instanceof Error ? err.message : "Unknown error", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -50,8 +50,8 @@ export default function ApprovalQueue() {
       await approveUser(id);
       toast({ title: "Approved", description: "User has been granted access." });
       load();
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      toast({ title: "Error", description: err instanceof Error ? err.message : "Unknown error", variant: "destructive" });
     } finally {
       setActionId(null);
     }
@@ -63,8 +63,8 @@ export default function ApprovalQueue() {
       await rejectUser(id);
       toast({ title: "Rejected", description: "User registration rejected." });
       load();
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      toast({ title: "Error", description: err instanceof Error ? err.message : "Unknown error", variant: "destructive" });
     } finally {
       setActionId(null);
     }
@@ -78,8 +78,8 @@ export default function ApprovalQueue() {
       toast({ title: "User deleted", description: "Account and all assets have been soft-deleted." });
       setDeleteTarget(null);
       load();
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      toast({ title: "Error", description: err instanceof Error ? err.message : "Unknown error", variant: "destructive" });
     } finally {
       setActionId(null);
     }

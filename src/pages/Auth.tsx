@@ -72,8 +72,8 @@ export default function Auth() {
         if (error) throw error;
         toast({ title: "Check your email", description: "We sent you a password reset link." });
       }
-    } catch (err: any) {
-      const msg = err.message || "Unknown error";
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Unknown error";
       // Associate error with the relevant field
       if (msg.toLowerCase().includes("password")) {
         setPasswordError(msg);

@@ -57,8 +57,8 @@ export default function AssetProposalCard({
       setSelected(new Set());
       await saveProposedAssets(applicationId, results);
       toast({ title: "Materials proposed!", description: "Select the document types you'd like to generate." });
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      toast({ title: "Error", description: err instanceof Error ? err.message : "Unknown error", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -88,8 +88,8 @@ export default function AssetProposalCard({
       const assets = await confirmAssetSelection(applicationId, Array.from(selected));
       onAssetsConfirmed(assets);
       toast({ title: "Selection confirmed!", description: "Generating your selected documents..." });
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      toast({ title: "Error", description: err instanceof Error ? err.message : "Unknown error", variant: "destructive" });
     } finally {
       setConfirming(false);
     }
@@ -160,7 +160,7 @@ export default function AssetProposalCard({
           </Button>
           <Button size="sm" onClick={handleConfirm} disabled={selected.size !== 3 || confirming}>
             {confirming ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-            Generate Selected ({selected.size}/3)
+            Generate Selected ({selected.size})
           </Button>
         </div>
       </CardContent>

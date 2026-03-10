@@ -121,8 +121,8 @@ const NewApplication = () => {
       // Navigate to the application detail page — generation continues in background
       toast({ title: "Application created!", description: "Your materials are being generated in the background." });
       navigate(`/applications/${appId}`);
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      toast({ title: "Error", description: err instanceof Error ? err.message : "Unknown error", variant: "destructive" });
       setStep("input");
     }
   };

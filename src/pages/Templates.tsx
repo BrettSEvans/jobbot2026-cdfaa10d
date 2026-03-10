@@ -67,8 +67,8 @@ const Templates = () => {
       const personaId = isImpersonating && activePersona?.isTestUser ? activePersona.id : null;
       const data = await getTemplates({ personaId });
       setAllTemplates(data);
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      toast({ title: "Error", description: err instanceof Error ? err.message : "Unknown error", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -122,8 +122,8 @@ const Templates = () => {
       await deleteTemplate(id);
       setAllTemplates((prev) => prev.filter((t) => t.id !== id));
       toast({ title: "Deleted", description: "Template removed." });
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      toast({ title: "Error", description: err instanceof Error ? err.message : "Unknown error", variant: "destructive" });
     }
   };
 

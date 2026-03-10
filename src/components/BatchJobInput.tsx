@@ -150,8 +150,8 @@ export default function BatchJobInput() {
           useManualInput: entry.useManual,
         });
         newResults.set(entry.id, { appId, status: "started" });
-      } catch (err: any) {
-        newResults.set(entry.id, { status: `error: ${err.message}` });
+      } catch (err: unknown) {
+        newResults.set(entry.id, { status: `error: ${err instanceof Error ? err.message : "Unknown error"}` });
       }
     }
 

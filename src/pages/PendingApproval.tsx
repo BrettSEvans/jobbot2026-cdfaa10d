@@ -1,8 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Clock, LogOut, Zap } from "lucide-react";
+import { Clock, LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { BRAND } from "@/lib/branding";
+import BrandLogo from "@/components/BrandLogo";
 
 interface Props {
   status: "pending" | "rejected";
@@ -14,9 +14,8 @@ export default function PendingApproval({ status }: Props) {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-md space-y-6">
-        <div className="flex items-center justify-center gap-2">
-          <Zap className="h-6 w-6 fill-primary text-primary" />
-          <span className="text-xl font-heading font-bold tracking-tight text-primary">{BRAND.name}</span>
+        <div className="flex items-center justify-center">
+          <BrandLogo size="md" />
         </div>
 
         <Card>

@@ -272,19 +272,21 @@ registerHelp({
   slug: 'ai-chat',
   title: 'Vibe Edit',
   summary:
-    'Refine any generated document by describing what you want changed in natural language. The AI will update the document while preserving context.',
+    'Refine any generated document by describing what you want changed in natural language. Access it from the secondary action bar on any document tab.',
   steps: [
     'Navigate to the document you want to refine.',
-    'Click "Vibe Edit" and type your request (e.g. "Emphasize leadership").',
+    'Click "Vibe Edit" in the action bar to open the inline chat.',
+    'Type your request (e.g. "Emphasize leadership" or "Make it shorter").',
     'The document will be updated and a new revision saved automatically.',
   ],
   tips: [
     'Be specific about what to change for best results.',
     'You can refine multiple times — each revision is saved.',
+    'Vibe Edit is available on Resume, Cover Letter, and all Industry Materials.',
   ],
   route: '/applications/:id',
-  keywords: ['refine', 'chat', 'improve', 'edit', 'change', 'ai'],
-  relatedSlugs: ['dashboard-tab', 'cover-letter-tab', 'resume-tab'],
+  keywords: ['refine', 'chat', 'improve', 'edit', 'change', 'ai', 'vibe'],
+  relatedSlugs: ['cover-letter-tab', 'resume-tab', 'dynamic-assets'],
 });
 
 registerHelp({

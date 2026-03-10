@@ -190,6 +190,7 @@ export function useQATestRuns() {
     upsertResult,
     updateFailureNotes,
     fixRegression,
+    deleteResult,
     fixAllRegressions,
     refresh: () => { loadRuns(); if (activeRunId) loadResults(activeRunId); },
   };

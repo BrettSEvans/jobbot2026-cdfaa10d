@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Loader2, Users, Megaphone, Link, Plus, Copy, Check } from "lucide-react";
+import { Loader2, Users, Megaphone, Link, Plus, Copy, Check, Pencil } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 

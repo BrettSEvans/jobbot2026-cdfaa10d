@@ -371,6 +371,11 @@ const ApplicationDetail = () => {
           )}
         </div>
 
+        {/* Prominent CTA when generation is complete but no industry materials yet */}
+        {state.app.status === "complete" && dynamicAssets.length === 0 && !dynamicLoading && isPrimaryView && (
+          <ProposeMaterialsCTA onPropose={() => setShowProposalDialog(true)} />
+        )}
+
         {/* Dynamic Assets Bar */}
         {dynamicAssets.length > 0 && (
           <div className="space-y-1.5">

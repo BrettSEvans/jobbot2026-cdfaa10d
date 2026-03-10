@@ -81,7 +81,7 @@ function AuthenticatedApp() {
             .then(() => {
               clearAttribution();
               // Auto-approve campaign users
-              const utmCampaign = (attribution as Record<string, string>).utm_campaign;
+              const utmCampaign = (attribution as unknown as Record<string, string>).utm_campaign;
               if (utmCampaign && data?.approval_status === "pending") {
                 supabase
                   .rpc("campaign_auto_approve", { _user_id: user.id, _utm_campaign: utmCampaign })

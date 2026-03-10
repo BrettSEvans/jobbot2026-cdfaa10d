@@ -75,7 +75,7 @@ export default function AdminCampaignsTab() {
   // Create dialog state
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ name: "", utm_source: "", utm_medium: "", utm_campaign: "", utm_content: "", utm_term: "", ref_code: "" });
+  const [form, setForm] = useState({ name: "", utm_source: "", utm_medium: "", utm_campaign: "", utm_content: "", utm_term: "", ref_code: "", max_signups: "" });
 
   useEffect(() => {
     Promise.all([

@@ -238,17 +238,11 @@ const Applications = () => {
     }
   };
 
-  const handleCopyHtml = async (html: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    await navigator.clipboard.writeText(html);
-    toast({ title: "Copied!", description: "Dashboard HTML copied to clipboard." });
-  };
-
-  const handleCopyCoverLetter = async (text: string, e: React.MouseEvent) => {
+  const handleCopyToClipboard = useCallback(async (text: string, label: string, e: React.MouseEvent) => {
     e.stopPropagation();
     await navigator.clipboard.writeText(text);
-    toast({ title: "Copied!", description: "Cover letter copied to clipboard." });
-  };
+    toast({ title: "Copied!", description: `${label} copied to clipboard.` });
+  }, [toast]);
 
   const sorted = useMemo(() => {
     return [...applications].sort((a, b) => {

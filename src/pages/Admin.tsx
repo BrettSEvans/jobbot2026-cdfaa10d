@@ -19,6 +19,7 @@ import AdminSubscriptionsTab from "@/components/admin/AdminSubscriptionsTab";
 import AdminQATab from "@/components/admin/AdminQATab";
 import AdminGuideTab from "@/components/admin/AdminGuideTab";
 import AdminPromptLogTab from "@/components/admin/AdminPromptLogTab";
+import AdminCampaignsTab from "@/components/admin/AdminCampaignsTab";
 import AdminSidebar, { getVisibleSections } from "@/components/admin/AdminSidebar";
 
 export default function Admin() {

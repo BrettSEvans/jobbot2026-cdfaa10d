@@ -23,6 +23,7 @@ import {
   streamDynamicAssetGeneration,
   updateGeneratedAsset,
   saveDynamicAssetRevision,
+  buildSiblingStructures,
   type GeneratedAsset,
 } from "@/lib/api/dynamicAssets";
 import { getActiveResumeText } from "@/lib/api/profile";
@@ -204,6 +205,11 @@ const ApplicationDetail = () => {
       const { getLayoutStyleForAsset } = await import("@/lib/assetLayoutStyles");
       const layoutStyle = getLayoutStyleForAsset(asset.asset_name, dynamicAssets.map(a => a.asset_name));
 
+      const siblingStructures = buildSiblingStructures(
+        dynamicAssets.map(a => ({ asset_name: a.asset_name, html: a.html })),
+        asset.asset_name,
+      );
+
       let accumulated = "";
       await streamDynamicAssetGeneration({
         assetName: asset.asset_name,
@@ -214,6 +220,7 @@ const ApplicationDetail = () => {
         jobTitle: state.jobTitle,
         branding: state.app?.branding,
         layoutStyle,
+        siblingStructures,
         onDelta: (text) => { accumulated += text; },
         onDone: () => {},
       });
@@ -491,6 +498,7 @@ const ApplicationDetail = () => {
                 key={activeDynamicAsset.id}
                 asset={activeDynamicAsset}
                 allAssetNames={dynamicAssets.map(a => a.asset_name)}
+                allAssets={dynamicAssets.map(a => ({ asset_name: a.asset_name, html: a.html }))}
                 jobDescription={state.jobDescription}
                 companyName={state.companyName}
                 jobTitle={state.jobTitle}

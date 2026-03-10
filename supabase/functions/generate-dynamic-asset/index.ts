@@ -26,7 +26,7 @@ serve(async (req) => {
   }
 
   try {
-    const { assetName, briefDescription, jobDescription, resumeText, companyName, jobTitle, branding, styleContext, layoutStyle } = await req.json();
+    const { assetName, briefDescription, jobDescription, resumeText, companyName, jobTitle, branding, styleContext, layoutStyle, siblingStructures } = await req.json();
 
     await logUsage(req, `dynamic-asset:${assetName}`, 'generate-dynamic-asset');
 
@@ -88,7 +88,17 @@ STYLE RULES:
 - Include a header with the document title and company name
 - Print-friendly single-page design
 ${layoutInstructions}
-${styleContext ? `\nUser style preferences:\n${styleContext}` : ''}`;
+${styleContext ? `\nUser style preferences:\n${styleContext}` : ''}
+
+UNIQUENESS REQUIREMENT (CRITICAL — score ≥ 70% design variability):
+Your document MUST be structurally and visually distinct from sibling documents in this portfolio. Aim for at least 70% uniqueness compared to each sibling. Vary:
+- Overall page composition (columns, grids, sidebars vs linear flow)
+- Header treatment (full-width bars vs minimal lines vs centered vs asymmetric)
+- Data presentation (tables vs cards vs progress bars vs charts vs timelines)
+- Section separators (borders, whitespace, background color blocks, dotted lines)
+- Typography hierarchy and spacing patterns
+Do NOT repeat the same header → paragraph → colored-block → table pattern across documents.
+${siblingStructures?.length ? `\nEXISTING SIBLING DOCUMENTS (you must differentiate from these):\n${siblingStructures.map((s: { assetName: string; structureSummary: string }) => `--- ${s.assetName} ---\n${s.structureSummary}`).join('\n\n')}` : ''}`;
 
     const userPrompt = `Generate a "${assetName}" document.
 ${briefDescription ? `Description: ${briefDescription}` : ''}

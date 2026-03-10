@@ -22,6 +22,7 @@ import {
   saveDynamicAssetRevision,
   getDynamicAssetRevisions,
   markAssetDownloaded,
+  buildSiblingStructures,
   type GeneratedAsset,
 } from "@/lib/api/dynamicAssets";
 import { extractStyleSignalsFromMessage } from "@/lib/api/stylePreferences";
@@ -41,6 +42,7 @@ import {
 interface DynamicAssetTabProps {
   asset: GeneratedAsset;
   allAssetNames: string[];
+  allAssets?: { asset_name: string; html: string }[];
   jobDescription: string;
   companyName?: string;
   jobTitle?: string;
@@ -54,6 +56,7 @@ interface DynamicAssetTabProps {
 export default function DynamicAssetTab({
   asset,
   allAssetNames,
+  allAssets = [],
   jobDescription,
   companyName,
   jobTitle,
@@ -129,6 +132,7 @@ export default function DynamicAssetTab({
       try { resumeText = await getActiveResumeText(); } catch { }
 
       const layoutStyle = getLayoutStyleForAsset(asset.asset_name, allAssetNames);
+      const siblingStructures = buildSiblingStructures(allAssets, asset.asset_name);
       let accumulated = "";
       await streamDynamicAssetGeneration({
         assetName: asset.asset_name,
@@ -139,6 +143,7 @@ export default function DynamicAssetTab({
         jobTitle,
         branding,
         layoutStyle,
+        siblingStructures,
         onDelta: (text) => { accumulated += text; },
         onDone: () => {},
       });

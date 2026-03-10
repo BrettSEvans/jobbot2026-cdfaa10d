@@ -68,6 +68,7 @@ const ApplicationDetail = () => {
   const navigate = useNavigate();
   const state = useApplicationDetail(id);
   const { isAssetAllowed, canRefine, tier } = useSubscription();
+  const { isAdmin } = useUserRoles();
   const [activeView, setActiveView] = useState<ActiveView>("resume");
 
   // Dynamic assets state

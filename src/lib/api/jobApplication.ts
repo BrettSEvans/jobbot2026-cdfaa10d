@@ -143,7 +143,7 @@ const ALLOWED_JOB_APP_FIELDS = [
   "roadmap_html", "resume_html", "resume_style_id", "company_icon_url",
   "source_resume_id", "persona_id", "deleted_at", "deleted_by",
   "ats_score", "ats_scored_at", "pipeline_stage", "stage_changed_at",
-  "selected_assets",
+  "selected_assets", "design_variability",
 ] as const;
 
 function pickAllowed(input: Record<string, unknown>): Record<string, unknown> {

@@ -56,7 +56,7 @@ export default function AssetProposalCard({
       setProposals(results);
       setSelected(new Set());
       await saveProposedAssets(applicationId, results);
-      toast({ title: "Materials proposed!", description: "Select 3 document types to generate." });
+      toast({ title: "Materials proposed!", description: "Select the document types you'd like to generate." });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {

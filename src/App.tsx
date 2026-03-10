@@ -152,8 +152,8 @@ function AuthenticatedApp() {
 const App = () => {
   useEffect(() => {
     document.title = `${BRAND.name} — ${BRAND.tagline}`;
-    // Initialize analytics (no-op without API key — debug mode in dev)
     initAnalytics(import.meta.env.VITE_POSTHOG_KEY);
+    captureAttribution(); // Capture UTM/ref params before auth redirect
   }, []);
 
   return (

@@ -97,7 +97,7 @@ registerTutorialStep({
   body: "Click here to see all your applications organized by stage in the Pipeline board. It's a quick way to jump from a single application to the big picture.",
   placement: "bottom",
   route: "/applications/:id",
-  order: 8,
+  order: 9,
 });
 
 // ── Asset Tour Steps ──────────────────────────────────

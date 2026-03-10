@@ -63,6 +63,13 @@ export default function HtmlAssetTab({
   const assetJob = useAssetJob(appId, assetType);
   const isAssetJobActive = !!(assetJob && !["complete", "error"].includes(assetJob.status));
 
+  // Detect main pipeline generation (e.g. initial job creation)
+  const pipelineJob = state.bgJob;
+  const isPipelineActive = state.isBgGenerating;
+  const pipelineStage = (pipelineJob?.status || "pending") as PipelineStage;
+  // Show pipeline progress if the pipeline is active and this asset hasn't been generated yet
+  const showPipelineProgress = isPipelineActive && !html;
+
   // Check if resume text is available (only relevant for resume asset type)
   const [missingResumeText, setMissingResumeText] = useState(false);
   useEffect(() => {

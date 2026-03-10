@@ -212,10 +212,18 @@ const NewApplication = () => {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {blockedSiteMessage && (
-                    <Alert>
+                    <Alert variant="destructive" className="border-2 border-destructive">
                       <Info className="h-4 w-4" />
                       <AlertDescription>{blockedSiteMessage}</AlertDescription>
                     </Alert>
+                  )}
+                  {useManualInput && jobUrl.trim() && (
+                    <p className="text-xs text-muted-foreground">
+                      Original job link:{" "}
+                      <a href={jobUrl.startsWith("http") ? jobUrl : `https://${jobUrl}`} target="_blank" rel="noopener noreferrer" className="text-primary underline underline-offset-2 break-all">
+                        {jobUrl}
+                      </a>
+                    </p>
                   )}
                   {useManualInput ? (
                     <Textarea

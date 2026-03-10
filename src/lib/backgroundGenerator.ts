@@ -198,8 +198,19 @@ class BackgroundGenerationManager {
       if (!useManualInput && jobUrl) {
         this.updateJob(appId, { status: "scraping", progress: "Scraping job posting..." });
         await saveJobApplication({ id: appId, job_url: jobUrl, generation_status: "scraping" });
-        const result = await scrapeJob(jobUrl);
-        markdown = result.markdown;
+        try {
+          const result = await scrapeJob(jobUrl);
+          markdown = result.markdown;
+        } catch (scrapeErr: unknown) {
+          const msg = scrapeErr instanceof Error ? scrapeErr.message : String(scrapeErr);
+          const isUnsupported = msg.includes("do not support this site") || msg.includes("403");
+          if (isUnsupported) {
+            throw new Error(
+              `This site (${new URL(jobUrl.startsWith("http") ? jobUrl : `https://${jobUrl}`).hostname}) blocks automated scraping. Please use "Paste text instead" to enter the job description manually.`
+            );
+          }
+          throw scrapeErr;
+        }
       }
       this.updateJob(appId, { status: "scraping", progress: "Job description ready" });
 

@@ -13,6 +13,7 @@ import { saveCoverLetterRevision } from "@/lib/api/coverLetterRevisions";
 import { downloadCoverLetterPdf, buildCoverLetterHtml, coverLetterBodyToHtml } from "@/lib/coverLetterPdf";
 import { getProfileContextForPrompt } from "@/lib/api/profile";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
+import GenerationProgressBar, { type PipelineStage } from "@/components/GenerationProgressBar";
 import type { ApplicationState } from "@/hooks/useApplicationDetail";
 
 interface CoverLetterTabProps {

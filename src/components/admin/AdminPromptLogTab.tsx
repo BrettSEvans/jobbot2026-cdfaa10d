@@ -115,33 +115,31 @@ export default function AdminPromptLogTab() {
                         <div className="flex items-start gap-1">
                           {isExpanded ? <ChevronDown className="h-3.5 w-3.5 mt-0.5 shrink-0 text-muted-foreground" /> : <ChevronRight className="h-3.5 w-3.5 mt-0.5 shrink-0 text-muted-foreground" />}
                           <span className={isExpanded ? "" : "line-clamp-1"}>{isExpanded ? e.prompt : truncate(e.prompt)}</span>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6 shrink-0 ml-1"
+                                  onClick={(ev) => {
+                                    ev.stopPropagation();
+                                    navigator.clipboard.writeText(e.prompt);
+                                    toast({ title: "Copied to clipboard" });
+                                  }}
+                                >
+                                  <Copy className="h-3.5 w-3.5" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Copy prompt</TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         </div>
                       </TableCell>
                       <TableCell>
                         {e.category && <Badge variant="secondary" className="text-xs font-normal">{e.category}</Badge>}
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground">{isExpanded ? e.outcome : truncate(e.outcome, 50)}</TableCell>
-                      <TableCell>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7"
-                                onClick={(ev) => {
-                                  ev.stopPropagation();
-                                  navigator.clipboard.writeText(e.prompt);
-                                  toast({ title: "Copied to clipboard" });
-                                }}
-                              >
-                                <Copy className="h-3.5 w-3.5" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>Copy prompt</TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </TableCell>
                     </TableRow>
                   );
                 })}

@@ -35,6 +35,7 @@ import DynamicAssetTab from "@/components/DynamicAssetTab";
 import ChangeAssetDialog from "@/components/ChangeAssetDialog";
 import AssetProposalCard from "@/components/AssetProposalCard";
 import UpgradeGate from "@/components/UpgradeGate";
+import ProposeMaterialsCTA from "@/components/ProposeMaterialsCTA";
 import {
   Dialog,
   DialogContent,
@@ -369,6 +370,11 @@ const ApplicationDetail = () => {
             </div>
           )}
         </div>
+
+        {/* Prominent CTA when generation is complete but no industry materials yet */}
+        {state.app.status === "complete" && dynamicAssets.length === 0 && !dynamicLoading && isPrimaryView && (
+          <ProposeMaterialsCTA onPropose={() => setShowProposalDialog(true)} />
+        )}
 
         {/* Dynamic Assets Bar */}
         {dynamicAssets.length > 0 && (

@@ -47,7 +47,7 @@ export default function Profile() {
   const [saved, setSaved] = useState({
     firstName: "", middleName: "", lastName: "", displayName: "",
     resumeText: "", yearsExperience: "", preferredTone: "professional",
-    industries: [] as string[], skills: [] as string[],
+    industries: [] as string[], skills: [] as string[], masterCoverLetter: "",
   });
 
   // Compute dirty state per card

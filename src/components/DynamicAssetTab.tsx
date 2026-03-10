@@ -42,6 +42,7 @@ import {
 interface DynamicAssetTabProps {
   asset: GeneratedAsset;
   allAssetNames: string[];
+  allAssets?: { asset_name: string; html: string }[];
   jobDescription: string;
   companyName?: string;
   jobTitle?: string;

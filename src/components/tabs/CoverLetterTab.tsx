@@ -13,6 +13,7 @@ import { saveCoverLetterRevision } from "@/lib/api/coverLetterRevisions";
 import { downloadCoverLetterPdf, buildCoverLetterHtml, coverLetterBodyToHtml } from "@/lib/coverLetterPdf";
 import { getProfileContextForPrompt } from "@/lib/api/profile";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
+import GenerationProgressBar, { type PipelineStage } from "@/components/GenerationProgressBar";
 import type { ApplicationState } from "@/hooks/useApplicationDetail";
 
 interface CoverLetterTabProps {
@@ -221,6 +222,14 @@ export default function CoverLetterTab({ appId, state }: CoverLetterTabProps) {
                 dateText={dateText}
                 onDateChange={setDateText}
               />
+            </div>
+          ) : !coverLetter && state.isBgGenerating ? (
+            <div className="py-8 space-y-4">
+              <GenerationProgressBar
+                currentStage={(state.bgJob?.status || "pending") as PipelineStage}
+                startedAt={state.bgJob?.startedAt}
+              />
+              <p className="text-xs text-muted-foreground text-center">You can navigate away — generation continues in the background.</p>
             </div>
           ) : (previewCoverLetter || coverLetter) ? (
             <iframe

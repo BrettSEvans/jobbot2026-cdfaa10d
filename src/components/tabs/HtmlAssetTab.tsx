@@ -27,6 +27,7 @@ import { extractStyleSignalsFromMessage } from "@/lib/api/stylePreferences";
 import { cleanHtml } from "@/lib/cleanHtml";
 import { downloadHtmlAsPdf, buildPdfFilename } from "@/lib/htmlToPdf";
 import { useAssetJob } from "@/hooks/useBackgroundJob";
+import GenerationProgressBar, { type PipelineStage } from "@/components/GenerationProgressBar";
 import type { ApplicationState } from "@/hooks/useApplicationDetail";
 
 interface HtmlAssetTabProps {
@@ -61,6 +62,13 @@ export default function HtmlAssetTab({
 
   const assetJob = useAssetJob(appId, assetType);
   const isAssetJobActive = !!(assetJob && !["complete", "error"].includes(assetJob.status));
+
+  // Detect main pipeline generation (e.g. initial job creation)
+  const pipelineJob = state.bgJob;
+  const isPipelineActive = state.isBgGenerating;
+  const pipelineStage = (pipelineJob?.status || "pending") as PipelineStage;
+  // Show pipeline progress if the pipeline is active and this asset hasn't been generated yet
+  const showPipelineProgress = isPipelineActive && !html;
 
   // Check if resume text is available (only relevant for resume asset type)
   const [missingResumeText, setMissingResumeText] = useState(false);
@@ -277,6 +285,16 @@ export default function HtmlAssetTab({
           <div className="w-full" style={{ height: "70vh" }}>
             <iframe srcDoc={previewHtml || html} className="w-full h-full border-0" sandbox="allow-scripts" title={`${label} Preview`} />
           </div>
+        </Card>
+      ) : showPipelineProgress ? (
+        <Card>
+          <CardContent className="py-8 space-y-4">
+            <GenerationProgressBar
+              currentStage={pipelineStage}
+              startedAt={pipelineJob?.startedAt}
+            />
+            <p className="text-xs text-muted-foreground text-center">You can navigate away — generation continues in the background.</p>
+          </CardContent>
         </Card>
       ) : isAssetJobActive ? (
         <Card>

@@ -307,12 +307,20 @@ class BackgroundGenerationManager {
         onDone: () => {},
       });
 
-      // 6. Single consolidated save
+      // 6a. Save resume immediately so it appears in the UI right away
+      if (resumeHtml) {
+        await saveJobApplication({
+          id: appId,
+          job_url: jobUrl,
+          resume_html: resumeHtml,
+        });
+      }
+
+      // 6b. Save cover letter and mark complete
       await saveJobApplication({
         id: appId,
         job_url: jobUrl,
         cover_letter: coverLetter,
-        ...(resumeHtml ? { resume_html: resumeHtml } : {}),
         status: "complete",
         generation_status: "complete",
       });

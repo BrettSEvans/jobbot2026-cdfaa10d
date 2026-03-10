@@ -121,7 +121,7 @@ export default function Admin() {
               )}
             </div>
             <p className="text-sm text-muted-foreground">
-              {isAdmin && isQA ? "Full admin & QA access" : isAdmin ? "Administrator access" : "QA tester access"}
+              {isAdmin && isQA ? "Full admin & QA access" : isAdmin ? "Administrator access" : isMarketing ? "Marketing access" : "QA tester access"}
             </p>
           </div>
         </div>

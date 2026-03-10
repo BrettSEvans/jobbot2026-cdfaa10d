@@ -133,6 +133,7 @@ export default function Admin() {
             onSectionChange={setActiveSection}
             isAdmin={isAdmin}
             isQA={isQA}
+            isMarketing={isMarketing}
           />
           <div className="flex-1 min-w-0">
             {renderSection()}

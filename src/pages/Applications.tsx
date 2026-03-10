@@ -10,7 +10,8 @@ import CompanyIcon from "@/components/CompanyIcon";
 import KanbanBoard from "@/components/KanbanBoard";
 import PipelineAnalytics from "@/components/PipelineAnalytics";
 import GhostPromptDialog from "@/components/GhostPromptDialog";
-import { updatePipelineStage } from "@/lib/pipelineStages";
+import { updatePipelineStage, type PipelineStage } from "@/lib/pipelineStages";
+import { useStalePipelinePrompt } from "@/hooks/useStalePipelinePrompt";
 import {
   getJobApplications,
   deleteJobApplication,

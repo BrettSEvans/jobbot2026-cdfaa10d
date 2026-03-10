@@ -26,7 +26,7 @@ serve(async (req) => {
   }
 
   try {
-    const { assetName, briefDescription, jobDescription, resumeText, companyName, jobTitle, branding, styleContext, layoutStyle } = await req.json();
+    const { assetName, briefDescription, jobDescription, resumeText, companyName, jobTitle, branding, styleContext, layoutStyle, siblingStructures } = await req.json();
 
     await logUsage(req, `dynamic-asset:${assetName}`, 'generate-dynamic-asset');
 

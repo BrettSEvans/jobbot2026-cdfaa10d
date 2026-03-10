@@ -24,7 +24,7 @@ const SLUGS_REQUIRING_STEPS = [
   "ai-chat", "asset-proposal", "change-asset", "batch-mode",
   "approval-queue", "test-users", "reset-password", "import-job",
   "onboarding-wizard", "pricing", "wysiwyg-editor",
-  "save-as-template", "template-selector",
+  "save-as-template", "template-selector", "master-cover-letter",
 ];
 
 // Slugs that should have route (page-specific or context-specific)

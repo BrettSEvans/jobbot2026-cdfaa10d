@@ -75,7 +75,7 @@ registerTutorialStep({
   body: "Paste your go-to cover letter here. It's optional, but when provided the AI uses your voice and style as a starting point — making every tailored letter sound like you instead of a generic template.",
   placement: "top",
   route: "/profile",
-  order: 6,
+  order: 7,
 });
 
 registerTutorialStep({

@@ -635,8 +635,8 @@ const Applications = () => {
           open
           stage="applied"
           companyName={staleAppliedApp.company_name || "this company"}
-          onMarkGhosted={() => markAsGhosted(staleAppliedApp.id)}
-          onDismiss={() => dismissGhostPrompt(staleAppliedApp.id)}
+          onMarkGhosted={() => markStaleAsGhosted(staleAppliedApp.id, 'applied', dismissApplied)}
+          onDismiss={() => dismissApplied(staleAppliedApp.id)}
         />
       )}
 
@@ -646,8 +646,8 @@ const Applications = () => {
           open
           stage="interviewing"
           companyName={staleInterviewingApp.company_name || "this company"}
-          onMarkGhosted={() => markInterviewAsGhosted(staleInterviewingApp.id)}
-          onDismiss={() => dismissInterviewGhostPrompt(staleInterviewingApp.id)}
+          onMarkGhosted={() => markStaleAsGhosted(staleInterviewingApp.id, 'interviewing', dismissInterviewing)}
+          onDismiss={() => dismissInterviewing(staleInterviewingApp.id)}
         />
       )}
     </div>

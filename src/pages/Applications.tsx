@@ -76,8 +76,8 @@ import { BookOpen } from "lucide-react";
 import { BRAND } from "@/lib/branding";
 import { ImageIcon } from "lucide-react";
 import ApplicationCommandCard from "@/components/ApplicationCommandCard";
-type SortKey = "company_name" | "job_title" | "status" | "created_at" | "updated_at";
-type SortDir = "asc" | "desc";
+type SortKey = "company_name" | "job_title" | "status" | "created_at" | "updated_at" | "pipeline_stage";
+type SortDir = "asc" | "desc" | "group";
 const Applications = () => {
   const { activePersona, isImpersonating } = useImpersonation();
   const { showTutorial, startTutorial } = useTutorial();

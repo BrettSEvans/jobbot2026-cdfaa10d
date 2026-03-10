@@ -27,7 +27,7 @@ const FEATURES = [
   {
     icon: Sparkles,
     title: "Executive Reports",
-    desc: "RAID logs, architecture diagrams, roadmaps, and executive reports — all branded.",
+    desc: "After Action Summaries, architecture diagrams, roadmaps, and executive reports — all branded.",
   },
   {
     icon: Clock,

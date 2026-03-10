@@ -42,7 +42,7 @@ export default function Profile() {
   const [skills, setSkills] = useState<string[]>([]);
   const [newIndustry, setNewIndustry] = useState("");
   const [newSkill, setNewSkill] = useState("");
-
+  const [masterCoverLetter, setMasterCoverLetter] = useState("");
   // Saved values (snapshot from last load/save)
   const [saved, setSaved] = useState({
     firstName: "", middleName: "", lastName: "", displayName: "",

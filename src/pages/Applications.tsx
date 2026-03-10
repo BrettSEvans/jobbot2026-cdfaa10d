@@ -245,6 +245,8 @@ const Applications = () => {
     toast({ title: "Copied!", description: `${label} copied to clipboard.` });
   }, [toast]);
 
+  const isGrouped = sortKey === "pipeline_stage" && sortDir === "group";
+
   const sorted = useMemo(() => {
     return [...applications].sort((a, b) => {
       const aVal = (a[sortKey] || "").toString().toLowerCase();
@@ -253,6 +255,18 @@ const Applications = () => {
       return sortDir === "asc" ? cmp : -cmp;
     });
   }, [applications, sortKey, sortDir]);
+
+  const groupedByStage = useMemo(() => {
+    if (!isGrouped) return [];
+    return PIPELINE_STAGES
+      .map((stage) => ({
+        stage,
+        label: STAGE_LABELS[stage],
+        colorClass: STAGE_COLORS[stage],
+        apps: applications.filter((a) => (a.pipeline_stage || "bookmarked") === stage),
+      }))
+      .filter((g) => g.apps.length > 0);
+  }, [applications, isGrouped]);
 
   const previewApp = applications.find((a) => a.id === previewId);
 

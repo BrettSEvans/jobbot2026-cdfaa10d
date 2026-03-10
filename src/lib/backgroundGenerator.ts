@@ -210,7 +210,7 @@ class BackgroundGenerationManager {
           const isUnsupported = msg.includes("do not support this site") || msg.includes("403");
           if (isUnsupported) {
             const blockedHost = new URL(jobUrl.startsWith("http") ? jobUrl : `https://${jobUrl}`).hostname;
-            addBlockedSite(blockedHost);
+            await addBlockedSite(blockedHost);
             throw new Error(
               `This site (${blockedHost}) blocks automated scraping. Please use "Paste text instead" to enter the job description manually.`
             );

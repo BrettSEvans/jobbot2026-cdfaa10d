@@ -122,7 +122,7 @@ export default function AssetProposalCard({
           <CardTitle className="text-base font-semibold">Select Document Types</CardTitle>
           <Badge variant="outline">{selected.size} selected</Badge>
         </div>
-        <p className="text-sm text-muted-foreground">Choose exactly 3 documents to generate for this application.</p>
+        <p className="text-sm text-muted-foreground">Choose which documents to generate for this application.</p>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

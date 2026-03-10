@@ -61,7 +61,7 @@ export async function markAssetDownloaded(assetId: string) {
   return data as GeneratedAsset;
 }
 
-// --- Propose 6 asset types via AI ---
+// --- Propose portfolio doc types via AI ---
 export async function proposeAssets({
   jobDescription,
   resumeText,

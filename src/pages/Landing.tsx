@@ -88,7 +88,7 @@ function Hero() {
           </Button>
         </div>
         <p className="mt-4 text-xs text-muted-foreground">
-          No credit card required · 6 documents per application · Free forever
+          No credit card required · Multiple documents per application · Free forever
         </p>
       </div>
     </section>

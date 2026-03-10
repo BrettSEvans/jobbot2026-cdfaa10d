@@ -6,6 +6,31 @@ import { streamFromEdgeFunction } from './streamUtils';
 import { getStyleContextForPrompt } from './stylePreferences';
 import type { Json } from '@/integrations/supabase/types';
 
+/**
+ * Extract a short structural summary of an HTML document for uniqueness comparison.
+ * Strips text content, keeps tags and CSS classes, truncates to ~4000 chars.
+ */
+export function extractStructureSummary(html: string): string {
+  return html
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/>[^<]+</g, '><')
+    .replace(/\s{2,}/g, ' ')
+    .slice(0, 4000);
+}
+
+/**
+ * Build sibling structure summaries from existing generated assets,
+ * excluding the asset currently being generated.
+ */
+export function buildSiblingStructures(
+  allAssets: { asset_name: string; html: string }[],
+  excludeAssetName: string,
+): { assetName: string; structureSummary: string }[] {
+  return allAssets
+    .filter((a) => a.asset_name !== excludeAssetName && a.html && a.html.length > 50)
+    .map((a) => ({ assetName: a.asset_name, structureSummary: extractStructureSummary(a.html) }));
+}
+
 export interface ProposedAsset {
   asset_name: string;
   brief_description: string;

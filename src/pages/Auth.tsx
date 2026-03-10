@@ -10,6 +10,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, BarChart3, FileCheck, Sparkles, Shield, Clock } from "lucide-react";
 import { BRAND } from "@/lib/branding";
 import BrandLogo from "@/components/BrandLogo";
+import { getStoredAttribution } from "@/lib/marketingAttribution";
+import { confirmCampaignSignup } from "@/lib/api/campaignSignup";
 
 type Mode = "login" | "signup" | "forgot";
 

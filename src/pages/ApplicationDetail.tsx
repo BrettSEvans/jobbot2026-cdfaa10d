@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,19 +15,10 @@ import {
 } from "lucide-react";
 import GenerationErrorBanner from "@/components/GenerationErrorBanner";
 import { useApplicationDetail } from "@/hooks/useApplicationDetail";
+import { useDynamicAssets } from "@/hooks/useDynamicAssets";
+import { useAtsAutoScore } from "@/hooks/useAtsAutoScore";
 import { streamResumeGeneration } from "@/lib/api/resume";
 import { saveResumeRevision } from "@/lib/api/resumeRevisions";
-import {
-  getProposedAssets,
-  getGeneratedAssets,
-  streamDynamicAssetGeneration,
-  updateGeneratedAsset,
-  saveDynamicAssetRevision,
-  buildSiblingStructures,
-  type GeneratedAsset,
-} from "@/lib/api/dynamicAssets";
-import { getActiveResumeText } from "@/lib/api/profile";
-import { cleanHtml } from "@/lib/cleanHtml";
 import CoverLetterTab from "@/components/tabs/CoverLetterTab";
 import HtmlAssetTab from "@/components/tabs/HtmlAssetTab";
 import JobDescriptionTab from "@/components/tabs/JobDescriptionTab";
@@ -44,7 +35,6 @@ import {
 import ImpersonationNotice from "@/components/ImpersonationNotice";
 import { useSubscription } from "@/hooks/useSubscription";
 import AtsScoreCard from "@/components/AtsScoreCard";
-import { scoreAtsMatch, scoreBaselineResume, isCacheValid, type AtsScoreResult } from "@/lib/api/atsScore";
 import {
   Select,
   SelectContent,
@@ -58,7 +48,6 @@ import {
   updatePipelineStage,
   type PipelineStage,
 } from "@/lib/pipelineStages";
-import { downloadHtmlAsDocx, buildDocxFilename } from "@/lib/docxExport";
 import { useUserRoles } from "@/hooks/useUserRoles";
 import DesignVariabilityCard from "@/components/admin/DesignVariabilityCard";
 import { useCoverLetterNudge } from "@/hooks/useCoverLetterNudge";
@@ -74,90 +63,24 @@ const ApplicationDetail = () => {
   const { shouldNudge, dismiss: dismissNudge } = useCoverLetterNudge();
   const [nudgeDismissed, setNudgeDismissed] = useState(false);
 
-  // Dynamic assets state
-  const [dynamicAssets, setDynamicAssets] = useState<GeneratedAsset[]>([]);
-  const [hasProposals, setHasProposals] = useState(false);
-  const [dynamicLoading, setDynamicLoading] = useState(true);
-  const [showProposalDialog, setShowProposalDialog] = useState(false);
+  // Extracted hooks
+  const {
+    dynamicAssets, hasProposals, dynamicLoading,
+    showProposalDialog, setShowProposalDialog,
+    handleAssetsConfirmed, generateDynamicAsset, handleAssetUpdated,
+  } = useDynamicAssets(id, {
+    jobDescription: state.jobDescription,
+    companyName: state.companyName,
+    jobTitle: state.jobTitle,
+    branding: state.app?.branding,
+  });
 
-  // ATS Score state
-  const [atsScore, setAtsScore] = useState<AtsScoreResult | null>(null);
-  const [atsLoading, setAtsLoading] = useState(false);
-
-  // Auto-trigger tracking
-  const prevResumeHtmlRef = useRef<string>("");
-  const atsAutoTriggered = useRef(false);
+  const {
+    atsScore, atsLoading, handleAtsRescan, handleApplyBulletFix,
+  } = useAtsAutoScore(id, state.resumeHtml, state.jobDescription, state.app, state.setResumeHtml, state.saveField);
 
   // Pipeline stage
   const currentStage = (state.app?.pipeline_stage || 'applied') as PipelineStage;
-
-  // Load ATS score from app data
-  useEffect(() => {
-    if (state.app?.ats_score) {
-      const score = state.app.ats_score as unknown as AtsScoreResult;
-      if (score.score != null) setAtsScore(score);
-    }
-  }, [state.app]);
-
-  // Auto-trigger ATS scan when resume generation completes
-  useEffect(() => {
-    const prevHtml = prevResumeHtmlRef.current;
-    const currentHtml = state.resumeHtml;
-    prevResumeHtmlRef.current = currentHtml;
-
-    // Detect resume appearing (was empty, now populated)
-    if (!prevHtml && currentHtml && currentHtml.length > 100 && state.jobDescription && !atsAutoTriggered.current) {
-      // Check if cached score is still valid — skip rescan if so
-      const cachedScore = state.app?.ats_score as unknown as AtsScoreResult | null;
-      const cachedAt = state.app?.ats_scored_at ?? null;
-      if (cachedScore && cachedAt && isCacheValid(cachedScore, cachedAt, currentHtml, state.jobDescription)) {
-        atsAutoTriggered.current = true;
-        return;
-      }
-      atsAutoTriggered.current = true;
-      handleAtsRescan();
-    }
-  }, [state.resumeHtml, state.jobDescription]);
-
-  const handleAtsRescan = async () => {
-    if (!id || !state.resumeHtml || !state.jobDescription) return;
-    setAtsLoading(true);
-    try {
-      // Get baseline score if we don't have one yet
-      let baselineScore = atsScore?._baselineScore;
-      if (baselineScore == null) {
-        baselineScore = (await scoreBaselineResume(state.jobDescription)) ?? undefined;
-      }
-
-      const result = await scoreAtsMatch(id, state.jobDescription, state.resumeHtml, baselineScore);
-      setAtsScore(result);
-    } catch (err: unknown) {
-      console.warn("ATS scoring failed:", err);
-    } finally {
-      setAtsLoading(false);
-    }
-  };
-
-  /** Apply a suggested bullet fix directly into the resume HTML */
-  const handleApplyBulletFix = async (originalText: string, newText: string): Promise<boolean> => {
-    if (!id || !state.resumeHtml) return false;
-    try {
-      const escaped = originalText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      let updated = state.resumeHtml;
-      if (updated.includes(originalText)) {
-        updated = updated.replace(originalText, newText);
-      } else {
-        const fuzzyPattern = new RegExp(escaped.replace(/\s+/g, '\\s+'), 'i');
-        updated = updated.replace(fuzzyPattern, newText);
-      }
-      if (updated === state.resumeHtml) return false;
-      state.setResumeHtml(updated);
-      await state.saveField({ resume_html: updated });
-      return true;
-    } catch {
-      return false;
-    }
-  };
 
   const handleStageChange = async (newStage: string) => {
     if (!id) return;
@@ -167,95 +90,6 @@ const ApplicationDetail = () => {
     } catch (err: unknown) {
       console.warn("Stage update failed:", err);
     }
-  };
-
-  // Load dynamic assets on mount
-  useEffect(() => {
-    if (!id) return;
-    (async () => {
-      setDynamicLoading(true);
-      try {
-        const [assets, proposals] = await Promise.all([
-          getGeneratedAssets(id),
-          getProposedAssets(id),
-        ]);
-        setDynamicAssets(assets);
-        setHasProposals(proposals.length > 0);
-      } catch { }
-      finally { setDynamicLoading(false); }
-    })();
-  }, [id]);
-
-  const handleAssetsConfirmed = async (assets: GeneratedAsset[]) => {
-    setDynamicAssets(assets);
-    setShowProposalDialog(false);
-    for (const asset of assets) {
-      generateDynamicAsset(asset);
-    }
-  };
-
-  const generateDynamicAsset = async (asset: GeneratedAsset) => {
-    try {
-      await updateGeneratedAsset(asset.id, { generation_status: 'generating' });
-      setDynamicAssets((prev) =>
-        prev.map((a) => a.id === asset.id ? { ...a, generation_status: 'generating' } : a)
-      );
-
-      let resumeText = "";
-      try { resumeText = await getActiveResumeText(); } catch { }
-
-      const { getLayoutStyleForAsset } = await import("@/lib/assetLayoutStyles");
-      const layoutStyle = getLayoutStyleForAsset(asset.asset_name, dynamicAssets.map(a => a.asset_name));
-
-      const siblingStructures = buildSiblingStructures(
-        dynamicAssets.map(a => ({ asset_name: a.asset_name, html: a.html })),
-        asset.asset_name,
-      );
-
-      let accumulated = "";
-      await streamDynamicAssetGeneration({
-        assetName: asset.asset_name,
-        briefDescription: asset.brief_description,
-        jobDescription: state.jobDescription,
-        resumeText,
-        companyName: state.companyName,
-        jobTitle: state.jobTitle,
-        branding: state.app?.branding,
-        layoutStyle,
-        siblingStructures,
-        onDelta: (text) => { accumulated += text; },
-        onDone: () => {},
-      });
-
-      const cleaned = cleanHtml(accumulated);
-      const updated = await updateGeneratedAsset(asset.id, {
-        html: cleaned,
-        generation_status: 'complete',
-      });
-
-      try {
-        await saveDynamicAssetRevision(asset.id, asset.application_id, cleaned, "Initial generation");
-      } catch { }
-
-      setDynamicAssets((prev) =>
-        prev.map((a) => a.id === asset.id ? updated : a)
-      );
-    } catch (err: unknown) {
-      const errMsg = err instanceof Error ? err.message : "Unknown error";
-      await updateGeneratedAsset(asset.id, {
-        generation_status: 'error',
-        generation_error: errMsg,
-      });
-      setDynamicAssets((prev) =>
-        prev.map((a) => a.id === asset.id ? { ...a, generation_status: 'error', generation_error: errMsg } : a)
-      );
-    }
-  };
-
-  const handleAssetUpdated = (updated: GeneratedAsset) => {
-    setDynamicAssets((prev) =>
-      prev.map((a) => a.id === updated.id ? updated : a)
-    );
   };
 
   if (state.loading) {

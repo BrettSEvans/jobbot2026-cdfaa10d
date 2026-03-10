@@ -83,19 +83,21 @@ export default function TutorialBubble({
     };
   }, [calculate]);
 
-  // Handle ESC key
+  const isLast = currentIndex === totalSteps - 1;
+  const isFirst = currentIndex === 0;
+
+  // Handle keyboard navigation
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") onSkip();
+      if (e.key === "Enter" || e.key === "ArrowRight") onNext();
+      if ((e.key === "ArrowLeft") && !isFirst) onBack();
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [onSkip]);
+  }, [onSkip, onNext, onBack, isFirst]);
 
   if (!position) return null;
-
-  const isLast = currentIndex === totalSteps - 1;
-  const isFirst = currentIndex === 0;
 
   const bubbleClasses = theme === "dark"
     ? "bg-[hsl(0,0%,98%)] text-[hsl(220,25%,10%)] shadow-xl"

@@ -279,14 +279,14 @@ export default function AdminCampaignsTab() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-base">Your Campaigns</CardTitle>
-          <Dialog open={open} onOpenChange={setOpen}>
+          <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setEditingCampaign(null); setForm(emptyForm); } }}>
             <DialogTrigger asChild>
               <Button size="sm"><Plus className="h-4 w-4 mr-1" /> New Campaign</Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Create Campaign</DialogTitle>
-                <DialogDescription>Define UTM parameters to generate a trackable link.</DialogDescription>
+                <DialogTitle>{editingCampaign ? "Edit Campaign" : "Create Campaign"}</DialogTitle>
+                <DialogDescription>{editingCampaign ? "Update campaign parameters." : "Define UTM parameters to generate a trackable link."}</DialogDescription>
               </DialogHeader>
               <div className="grid gap-3 py-2">
                 <div>

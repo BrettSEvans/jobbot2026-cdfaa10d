@@ -38,6 +38,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { BRAND } from "@/lib/branding";
 import { initAnalytics, analytics } from "@/lib/analytics";
+import { captureAttribution, getStoredAttribution, clearAttribution } from "@/lib/marketingAttribution";
 import "@/lib/helpEntries"; // register all help topics
 import "@/lib/qaEntries"; // register all QA test cases
 import "@/lib/tutorial/steps"; // register tutorial steps

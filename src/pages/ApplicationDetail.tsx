@@ -131,7 +131,7 @@ const ApplicationDetail = () => {
 
       const result = await scoreAtsMatch(id, state.jobDescription, state.resumeHtml, baselineScore);
       setAtsScore(result);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.warn("ATS scoring failed:", err);
     } finally {
       setAtsLoading(false);

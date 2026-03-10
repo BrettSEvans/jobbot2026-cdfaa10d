@@ -31,7 +31,10 @@ import {
   Layers,
   FileUser,
   ChevronDown,
+  Info,
 } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { isBlockedSite, getBlockedReason } from "@/lib/blockedScrapeSites";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";

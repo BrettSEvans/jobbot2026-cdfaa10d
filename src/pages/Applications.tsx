@@ -24,6 +24,7 @@ import type { JobApplication } from "@/hooks/useApplicationDetail";
 import {
   Plus,
   Trash2,
+  Search,
   Loader2,
   LayoutTemplate,
   ArrowUpDown,

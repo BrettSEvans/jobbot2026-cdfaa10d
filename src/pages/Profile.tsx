@@ -72,11 +72,13 @@ export default function Profile() {
       displayName: p.display_name || "", resumeText: p.resume_text || "",
       yearsExperience: p.years_experience || "", preferredTone: p.preferred_tone || "professional",
       industries: p.target_industries || [], skills: p.key_skills || [],
+      masterCoverLetter: (p as any).master_cover_letter || "",
     };
     setFirstName(vals.firstName); setMiddleName(vals.middleName); setLastName(vals.lastName);
     setDisplayName(vals.displayName); setResumeText(vals.resumeText);
     setYearsExperience(vals.yearsExperience); setPreferredTone(vals.preferredTone);
-    setIndustries(vals.industries); setSkills(vals.skills); setSaved(vals);
+    setIndustries(vals.industries); setSkills(vals.skills);
+    setMasterCoverLetter(vals.masterCoverLetter); setSaved(vals);
   }, []);
 
   // Load profile

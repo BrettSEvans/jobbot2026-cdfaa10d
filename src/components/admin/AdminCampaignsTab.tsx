@@ -287,6 +287,12 @@ export default function AdminCampaignsTab() {
                     <Input placeholder="optional" value={form.ref_code} onChange={(e) => setForm((p) => ({ ...p, ref_code: e.target.value }))} />
                   </div>
                 </div>
+                <div>
+                  <Label>Max Signups</Label>
+                  <Input type="number" min="1" placeholder="Unlimited" value={form.max_signups} onChange={(e) => setForm((p) => ({ ...p, max_signups: e.target.value }))} />
+                  <p className="text-xs text-muted-foreground mt-1">Leave blank for unlimited</p>
+                </div>
+                </div>
               </div>
               <DialogFooter>
                 <Button onClick={handleCreate} disabled={saving}>

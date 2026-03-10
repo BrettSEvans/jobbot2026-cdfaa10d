@@ -517,6 +517,7 @@ export type Database = {
           middle_name: string | null
           onboarding_completed_at: string | null
           preferred_tone: string | null
+          referral_source: Json | null
           resume_text: string | null
           target_industries: string[] | null
           updated_at: string
@@ -536,6 +537,7 @@ export type Database = {
           middle_name?: string | null
           onboarding_completed_at?: string | null
           preferred_tone?: string | null
+          referral_source?: Json | null
           resume_text?: string | null
           target_industries?: string[] | null
           updated_at?: string
@@ -555,6 +557,7 @@ export type Database = {
           middle_name?: string | null
           onboarding_completed_at?: string | null
           preferred_tone?: string | null
+          referral_source?: Json | null
           resume_text?: string | null
           target_industries?: string[] | null
           updated_at?: string
@@ -1112,7 +1115,7 @@ export type Database = {
       set_active_resume: { Args: { p_resume_id: string }; Returns: undefined }
     }
     Enums: {
-      app_role: "admin" | "user" | "qa"
+      app_role: "admin" | "user" | "qa" | "marketing"
       subscription_tier: "free" | "pro" | "premium"
     }
     CompositeTypes: {
@@ -1241,7 +1244,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "user", "qa"],
+      app_role: ["admin", "user", "qa", "marketing"],
       subscription_tier: ["free", "pro", "premium"],
     },
   },

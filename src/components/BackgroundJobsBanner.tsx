@@ -13,7 +13,7 @@ export default function BackgroundJobsBanner() {
       setActiveCount(backgroundGenerator.getActiveCount());
       // Check if any active job is in parallel phase
       const jobs = backgroundGenerator.getAllJobs();
-      const parallelJob = jobs.find((j) => j.status === "generating-assets");
+      const parallelJob = jobs.find((j) => j.status === "generating-asset");
       if (parallelJob && parallelJob.parallelTotal) {
         setParallelInfo({ completed: parallelJob.parallelCompleted || 0, total: parallelJob.parallelTotal });
       } else {

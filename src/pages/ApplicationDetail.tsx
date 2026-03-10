@@ -65,7 +65,7 @@ const ApplicationDetail = () => {
   const navigate = useNavigate();
   const state = useApplicationDetail(id);
   const { isAssetAllowed, canRefine, tier } = useSubscription();
-  const [activeView, setActiveView] = useState<ActiveView>("cover-letter");
+  const [activeView, setActiveView] = useState<ActiveView>("resume");
 
   // Dynamic assets state
   const [dynamicAssets, setDynamicAssets] = useState<GeneratedAsset[]>([]);
@@ -257,8 +257,8 @@ const ApplicationDetail = () => {
   }
 
   const primaryTabs = [
-    { id: "cover-letter" as const, label: "Cover Letter", icon: Mail },
     { id: "resume" as const, label: "Resume", icon: FileUser },
+    { id: "cover-letter" as const, label: "Cover Letter", icon: Mail },
   ];
 
   const isPrimaryView = ["cover-letter", "resume"].includes(activeView);

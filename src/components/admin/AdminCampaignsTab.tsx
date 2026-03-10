@@ -7,7 +7,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Loader2, Users, Megaphone, Link, Plus, Copy, Check, Pencil } from "lucide-react";
+import { Loader2, Users, Megaphone, Link, Plus, Copy, Check, Pencil, Trash2 } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { format } from "date-fns";
 import { toast } from "sonner";
 
@@ -373,10 +374,32 @@ export default function AdminCampaignsTab() {
                         )}
                       </TableCell>
                       <TableCell>{format(new Date(c.created_at), "MMM d, yyyy")}</TableCell>
-                      <TableCell>
+                      <TableCell className="flex items-center gap-1">
                         <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEditDialog(c)}>
                           <Pencil className="h-3.5 w-3.5" />
                         </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive">
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete campaign?</AlertDialogTitle>
+                              <AlertDialogDescription>This will permanently delete "{c.name}". Attribution data for existing users will be preserved.</AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={async () => {
+                                const { error } = await supabase.from("campaigns").delete().eq("id", c.id);
+                                if (error) { toast.error("Failed to delete campaign"); return; }
+                                setCampaigns((prev) => prev.filter((x) => x.id !== c.id));
+                                toast.success("Campaign deleted");
+                              }}>Delete</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </TableCell>
                     </TableRow>
                   );

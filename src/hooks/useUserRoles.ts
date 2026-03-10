@@ -41,7 +41,8 @@ export function useUserRoles() {
   const isAdmin = roles.includes('admin');
   const isQA = roles.includes('qa');
   const isMarketing = roles.includes('marketing');
+  const isCustomer = roles.includes('customer');
   const hasAnyRole = roles.length > 0;
 
-  return { roles, isAdmin, isQA, isMarketing, hasAnyRole, loading };
+  return { roles, isAdmin, isQA, isMarketing, isCustomer, hasAnyRole, loading };
 }

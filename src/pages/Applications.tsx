@@ -306,9 +306,11 @@ const Applications = () => {
                 <TooltipContent>Fetch missing company logos</TooltipContent>
               </Tooltip>
             )}
-            <Button variant="outline" onClick={() => navigate("/search-jobs")} data-tutorial="search-jobs-btn">
-              <Search className="mr-2 h-4 w-4" /> Search Jobs
-            </Button>
+            {isAdmin && (
+              <Button variant="outline" onClick={() => navigate("/search-jobs")} data-tutorial="search-jobs-btn">
+                <Search className="mr-2 h-4 w-4" /> Search Jobs
+              </Button>
+            )}
             <Button variant="outline" onClick={() => navigate("/templates")}>
               <LayoutTemplate className="mr-2 h-4 w-4" /> Templates
             </Button>

@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { useUserRoles } from "@/hooks/useUserRoles";
 import { supabase } from "@/integrations/supabase/client";
 import ProUsageBar from "@/components/ProUsageBar";
 import { Button } from "@/components/ui/button";
@@ -81,6 +82,7 @@ type SortKey = "company_name" | "job_title" | "status" | "created_at" | "updated
 type SortDir = "asc" | "desc" | "group";
 const Applications = () => {
   const { activePersona, isImpersonating } = useImpersonation();
+  const { isAdmin } = useUserRoles();
   const { showTutorial, startTutorial } = useTutorial();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -306,9 +308,11 @@ const Applications = () => {
                 <TooltipContent>Fetch missing company logos</TooltipContent>
               </Tooltip>
             )}
-            <Button variant="outline" onClick={() => navigate("/search-jobs")} data-tutorial="search-jobs-btn">
-              <Search className="mr-2 h-4 w-4" /> Search Jobs
-            </Button>
+            {isAdmin && (
+              <Button variant="outline" onClick={() => navigate("/search-jobs")} data-tutorial="search-jobs-btn">
+                <Search className="mr-2 h-4 w-4" /> Search Jobs
+              </Button>
+            )}
             <Button variant="outline" onClick={() => navigate("/templates")}>
               <LayoutTemplate className="mr-2 h-4 w-4" /> Templates
             </Button>

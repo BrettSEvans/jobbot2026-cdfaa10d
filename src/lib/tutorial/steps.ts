@@ -178,7 +178,7 @@ registerTutorialStep({
   body: "This is your creative superpower. Click \"Vibe Edit\" in the action bar and describe what you want changed — \"make it punchier\", \"add more metrics\", \"emphasize leadership\". The AI reshapes your asset while keeping everything else intact.",
   placement: "bottom",
   route: "/applications/:id",
-  order: 15,
+  order: 16,
   prerequisiteSelector: '[data-tutorial="industry-assets-grid"] button',
 });
 

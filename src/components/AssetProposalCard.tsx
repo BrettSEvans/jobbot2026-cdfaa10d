@@ -160,7 +160,7 @@ export default function AssetProposalCard({
           </Button>
           <Button size="sm" onClick={handleConfirm} disabled={selected.size !== 3 || confirming}>
             {confirming ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-            Generate Selected ({selected.size}/3)
+            Generate Selected ({selected.size})
           </Button>
         </div>
       </CardContent>

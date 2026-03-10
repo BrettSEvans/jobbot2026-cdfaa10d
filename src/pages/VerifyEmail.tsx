@@ -33,8 +33,8 @@ export default function VerifyEmail() {
       toast.success("Verification email sent! Check your inbox.");
       setCooldown(true);
       setTimeout(() => setCooldown(false), 60_000);
-    } catch (err: any) {
-      toast.error(err.message || "Failed to resend email");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to resend email");
     } finally {
       setResending(false);
     }

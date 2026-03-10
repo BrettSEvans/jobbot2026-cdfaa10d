@@ -640,7 +640,7 @@ const Applications = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {deletedApps.map((app: any) => {
+                      {deletedApps.map((app) => {
                         const days = getDaysRemaining(app.deleted_at);
                         return (
                           <TableRow key={app.id} className="opacity-70">

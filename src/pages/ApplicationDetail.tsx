@@ -240,13 +240,14 @@ const ApplicationDetail = () => {
       setDynamicAssets((prev) =>
         prev.map((a) => a.id === asset.id ? updated : a)
       );
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : "Unknown error";
       await updateGeneratedAsset(asset.id, {
         generation_status: 'error',
-        generation_error: err.message,
+        generation_error: errMsg,
       });
       setDynamicAssets((prev) =>
-        prev.map((a) => a.id === asset.id ? { ...a, generation_status: 'error', generation_error: err.message } : a)
+        prev.map((a) => a.id === asset.id ? { ...a, generation_status: 'error', generation_error: errMsg } : a)
       );
     }
   };

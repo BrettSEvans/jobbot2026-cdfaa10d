@@ -30,9 +30,10 @@ export default function ImportJob() {
       const result = await importJobExternal(params);
       toast({ title: "Imported!", description: "Job added to your applications." });
       navigate(`/applications/${result.applicationId}`);
-    } catch (err: any) {
-      setError(err.message);
-      toast({ title: "Import failed", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Unknown error";
+      setError(msg);
+      toast({ title: "Import failed", description: msg, variant: "destructive" });
     } finally {
       setImporting(false);
     }

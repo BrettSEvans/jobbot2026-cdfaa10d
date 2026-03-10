@@ -353,7 +353,7 @@ class BackgroundGenerationManager {
 
       this.abortControllers.delete(appId);
       this.updateJob(appId, { status: "complete", progress: "Done!" });
-    } catch (err: any) {
+    } catch (err: unknown) {
       this.abortControllers.delete(appId);
       const isCancelled = signal?.aborted;
       if (isCancelled) {

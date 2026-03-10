@@ -99,8 +99,8 @@ export default function ChangeAssetDialog({
       setOpen(false);
       setSuggestions([]);
       setSelected(null);
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      toast({ title: "Error", description: err instanceof Error ? err.message : "Unknown error", variant: "destructive" });
     } finally {
       setReplacing(false);
     }

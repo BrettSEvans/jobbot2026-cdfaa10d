@@ -14,6 +14,7 @@ export interface UserProfile {
   target_industries: string[];
   key_skills: string[];
   preferred_tone: string;
+  master_cover_letter: string | null;
 }
 
 export interface UserResume {

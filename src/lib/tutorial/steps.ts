@@ -61,7 +61,7 @@ registerTutorialStep({
   helpSlug: "application-detail",
   targetSelector: '[data-tutorial="asset-tabs"]',
   title: "Browse Your Assets",
-  body: "Switch between Dashboard, Cover Letter, Resume, and Industry Assets using these tabs. Each asset is tailored to the specific job and company.",
+  body: "All your documents live in one tab strip — Resume and Cover Letter on the left, Industry Materials after the separator. Click any tab to view, download, or refine that document.",
   placement: "bottom",
   route: "/applications/:id",
   order: 6,

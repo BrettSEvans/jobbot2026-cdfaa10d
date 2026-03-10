@@ -46,7 +46,7 @@ interface AdminSidebarProps {
 }
 
 export default function AdminSidebar({ activeSection, onSectionChange, isAdmin, isQA, isMarketing }: AdminSidebarProps) {
-  const visible = getVisibleSections(isAdmin, isQA);
+  const visible = getVisibleSections(isAdmin, isQA, isMarketing);
   const groups = [...new Set(visible.map((s) => s.group))];
 
   return (

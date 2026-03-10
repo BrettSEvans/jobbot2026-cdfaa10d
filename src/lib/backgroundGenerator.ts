@@ -204,7 +204,7 @@ class BackgroundGenerationManager {
           markdown = result.markdown;
           // Successful scrape — if this was a recheck of a previously blocked site, unblock it
           const scrapedHost = new URL(jobUrl.startsWith("http") ? jobUrl : `https://${jobUrl}`).hostname;
-          removeSiteBlock(scrapedHost);
+          await removeSiteBlock(scrapedHost);
         } catch (scrapeErr: unknown) {
           const msg = scrapeErr instanceof Error ? scrapeErr.message : String(scrapeErr);
           const isUnsupported = msg.includes("do not support this site") || msg.includes("403");

@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 import {
-  UserCheck, FileText, FileCode, Users, CreditCard, Gauge, ScrollText, BookOpen, FlaskConical,
+  UserCheck, FileText, FileCode, Users, CreditCard, Gauge, ScrollText, BookOpen, FlaskConical, MessageSquareText,
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -21,6 +21,7 @@ export const ADMIN_SECTIONS: AdminSection[] = [
   { id: "roles", label: "Roles & Access", icon: Users, group: "Access", requiresAdmin: true, requiresQA: false },
   { id: "limits", label: "Rate Limits", icon: Gauge, group: "Access", requiresAdmin: true, requiresQA: false },
   { id: "audit", label: "Audit Log", icon: ScrollText, group: "Monitoring", requiresAdmin: true, requiresQA: false },
+  { id: "prompt-log", label: "Prompt Log", icon: MessageSquareText, group: "Monitoring", requiresAdmin: true, requiresQA: false },
   { id: "qa", label: "QA Testing", icon: FlaskConical, group: "Monitoring", requiresAdmin: false, requiresQA: true },
   { id: "guide", label: "Guide", icon: BookOpen, group: "Reference", requiresAdmin: true, requiresQA: false },
 ];

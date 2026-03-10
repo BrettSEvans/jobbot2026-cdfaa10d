@@ -18,6 +18,7 @@ import AdminAuditTab from "@/components/admin/AdminAuditTab";
 import AdminSubscriptionsTab from "@/components/admin/AdminSubscriptionsTab";
 import AdminQATab from "@/components/admin/AdminQATab";
 import AdminGuideTab from "@/components/admin/AdminGuideTab";
+import AdminPromptLogTab from "@/components/admin/AdminPromptLogTab";
 import AdminSidebar, { getVisibleSections } from "@/components/admin/AdminSidebar";
 
 export default function Admin() {
@@ -80,6 +81,7 @@ export default function Admin() {
       case "roles": return <AdminRolesTab />;
       case "limits": return <AdminRateLimitsTab />;
       case "audit": return <AdminAuditTab />;
+      case "prompt-log": return <AdminPromptLogTab />;
       case "qa": return <AdminQATab />;
       case "guide":
         return (

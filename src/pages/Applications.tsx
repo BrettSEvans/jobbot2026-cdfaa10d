@@ -82,6 +82,7 @@ type SortKey = "company_name" | "job_title" | "status" | "created_at" | "updated
 type SortDir = "asc" | "desc" | "group";
 const Applications = () => {
   const { activePersona, isImpersonating } = useImpersonation();
+  const { isAdmin } = useUserRoles();
   const { showTutorial, startTutorial } = useTutorial();
   const { toast } = useToast();
   const navigate = useNavigate();

@@ -15,16 +15,17 @@ export interface AdminSection {
 }
 
 export const ADMIN_SECTIONS: AdminSection[] = [
-  { id: "approvals", label: "Approvals", icon: UserCheck, group: "Operations", requiresAdmin: true, requiresQA: false },
-  { id: "subscriptions", label: "Subscriptions", icon: CreditCard, group: "Operations", requiresAdmin: true, requiresQA: false },
-  { id: "prompts", label: "Prompts", icon: FileText, group: "AI Config", requiresAdmin: true, requiresQA: false },
-  { id: "gen-guide", label: "Gen Guide", icon: FileCode, group: "AI Config", requiresAdmin: true, requiresQA: false },
-  { id: "roles", label: "Roles & Access", icon: Users, group: "Access", requiresAdmin: true, requiresQA: false },
-  { id: "limits", label: "Rate Limits", icon: Gauge, group: "Access", requiresAdmin: true, requiresQA: false },
-  { id: "audit", label: "Audit Log", icon: ScrollText, group: "Monitoring", requiresAdmin: true, requiresQA: false },
-  { id: "prompt-log", label: "Prompt Log", icon: MessageSquareText, group: "Monitoring", requiresAdmin: true, requiresQA: false },
-  { id: "qa", label: "QA Testing", icon: FlaskConical, group: "Monitoring", requiresAdmin: false, requiresQA: true },
-  { id: "guide", label: "Guide", icon: BookOpen, group: "Reference", requiresAdmin: true, requiresQA: false },
+  { id: "approvals", label: "Approvals", icon: UserCheck, group: "Operations", requiresAdmin: true, requiresQA: false, requiresMarketing: false },
+  { id: "subscriptions", label: "Subscriptions", icon: CreditCard, group: "Operations", requiresAdmin: true, requiresQA: false, requiresMarketing: false },
+  { id: "prompts", label: "Prompts", icon: FileText, group: "AI Config", requiresAdmin: true, requiresQA: false, requiresMarketing: false },
+  { id: "gen-guide", label: "Gen Guide", icon: FileCode, group: "AI Config", requiresAdmin: true, requiresQA: false, requiresMarketing: false },
+  { id: "roles", label: "Roles & Access", icon: Users, group: "Access", requiresAdmin: true, requiresQA: false, requiresMarketing: false },
+  { id: "limits", label: "Rate Limits", icon: Gauge, group: "Access", requiresAdmin: true, requiresQA: false, requiresMarketing: false },
+  { id: "campaigns", label: "Campaigns", icon: Megaphone, group: "Marketing", requiresAdmin: false, requiresQA: false, requiresMarketing: true },
+  { id: "audit", label: "Audit Log", icon: ScrollText, group: "Monitoring", requiresAdmin: true, requiresQA: false, requiresMarketing: false },
+  { id: "prompt-log", label: "Prompt Log", icon: MessageSquareText, group: "Monitoring", requiresAdmin: true, requiresQA: false, requiresMarketing: false },
+  { id: "qa", label: "QA Testing", icon: FlaskConical, group: "Monitoring", requiresAdmin: false, requiresQA: true, requiresMarketing: false },
+  { id: "guide", label: "Guide", icon: BookOpen, group: "Reference", requiresAdmin: true, requiresQA: false, requiresMarketing: false },
 ];
 
 export function getVisibleSections(isAdmin: boolean, isQA: boolean): AdminSection[] {

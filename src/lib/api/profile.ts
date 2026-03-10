@@ -204,7 +204,8 @@ function buildProfileContext(persona: PersonaProfile): string {
   if (persona.key_skills?.length) parts.push(`Key skills & strengths: ${persona.key_skills.join(", ")}`);
   if (persona.preferred_tone) parts.push(`Preferred writing tone: ${persona.preferred_tone}`);
   if (persona.resume_text) parts.push(`\nResume / background:\n${persona.resume_text}`);
-  if ((persona as any).master_cover_letter) parts.push(`\nMaster cover letter (use as voice/style reference — adapt content to the specific role):\n${(persona as any).master_cover_letter}`);
+  const masterCL = 'master_cover_letter' in persona ? (persona as unknown as Record<string, unknown>).master_cover_letter as string | undefined : undefined;
+  if (masterCL) parts.push(`\nMaster cover letter (use as voice/style reference — adapt content to the specific role):\n${masterCL}`);
 
   if (parts.length === 0) return "";
   return `\n\nAPPLICANT PROFILE (use this to personalize the output):\n${parts.join("\n")}`;

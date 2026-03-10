@@ -34,15 +34,19 @@ export function useSubscription() {
         .single();
 
       if (error) {
-        // If no subscription exists, create a free one
         if (error.code === "PGRST116") {
-          const { data: newSub, error: insertError } = await supabase
-            .from("user_subscriptions")
-            .insert({ user_id: user!.id, tier: "free", status: "active" })
-            .select()
-            .single();
-          if (insertError) throw insertError;
-          return newSub as unknown as UserSubscription;
+          // No subscription row — this should be created by the handle_new_user trigger.
+          // Return a default free subscription to avoid breaking the UI.
+          return {
+            id: "",
+            user_id: user!.id,
+            tier: "free" as const,
+            status: "active",
+            current_period_start: new Date().toISOString(),
+            current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+            stripe_customer_id: null,
+            stripe_subscription_id: null,
+          } as UserSubscription;
         }
         throw error;
       }
@@ -51,22 +55,12 @@ export function useSubscription() {
     enabled: !!user,
   });
 
-  // Mock upgrade — in production this would redirect to Stripe checkout
+  // Upgrade is admin-only or via Stripe webhooks — this is a no-op placeholder for UI
   const upgradeMutation = useMutation({
-    mutationFn: async (newTier: SubscriptionTier) => {
-      const { error } = await supabase
-        .from("user_subscriptions")
-        .update({
-          tier: newTier,
-          status: "active",
-          current_period_start: new Date().toISOString(),
-          current_period_end: new Date(
-            Date.now() + 30 * 24 * 60 * 60 * 1000
-          ).toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .eq("user_id", user!.id);
-      if (error) throw error;
+    mutationFn: async (_newTier: SubscriptionTier) => {
+      // In production, this would redirect to Stripe checkout.
+      // Direct client-side tier updates are blocked by RLS.
+      throw new Error("Please contact support to upgrade your plan.");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["subscription"] });

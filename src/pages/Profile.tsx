@@ -72,7 +72,7 @@ export default function Profile() {
       displayName: p.display_name || "", resumeText: p.resume_text || "",
       yearsExperience: p.years_experience || "", preferredTone: p.preferred_tone || "professional",
       industries: p.target_industries || [], skills: p.key_skills || [],
-      masterCoverLetter: (p as any).master_cover_letter || "",
+      masterCoverLetter: 'master_cover_letter' in p ? (p as unknown as Record<string, unknown>).master_cover_letter as string || "" : "",
     };
     setFirstName(vals.firstName); setMiddleName(vals.middleName); setLastName(vals.lastName);
     setDisplayName(vals.displayName); setResumeText(vals.resumeText);

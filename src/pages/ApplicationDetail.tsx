@@ -71,6 +71,8 @@ const ApplicationDetail = () => {
   const { isAssetAllowed, canRefine, tier } = useSubscription();
   const { isAdmin } = useUserRoles();
   const [activeView, setActiveView] = useState<ActiveView>("resume");
+  const { shouldNudge, dismiss: dismissNudge } = useCoverLetterNudge();
+  const [nudgeDismissed, setNudgeDismissed] = useState(false);
 
   // Dynamic assets state
   const [dynamicAssets, setDynamicAssets] = useState<GeneratedAsset[]>([]);

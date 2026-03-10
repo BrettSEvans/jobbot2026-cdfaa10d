@@ -30,6 +30,7 @@ import ImportJob from "./pages/ImportJob";
 
 import { useAuth } from "./hooks/useAuth";
 import { useTutorial } from "./hooks/useTutorial";
+import { useIdleTimeout } from "./hooks/useIdleTimeout";
 import { NavigationGuardProvider } from "./hooks/useNavigationGuard";
 import { ImpersonationProvider } from "./contexts/ImpersonationContext";
 import { Loader2 } from "lucide-react";

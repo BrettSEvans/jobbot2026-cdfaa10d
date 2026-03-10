@@ -190,7 +190,7 @@ registerTutorialStep({
   body: "Click here to generate an asset for the first time, or regenerate it with fresh content. Previous versions are saved in revision history.",
   placement: "bottom",
   route: "/applications/:id",
-  order: 16,
+  order: 17,
   prerequisiteSelector: '[data-tutorial="industry-assets-grid"] button',
 });
 

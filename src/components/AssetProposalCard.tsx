@@ -103,7 +103,7 @@ export default function AssetProposalCard({
           <div>
             <h3 className="font-semibold text-lg">Industry-Specific Materials</h3>
             <p className="text-sm text-muted-foreground mt-1">
-              Let AI analyze the job and propose 6 professional documents tailored to this role and industry.
+              Let AI analyze the job and propose professional documents tailored to this role and industry.
             </p>
           </div>
           <Button onClick={handlePropose} disabled={loading}>

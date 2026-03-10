@@ -27,6 +27,7 @@ import HelpButton from "./components/HelpButton";
 import TutorialOverlay from "./components/tutorial/TutorialOverlay";
 import TutorialDemo from "./pages/TutorialDemo";
 import ImportJob from "./pages/ImportJob";
+import SearchJobs from "./pages/SearchJobs";
 
 import { useAuth } from "./hooks/useAuth";
 import { useTutorial } from "./hooks/useTutorial";

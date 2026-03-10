@@ -53,7 +53,7 @@ registerTutorialStep({
   body: `Paste the full URL of the job posting here. ${BRAND.name} will scrape the listing, research the company, and extract key details automatically.`,
   placement: "bottom",
   route: "/applications/new",
-  order: 4,
+  order: 5,
 });
 
 registerTutorialStep({

@@ -148,6 +148,19 @@ export function useQATestRuns() {
     await loadResults(runId);
   };
 
+  const deleteResult = async (runId: string, testCaseId: string) => {
+    const { error } = await supabase
+      .from("qa_test_results")
+      .delete()
+      .eq("run_id", runId)
+      .eq("test_case_id", testCaseId);
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+      return;
+    }
+    await loadResults(runId);
+  };
+
   const fixAllRegressions = async (runId: string) => {
     const { error } = await supabase
       .from("qa_test_results")

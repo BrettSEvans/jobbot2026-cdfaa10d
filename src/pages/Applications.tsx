@@ -10,7 +10,8 @@ import CompanyIcon from "@/components/CompanyIcon";
 import KanbanBoard from "@/components/KanbanBoard";
 import PipelineAnalytics from "@/components/PipelineAnalytics";
 import GhostPromptDialog from "@/components/GhostPromptDialog";
-import { updatePipelineStage, type PipelineStage } from "@/lib/pipelineStages";
+import { updatePipelineStage, PIPELINE_STAGES, STAGE_LABELS, STAGE_COLORS, type PipelineStage } from "@/lib/pipelineStages";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useStalePipelinePrompt } from "@/hooks/useStalePipelinePrompt";
 import {
   getJobApplications,
@@ -75,8 +76,8 @@ import { BookOpen } from "lucide-react";
 import { BRAND } from "@/lib/branding";
 import { ImageIcon } from "lucide-react";
 import ApplicationCommandCard from "@/components/ApplicationCommandCard";
-type SortKey = "company_name" | "job_title" | "status" | "created_at" | "updated_at";
-type SortDir = "asc" | "desc";
+type SortKey = "company_name" | "job_title" | "status" | "created_at" | "updated_at" | "pipeline_stage";
+type SortDir = "asc" | "desc" | "group";
 const Applications = () => {
   const { activePersona, isImpersonating } = useImpersonation();
   const { showTutorial, startTutorial } = useTutorial();
@@ -244,6 +245,8 @@ const Applications = () => {
     toast({ title: "Copied!", description: `${label} copied to clipboard.` });
   }, [toast]);
 
+  const isGrouped = sortKey === "pipeline_stage" && sortDir === "group";
+
   const sorted = useMemo(() => {
     return [...applications].sort((a, b) => {
       const aVal = (a[sortKey] || "").toString().toLowerCase();
@@ -252,6 +255,18 @@ const Applications = () => {
       return sortDir === "asc" ? cmp : -cmp;
     });
   }, [applications, sortKey, sortDir]);
+
+  const groupedByStage = useMemo(() => {
+    if (!isGrouped) return [];
+    return PIPELINE_STAGES
+      .map((stage) => ({
+        stage,
+        label: STAGE_LABELS[stage],
+        colorClass: STAGE_COLORS[stage],
+        apps: applications.filter((a) => (a.pipeline_stage || "bookmarked") === stage),
+      }))
+      .filter((g) => g.apps.length > 0);
+  }, [applications, isGrouped]);
 
   const previewApp = applications.find((a) => a.id === previewId);
 
@@ -461,9 +476,14 @@ const Applications = () => {
                     <Select
                       value={`${sortKey}-${sortDir}`}
                       onValueChange={(v) => {
-                        const [key, dir] = v.split("-") as [SortKey, SortDir];
-                        setSortKey(key);
-                        setSortDir(dir);
+                        if (v === "pipeline_stage-group") {
+                          setSortKey("pipeline_stage" as SortKey);
+                          setSortDir("group" as SortDir);
+                        } else {
+                          const [key, dir] = v.split("-") as [SortKey, SortDir];
+                          setSortKey(key);
+                          setSortDir(dir);
+                        }
                       }}
                     >
                       <SelectTrigger className="w-[180px] h-8 text-xs">
@@ -476,24 +496,57 @@ const Applications = () => {
                         <SelectItem value="company_name-asc">Company A-Z</SelectItem>
                         <SelectItem value="company_name-desc">Company Z-A</SelectItem>
                         <SelectItem value="updated_at-desc">Recently Updated</SelectItem>
+                        <SelectItem value="pipeline_stage-group">Group by Status</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
                   {/* Card grid */}
                   <div data-tutorial="app-table" className="relative">
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                      {sorted.map((app) => (
-                        <ApplicationCommandCard
-                          key={app.id}
-                          app={app}
-                          onDelete={handleSoftDelete}
-                          onCopyCoverLetter={(text, e) => handleCopyToClipboard(text, "Cover letter", e)}
-                          onCopyHtml={(html, e) => handleCopyToClipboard(html, "Dashboard HTML", e)}
-                          onPreview={(id) => { setIsClosing(false); setPreviewId(id); }}
-                        />
-                      ))}
-                    </div>
+                    {isGrouped ? (
+                      <Accordion type="multiple" defaultValue={[]} className="space-y-2">
+                        {groupedByStage.map((group) => (
+                          <AccordionItem key={group.stage} value={group.stage} className="border rounded-lg px-2">
+                            <AccordionTrigger className="hover:no-underline py-3">
+                              <div className="flex items-center gap-2">
+                                <span className={`inline-block h-2.5 w-2.5 rounded-full ${group.colorClass.split(" ")[0]}`} />
+                                <span className="font-medium text-sm">{group.label}</span>
+                                <Badge variant="secondary" className="text-[10px] h-5 px-1.5">
+                                  {group.apps.length}
+                                </Badge>
+                              </div>
+                            </AccordionTrigger>
+                            <AccordionContent>
+                              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 pt-1 pb-2">
+                                {group.apps.map((app) => (
+                                  <ApplicationCommandCard
+                                    key={app.id}
+                                    app={app}
+                                    onDelete={handleSoftDelete}
+                                    onCopyCoverLetter={(text, e) => handleCopyToClipboard(text, "Cover letter", e)}
+                                    onCopyHtml={(html, e) => handleCopyToClipboard(html, "Dashboard HTML", e)}
+                                    onPreview={(id) => { setIsClosing(false); setPreviewId(id); }}
+                                  />
+                                ))}
+                              </div>
+                            </AccordionContent>
+                          </AccordionItem>
+                        ))}
+                      </Accordion>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                        {sorted.map((app) => (
+                          <ApplicationCommandCard
+                            key={app.id}
+                            app={app}
+                            onDelete={handleSoftDelete}
+                            onCopyCoverLetter={(text, e) => handleCopyToClipboard(text, "Cover letter", e)}
+                            onCopyHtml={(html, e) => handleCopyToClipboard(html, "Dashboard HTML", e)}
+                            onPreview={(id) => { setIsClosing(false); setPreviewId(id); }}
+                          />
+                        ))}
+                      </div>
+                    )}
 
                     {/* Slide-in preview panel (desktop) */}
                     {previewApp?.dashboard_html && (

@@ -122,7 +122,7 @@ registerTutorialStep({
   body: "Your cover letter is generated from the job description and your resume. You can edit it inline, regenerate it, or browse previous versions in the revision history.",
   placement: "bottom",
   route: "/applications/:id",
-  order: 10,
+  order: 11,
 });
 
 registerTutorialStep({

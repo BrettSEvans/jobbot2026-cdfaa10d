@@ -24,7 +24,7 @@ const SLUGS_REQUIRING_STEPS = [
   "ai-chat", "asset-proposal", "change-asset", "batch-mode",
   "approval-queue", "test-users", "reset-password", "import-job",
   "onboarding-wizard", "pricing", "wysiwyg-editor",
-  "save-as-template", "template-selector",
+  "save-as-template", "template-selector", "master-cover-letter",
 ];
 
 // Slugs that should have route (page-specific or context-specific)
@@ -34,7 +34,7 @@ const SLUGS_REQUIRING_ROUTE = [
   "admin-panel", "pricing", "reset-password", "import-job",
   "ats-score", "ai-chat", "asset-proposal", "change-asset",
   "save-as-template", "wysiwyg-editor", "export-downloads",
-  "style-preferences",
+  "style-preferences", "master-cover-letter", "resume-health-dashboard",
 ];
 
 describe("Help Entries — Completeness", () => {

@@ -56,6 +56,7 @@ export default function CoverLetterCard({
           </div>
         )}
         <Textarea
+          data-tutorial="master-cover-letter"
           rows={10}
           placeholder="Dear Hiring Manager, I am writing to express my interest in…"
           value={masterCoverLetter}

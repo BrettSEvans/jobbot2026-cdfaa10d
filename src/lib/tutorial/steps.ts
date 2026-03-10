@@ -57,6 +57,17 @@ registerTutorialStep({
 });
 
 registerTutorialStep({
+  id: "master-cover-letter",
+  helpSlug: "master-cover-letter",
+  targetSelector: '[data-tutorial="master-cover-letter"]',
+  title: "Add Your Master Cover Letter",
+  body: "Paste your go-to cover letter here. It's optional, but when provided the AI uses your voice and style as a starting point — making every tailored letter sound like you instead of a generic template.",
+  placement: "top",
+  route: "/profile",
+  order: 6,
+});
+
+registerTutorialStep({
   id: "view-assets",
   helpSlug: "application-detail",
   targetSelector: '[data-tutorial="asset-tabs"]',
@@ -64,7 +75,7 @@ registerTutorialStep({
   body: "All your documents live in one tab strip — Resume and Cover Letter on the left, Industry Materials after the separator. Click any tab to view, download, or refine that document.",
   placement: "bottom",
   route: "/applications/:id",
-  order: 6,
+  order: 7,
 });
 
 registerTutorialStep({
@@ -75,7 +86,7 @@ registerTutorialStep({
   body: "Click here to see all your applications organized by stage in the Pipeline board. It's a quick way to jump from a single application to the big picture.",
   placement: "bottom",
   route: "/applications/:id",
-  order: 7,
+  order: 8,
 });
 
 // ── Asset Tour Steps ──────────────────────────────────
@@ -88,7 +99,7 @@ registerTutorialStep({
   body: "This interactive dashboard summarizes the company, role, and your strategic fit. It includes six tabs: Executive Overview, domain insights, Roadmap, Agentic Workforce, and CFO View.",
   placement: "bottom",
   route: "/applications/:id",
-  order: 8,
+  order: 9,
   prerequisiteSelector: '[data-tutorial="dashboard-tab"]',
 });
 
@@ -100,7 +111,7 @@ registerTutorialStep({
   body: "Your cover letter is generated from the job description and your resume. You can edit it inline, regenerate it, or browse previous versions in the revision history.",
   placement: "bottom",
   route: "/applications/:id",
-  order: 9,
+  order: 10,
 });
 
 registerTutorialStep({
@@ -111,7 +122,7 @@ registerTutorialStep({
   body: "Each resume is tailored to the specific job posting. Choose from different resume styles, regenerate with fresh content, and download as a professionally formatted PDF.",
   placement: "bottom",
   route: "/applications/:id",
-  order: 10,
+  order: 11,
 });
 
 registerTutorialStep({
@@ -122,7 +133,7 @@ registerTutorialStep({
   body: "After the separator in the tab strip, you'll find AI-proposed documents tailored to the job's industry — like a RAID Log, Architecture Diagram, or Executive Report. Click any tab to view it, or use the swap icon to replace it.",
   placement: "bottom",
   route: "/applications/:id",
-  order: 11,
+  order: 12,
 });
 
 registerTutorialStep({
@@ -133,7 +144,7 @@ registerTutorialStep({
   body: "Don't need this document? Click here to replace it with a different industry-relevant asset. The AI will propose fresh options based on the job context.",
   placement: "left",
   route: "/applications/:id",
-  order: 12,
+  order: 13,
 });
 
 registerTutorialStep({
@@ -144,7 +155,7 @@ registerTutorialStep({
   body: "Every time you generate or regenerate an asset, the previous version is saved here. Click any revision to preview it, or restore an older version.",
   placement: "top",
   route: "/applications/:id",
-  order: 13,
+  order: 14,
   prerequisiteSelector: '[data-tutorial="industry-assets-grid"] button',
 });
 
@@ -156,7 +167,7 @@ registerTutorialStep({
   body: "This is your creative superpower. Click \"Vibe Edit\" in the action bar and describe what you want changed — \"make it punchier\", \"add more metrics\", \"emphasize leadership\". The AI reshapes your asset while keeping everything else intact.",
   placement: "bottom",
   route: "/applications/:id",
-  order: 14,
+  order: 15,
   prerequisiteSelector: '[data-tutorial="industry-assets-grid"] button',
 });
 
@@ -168,7 +179,7 @@ registerTutorialStep({
   body: "Click here to generate an asset for the first time, or regenerate it with fresh content. Previous versions are saved in revision history.",
   placement: "bottom",
   route: "/applications/:id",
-  order: 15,
+  order: 16,
   prerequisiteSelector: '[data-tutorial="industry-assets-grid"] button',
 });
 
@@ -180,6 +191,6 @@ registerTutorialStep({
   body: "The primary filled button on every document — click 'Download PDF' to export a professionally formatted file. It's always the most prominent action in the action bar.",
   placement: "bottom",
   route: "/applications/:id",
-  order: 16,
+  order: 17,
   prerequisiteSelector: '[data-tutorial="industry-assets-grid"] button',
 });

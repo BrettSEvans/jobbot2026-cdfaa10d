@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Loader2, Users, Megaphone, Link, Plus, Copy, Check } from "lucide-react";
+import { Loader2, Users, Megaphone, Link, Plus, Copy, Check, Pencil } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 
@@ -72,10 +72,12 @@ export default function AdminCampaignsTab() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
 
-  // Create dialog state
+  // Create/Edit dialog state
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ name: "", utm_source: "", utm_medium: "", utm_campaign: "", utm_content: "", utm_term: "", ref_code: "", max_signups: "" });
+  const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null);
+  const emptyForm = { name: "", utm_source: "", utm_medium: "", utm_campaign: "", utm_content: "", utm_term: "", ref_code: "", max_signups: "" };
+  const [form, setForm] = useState(emptyForm);
 
   useEffect(() => {
     Promise.all([
@@ -104,40 +106,72 @@ export default function AdminCampaignsTab() {
     }));
   };
 
-  const handleCreate = async () => {
+  const openEditDialog = (c: Campaign) => {
+    setEditingCampaign(c);
+    setForm({
+      name: c.name,
+      utm_source: c.utm_source,
+      utm_medium: c.utm_medium,
+      utm_campaign: c.utm_campaign,
+      utm_content: c.utm_content ?? "",
+      utm_term: c.utm_term ?? "",
+      ref_code: c.ref_code ?? "",
+      max_signups: c.max_signups != null ? String(c.max_signups) : "",
+    });
+    setOpen(true);
+  };
+
+  const handleSave = async () => {
     if (!form.name.trim() || !form.utm_campaign.trim()) {
       toast.error("Name and campaign slug are required");
       return;
     }
     setSaving(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setSaving(false); return; }
 
-    const { data, error } = await supabase
-      .from("campaigns")
-      .insert({
-        name: form.name.trim(),
-        utm_source: form.utm_source.trim(),
-        utm_medium: form.utm_medium.trim(),
-        utm_campaign: form.utm_campaign.trim(),
-        utm_content: form.utm_content.trim() || null,
-        utm_term: form.utm_term.trim() || null,
-        ref_code: form.ref_code.trim() || null,
-        max_signups: form.max_signups ? parseInt(form.max_signups, 10) : null,
-        created_by: user.id,
-      } as any)
-      .select()
-      .single();
+    const payload = {
+      name: form.name.trim(),
+      utm_source: form.utm_source.trim(),
+      utm_medium: form.utm_medium.trim(),
+      utm_campaign: form.utm_campaign.trim(),
+      utm_content: form.utm_content.trim() || null,
+      utm_term: form.utm_term.trim() || null,
+      ref_code: form.ref_code.trim() || null,
+      max_signups: form.max_signups ? parseInt(form.max_signups, 10) : null,
+    };
 
-    setSaving(false);
-    if (error) {
-      toast.error("Failed to create campaign");
-      return;
+    if (editingCampaign) {
+      // Update existing
+      const { data, error } = await supabase
+        .from("campaigns")
+        .update(payload as any)
+        .eq("id", editingCampaign.id)
+        .select()
+        .single();
+
+      setSaving(false);
+      if (error) { toast.error("Failed to update campaign"); return; }
+      setCampaigns((prev) => prev.map((c) => c.id === editingCampaign.id ? (data as unknown as Campaign) : c));
+      toast.success("Campaign updated");
+    } else {
+      // Create new
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setSaving(false); return; }
+
+      const { data, error } = await supabase
+        .from("campaigns")
+        .insert({ ...payload, created_by: user.id } as any)
+        .select()
+        .single();
+
+      setSaving(false);
+      if (error) { toast.error("Failed to create campaign"); return; }
+      setCampaigns((prev) => [data as unknown as Campaign, ...prev]);
+      toast.success("Campaign created");
     }
-    setCampaigns((prev) => [data as unknown as Campaign, ...prev]);
-    setForm({ name: "", utm_source: "", utm_medium: "", utm_campaign: "", utm_content: "", utm_term: "", ref_code: "", max_signups: "" });
+
+    setForm(emptyForm);
+    setEditingCampaign(null);
     setOpen(false);
-    toast.success("Campaign created");
   };
 
   // Count signups per campaign
@@ -245,14 +279,14 @@ export default function AdminCampaignsTab() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-base">Your Campaigns</CardTitle>
-          <Dialog open={open} onOpenChange={setOpen}>
+          <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setEditingCampaign(null); setForm(emptyForm); } }}>
             <DialogTrigger asChild>
               <Button size="sm"><Plus className="h-4 w-4 mr-1" /> New Campaign</Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Create Campaign</DialogTitle>
-                <DialogDescription>Define UTM parameters to generate a trackable link.</DialogDescription>
+                <DialogTitle>{editingCampaign ? "Edit Campaign" : "Create Campaign"}</DialogTitle>
+                <DialogDescription>{editingCampaign ? "Update campaign parameters." : "Define UTM parameters to generate a trackable link."}</DialogDescription>
               </DialogHeader>
               <div className="grid gap-3 py-2">
                 <div>
@@ -294,8 +328,8 @@ export default function AdminCampaignsTab() {
                 </div>
               </div>
               <DialogFooter>
-                <Button onClick={handleCreate} disabled={saving}>
-                  {saving && <Loader2 className="h-4 w-4 animate-spin mr-1" />} Create
+                <Button onClick={handleSave} disabled={saving}>
+                  {saving && <Loader2 className="h-4 w-4 animate-spin mr-1" />} {editingCampaign ? "Save" : "Create"}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -309,12 +343,13 @@ export default function AdminCampaignsTab() {
                 <TableHead>Tracking Link</TableHead>
                 <TableHead className="text-center">Signups</TableHead>
                 <TableHead>Created</TableHead>
+                <TableHead className="w-10"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {campaigns.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
                     No campaigns yet. Create one above.
                   </TableCell>
                 </TableRow>
@@ -338,6 +373,11 @@ export default function AdminCampaignsTab() {
                         )}
                       </TableCell>
                       <TableCell>{format(new Date(c.created_at), "MMM d, yyyy")}</TableCell>
+                      <TableCell>
+                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEditDialog(c)}>
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   );
                 })

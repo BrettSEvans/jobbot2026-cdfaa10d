@@ -592,20 +592,22 @@ registerHelp({
   slug: 'export-downloads',
   title: 'PDF & DOCX Export',
   summary:
-    'Download your generated cover letters, resumes, and dashboards as PDF or DOCX files for use in applications.',
+    'Download your generated documents as PDF or DOCX files. "Download PDF" is the primary action on every document tab — it\'s the large, filled button in the action bar. DOCX is available as a secondary option for Resume and Cover Letter on paid tiers.',
   steps: [
-    'Open an application and navigate to the document you want to export.',
-    'Click the download button (PDF or DOCX icon) on the document tab.',
-    'Choose PDF for a pixel-perfect copy or DOCX for an editable version.',
-    'The file downloads to your device immediately.',
+    'Open an application and navigate to any document tab.',
+    'Click the primary "Download PDF" button in the sticky action bar.',
+    'For Resume or Cover Letter, click "DOCX" for an editable Word format.',
+    'Files download with standardized names: {asset-type}-{company}-{role}.{ext}.',
   ],
   tips: [
-    'PDF export preserves the visual layout exactly as shown.',
-    'DOCX export is editable in Microsoft Word or Google Docs.',
+    'PDF export preserves the visual layout exactly as shown in the preview.',
+    'DOCX export is editable in Microsoft Word or Google Docs (Pro/Premium only).',
+    'The download button is always the most prominent action in the action bar.',
+    'For Industry Materials, downloading locks the asset from further regeneration.',
   ],
   route: '/applications/:id',
-  keywords: ['pdf', 'docx', 'export', 'download', 'word', 'file'],
-  relatedSlugs: ['cover-letter-tab', 'resume-tab', 'dashboard-tab'],
+  keywords: ['pdf', 'docx', 'export', 'download', 'word', 'file', 'primary action'],
+  relatedSlugs: ['cover-letter-tab', 'resume-tab', 'dynamic-assets', 'application-detail'],
 });
 
 registerHelp({

@@ -177,7 +177,7 @@ registerTutorialStep({
   helpSlug: "dynamic-assets",
   targetSelector: '[data-tutorial="download-btn"]',
   title: "Download as PDF",
-  body: "Export any asset as a professionally formatted PDF. Ready to attach to your application or share with hiring managers.",
+  body: "The primary filled button on every document — click 'Download PDF' to export a professionally formatted file. It's always the most prominent action in the action bar.",
   placement: "bottom",
   route: "/applications/:id",
   order: 16,

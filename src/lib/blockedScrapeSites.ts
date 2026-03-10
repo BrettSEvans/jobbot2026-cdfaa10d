@@ -2,10 +2,14 @@
  * Registry of sites that block automated scraping.
  * Tracks known blocked hostnames and learns new ones at runtime.
  * Every RECHECK_INTERVAL attempts, allows a scrape to retest if blocking persists.
- * Runtime-discovered blocks are persisted to localStorage so all sessions benefit.
+ *
+ * The shared blocked list is stored in a database table so ALL users benefit
+ * from any single user's discovery of a blocked site.
+ * Attempt counters remain in localStorage (per-browser recheck cadence).
  */
 
-const STORAGE_KEY = "resuvibe_blocked_scrape_sites";
+import { supabase } from "@/integrations/supabase/client";
+
 const COUNTS_KEY = "resuvibe_blocked_scrape_counts";
 
 const KNOWN_BLOCKED = new Set([
@@ -17,14 +21,12 @@ const KNOWN_BLOCKED = new Set([
 
 const RECHECK_INTERVAL = 100;
 
-// Hydrate from localStorage
-function loadPersistedSet(): Set<string> {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return new Set(JSON.parse(raw) as string[]);
-  } catch { /* ignore corrupt data */ }
-  return new Set<string>();
-}
+/** In-memory cache of DB-fetched blocked hostnames (refreshed periodically). */
+let dbBlockedCache = new Set<string>();
+let lastFetchedAt = 0;
+const CACHE_TTL_MS = 5 * 60_000; // 5 minutes
+
+// --- Attempt counts (remain per-browser in localStorage) ---
 
 function loadPersistedCounts(): Map<string, number> {
   try {
@@ -34,22 +36,38 @@ function loadPersistedCounts(): Map<string, number> {
   return new Map<string, number>();
 }
 
-const runtimeBlocked = loadPersistedSet();
 const attemptCounts = loadPersistedCounts();
-
-function persistBlocked() {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify([...runtimeBlocked]));
-  } catch { /* quota exceeded — non-critical */ }
-}
 
 function persistCounts() {
   try {
     const obj: Record<string, number> = {};
     attemptCounts.forEach((v, k) => { obj[k] = v; });
     localStorage.setItem(COUNTS_KEY, JSON.stringify(obj));
-  } catch { /* non-critical */ }
+  } catch { /* quota exceeded — non-critical */ }
 }
+
+// --- DB helpers ---
+
+/** Fetch the shared blocked list from the database (with in-memory caching). */
+async function refreshDbCache(): Promise<void> {
+  if (Date.now() - lastFetchedAt < CACHE_TTL_MS) return;
+  try {
+    const { data } = await supabase
+      .from("blocked_scrape_sites")
+      .select("hostname");
+    if (data) {
+      dbBlockedCache = new Set(data.map((r) => r.hostname));
+      lastFetchedAt = Date.now();
+    }
+  } catch (e) {
+    console.warn("Failed to fetch blocked sites from DB:", e);
+  }
+}
+
+/** Eagerly refresh on module load (non-blocking). */
+refreshDbCache();
+
+// --- Hostname util ---
 
 function normalizeHostname(url: string): string | null {
   try {
@@ -60,12 +78,21 @@ function normalizeHostname(url: string): string | null {
   }
 }
 
-/** Returns true if the site is blocked (and this is NOT a recheck attempt). */
+// --- Public API ---
+
+/**
+ * Returns true if the site is blocked (and this is NOT a recheck attempt).
+ * Checks the hardcoded list + the shared DB cache synchronously.
+ * Triggers a background cache refresh if stale.
+ */
 export function isBlockedSite(url: string): boolean {
+  // Trigger non-blocking refresh if cache is stale
+  refreshDbCache();
+
   const host = normalizeHostname(url);
   if (!host) return false;
 
-  const blocked = KNOWN_BLOCKED.has(host) || runtimeBlocked.has(host);
+  const blocked = KNOWN_BLOCKED.has(host) || dbBlockedCache.has(host);
   if (!blocked) return false;
 
   // Increment attempt counter; every Nth attempt allow a recheck
@@ -80,28 +107,47 @@ export function isBlockedSite(url: string): boolean {
   return true;
 }
 
-/** Mark a hostname as blocked (called after a failed scrape). */
-export function addBlockedSite(hostname: string) {
+/**
+ * Mark a hostname as blocked.
+ * Writes to the shared DB table so all users benefit immediately.
+ */
+export async function addBlockedSite(hostname: string) {
   const h = hostname.toLowerCase();
-  runtimeBlocked.add(h);
+  dbBlockedCache.add(h);
   attemptCounts.set(h, 0);
-  persistBlocked();
   persistCounts();
+
+  try {
+    await supabase.from("blocked_scrape_sites").upsert(
+      { hostname: h, last_confirmed_at: new Date().toISOString() },
+      { onConflict: "hostname" }
+    );
+  } catch (e) {
+    console.warn("Failed to persist blocked site to DB:", e);
+  }
 }
 
-/** Remove a hostname from the runtime blocked list (called after a successful recheck). */
-export function removeSiteBlock(hostname: string) {
+/**
+ * Remove a hostname from the blocked list (called after a successful recheck).
+ * Deletes from the shared DB table so all users benefit.
+ */
+export async function removeSiteBlock(hostname: string) {
   const h = hostname.toLowerCase();
-  runtimeBlocked.delete(h);
+  dbBlockedCache.delete(h);
   attemptCounts.delete(h);
-  persistBlocked();
   persistCounts();
+
+  try {
+    await supabase.from("blocked_scrape_sites").delete().eq("hostname", h);
+  } catch (e) {
+    console.warn("Failed to remove blocked site from DB:", e);
+  }
 }
 
 /** User-friendly message explaining why the site is blocked. */
 export function getBlockedReason(url: string): string | null {
   const host = normalizeHostname(url);
   if (!host) return null;
-  if (!KNOWN_BLOCKED.has(host) && !runtimeBlocked.has(host)) return null;
+  if (!KNOWN_BLOCKED.has(host) && !dbBlockedCache.has(host)) return null;
   return `${host} blocks automated scraping. Please paste the job description text directly instead.`;
 }

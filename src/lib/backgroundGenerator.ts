@@ -480,9 +480,10 @@ class BackgroundGenerationManager {
       }
 
       this.updateJob(jobKey, { status: "complete", progress: `${label} complete!` });
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : "Unknown error";
       console.error(`Background ${label} error:`, err);
-      this.updateJob(jobKey, { status: "error", progress: `${label} failed`, error: err.message });
+      this.updateJob(jobKey, { status: "error", progress: `${label} failed`, error: errMsg });
     }
   }
 

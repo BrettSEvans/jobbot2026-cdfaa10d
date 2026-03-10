@@ -23,7 +23,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export type GenerationJob = {
   applicationId: string;
-  status: "pending" | "scraping" | "analyzing" | "cover-letter" | "generating-assets" | "executive-report" | "raid-log" | "architecture-diagram" | "roadmap" | "resume" | "generating-asset" | "refining-asset" | "complete" | "error";
+  status: "pending" | "scraping" | "analyzing" | "resume" | "cover-letter" | "generating-asset" | "refining-asset" | "complete" | "error";
   progress: string;
   error?: string;
   /** Tracks how many of the parallel assets have finished (used by UI) */

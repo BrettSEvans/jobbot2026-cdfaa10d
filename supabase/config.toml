@@ -77,3 +77,9 @@ verify_jwt = false
 
 [functions.extract-resume-text]
 verify_jwt = false
+
+[functions.confirm-campaign-signup]
+verify_jwt = false
+
+[functions.search-jobs]
+verify_jwt = false

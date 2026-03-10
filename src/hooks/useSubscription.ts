@@ -55,22 +55,12 @@ export function useSubscription() {
     enabled: !!user,
   });
 
-  // Mock upgrade — in production this would redirect to Stripe checkout
+  // Upgrade is admin-only or via Stripe webhooks — this is a no-op placeholder for UI
   const upgradeMutation = useMutation({
-    mutationFn: async (newTier: SubscriptionTier) => {
-      const { error } = await supabase
-        .from("user_subscriptions")
-        .update({
-          tier: newTier,
-          status: "active",
-          current_period_start: new Date().toISOString(),
-          current_period_end: new Date(
-            Date.now() + 30 * 24 * 60 * 60 * 1000
-          ).toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .eq("user_id", user!.id);
-      if (error) throw error;
+    mutationFn: async (_newTier: SubscriptionTier) => {
+      // In production, this would redirect to Stripe checkout.
+      // Direct client-side tier updates are blocked by RLS.
+      throw new Error("Please contact support to upgrade your plan.");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["subscription"] });

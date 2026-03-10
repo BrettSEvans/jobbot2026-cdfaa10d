@@ -23,6 +23,7 @@ import {
   streamDynamicAssetGeneration,
   updateGeneratedAsset,
   saveDynamicAssetRevision,
+  buildSiblingStructures,
   type GeneratedAsset,
 } from "@/lib/api/dynamicAssets";
 import { getActiveResumeText } from "@/lib/api/profile";

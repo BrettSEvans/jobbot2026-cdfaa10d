@@ -22,6 +22,7 @@ import {
   saveDynamicAssetRevision,
   getDynamicAssetRevisions,
   markAssetDownloaded,
+  buildSiblingStructures,
   type GeneratedAsset,
 } from "@/lib/api/dynamicAssets";
 import { extractStyleSignalsFromMessage } from "@/lib/api/stylePreferences";

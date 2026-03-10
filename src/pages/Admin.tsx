@@ -28,7 +28,7 @@ export default function Admin() {
   const [activeBuildLabel, setActiveBuildLabel] = useState<string | null>(null);
 
   // Determine default section based on role
-  const visible = getVisibleSections(isAdmin, isQA);
+  const visible = getVisibleSections(isAdmin, isQA, isMarketing);
   const defaultSection = visible[0]?.id || "qa";
   const [activeSection, setActiveSection] = useState(defaultSection);
 

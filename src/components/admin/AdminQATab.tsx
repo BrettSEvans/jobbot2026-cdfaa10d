@@ -1,10 +1,11 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import {
@@ -15,9 +16,11 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   ClipboardCopy, Clock, CheckCircle2, XCircle, MinusCircle, FlaskConical,
-  Plus, Wrench, ChevronDown, Loader2, CheckCheck, History,
+  Plus, Wrench, ChevronDown, ChevronRight, Loader2, CheckCheck, History,
+  RotateCcw, Download, Keyboard, Eye, EyeOff,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -26,8 +29,10 @@ import {
   getTotalEstimatedMinutes, type ManualTestCase,
 } from "@/lib/qaRegistry";
 import { useQATestRuns, type QATestResult } from "@/hooks/useQATestRuns";
+import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 
 type TestResult = "pass" | "fail" | "skip" | null;
+type ResultFilter = "all" | "untested" | "pass" | "fail" | "skip";
 
 export default function AdminQATab() {
   const { toast } = useToast();
@@ -35,6 +40,7 @@ export default function AdminQATab() {
 
   const [areaFilter, setAreaFilter] = useState<string>("all");
   const [tagFilter, setTagFilter] = useState<string>("all");
+  const [resultFilter, setResultFilter] = useState<ResultFilter>("all");
   const [search, setSearch] = useState("");
   const [newRunOpen, setNewRunOpen] = useState(false);
   const [newBuildLabel, setNewBuildLabel] = useState("");
@@ -42,9 +48,19 @@ export default function AdminQATab() {
   const [newRunNotes, setNewRunNotes] = useState("");
   const [fixAllConfirm, setFixAllConfirm] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [selectedTests, setSelectedTests] = useState<Set<string>>(new Set());
+  const [compareRunId, setCompareRunId] = useState<string | null>(null);
+  const [compareResults, setCompareResults] = useState<Map<string, QATestResult>>(new Map());
 
   const areas = useMemo(() => getAllAreas(), []);
   const tags = useMemo(() => getAllTags(), []);
+
+  // Build a map of test_case_id -> QATestResult for the active run
+  const resultMap = useMemo(() => {
+    const m = new Map<string, QATestResult>();
+    for (const r of qa.results) m.set(r.test_case_id, r);
+    return m;
+  }, [qa.results]);
 
   const filteredTests = useMemo(() => {
     let tests = areaFilter === "all" ? getAllTests() : getTestsByArea(areaFilter);
@@ -58,8 +74,16 @@ export default function AdminQATab() {
           t.steps.some((s) => s.toLowerCase().includes(q))
       );
     }
+    // Result status filter
+    if (resultFilter !== "all") {
+      tests = tests.filter((t) => {
+        const r = resultMap.get(t.id)?.result as TestResult;
+        if (resultFilter === "untested") return !r;
+        return r === resultFilter;
+      });
+    }
     return tests;
-  }, [areaFilter, tagFilter, search]);
+  }, [areaFilter, tagFilter, search, resultFilter, resultMap]);
 
   const groupedByArea = useMemo(() => {
     const map = new Map<string, ManualTestCase[]>();
@@ -71,27 +95,51 @@ export default function AdminQATab() {
     return map;
   }, [filteredTests]);
 
-  // Build a map of test_case_id -> QATestResult for the active run
-  const resultMap = useMemo(() => {
-    const m = new Map<string, QATestResult>();
-    for (const r of qa.results) m.set(r.test_case_id, r);
-    return m;
-  }, [qa.results]);
+  // Smart accordion defaults: only open areas with untested or failed items
+  const smartOpenAreas = useMemo(() => {
+    const openAreas: string[] = [];
+    for (const [area, tests] of groupedByArea) {
+      const hasUntested = tests.some((t) => !resultMap.get(t.id)?.result);
+      const hasFailed = tests.some((t) => resultMap.get(t.id)?.result === "fail" && !resultMap.get(t.id)?.regression_fixed_at);
+      if (hasUntested || hasFailed) openAreas.push(area);
+    }
+    // If nothing needs attention, open the first area
+    if (openAreas.length === 0 && groupedByArea.size > 0) {
+      openAreas.push([...groupedByArea.keys()][0]);
+    }
+    return openAreas;
+  }, [groupedByArea, resultMap]);
+
+  // Stats
+  const allTests = getAllTests();
+  const totalCount = allTests.length;
+  const passCount = allTests.filter((t) => resultMap.get(t.id)?.result === "pass").length;
+  const failCount = allTests.filter((t) => resultMap.get(t.id)?.result === "fail").length;
+  const skipCount = allTests.filter((t) => resultMap.get(t.id)?.result === "skip").length;
+  const untestedCount = totalCount - passCount - failCount - skipCount;
+  const openRegressions = allTests.filter(
+    (t) => resultMap.get(t.id)?.result === "fail" && !resultMap.get(t.id)?.regression_fixed_at
+  ).length;
+  const completionPercent = totalCount > 0 ? Math.round(((totalCount - untestedCount) / totalCount) * 100) : 0;
+
+  // Time remaining (based on untested)
+  const untestedTests = allTests.filter((t) => !resultMap.get(t.id)?.result);
+  const remainingMinutes = getTotalEstimatedMinutes(untestedTests);
+  const remHours = Math.floor(remainingMinutes / 60);
+  const remMins = remainingMinutes % 60;
 
   const totalMinutes = getTotalEstimatedMinutes(filteredTests);
   const hours = Math.floor(totalMinutes / 60);
   const mins = totalMinutes % 60;
 
-  const passCount = filteredTests.filter((t) => resultMap.get(t.id)?.result === "pass").length;
-  const failCount = filteredTests.filter((t) => resultMap.get(t.id)?.result === "fail").length;
-  const skipCount = filteredTests.filter((t) => resultMap.get(t.id)?.result === "skip").length;
-  const openRegressions = filteredTests.filter(
-    (t) => resultMap.get(t.id)?.result === "fail" && !resultMap.get(t.id)?.regression_fixed_at
-  ).length;
-
   const handleSetResult = (testCaseId: string, result: TestResult) => {
     if (!qa.activeRunId || !result) return;
     qa.upsertResult(qa.activeRunId, testCaseId, result);
+  };
+
+  const handleClearResult = (testCaseId: string) => {
+    if (!qa.activeRunId) return;
+    qa.deleteResult(qa.activeRunId, testCaseId);
   };
 
   const handleCreateRun = () => {
@@ -104,7 +152,89 @@ export default function AdminQATab() {
     setNewRunNotes("");
   };
 
+  // Default timestamp to now when opening dialog
+  const handleOpenNewRun = () => {
+    const now = new Date();
+    const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    setNewBuildTimestamp(local);
+    setNewRunOpen(true);
+  };
+
+  // Bulk actions
+  const handleToggleSelect = (id: string) => {
+    setSelectedTests((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleSelectAll = () => {
+    if (selectedTests.size === filteredTests.length) {
+      setSelectedTests(new Set());
+    } else {
+      setSelectedTests(new Set(filteredTests.map((t) => t.id)));
+    }
+  };
+
+  const handleBulkAction = (result: TestResult) => {
+    if (!qa.activeRunId || !result || selectedTests.size === 0) return;
+    for (const id of selectedTests) {
+      qa.upsertResult(qa.activeRunId, id, result);
+    }
+    setSelectedTests(new Set());
+  };
+
+  // Run comparison
+  const handleLoadCompareRun = async (runId: string) => {
+    setCompareRunId(runId);
+    const { data } = await (await import("@/integrations/supabase/client")).supabase
+      .from("qa_test_results")
+      .select("*")
+      .eq("run_id", runId);
+    const m = new Map<string, QATestResult>();
+    for (const r of (data || [])) m.set(r.test_case_id, r as QATestResult);
+    setCompareResults(m);
+  };
+
+  // CSV export
+  const exportAsCsv = () => {
+    const headers = ["Area", "Test Case", "Result", "Failure Notes", "Tags", "Est. Minutes"];
+    const rows = filteredTests.map((t) => {
+      const r = resultMap.get(t.id);
+      return [
+        t.area,
+        `"${t.title.replace(/"/g, '""')}"`,
+        r?.result || "untested",
+        `"${(r?.failure_notes || "").replace(/"/g, '""')}"`,
+        `"${t.tags.join(", ")}"`,
+        String(t.estimatedMinutes),
+      ].join(",");
+    });
+    const csv = [headers.join(","), ...rows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `qa-results-${qa.activeRun?.build_label || "export"}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast({ title: "Exported", description: "CSV downloaded." });
+  };
+
   const pastRuns = qa.runs.filter((r) => r.id !== qa.activeRunId);
+
+  // Donut chart data
+  const chartData = [
+    { name: "Pass", value: passCount, color: "hsl(var(--chart-2))" },
+    { name: "Fail", value: failCount, color: "hsl(var(--destructive))" },
+    { name: "Skip", value: skipCount, color: "hsl(var(--muted-foreground))" },
+    { name: "Untested", value: untestedCount, color: "hsl(var(--border))" },
+  ].filter((d) => d.value > 0);
+
+  // Previous build labels for autocomplete suggestions
+  const previousLabels = useMemo(() => qa.runs.slice(0, 3).map((r) => r.build_label), [qa.runs]);
 
   if (qa.loading) {
     return (
@@ -125,7 +255,7 @@ export default function AdminQATab() {
             <CardTitle className="text-base flex items-center gap-2">
               <FlaskConical className="h-4 w-4 text-primary" /> Manual QA Suite
             </CardTitle>
-            <Button size="sm" onClick={() => setNewRunOpen(true)}>
+            <Button size="sm" onClick={handleOpenNewRun}>
               <Plus className="h-3.5 w-3.5 mr-1" /> New Test Run
             </Button>
           </div>
@@ -164,28 +294,125 @@ export default function AdminQATab() {
           )}
         </CardHeader>
         {qa.activeRun && (
-          <CardContent className="pt-0">
-            <div className="flex items-center gap-4 text-sm">
-              <span>{filteredTests.length} tests · ~{hours}h {mins}m</span>
-              <span className="text-green-600 dark:text-green-400">{passCount} pass</span>
-              <span className="text-destructive">{failCount} fail</span>
-              <span className="text-muted-foreground">{skipCount} skip</span>
-              {openRegressions > 0 && (
-                <span className="text-amber-600 dark:text-amber-400">{openRegressions} open regressions</span>
+          <CardContent className="pt-0 space-y-3">
+            {/* Segmented Progress Bar */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span>{completionPercent}% tested ({totalCount - untestedCount}/{totalCount})</span>
+                {untestedCount > 0 && (
+                  <span>~{remHours > 0 ? `${remHours}h ` : ""}{remMins}m remaining</span>
+                )}
+              </div>
+              <div className="h-3 w-full rounded-full bg-secondary overflow-hidden flex">
+                {passCount > 0 && (
+                  <div
+                    className="h-full bg-green-500 transition-all"
+                    style={{ width: `${(passCount / totalCount) * 100}%` }}
+                    title={`${passCount} passed`}
+                  />
+                )}
+                {failCount > 0 && (
+                  <div
+                    className="h-full bg-destructive transition-all"
+                    style={{ width: `${(failCount / totalCount) * 100}%` }}
+                    title={`${failCount} failed`}
+                  />
+                )}
+                {skipCount > 0 && (
+                  <div
+                    className="h-full bg-muted-foreground/40 transition-all"
+                    style={{ width: `${(skipCount / totalCount) * 100}%` }}
+                    title={`${skipCount} skipped`}
+                  />
+                )}
+              </div>
+              <div className="flex items-center gap-3 text-xs">
+                <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-green-500 inline-block" /> {passCount} pass</span>
+                <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-destructive inline-block" /> {failCount} fail</span>
+                <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-muted-foreground/40 inline-block" /> {skipCount} skip</span>
+                <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-secondary inline-block border border-border" /> {untestedCount} untested</span>
+                {openRegressions > 0 && (
+                  <span className="text-amber-600 dark:text-amber-400 font-medium">{openRegressions} open regressions</span>
+                )}
+              </div>
+            </div>
+
+            {/* Summary + Actions Row */}
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Donut chart mini */}
+              {totalCount > 0 && (
+                <div className="w-12 h-12 shrink-0">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={chartData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={12}
+                        outerRadius={22}
+                        dataKey="value"
+                        strokeWidth={0}
+                      >
+                        {chartData.map((entry, i) => (
+                          <Cell key={i} fill={entry.color} />
+                        ))}
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
               )}
+              <span className="text-sm text-muted-foreground">{filteredTests.length} tests · ~{hours}h {mins}m</span>
+
               {openRegressions > 0 && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setFixAllConfirm(true)}
-                >
+                <Button variant="outline" size="sm" onClick={() => setFixAllConfirm(true)}>
                   <Wrench className="h-3.5 w-3.5 mr-1" /> Fix All Regressions
                 </Button>
               )}
-              <Button variant="outline" size="sm" onClick={() => copyAsMarkdown(filteredTests, groupedByArea, resultMap, toast)} className="ml-auto">
-                <ClipboardCopy className="h-3.5 w-3.5 mr-1" /> Copy as Markdown
-              </Button>
+
+              <div className="flex items-center gap-1 ml-auto">
+                <Button variant="outline" size="sm" onClick={() => copyAsMarkdown(filteredTests, groupedByArea, resultMap, toast)}>
+                  <ClipboardCopy className="h-3.5 w-3.5 mr-1" /> Markdown
+                </Button>
+                <Button variant="outline" size="sm" onClick={exportAsCsv}>
+                  <Download className="h-3.5 w-3.5 mr-1" /> CSV
+                </Button>
+              </div>
             </div>
+
+            {/* Compare Runs */}
+            {pastRuns.length > 0 && (
+              <div className="flex items-center gap-2 text-xs">
+                <span className="text-muted-foreground">Compare with:</span>
+                <Select value={compareRunId || "none"} onValueChange={(v) => v === "none" ? (setCompareRunId(null), setCompareResults(new Map())) : handleLoadCompareRun(v)}>
+                  <SelectTrigger className="w-48 h-7 text-xs">
+                    <SelectValue placeholder="Select run to compare" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    {pastRuns.map((r) => (
+                      <SelectItem key={r.id} value={r.id}>{r.build_label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {compareRunId && (
+                  <Badge variant="outline" className="text-xs">
+                    {(() => {
+                      const regressions = allTests.filter((t) => {
+                        const prev = compareResults.get(t.id)?.result;
+                        const curr = resultMap.get(t.id)?.result;
+                        return prev === "pass" && curr === "fail";
+                      }).length;
+                      const fixes = allTests.filter((t) => {
+                        const prev = compareResults.get(t.id)?.result;
+                        const curr = resultMap.get(t.id)?.result;
+                        return prev === "fail" && curr === "pass";
+                      }).length;
+                      return `${regressions} regressions · ${fixes} fixes`;
+                    })()}
+                  </Badge>
+                )}
+              </div>
+            )}
           </CardContent>
         )}
       </Card>
@@ -195,7 +422,7 @@ export default function AdminQATab() {
         <Card>
           <CardContent className="pt-4 space-y-4">
             {/* Filters */}
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 items-center">
               <Select value={areaFilter} onValueChange={setAreaFilter}>
                 <SelectTrigger className="w-40">
                   <SelectValue placeholder="All areas" />
@@ -218,6 +445,18 @@ export default function AdminQATab() {
                   ))}
                 </SelectContent>
               </Select>
+              <Select value={resultFilter} onValueChange={(v) => setResultFilter(v as ResultFilter)}>
+                <SelectTrigger className="w-36">
+                  <SelectValue placeholder="All results" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All results</SelectItem>
+                  <SelectItem value="untested">⬜ Untested ({untestedCount})</SelectItem>
+                  <SelectItem value="pass">✅ Pass ({passCount})</SelectItem>
+                  <SelectItem value="fail">❌ Fail ({failCount})</SelectItem>
+                  <SelectItem value="skip">⏭ Skip ({skipCount})</SelectItem>
+                </SelectContent>
+              </Select>
               <Input
                 placeholder="Search tests…"
                 value={search}
@@ -226,7 +465,48 @@ export default function AdminQATab() {
               />
             </div>
 
-            <Accordion type="multiple" defaultValue={[...groupedByArea.keys()]}>
+            {/* Bulk Actions Bar */}
+            {selectedTests.size > 0 && qa.activeRun.status !== "completed" && (
+              <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/50 border border-border">
+                <span className="text-sm font-medium">{selectedTests.size} selected</span>
+                <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => handleBulkAction("pass")}>
+                  <CheckCircle2 className="h-3 w-3 mr-1" /> Mark Pass
+                </Button>
+                <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => handleBulkAction("skip")}>
+                  <MinusCircle className="h-3 w-3 mr-1" /> Mark Skip
+                </Button>
+                <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => handleBulkAction("fail")}>
+                  <XCircle className="h-3 w-3 mr-1" /> Mark Fail
+                </Button>
+                <Button size="sm" variant="ghost" className="h-7 text-xs ml-auto" onClick={() => setSelectedTests(new Set())}>
+                  Clear
+                </Button>
+              </div>
+            )}
+
+            {/* Select All toggle */}
+            {filteredTests.length > 0 && qa.activeRun.status !== "completed" && (
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  checked={selectedTests.size === filteredTests.length && filteredTests.length > 0}
+                  onCheckedChange={handleSelectAll}
+                  id="select-all"
+                />
+                <Label htmlFor="select-all" className="text-xs text-muted-foreground cursor-pointer">
+                  Select all ({filteredTests.length})
+                </Label>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Keyboard className="h-3.5 w-3.5 text-muted-foreground ml-auto" />
+                  </TooltipTrigger>
+                  <TooltipContent side="left">
+                    <p className="text-xs">Keyboard: <kbd>P</kbd> Pass · <kbd>F</kbd> Fail · <kbd>S</kbd> Skip (when focused)</p>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+            )}
+
+            <Accordion type="multiple" defaultValue={smartOpenAreas}>
               {[...groupedByArea.entries()].map(([area, tests]) => (
                 <AccordionItem key={area} value={area}>
                   <AccordionTrigger className="text-sm font-semibold">
@@ -242,8 +522,10 @@ export default function AdminQATab() {
                           key={tc.id}
                           testCase={tc}
                           savedResult={resultMap.get(tc.id) || null}
+                          compareResult={compareResults.get(tc.id) || null}
                           runId={qa.activeRunId!}
                           onResult={(r) => handleSetResult(tc.id, r)}
+                          onClear={() => handleClearResult(tc.id)}
                           onUpdateNotes={(notes) =>
                             qa.updateFailureNotes(qa.activeRunId!, tc.id, notes)
                           }
@@ -251,6 +533,8 @@ export default function AdminQATab() {
                             qa.fixRegression(qa.activeRunId!, tc.id)
                           }
                           isCompleted={qa.activeRun?.status === "completed"}
+                          isSelected={selectedTests.has(tc.id)}
+                          onToggleSelect={() => handleToggleSelect(tc.id)}
                         />
                       ))}
                     </div>
@@ -314,6 +598,20 @@ export default function AdminQATab() {
                 value={newBuildLabel}
                 onChange={(e) => setNewBuildLabel(e.target.value)}
               />
+              {previousLabels.length > 0 && (
+                <div className="flex gap-1 mt-1">
+                  <span className="text-xs text-muted-foreground">Recent:</span>
+                  {previousLabels.map((label) => (
+                    <button
+                      key={label}
+                      className="text-xs text-primary hover:underline"
+                      onClick={() => setNewBuildLabel(label)}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
             <div>
               <Label>Build Timestamp</Label>
@@ -372,58 +670,119 @@ export default function AdminQATab() {
 function TestCaseCard({
   testCase: tc,
   savedResult,
+  compareResult,
   runId,
   onResult,
+  onClear,
   onUpdateNotes,
   onFixRegression,
   isCompleted,
+  isSelected,
+  onToggleSelect,
 }: {
   testCase: ManualTestCase;
   savedResult: QATestResult | null;
+  compareResult: QATestResult | null;
   runId: string;
   onResult: (r: TestResult) => void;
+  onClear: () => void;
   onUpdateNotes: (notes: string) => void;
   onFixRegression: () => void;
   isCompleted?: boolean;
+  isSelected?: boolean;
+  onToggleSelect?: () => void;
 }) {
   const result = (savedResult?.result as TestResult) || null;
   const isFailed = result === "fail";
   const isFixed = !!savedResult?.regression_fixed_at;
   const [notes, setNotes] = useState(savedResult?.failure_notes || "");
   const [fixConfirm, setFixConfirm] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [notesSaved, setNotesSaved] = useState(true);
+  const cardRef = useRef<HTMLDivElement>(null);
 
-  // Sync notes from DB
-  const dbNotes = savedResult?.failure_notes || "";
-  if (dbNotes !== notes && !isFailed) {
-    // Reset when result changes away from fail
-  }
+  // Sync notes from saved result
+  useEffect(() => {
+    setNotes(savedResult?.failure_notes || "");
+    setNotesSaved(true);
+  }, [savedResult?.failure_notes]);
+
+  // Keyboard shortcuts
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (isCompleted) return;
+    if (e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLInputElement) return;
+    if (e.key === "p" || e.key === "P") { e.preventDefault(); onResult("pass"); }
+    if (e.key === "f" || e.key === "F") { e.preventDefault(); onResult("fail"); }
+    if (e.key === "s" || e.key === "S") { e.preventDefault(); onResult("skip"); }
+  }, [isCompleted, onResult]);
+
+  // Regression comparison indicator
+  const compPrev = compareResult?.result as TestResult;
+  const isRegression = compPrev === "pass" && result === "fail";
+  const isNewFix = compPrev === "fail" && result === "pass";
 
   return (
-    <div className={`rounded-lg border p-3 space-y-2 transition-colors ${isFixed ? "border-green-500/30 bg-green-50/5" : "border-border hover:bg-muted/30"}`}>
+    <div
+      ref={cardRef}
+      tabIndex={0}
+      onKeyDown={handleKeyDown}
+      className={`rounded-lg border p-3 space-y-2 transition-colors focus:outline-none focus:ring-2 focus:ring-ring ${
+        isRegression ? "border-destructive/50 bg-destructive/5" :
+        isFixed ? "border-green-500/30 bg-green-50/5" :
+        isNewFix ? "border-green-500/30" :
+        "border-border hover:bg-muted/30"
+      }`}
+    >
       <div className="flex items-start justify-between gap-2">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className={`font-medium text-sm ${isFixed ? "line-through text-muted-foreground" : ""}`}>
-              {tc.title}
-            </span>
-            <Badge variant="outline" className="text-xs">
-              <Clock className="h-3 w-3 mr-1" />
-              {tc.estimatedMinutes}m
-            </Badge>
-            {isFixed && (
-              <Badge className="text-xs bg-green-600 text-white">Fixed</Badge>
-            )}
-            {tc.tags.map((tag) => (
-              <Badge key={tag} variant="outline" className="text-xs text-muted-foreground">
-                {tag}
-              </Badge>
-            ))}
-          </div>
-          {tc.route && (
-            <span className="text-xs text-muted-foreground font-mono">{tc.route}</span>
+        <div className="flex items-start gap-2 flex-1 min-w-0">
+          {!isCompleted && (
+            <Checkbox
+              checked={isSelected}
+              onCheckedChange={onToggleSelect}
+              className="mt-0.5"
+            />
           )}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className={`font-medium text-sm ${isFixed ? "line-through text-muted-foreground" : ""}`}>
+                {tc.title}
+              </span>
+              <Badge variant="outline" className="text-xs">
+                <Clock className="h-3 w-3 mr-1" />
+                {tc.estimatedMinutes}m
+              </Badge>
+              {isFixed && (
+                <Badge className="text-xs bg-green-600 text-white">Fixed</Badge>
+              )}
+              {isRegression && (
+                <Badge variant="destructive" className="text-xs">Regression</Badge>
+              )}
+              {isNewFix && (
+                <Badge className="text-xs bg-green-600 text-white">New Fix</Badge>
+              )}
+              {tc.tags.map((tag) => (
+                <Badge key={tag} variant="outline" className="text-xs text-muted-foreground">
+                  {tag}
+                </Badge>
+              ))}
+            </div>
+            {tc.route && (
+              <span className="text-xs text-muted-foreground font-mono">{tc.route}</span>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-1 shrink-0">
+          {/* Details toggle */}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 w-7 p-0 text-muted-foreground"
+            onClick={() => setDetailsOpen(!detailsOpen)}
+            title={detailsOpen ? "Hide details" : "Show details"}
+          >
+            {detailsOpen ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+          </Button>
+
           {isFailed && !isFixed && !isCompleted && (
             <Button
               variant="ghost"
@@ -442,7 +801,7 @@ function TestCaseCard({
                 size="sm"
                 className={result === "pass" ? "bg-green-600 hover:bg-green-700 text-white h-7 w-7 p-0" : "h-7 w-7 p-0 text-muted-foreground"}
                 onClick={() => onResult("pass")}
-                title="Pass"
+                title="Pass (P)"
               >
                 <CheckCircle2 className="h-4 w-4" />
               </Button>
@@ -451,7 +810,7 @@ function TestCaseCard({
                 size="sm"
                 className={result === "fail" ? "bg-destructive hover:bg-destructive/90 text-destructive-foreground h-7 w-7 p-0" : "h-7 w-7 p-0 text-muted-foreground"}
                 onClick={() => onResult("fail")}
-                title="Fail"
+                title="Fail (F)"
               >
                 <XCircle className="h-4 w-4" />
               </Button>
@@ -460,10 +819,21 @@ function TestCaseCard({
                 size="sm"
                 className={result === "skip" ? "bg-muted text-muted-foreground h-7 w-7 p-0" : "h-7 w-7 p-0 text-muted-foreground"}
                 onClick={() => onResult("skip")}
-                title="Skip"
+                title="Skip (S)"
               >
                 <MinusCircle className="h-4 w-4" />
               </Button>
+              {result && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 w-7 p-0 text-muted-foreground"
+                  onClick={onClear}
+                  title="Clear / Retest"
+                >
+                  <RotateCcw className="h-3.5 w-3.5" />
+                </Button>
+              )}
             </>
           )}
           {isCompleted && result && (
@@ -483,39 +853,48 @@ function TestCaseCard({
           <Textarea
             placeholder="Describe what went wrong…"
             value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            onBlur={() => onUpdateNotes(notes)}
+            onChange={(e) => { setNotes(e.target.value); setNotesSaved(false); }}
+            onBlur={() => { onUpdateNotes(notes); setNotesSaved(true); }}
             rows={2}
             className={`text-xs ${isFixed ? "line-through text-muted-foreground" : ""}`}
             disabled={isCompleted}
           />
+          {!isCompleted && (
+            <span className={`text-[10px] ${notesSaved ? "text-green-600 dark:text-green-400" : "text-muted-foreground"}`}>
+              {notesSaved ? "✓ Saved" : "Unsaved — click outside to save"}
+            </span>
+          )}
         </div>
       )}
 
-      {tc.preconditions && tc.preconditions.length > 0 && (
-        <p className="text-xs text-amber-600 dark:text-amber-400">
-          <strong>Preconditions:</strong> {tc.preconditions.join("; ")}
-        </p>
+      {/* Collapsible details — steps and expected results */}
+      {detailsOpen && (
+        <>
+          {tc.preconditions && tc.preconditions.length > 0 && (
+            <p className="text-xs text-amber-600 dark:text-amber-400">
+              <strong>Preconditions:</strong> {tc.preconditions.join("; ")}
+            </p>
+          )}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+            <div>
+              <p className="font-medium text-muted-foreground mb-1">Steps</p>
+              <ol className="list-decimal list-inside space-y-0.5 text-foreground/80">
+                {tc.steps.map((s, i) => (
+                  <li key={i}>{s}</li>
+                ))}
+              </ol>
+            </div>
+            <div>
+              <p className="font-medium text-muted-foreground mb-1">Expected Results</p>
+              <ul className="list-disc list-inside space-y-0.5 text-foreground/80">
+                {tc.expectedResults.map((e, i) => (
+                  <li key={i}>{e}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </>
       )}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
-        <div>
-          <p className="font-medium text-muted-foreground mb-1">Steps</p>
-          <ol className="list-decimal list-inside space-y-0.5 text-foreground/80">
-            {tc.steps.map((s, i) => (
-              <li key={i}>{s}</li>
-            ))}
-          </ol>
-        </div>
-        <div>
-          <p className="font-medium text-muted-foreground mb-1">Expected Results</p>
-          <ul className="list-disc list-inside space-y-0.5 text-foreground/80">
-            {tc.expectedResults.map((e, i) => (
-              <li key={i}>{e}</li>
-            ))}
-          </ul>
-        </div>
-      </div>
 
       {/* Fix regression confirm */}
       <AlertDialog open={fixConfirm} onOpenChange={setFixConfirm}>

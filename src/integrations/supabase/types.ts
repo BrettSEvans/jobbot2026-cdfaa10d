@@ -76,6 +76,27 @@ export type Database = {
           },
         ]
       }
+      blocked_scrape_sites: {
+        Row: {
+          blocked_at: string
+          hostname: string
+          id: string
+          last_confirmed_at: string
+        }
+        Insert: {
+          blocked_at?: string
+          hostname: string
+          id?: string
+          last_confirmed_at?: string
+        }
+        Update: {
+          blocked_at?: string
+          hostname?: string
+          id?: string
+          last_confirmed_at?: string
+        }
+        Relationships: []
+      }
       cover_letter_revisions: {
         Row: {
           application_id: string

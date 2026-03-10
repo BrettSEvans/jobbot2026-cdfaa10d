@@ -119,8 +119,8 @@ export default function AssetProposalCard({
     <Card>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-base font-semibold">Select 3 Document Types</CardTitle>
-          <Badge variant="outline">{selected.size}/3 selected</Badge>
+          <CardTitle className="text-base font-semibold">Select Document Types</CardTitle>
+          <Badge variant="outline">{selected.size} selected</Badge>
         </div>
         <p className="text-sm text-muted-foreground">Choose exactly 3 documents to generate for this application.</p>
       </CardHeader>

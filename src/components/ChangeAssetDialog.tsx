@@ -74,8 +74,8 @@ export default function ChangeAssetDialog({
       const filtered = results.filter((r) => !exclude.has(r.asset_name));
       setSuggestions(filtered.length > 0 ? filtered : results.filter((r) => r.asset_name !== asset.asset_name));
       setSelected(null);
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      toast({ title: "Error", description: err instanceof Error ? err.message : "Unknown error", variant: "destructive" });
     } finally {
       setLoading(false);
     }

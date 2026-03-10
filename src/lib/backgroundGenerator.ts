@@ -356,11 +356,12 @@ class BackgroundGenerationManager {
     } catch (err: unknown) {
       this.abortControllers.delete(appId);
       const isCancelled = signal?.aborted;
+      const errMsg = err instanceof Error ? err.message : "Unknown error";
       if (isCancelled) {
         // Already handled by cancelJob — just save the status
       } else {
         console.error("Background generation error:", err);
-        this.updateJob(appId, { status: "error", progress: "Failed", error: err.message });
+        this.updateJob(appId, { status: "error", progress: "Failed", error: errMsg });
       }
       try {
         await saveJobApplication({
@@ -368,7 +369,7 @@ class BackgroundGenerationManager {
           job_url: jobUrl,
           status: "error",
           generation_status: "error",
-          generation_error: err.message,
+          generation_error: errMsg,
         });
       } catch (saveErr) { console.warn("Failed to save error status:", saveErr); }
     }

@@ -58,6 +58,8 @@ import {
   type PipelineStage,
 } from "@/lib/pipelineStages";
 import { downloadHtmlAsDocx, buildDocxFilename } from "@/lib/docxExport";
+import { useUserRoles } from "@/hooks/useUserRoles";
+import DesignVariabilityCard from "@/components/admin/DesignVariabilityCard";
 
 type ActiveView = "cover-letter" | "resume" | string;
 

@@ -120,6 +120,7 @@ export default function Profile() {
         last_name: lastName || null, display_name: displayName || null,
         resume_text: resumeText || null, years_experience: yearsExperience || null,
         target_industries: industries, key_skills: skills, preferred_tone: preferredTone,
+        master_cover_letter: masterCoverLetter || null,
       };
       if (isImpersonating && activePersona) {
         await updateTestUser(activePersona.id, updates);
@@ -135,7 +136,7 @@ export default function Profile() {
       }
       setSaved({
         firstName, middleName, lastName, displayName, resumeText, yearsExperience, preferredTone,
-        industries: [...industries], skills: [...skills],
+        industries: [...industries], skills: [...skills], masterCoverLetter,
       });
       toast({ title: "Profile saved", description: "Your preferences will personalize future AI outputs." });
     } catch (err: unknown) {

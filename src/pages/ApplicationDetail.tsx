@@ -358,14 +358,14 @@ const ApplicationDetail = () => {
           />
         )}
 
-        {/* Primary Tab Triggers */}
-        <div data-tutorial="asset-tabs" className="flex items-center gap-1 border-b border-border pb-0 overflow-x-auto">
+        {/* Unified Tab Strip */}
+        <div data-tutorial="asset-tabs" className="flex items-center gap-0 border-b border-border pb-0 overflow-x-auto scrollbar-hide">
           {primaryTabs.map((tab) => (
             <button
               key={tab.id}
               data-tutorial={`${tab.id}-tab`}
               onClick={() => setActiveView(tab.id)}
-              className={`inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium border-b-2 transition-colors -mb-px ${
+              className={`inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium border-b-2 transition-colors -mb-px whitespace-nowrap ${
                 activeView === tab.id
                   ? "border-primary text-foreground"
                   : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
@@ -375,45 +375,29 @@ const ApplicationDetail = () => {
               {tab.label}
             </button>
           ))}
-          {dynamicAssets.length === 0 && !dynamicLoading && (
-            <div className="ml-auto -mb-px pb-1">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowProposalDialog(true)}
-              >
-                <Sparkles className="mr-2 h-4 w-4" /> Propose Materials
-              </Button>
-            </div>
+
+          {/* Separator between core docs and industry materials */}
+          {dynamicAssets.length > 0 && (
+            <div className="h-5 w-px bg-border mx-1 shrink-0 -mb-px" />
           )}
-        </div>
 
-        {/* Prominent CTA when generation is complete but no industry materials yet */}
-        {state.app.status === "complete" && dynamicAssets.length === 0 && !dynamicLoading && isPrimaryView && (
-          <ProposeMaterialsCTA onPropose={() => setShowProposalDialog(true)} />
-        )}
-
-        {/* Dynamic Assets Bar */}
-        {dynamicAssets.length > 0 && (
-          <div className="space-y-1.5">
-            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Industry Materials
-            </span>
-            <div data-tutorial="industry-assets-grid" className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          {/* Industry material tabs inline */}
+          {dynamicAssets.length > 0 && (
+            <div data-tutorial="industry-assets-grid" className="flex items-center gap-0">
               {dynamicAssets.map((asset) => (
-                <div key={asset.id} className="flex items-center gap-1">
+                <div key={asset.id} className="flex items-center -mb-px">
                   <button
                     onClick={() => setActiveView(asset.id)}
-                    className={`flex-1 min-w-0 flex items-center gap-2 px-3 py-2.5 rounded-lg border text-sm font-medium transition-all text-left ${
+                    className={`inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                       activeView === asset.id
-                        ? "border-primary bg-primary/5 text-foreground shadow-sm"
-                        : "border-border text-muted-foreground hover:text-foreground hover:border-foreground/20 hover:bg-muted/50"
+                        ? "border-primary text-foreground"
+                        : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
                     }`}
                   >
-                    <FileText className="h-4 w-4 shrink-0" />
-                    <span className="truncate">{asset.asset_name}</span>
+                    <FileText className="h-3.5 w-3.5 shrink-0" />
+                    <span className="truncate max-w-[120px]">{asset.asset_name}</span>
                     <div
-                      className={`h-2 w-2 rounded-full shrink-0 ml-auto ${
+                      className={`h-1.5 w-1.5 rounded-full shrink-0 ${
                         asset.generation_status === 'complete' && asset.html
                           ? "bg-primary"
                           : asset.generation_status === 'generating'
@@ -437,15 +421,31 @@ const ApplicationDetail = () => {
                         generateDynamicAsset(updated);
                       }}
                     >
-                      <Button data-tutorial="change-asset-btn" variant="ghost" size="icon" className="h-8 w-8 shrink-0" title="Change document type">
-                        <ArrowLeftRight className="h-3.5 w-3.5" />
+                      <Button data-tutorial="change-asset-btn" variant="ghost" size="icon" className="h-6 w-6 shrink-0 -ml-1" title="Change document type">
+                        <ArrowLeftRight className="h-3 w-3" />
                       </Button>
                     </ChangeAssetDialog>
                   )}
                 </div>
               ))}
             </div>
-          </div>
+          )}
+
+          {/* Propose Materials ghost button at end of tab bar */}
+          {dynamicAssets.length === 0 && !dynamicLoading && (
+            <button
+              onClick={() => setShowProposalDialog(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 border-transparent text-muted-foreground hover:text-foreground transition-colors -mb-px whitespace-nowrap ml-1"
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              <span>+ Add Materials</span>
+            </button>
+          )}
+        </div>
+
+        {/* Prominent CTA when generation is complete but no industry materials yet */}
+        {state.app.status === "complete" && dynamicAssets.length === 0 && !dynamicLoading && isPrimaryView && (
+          <ProposeMaterialsCTA onPropose={() => setShowProposalDialog(true)} />
         )}
 
         {/* Admin: Design Variability Analysis */}

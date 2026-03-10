@@ -311,7 +311,7 @@ const Applications = () => {
               </p>
             </div>
             <div className="flex gap-2 shrink-0 w-full sm:w-auto">
-              <Button size="sm" variant="outline" onClick={() => dismissBookmarkedPrompt(staleBookmarkedApp.id)} className="flex-1 sm:flex-initial">
+              <Button size="sm" variant="outline" onClick={() => dismissBookmarked(staleBookmarkedApp.id)} className="flex-1 sm:flex-initial">
                 Dismiss
               </Button>
               <Button size="sm" onClick={() => navigate(`/applications/${staleBookmarkedApp.id}`)} className="flex-1 sm:flex-initial">

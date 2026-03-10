@@ -145,7 +145,7 @@ export default function Profile() {
     } finally {
       setSaving(false);
     }
-  }, [firstName, middleName, lastName, displayName, resumeText, yearsExperience, preferredTone, industries, skills, toast, refreshRoot, isImpersonating, activePersona, updateActivePersona]);
+  }, [firstName, middleName, lastName, displayName, resumeText, yearsExperience, preferredTone, industries, skills, masterCoverLetter, toast, refreshRoot, isImpersonating, activePersona, updateActivePersona]);
 
   const handleCardSave = async (cardName: string) => {
     setSavingCard(cardName);

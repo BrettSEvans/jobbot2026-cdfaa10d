@@ -92,6 +92,22 @@ const NewApplication = () => {
     }).catch(console.warn);
   }, []);
 
+  // Auto-detect blocked scraping sites when URL changes
+  useEffect(() => {
+    if (!jobUrl.trim() || useManualInput) {
+      setBlockedSiteMessage(null);
+      return;
+    }
+    if (isBlockedSite(jobUrl)) {
+      const reason = getBlockedReason(jobUrl);
+      setBlockedSiteMessage(reason);
+      setUseManualInput(true);
+    } else {
+      setBlockedSiteMessage(null);
+    }
+  }, [jobUrl]);
+
+
   const isValidUrl = (str: string) => {
     try {
       const u = new URL(str.startsWith('http') ? str : `https://${str}`);

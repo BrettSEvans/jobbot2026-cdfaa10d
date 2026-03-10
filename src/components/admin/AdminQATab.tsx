@@ -139,9 +139,6 @@ export default function AdminQATab() {
 
   const handleClearResult = (testCaseId: string) => {
     if (!qa.activeRunId) return;
-    qa.upsertResult(qa.activeRunId, testCaseId, "pass", null);
-    // Delete the result row — use upsert to set it, then we need a delete. 
-    // Since we don't have a delete, we'll reset to untested by deleting via the hook
     qa.deleteResult(qa.activeRunId, testCaseId);
   };
 

@@ -286,6 +286,16 @@ export default function HtmlAssetTab({
             <iframe srcDoc={previewHtml || html} className="w-full h-full border-0" sandbox="allow-scripts" title={`${label} Preview`} />
           </div>
         </Card>
+      ) : showPipelineProgress ? (
+        <Card>
+          <CardContent className="py-8 space-y-4">
+            <GenerationProgressBar
+              currentStage={pipelineStage}
+              startedAt={pipelineJob?.startedAt}
+            />
+            <p className="text-xs text-muted-foreground text-center">You can navigate away — generation continues in the background.</p>
+          </CardContent>
+        </Card>
       ) : isAssetJobActive ? (
         <Card>
           <CardContent className="py-12 text-center space-y-3">

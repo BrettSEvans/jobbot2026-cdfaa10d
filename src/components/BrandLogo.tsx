@@ -32,7 +32,7 @@ export default function BrandLogo({ className, size = "md" }: BrandLogoProps) {
         className
       )}
     >
-      <img src={logoImg} alt="ResuVibe logo" className={cn(imgSize[size], "object-contain")} />
+      <img src={logoImg} alt="ResuVibe logo" className={cn(imgSize[size], "object-contain rounded-md bg-[hsl(40,25%,97%)]")} />
       <span className="text-foreground">Resu</span>
       <span className="relative text-primary" style={{ marginLeft: "-0.15em" }}>
         Vibe

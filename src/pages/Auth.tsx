@@ -55,13 +55,31 @@ export default function Auth() {
     setLoading(true);
     try {
       if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
+        const attribution = getStoredAttribution();
+        const utmCampaign = attribution?.utm_campaign;
+
+        const { data: signUpData, error } = await supabase.auth.signUp({
           email,
           password,
-          options: { emailRedirectTo: window.location.origin },
+          options: {
+            emailRedirectTo: window.location.origin,
+            data: utmCampaign ? { utm_campaign: utmCampaign } : undefined,
+          },
         });
         if (error) throw error;
-        // Redirect to verify-email page
+
+        // Campaign users: auto-confirm email and skip verification
+        if (utmCampaign && signUpData?.user?.id) {
+          const result = await confirmCampaignSignup(signUpData.user.id, utmCampaign);
+          if (result.confirmed) {
+            toast({ title: "Account created!", description: "You can now sign in with your credentials." });
+            setMode("login");
+            setPassword("");
+            return;
+          }
+        }
+
+        // Non-campaign users: redirect to verify-email page
         navigate(`/verify-email?email=${encodeURIComponent(email)}`);
         return;
       } else if (mode === "login") {

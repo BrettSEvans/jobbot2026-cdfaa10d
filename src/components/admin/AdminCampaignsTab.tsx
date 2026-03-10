@@ -373,7 +373,11 @@ export default function AdminCampaignsTab() {
                         )}
                       </TableCell>
                       <TableCell>{format(new Date(c.created_at), "MMM d, yyyy")}</TableCell>
-                    </TableRow>
+                      <TableCell>
+                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEditDialog(c)}>
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                      </TableCell>
                   );
                 })
               )}

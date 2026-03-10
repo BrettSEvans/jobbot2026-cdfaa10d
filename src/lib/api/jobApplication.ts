@@ -224,9 +224,11 @@ export async function saveJobApplication(app: SaveJobApplicationInput) {
 }
 
 export async function getJobApplications(personaId?: string | null) {
+  // Use column projection to avoid fetching large HTML blobs in list views
+  const LIST_COLUMNS = 'id, job_url, company_name, job_title, pipeline_stage, created_at, updated_at, generation_status, company_icon_url, ats_score, stage_changed_at, cover_letter, status, generation_error, persona_id, selected_assets, branding, company_url, job_description_markdown';
   let query = supabase
     .from('job_applications')
-    .select('*')
+    .select(LIST_COLUMNS)
     .is('deleted_at', null)
     .order('created_at', { ascending: false });
 

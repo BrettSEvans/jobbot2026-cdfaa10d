@@ -11,6 +11,7 @@ export interface AdminSection {
   group: string;
   requiresAdmin: boolean;
   requiresQA: boolean;
+  requiresMarketing: boolean;
 }
 
 export const ADMIN_SECTIONS: AdminSection[] = [

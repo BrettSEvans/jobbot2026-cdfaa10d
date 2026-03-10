@@ -57,6 +57,17 @@ registerTutorialStep({
 });
 
 registerTutorialStep({
+  id: "master-cover-letter",
+  helpSlug: "master-cover-letter",
+  targetSelector: '[data-tutorial="master-cover-letter"]',
+  title: "Add Your Master Cover Letter",
+  body: "Paste your go-to cover letter here. It's optional, but when provided the AI uses your voice and style as a starting point — making every tailored letter sound like you instead of a generic template.",
+  placement: "top",
+  route: "/profile",
+  order: 6,
+});
+
+registerTutorialStep({
   id: "view-assets",
   helpSlug: "application-detail",
   targetSelector: '[data-tutorial="asset-tabs"]',
@@ -64,7 +75,7 @@ registerTutorialStep({
   body: "All your documents live in one tab strip — Resume and Cover Letter on the left, Industry Materials after the separator. Click any tab to view, download, or refine that document.",
   placement: "bottom",
   route: "/applications/:id",
-  order: 6,
+  order: 7,
 });
 
 registerTutorialStep({

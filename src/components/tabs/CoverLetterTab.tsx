@@ -224,15 +224,13 @@ export default function CoverLetterTab({ appId, state }: CoverLetterTabProps) {
               />
             </div>
           ) : !coverLetter && state.isBgGenerating ? (
-            <Card>
-              <CardContent className="py-8 space-y-4">
-                <GenerationProgressBar
-                  currentStage={(state.bgJob?.status || "pending") as PipelineStage}
-                  startedAt={state.bgJob?.startedAt}
-                />
-                <p className="text-xs text-muted-foreground text-center">You can navigate away — generation continues in the background.</p>
-              </CardContent>
-            </Card>
+            <div className="py-8 space-y-4">
+              <GenerationProgressBar
+                currentStage={(state.bgJob?.status || "pending") as PipelineStage}
+                startedAt={state.bgJob?.startedAt}
+              />
+              <p className="text-xs text-muted-foreground text-center">You can navigate away — generation continues in the background.</p>
+            </div>
           ) : (previewCoverLetter || coverLetter) ? (
             <iframe
               srcDoc={buildCoverLetterHtml(

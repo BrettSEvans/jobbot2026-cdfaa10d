@@ -210,7 +210,13 @@ const NewApplication = () => {
                     </Button>
                   </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-3">
+                  {blockedSiteMessage && (
+                    <Alert>
+                      <Info className="h-4 w-4" />
+                      <AlertDescription>{blockedSiteMessage}</AlertDescription>
+                    </Alert>
+                  )}
                   {useManualInput ? (
                     <Textarea
                       placeholder="Paste the full job description text here..."

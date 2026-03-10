@@ -166,7 +166,7 @@ registerTutorialStep({
   body: "Every time you generate or regenerate an asset, the previous version is saved here. Click any revision to preview it, or restore an older version.",
   placement: "top",
   route: "/applications/:id",
-  order: 14,
+  order: 15,
   prerequisiteSelector: '[data-tutorial="industry-assets-grid"] button',
 });
 

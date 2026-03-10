@@ -28,10 +28,11 @@ export const ADMIN_SECTIONS: AdminSection[] = [
   { id: "guide", label: "Guide", icon: BookOpen, group: "Reference", requiresAdmin: true, requiresQA: false, requiresMarketing: false },
 ];
 
-export function getVisibleSections(isAdmin: boolean, isQA: boolean): AdminSection[] {
+export function getVisibleSections(isAdmin: boolean, isQA: boolean, isMarketing: boolean): AdminSection[] {
   return ADMIN_SECTIONS.filter((s) => {
     if (s.requiresAdmin && !isAdmin) return false;
     if (s.requiresQA && !isQA && !isAdmin) return false;
+    if (s.requiresMarketing && !isMarketing && !isAdmin) return false;
     return true;
   });
 }
@@ -41,9 +42,10 @@ interface AdminSidebarProps {
   onSectionChange: (id: string) => void;
   isAdmin: boolean;
   isQA: boolean;
+  isMarketing: boolean;
 }
 
-export default function AdminSidebar({ activeSection, onSectionChange, isAdmin, isQA }: AdminSidebarProps) {
+export default function AdminSidebar({ activeSection, onSectionChange, isAdmin, isQA, isMarketing }: AdminSidebarProps) {
   const visible = getVisibleSections(isAdmin, isQA);
   const groups = [...new Set(visible.map((s) => s.group))];
 

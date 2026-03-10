@@ -151,6 +151,7 @@ export async function streamDynamicAssetGeneration({
   jobTitle,
   branding,
   layoutStyle,
+  siblingStructures,
   onDelta,
   onDone,
 }: {
@@ -162,6 +163,7 @@ export async function streamDynamicAssetGeneration({
   jobTitle?: string;
   branding?: Json;
   layoutStyle?: { name: string; cssGuidance: string; structureGuidance: string };
+  siblingStructures?: { assetName: string; structureSummary: string }[];
   onDelta: (text: string) => void;
   onDone: () => void;
 }) {
@@ -170,7 +172,7 @@ export async function streamDynamicAssetGeneration({
 
   await streamFromEdgeFunction({
     functionName: 'generate-dynamic-asset',
-    body: { assetName, briefDescription, jobDescription, resumeText, companyName, jobTitle, branding, styleContext, layoutStyle },
+    body: { assetName, briefDescription, jobDescription, resumeText, companyName, jobTitle, branding, styleContext, layoutStyle, siblingStructures },
     onDelta,
     onDone,
   });

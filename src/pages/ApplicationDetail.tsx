@@ -35,6 +35,7 @@ import DynamicAssetTab from "@/components/DynamicAssetTab";
 import ChangeAssetDialog from "@/components/ChangeAssetDialog";
 import AssetProposalCard from "@/components/AssetProposalCard";
 import UpgradeGate from "@/components/UpgradeGate";
+import ProposeMaterialsCTA from "@/components/ProposeMaterialsCTA";
 import {
   Dialog,
   DialogContent,

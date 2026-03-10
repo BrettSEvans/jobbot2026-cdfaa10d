@@ -164,7 +164,7 @@ const ApplicationDetail = () => {
     try {
       await updatePipelineStage(id, currentStage, newStage as PipelineStage);
       state.reload();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.warn("Stage update failed:", err);
     }
   };

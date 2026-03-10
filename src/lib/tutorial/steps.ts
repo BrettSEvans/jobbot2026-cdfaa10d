@@ -86,7 +86,7 @@ registerTutorialStep({
   body: "All your documents live in one tab strip — Resume and Cover Letter on the left, Industry Materials after the separator. Click any tab to view, download, or refine that document.",
   placement: "bottom",
   route: "/applications/:id",
-  order: 7,
+  order: 8,
 });
 
 registerTutorialStep({

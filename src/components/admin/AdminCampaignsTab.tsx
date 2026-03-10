@@ -135,7 +135,7 @@ export default function AdminCampaignsTab() {
       return;
     }
     setCampaigns((prev) => [data as unknown as Campaign, ...prev]);
-    setForm({ name: "", utm_source: "", utm_medium: "", utm_campaign: "", utm_content: "", utm_term: "", ref_code: "" });
+    setForm({ name: "", utm_source: "", utm_medium: "", utm_campaign: "", utm_content: "", utm_term: "", ref_code: "", max_signups: "" });
     setOpen(false);
     toast.success("Campaign created");
   };

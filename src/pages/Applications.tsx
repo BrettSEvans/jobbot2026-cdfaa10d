@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { useUserRoles } from "@/hooks/useUserRoles";
 import { supabase } from "@/integrations/supabase/client";
 import ProUsageBar from "@/components/ProUsageBar";
 import { Button } from "@/components/ui/button";

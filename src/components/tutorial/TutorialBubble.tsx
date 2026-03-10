@@ -97,6 +97,8 @@ export default function TutorialBubble({
     return () => window.removeEventListener("keydown", handler);
   }, [onSkip, onNext, onBack, isFirst]);
 
+  if (!position) return null;
+
   const bubbleClasses = theme === "dark"
     ? "bg-[hsl(0,0%,98%)] text-[hsl(220,25%,10%)] shadow-xl"
     : "bg-card text-card-foreground shadow-2xl border border-border";

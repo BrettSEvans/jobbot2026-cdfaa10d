@@ -72,7 +72,7 @@ export default function AssetProposalCard({
       } else if (next.size < 3) {
         next.add(name);
       } else {
-        toast({ title: "Limit reached", description: "You can select exactly 3 documents.", variant: "destructive" });
+        toast({ title: "Limit reached", description: "You've reached the selection limit.", variant: "destructive" });
       }
       return next;
     });

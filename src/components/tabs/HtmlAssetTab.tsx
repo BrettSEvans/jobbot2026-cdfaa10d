@@ -27,6 +27,7 @@ import { extractStyleSignalsFromMessage } from "@/lib/api/stylePreferences";
 import { cleanHtml } from "@/lib/cleanHtml";
 import { downloadHtmlAsPdf, buildPdfFilename } from "@/lib/htmlToPdf";
 import { useAssetJob } from "@/hooks/useBackgroundJob";
+import GenerationProgressBar, { type PipelineStage } from "@/components/GenerationProgressBar";
 import type { ApplicationState } from "@/hooks/useApplicationDetail";
 
 interface HtmlAssetTabProps {

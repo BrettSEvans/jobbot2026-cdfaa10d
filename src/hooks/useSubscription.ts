@@ -34,15 +34,19 @@ export function useSubscription() {
         .single();
 
       if (error) {
-        // If no subscription exists, create a free one
         if (error.code === "PGRST116") {
-          const { data: newSub, error: insertError } = await supabase
-            .from("user_subscriptions")
-            .insert({ user_id: user!.id, tier: "free", status: "active" })
-            .select()
-            .single();
-          if (insertError) throw insertError;
-          return newSub as unknown as UserSubscription;
+          // No subscription row — this should be created by the handle_new_user trigger.
+          // Return a default free subscription to avoid breaking the UI.
+          return {
+            id: "",
+            user_id: user!.id,
+            tier: "free" as const,
+            status: "active",
+            current_period_start: new Date().toISOString(),
+            current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+            stripe_customer_id: null,
+            stripe_subscription_id: null,
+          } as UserSubscription;
         }
         throw error;
       }

@@ -189,6 +189,7 @@ export type SaveJobApplicationInput = {
   pipeline_stage?: string;
   stage_changed_at?: string;
   selected_assets?: Json;
+  design_variability?: Json;
 };
 
 export async function saveJobApplication(app: SaveJobApplicationInput) {

@@ -59,7 +59,7 @@ export default function Profile() {
     coverLetter: masterCoverLetter !== saved.masterCoverLetter,
   }), [displayName, resumeText, yearsExperience, preferredTone, industries, skills, saved, newSkill, newIndustry, middleName, firstName, lastName, masterCoverLetter]);
 
-  const hasUnsavedChanges = dirty.identity || dirty.resume || dirty.skills || dirty.tone;
+  const hasUnsavedChanges = dirty.identity || dirty.resume || dirty.skills || dirty.tone || dirty.coverLetter;
 
   // Populate form fields from a persona object
   const populateFromPersona = useCallback((p: {

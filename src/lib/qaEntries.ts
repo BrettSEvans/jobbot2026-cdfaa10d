@@ -1109,3 +1109,94 @@ registerTest({
   requiresAuth: true,
   requiresAdmin: false,
 });
+
+// ── Search Jobs ───────────────────────────────────────
+
+registerTest({
+  id: 'qa-search-jobs-basic',
+  title: 'Basic job search returns results',
+  area: 'Search Jobs',
+  route: '/search-jobs',
+  helpSlug: 'search-jobs',
+  steps: [
+    'Navigate to /search-jobs.',
+    'Enter "Software Engineer" in the search bar.',
+    'Click "Search".',
+  ],
+  expectedResults: [
+    'Loading spinner appears.',
+    'Results cards are displayed with title, domain, and description.',
+    'Each card has "View" and "Import" buttons.',
+  ],
+  tags: ['smoke', 'regression'],
+  estimatedMinutes: 2,
+  requiresAuth: true,
+  requiresAdmin: false,
+});
+
+registerTest({
+  id: 'qa-search-jobs-site-filter',
+  title: 'Site filter narrows search results',
+  area: 'Search Jobs',
+  route: '/search-jobs',
+  helpSlug: 'search-jobs',
+  steps: [
+    'Navigate to /search-jobs.',
+    'Enter "Product Manager" in the search bar.',
+    'Select "Google Careers" from the site filter dropdown.',
+    'Click "Search".',
+  ],
+  expectedResults: [
+    'Results are returned primarily from careers.google.com.',
+    'Result URLs reflect the filtered domain.',
+  ],
+  tags: ['regression'],
+  estimatedMinutes: 2,
+  requiresAuth: true,
+  requiresAdmin: false,
+});
+
+registerTest({
+  id: 'qa-search-jobs-import',
+  title: 'Importing a search result creates an application',
+  area: 'Search Jobs',
+  route: '/search-jobs',
+  helpSlug: 'search-jobs',
+  steps: [
+    'Navigate to /search-jobs.',
+    'Search for any job listing.',
+    'Click "Import" on a result card.',
+  ],
+  expectedResults: [
+    'Toast confirms import success.',
+    'User is navigated to the application detail page.',
+    'Job URL and description are pre-filled.',
+    'Application appears in the Applications list.',
+  ],
+  tags: ['smoke', 'regression'],
+  estimatedMinutes: 3,
+  requiresAuth: true,
+  requiresAdmin: false,
+});
+
+registerTest({
+  id: 'qa-search-jobs-empty',
+  title: 'Empty query / no results handling',
+  area: 'Search Jobs',
+  route: '/search-jobs',
+  helpSlug: 'search-jobs',
+  steps: [
+    'Navigate to /search-jobs.',
+    'Leave the search bar empty and click "Search".',
+    'Then search for a very obscure query unlikely to return results.',
+  ],
+  expectedResults: [
+    'Search button is disabled when query is empty.',
+    'No-results state is displayed with helpful guidance.',
+    'No errors are thrown.',
+  ],
+  tags: ['regression'],
+  estimatedMinutes: 2,
+  requiresAuth: true,
+  requiresAdmin: false,
+});

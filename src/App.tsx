@@ -27,6 +27,7 @@ import HelpButton from "./components/HelpButton";
 import TutorialOverlay from "./components/tutorial/TutorialOverlay";
 import TutorialDemo from "./pages/TutorialDemo";
 import ImportJob from "./pages/ImportJob";
+import SearchJobs from "./pages/SearchJobs";
 
 import { useAuth } from "./hooks/useAuth";
 import { useTutorial } from "./hooks/useTutorial";
@@ -145,6 +146,7 @@ function AuthenticatedApp() {
               <Route path="/pricing" element={<><AppHeader onSignOut={signOut} /><main id="main-content"><Pricing /></main></>} />
               <Route path="/tutorial-demo" element={<><AppHeader onSignOut={signOut} /><main id="main-content"><TutorialDemo /></main></>} />
               <Route path="/import" element={<><AppHeader onSignOut={signOut} /><main id="main-content"><ImportJob /></main></>} />
+              <Route path="/search-jobs" element={<><AppHeader onSignOut={signOut} /><main id="main-content"><SearchJobs /></main></>} />
               
               <Route path="/terms" element={<Terms />} />
               <Route path="/privacy" element={<Privacy />} />

@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { downloadHtmlAsDocx, buildDocxFilename } from "@/lib/docxExport";
 import { useSubscription } from "@/hooks/useSubscription";
 import {
-  Edit3, RefreshCw, Loader2, Download, Sparkles, FileDown, Check, X, AlertTriangle,
+  Loader2, Sparkles, Check, X, AlertTriangle,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -20,7 +20,7 @@ import InlineHtmlEditor from "@/components/InlineHtmlEditor";
 import GenerationErrorBanner from "@/components/GenerationErrorBanner";
 import SaveAsTemplate from "@/components/SaveAsTemplate";
 import AssetRevisions from "@/components/AssetRevisions";
-import VibeEditInfo from "@/components/VibeEditInfo";
+import AssetActionBar from "@/components/tabs/AssetActionBar";
 import { backgroundGenerator } from "@/lib/backgroundGenerator";
 import { streamRefineAsset, type RefinableAssetType } from "@/lib/api/refineAsset";
 import { extractStyleSignalsFromMessage } from "@/lib/api/stylePreferences";
@@ -57,20 +57,18 @@ export default function HtmlAssetTab({
   const [chatInput, setChatInput] = useState("");
   const [revisionTrigger, setRevisionTrigger] = useState(0);
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
+  const [showRevisions, setShowRevisions] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editHtml, setEditHtml] = useState("");
 
   const assetJob = useAssetJob(appId, assetType);
   const isAssetJobActive = !!(assetJob && !["complete", "error"].includes(assetJob.status));
 
-  // Detect main pipeline generation (e.g. initial job creation)
   const pipelineJob = state.bgJob;
   const isPipelineActive = state.isBgGenerating;
   const pipelineStage = (pipelineJob?.status || "pending") as PipelineStage;
-  // Show pipeline progress if the pipeline is active and this asset hasn't been generated yet
   const showPipelineProgress = isPipelineActive && !html;
 
-  // Check if resume text is available (only relevant for resume asset type)
   const [missingResumeText, setMissingResumeText] = useState(false);
   useEffect(() => {
     if (assetType !== "resume") return;
@@ -143,7 +141,6 @@ export default function HtmlAssetTab({
           onDelta: (text) => { accumulated += text; },
           onDone: () => {},
         });
-        // Fire-and-forget style signal extraction
         extractStyleSignalsFromMessage(msg);
         return { html: cleanHtml(accumulated) };
       },
@@ -198,39 +195,36 @@ export default function HtmlAssetTab({
           </AlertDescription>
         </Alert>
       )}
-      <div className="flex flex-wrap gap-2">
-        <Button data-tutorial="refine-ai-btn" variant="outline" size="sm" onClick={() => setChatOpen(!chatOpen)} disabled={!canRefineProp}>
-          <Edit3 className="mr-2 h-4 w-4" /> {!canRefineProp ? "Upgrade to Vibe Edit" : chatOpen ? "Hide Chat" : "Vibe Edit"}
-        </Button>
-        <VibeEditInfo assetType={assetType} />
-        {html && (
-          <Button variant="outline" size="sm" onClick={() => { if (!editing) setEditHtml(html); setEditing(!editing); }}>
-            <Edit3 className="mr-2 h-4 w-4" /> {editing ? "Cancel Edit" : "Edit"}
-          </Button>
-        )}
-        <Button variant="outline" size="sm" onClick={handleGenerate} disabled={isAssetJobActive}>
-          {isAssetJobActive ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-          {html ? "Regenerate" : "Generate"} {label}
-        </Button>
-        {html && (
-          <>
+
+      {/* Unified Action Bar */}
+      <AssetActionBar
+        hasContent={!!html}
+        assetType={assetType}
+        label={label}
+        onDownloadPdf={handleDownloadPdf}
+        onDownloadDocx={handleDownloadDocx}
+        showDocx={showDocx}
+        onVibeEdit={() => setChatOpen(!chatOpen)}
+        vibeEditOpen={chatOpen}
+        canRefine={canRefineProp}
+        onEdit={() => { if (!editing) setEditHtml(html); setEditing(!editing); }}
+        isEditing={editing}
+        onRegenerate={handleGenerate}
+        onCopy={() => handleCopy(html, label)}
+        onToggleRevisions={() => setShowRevisions(!showRevisions)}
+        onSaveAsTemplate={
+          html ? (
             <SaveAsTemplate
               dashboardHtml={html} applicationId={appId} assetType={assetType}
               defaultLabel={`${companyName} ${jobTitle} ${label}`.trim()}
               defaultJobFunction={jobTitle} defaultDepartment=""
             />
-            <Button variant="outline" size="sm" onClick={handleDownloadPdf}>
-              <FileDown className="mr-2 h-4 w-4" /> PDF
-            </Button>
-            {showDocx && (
-              <Button variant="outline" size="sm" onClick={handleDownloadDocx}>
-                <FileDown className="mr-2 h-4 w-4" /> DOCX
-              </Button>
-            )}
-          </>
-        )}
-      </div>
+          ) : undefined
+        }
+        isGenerating={isAssetJobActive}
+      />
 
+      {/* Vibe Edit Chat */}
       {chatOpen && (
         <Card>
           <CardContent className="pt-4 space-y-3">
@@ -251,7 +245,8 @@ export default function HtmlAssetTab({
         </Card>
       )}
 
-      {html && (
+      {/* Revision History (toggled from overflow menu) */}
+      {showRevisions && html && (
         <AssetRevisions
           applicationId={appId} assetType={assetType} currentHtml={html}
           onPreviewRevision={(h) => setPreviewHtml(h === html ? null : h)}

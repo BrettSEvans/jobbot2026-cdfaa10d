@@ -123,6 +123,7 @@ export default function AdminCampaignsTab() {
         utm_content: form.utm_content.trim() || null,
         utm_term: form.utm_term.trim() || null,
         ref_code: form.ref_code.trim() || null,
+        max_signups: form.max_signups ? parseInt(form.max_signups, 10) : null,
         created_by: user.id,
       } as any)
       .select()

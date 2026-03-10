@@ -439,16 +439,17 @@ const ApplicationDetail = () => {
               ))}
             </div>
           </div>
+        )}
 
-          {/* Admin: Design Variability Analysis */}
-          {isAdmin && dynamicAssets.length >= 2 && (
-            <DesignVariabilityCard
-              appId={id!}
-              dynamicAssets={dynamicAssets.map((a) => ({ id: a.id, asset_name: a.asset_name, html: a.html }))}
-              branding={(state.app?.branding as Record<string, unknown>) ?? null}
-              cachedVariability={state.app?.design_variability ?? null}
-            />
-          )}
+        {/* Admin: Design Variability Analysis */}
+        {isAdmin && dynamicAssets.length >= 2 && (
+          <DesignVariabilityCard
+            appId={id!}
+            dynamicAssets={dynamicAssets.map((a) => ({ id: a.id, asset_name: a.asset_name, html: a.html }))}
+            branding={(state.app?.branding as Record<string, unknown>) ?? null}
+            cachedVariability={state.app?.design_variability ?? null}
+          />
+        )}
 
         {/* Content Area */}
         <div>

@@ -110,7 +110,7 @@ registerTutorialStep({
   body: "This interactive dashboard summarizes the company, role, and your strategic fit. It includes six tabs: Executive Overview, domain insights, Roadmap, Agentic Workforce, and CFO View.",
   placement: "bottom",
   route: "/applications/:id",
-  order: 9,
+  order: 10,
   prerequisiteSelector: '[data-tutorial="dashboard-tab"]',
 });
 

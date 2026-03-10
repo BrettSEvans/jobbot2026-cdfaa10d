@@ -301,7 +301,7 @@ export default function DynamicAssetTab({
         vibeEditOpen={chatOpen}
         canRefine={canRefineProp}
         onRegenerate={handleGenerate}
-        onCopy={handleCopyText}
+        
         onToggleRevisions={() => setShowRevisions(!showRevisions)}
         isGenerating={isWorking}
         isLocked={isDownloaded}

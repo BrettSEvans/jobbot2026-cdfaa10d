@@ -114,19 +114,23 @@ registerHelp({
   slug: 'application-detail',
   title: 'Application Detail',
   summary:
-    'The detail view shows all generated materials for a job application. Navigate between Cover Letter, Resume, and any Industry Materials using the tabs.',
+    'The detail view shows all generated materials for a job application. A unified tab strip lets you navigate between Resume, Cover Letter, and Industry Materials in one row. Download PDF is the primary action on every document, with Vibe Edit and advanced options (Edit, Regenerate, Revision History) available via the action bar.',
   steps: [
-    'Use the top tabs to switch between Cover Letter and Resume.',
+    'Use the unified tab strip to switch between Resume, Cover Letter, and any Industry Materials.',
+    'Click "Download PDF" (the primary button) to export any document.',
+    'Click "Vibe Edit" to refine a document with natural language instructions.',
+    'Use the ⋯ menu for advanced actions: Edit HTML, Regenerate, Copy Text, Revision History, and Save as Template.',
     'Click "Info" to view application details and the original job description.',
-    'Use the Industry Materials bar to view AI-proposed supplementary documents.',
   ],
   tips: [
-    'Each document can be refined using Vibe Edit — just describe what you want changed.',
-    'Revision history is saved so you can revert to earlier versions.',
+    'The action bar sticks to the top of the page as you scroll the document preview.',
+    'Download PDF is always the most prominent action — DOCX export is available for Resume and Cover Letter on paid tiers.',
+    'Revision history is saved automatically with every generation and refinement.',
+    'Industry Materials appear in the same tab strip after a vertical separator.',
   ],
   route: '/applications/:id',
-  keywords: ['detail', 'tabs', 'view', 'materials', 'company'],
-  relatedSlugs: ['dashboard-tab', 'cover-letter-tab', 'resume-tab', 'dynamic-assets'],
+  keywords: ['detail', 'tabs', 'view', 'materials', 'company', 'download', 'action bar'],
+  relatedSlugs: ['cover-letter-tab', 'resume-tab', 'dynamic-assets', 'export-downloads'],
 });
 
 registerHelp({

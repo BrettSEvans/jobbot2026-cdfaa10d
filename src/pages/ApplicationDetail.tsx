@@ -101,6 +101,13 @@ const ApplicationDetail = () => {
 
     // Detect resume appearing (was empty, now populated)
     if (!prevHtml && currentHtml && currentHtml.length > 100 && state.jobDescription && !atsAutoTriggered.current) {
+      // Check if cached score is still valid — skip rescan if so
+      const cachedScore = state.app?.ats_score as unknown as AtsScoreResult | null;
+      const cachedAt = state.app?.ats_scored_at ?? null;
+      if (cachedScore && cachedAt && isCacheValid(cachedScore, cachedAt, currentHtml, state.jobDescription)) {
+        atsAutoTriggered.current = true;
+        return;
+      }
       atsAutoTriggered.current = true;
       handleAtsRescan();
     }

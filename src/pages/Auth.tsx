@@ -10,8 +10,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, BarChart3, FileCheck, Sparkles, Shield, Clock } from "lucide-react";
 import { BRAND } from "@/lib/branding";
 import BrandLogo from "@/components/BrandLogo";
-import { getStoredAttribution } from "@/lib/marketingAttribution";
-import { confirmCampaignSignup } from "@/lib/api/campaignSignup";
 
 type Mode = "login" | "signup" | "forgot";
 
@@ -28,7 +26,7 @@ const FEATURES = [
   },
   {
     icon: Sparkles,
-    title: "6 Executive Reports",
+    title: "Executive Reports",
     desc: "RAID logs, architecture diagrams, roadmaps, and executive reports — all branded.",
   },
   {
@@ -55,31 +53,13 @@ export default function Auth() {
     setLoading(true);
     try {
       if (mode === "signup") {
-        const attribution = getStoredAttribution();
-        const utmCampaign = attribution?.utm_campaign;
-
-        const { data: signUpData, error } = await supabase.auth.signUp({
+        const { error } = await supabase.auth.signUp({
           email,
           password,
-          options: {
-            emailRedirectTo: window.location.origin,
-            data: utmCampaign ? { utm_campaign: utmCampaign } : undefined,
-          },
+          options: { emailRedirectTo: window.location.origin },
         });
         if (error) throw error;
-
-        // Campaign users: auto-confirm email and skip verification
-        if (utmCampaign && signUpData?.user?.id) {
-          const result = await confirmCampaignSignup(signUpData.user.id, utmCampaign);
-          if (result.confirmed) {
-            toast({ title: "Account created!", description: "You can now sign in with your credentials." });
-            setMode("login");
-            setPassword("");
-            return;
-          }
-        }
-
-        // Non-campaign users: redirect to verify-email page
+        // Redirect to verify-email page
         navigate(`/verify-email?email=${encodeURIComponent(email)}`);
         return;
       } else if (mode === "login") {
@@ -132,12 +112,15 @@ export default function Auth() {
           </div>
 
           <h1 className="text-4xl font-heading font-bold tracking-tight leading-tight mb-4 text-foreground">
-            Land your next role<br />
-            with AI-powered<br />
+            Land your next role
+            <br />
+            with AI-powered
+            <br />
             application assets.
           </h1>
           <p className="text-lg text-muted-foreground max-w-md leading-relaxed mb-10">
-            Paste a job URL and get a complete application package — branded dashboards, tailored cover letters, and executive reports — in minutes.
+            Paste a job URL and get a complete application package — branded dashboards, tailored cover letters, and
+            executive reports — in minutes.
           </p>
 
           <div className="grid grid-cols-2 gap-5">
@@ -180,18 +163,30 @@ export default function Auth() {
                 {mode === "forgot"
                   ? "Enter your email to receive a reset link"
                   : mode === "login"
-                  ? "Sign in to access your applications"
-                  : "Get started with your free account"}
+                    ? "Sign in to access your applications"
+                    : "Get started with your free account"}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {mode !== "forgot" && (
                 <Button variant="outline" className="w-full" onClick={handleGoogle}>
                   <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
-                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
-                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                    <path
+                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
+                      fill="#4285F4"
+                    />
+                    <path
+                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                      fill="#34A853"
+                    />
+                    <path
+                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                      fill="#FBBC05"
+                    />
+                    <path
+                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                      fill="#EA4335"
+                    />
                   </svg>
                   Continue with Google
                 </Button>
@@ -215,14 +210,19 @@ export default function Auth() {
                     id="email"
                     type="email"
                     value={email}
-                    onChange={(e) => { setEmail(e.target.value); setEmailError(null); }}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      setEmailError(null);
+                    }}
                     required
                     placeholder="you@example.com"
                     aria-invalid={!!emailError}
                     aria-describedby={emailError ? "email-error" : undefined}
                   />
                   {emailError && (
-                    <p id="email-error" role="alert" className="text-xs text-destructive">{emailError}</p>
+                    <p id="email-error" role="alert" className="text-xs text-destructive">
+                      {emailError}
+                    </p>
                   )}
                 </div>
                 {mode !== "forgot" && (
@@ -232,7 +232,10 @@ export default function Auth() {
                       id="password"
                       type="password"
                       value={password}
-                      onChange={(e) => { setPassword(e.target.value); setPasswordError(null); }}
+                      onChange={(e) => {
+                        setPassword(e.target.value);
+                        setPasswordError(null);
+                      }}
                       required
                       minLength={6}
                       placeholder="••••••••"
@@ -240,7 +243,9 @@ export default function Auth() {
                       aria-describedby={passwordError ? "password-error" : undefined}
                     />
                     {passwordError && (
-                      <p id="password-error" role="alert" className="text-xs text-destructive">{passwordError}</p>
+                      <p id="password-error" role="alert" className="text-xs text-destructive">
+                        {passwordError}
+                      </p>
                     )}
                   </div>
                 )}
@@ -253,21 +258,41 @@ export default function Auth() {
               <div className="text-center text-sm space-y-1">
                 {mode === "login" && (
                   <>
-                    <button className="text-muted-foreground hover:text-foreground underline-offset-4 hover:underline" onClick={() => setMode("forgot")}>Forgot password?</button>
+                    <button
+                      className="text-muted-foreground hover:text-foreground underline-offset-4 hover:underline"
+                      onClick={() => setMode("forgot")}
+                    >
+                      Forgot password?
+                    </button>
                     <p className="text-muted-foreground">
                       No account?{" "}
-                      <button className="text-primary font-medium hover:underline underline-offset-4" onClick={() => setMode("signup")}>Sign up free</button>
+                      <button
+                        className="text-primary font-medium hover:underline underline-offset-4"
+                        onClick={() => setMode("signup")}
+                      >
+                        Sign up free
+                      </button>
                     </p>
                   </>
                 )}
                 {mode === "signup" && (
                   <p className="text-muted-foreground">
                     Already have an account?{" "}
-                    <button className="text-primary font-medium hover:underline underline-offset-4" onClick={() => setMode("login")}>Sign in</button>
+                    <button
+                      className="text-primary font-medium hover:underline underline-offset-4"
+                      onClick={() => setMode("login")}
+                    >
+                      Sign in
+                    </button>
                   </p>
                 )}
                 {mode === "forgot" && (
-                  <button className="text-primary font-medium hover:underline underline-offset-4" onClick={() => setMode("login")}>Back to sign in</button>
+                  <button
+                    className="text-primary font-medium hover:underline underline-offset-4"
+                    onClick={() => setMode("login")}
+                  >
+                    Back to sign in
+                  </button>
                 )}
               </div>
             </CardContent>

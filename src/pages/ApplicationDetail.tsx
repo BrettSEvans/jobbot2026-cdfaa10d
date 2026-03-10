@@ -447,7 +447,7 @@ const ApplicationDetail = () => {
             appId={id!}
             dynamicAssets={dynamicAssets.map((a) => ({ id: a.id, asset_name: a.asset_name, html: a.html }))}
             branding={(state.app?.branding as Record<string, unknown>) ?? null}
-            cachedVariability={state.app?.design_variability ?? null}
+            cachedVariability={(state.app as any)?.design_variability ?? null}
           />
         )}
 

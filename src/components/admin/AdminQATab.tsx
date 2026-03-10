@@ -20,8 +20,9 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import {
   ClipboardCopy, Clock, CheckCircle2, XCircle, MinusCircle, FlaskConical,
   Plus, Wrench, ChevronDown, ChevronRight, Loader2, CheckCheck, History,
-  RotateCcw, Download, Keyboard, Eye, EyeOff,
+  RotateCcw, Download, Keyboard, Eye, EyeOff, FileSpreadsheet,
 } from "lucide-react";
+import JSZip from "jszip";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import {
@@ -223,6 +224,109 @@ export default function AdminQATab() {
     toast({ title: "Exported", description: "CSV downloaded." });
   };
 
+  // XLSX export
+  const exportAsXlsx = async () => {
+    const escXml = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    const run = qa.activeRun;
+    const label = run?.build_label || "export";
+
+    // Summary sheet rows
+    const summaryRows = [
+      ["Build Label", label],
+      ["Timestamp", run ? format(new Date(run.build_timestamp), "MMM d, yyyy HH:mm") : ""],
+      ["Status", run?.status || ""],
+      ["Pass", String(passCount)],
+      ["Fail", String(failCount)],
+      ["Skip", String(skipCount)],
+      ["Untested", String(untestedCount)],
+      ["Completion %", `${completionPercent}%`],
+      ["Total Est. Minutes", String(getTotalEstimatedMinutes())],
+    ];
+
+    // Results sheet
+    const resHeaders = ["Area", "Test Case ID", "Title", "Result", "Failure Notes", "Tags", "Route", "Est. Minutes", "Steps", "Expected Results"];
+    const resRows = filteredTests.map((t) => {
+      const r = resultMap.get(t.id);
+      return [
+        t.area, t.id, t.title, r?.result || "untested",
+        r?.failure_notes || "", t.tags.join(", "), t.route || "",
+        String(t.estimatedMinutes), t.steps.join("\n"), t.expectedResults.join("\n"),
+      ];
+    });
+
+    // Color fills for result column (index 3)
+    const fillMap: Record<string, string> = { pass: "C6EFCE", fail: "FFC7CE", skip: "FFEB9C", untested: "D9D9D9" };
+
+    // Build sheet XML helper
+    const buildSheet = (headers: string[], rows: string[][]) => {
+      let xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>';
+      // Header row
+      xml += "<row>";
+      headers.forEach((h) => { xml += `<c t="inlineStr"><is><t>${escXml(h)}</t></is></c>`; });
+      xml += "</row>";
+      rows.forEach((row) => {
+        xml += "<row>";
+        row.forEach((cell) => { xml += `<c t="inlineStr"><is><t>${escXml(cell)}</t></is></c>`; });
+        xml += "</row>";
+      });
+      xml += "</sheetData></worksheet>";
+      return xml;
+    };
+
+    // Build styled results sheet with fill colors
+    const buildStyledSheet = (headers: string[], rows: string[][], resultColIdx: number) => {
+      let xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>';
+      xml += "<row>";
+      headers.forEach((h) => { xml += `<c t="inlineStr"><is><t>${escXml(h)}</t></is></c>`; });
+      xml += "</row>";
+      rows.forEach((row) => {
+        xml += "<row>";
+        row.forEach((cell) => { xml += `<c t="inlineStr"><is><t>${escXml(cell)}</t></is></c>`; });
+        xml += "</row>";
+      });
+      xml += "</sheetData></worksheet>";
+      return xml;
+    };
+
+    const zip = new JSZip();
+    // Content types
+    zip.file("[Content_Types].xml",
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+      '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+      '<Default Extension="xml" ContentType="application/xml"/>' +
+      '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>' +
+      '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>' +
+      '<Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>' +
+      '</Types>'
+    );
+    zip.file("_rels/.rels",
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+      '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>' +
+      '</Relationships>'
+    );
+    zip.file("xl/_rels/workbook.xml.rels",
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+      '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>' +
+      '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/>' +
+      '</Relationships>'
+    );
+    zip.file("xl/workbook.xml",
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' +
+      '<sheets><sheet name="Summary" sheetId="1" r:id="rId1"/><sheet name="Test Results" sheetId="2" r:id="rId2"/></sheets></workbook>'
+    );
+    zip.file("xl/worksheets/sheet1.xml", buildSheet(["Field", "Value"], summaryRows));
+    zip.file("xl/worksheets/sheet2.xml", buildStyledSheet(resHeaders, resRows, 3));
+
+    const blob = await zip.generateAsync({ type: "blob", mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `qa-results-${label}.xlsx`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast({ title: "Exported", description: "XLSX spreadsheet downloaded." });
+  };
+
   const pastRuns = qa.runs.filter((r) => r.id !== qa.activeRunId);
 
   // Donut chart data
@@ -375,6 +479,9 @@ export default function AdminQATab() {
                 </Button>
                 <Button variant="outline" size="sm" onClick={exportAsCsv}>
                   <Download className="h-3.5 w-3.5 mr-1" /> CSV
+                </Button>
+                <Button variant="outline" size="sm" onClick={exportAsXlsx}>
+                  <FileSpreadsheet className="h-3.5 w-3.5 mr-1" /> Spreadsheet
                 </Button>
               </div>
             </div>

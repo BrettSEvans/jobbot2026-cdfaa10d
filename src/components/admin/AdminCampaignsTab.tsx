@@ -106,40 +106,72 @@ export default function AdminCampaignsTab() {
     }));
   };
 
-  const handleCreate = async () => {
+  const openEditDialog = (c: Campaign) => {
+    setEditingCampaign(c);
+    setForm({
+      name: c.name,
+      utm_source: c.utm_source,
+      utm_medium: c.utm_medium,
+      utm_campaign: c.utm_campaign,
+      utm_content: c.utm_content ?? "",
+      utm_term: c.utm_term ?? "",
+      ref_code: c.ref_code ?? "",
+      max_signups: c.max_signups != null ? String(c.max_signups) : "",
+    });
+    setOpen(true);
+  };
+
+  const handleSave = async () => {
     if (!form.name.trim() || !form.utm_campaign.trim()) {
       toast.error("Name and campaign slug are required");
       return;
     }
     setSaving(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setSaving(false); return; }
 
-    const { data, error } = await supabase
-      .from("campaigns")
-      .insert({
-        name: form.name.trim(),
-        utm_source: form.utm_source.trim(),
-        utm_medium: form.utm_medium.trim(),
-        utm_campaign: form.utm_campaign.trim(),
-        utm_content: form.utm_content.trim() || null,
-        utm_term: form.utm_term.trim() || null,
-        ref_code: form.ref_code.trim() || null,
-        max_signups: form.max_signups ? parseInt(form.max_signups, 10) : null,
-        created_by: user.id,
-      } as any)
-      .select()
-      .single();
+    const payload = {
+      name: form.name.trim(),
+      utm_source: form.utm_source.trim(),
+      utm_medium: form.utm_medium.trim(),
+      utm_campaign: form.utm_campaign.trim(),
+      utm_content: form.utm_content.trim() || null,
+      utm_term: form.utm_term.trim() || null,
+      ref_code: form.ref_code.trim() || null,
+      max_signups: form.max_signups ? parseInt(form.max_signups, 10) : null,
+    };
 
-    setSaving(false);
-    if (error) {
-      toast.error("Failed to create campaign");
-      return;
+    if (editingCampaign) {
+      // Update existing
+      const { data, error } = await supabase
+        .from("campaigns")
+        .update(payload as any)
+        .eq("id", editingCampaign.id)
+        .select()
+        .single();
+
+      setSaving(false);
+      if (error) { toast.error("Failed to update campaign"); return; }
+      setCampaigns((prev) => prev.map((c) => c.id === editingCampaign.id ? (data as unknown as Campaign) : c));
+      toast.success("Campaign updated");
+    } else {
+      // Create new
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setSaving(false); return; }
+
+      const { data, error } = await supabase
+        .from("campaigns")
+        .insert({ ...payload, created_by: user.id } as any)
+        .select()
+        .single();
+
+      setSaving(false);
+      if (error) { toast.error("Failed to create campaign"); return; }
+      setCampaigns((prev) => [data as unknown as Campaign, ...prev]);
+      toast.success("Campaign created");
     }
-    setCampaigns((prev) => [data as unknown as Campaign, ...prev]);
-    setForm({ name: "", utm_source: "", utm_medium: "", utm_campaign: "", utm_content: "", utm_term: "", ref_code: "", max_signups: "" });
+
+    setForm(emptyForm);
+    setEditingCampaign(null);
     setOpen(false);
-    toast.success("Campaign created");
   };
 
   // Count signups per campaign

@@ -331,7 +331,13 @@ export default function AdminCampaignsTab() {
                           <CopyButton text={url} />
                         </div>
                       </TableCell>
-                      <TableCell className="text-center font-semibold">{signupCounts[c.utm_campaign] ?? 0}</TableCell>
+                      <TableCell className="text-center font-semibold">
+                        {signupCounts[c.utm_campaign] ?? 0}
+                        {c.max_signups != null ? ` / ${c.max_signups}` : " / ∞"}
+                        {c.max_signups != null && (signupCounts[c.utm_campaign] ?? 0) >= c.max_signups && (
+                          <Badge variant="destructive" className="ml-2 text-xs">Full</Badge>
+                        )}
+                      </TableCell>
                       <TableCell>{format(new Date(c.created_at), "MMM d, yyyy")}</TableCell>
                     </TableRow>
                   );

@@ -24,6 +24,17 @@ registerTutorialStep({
 });
 
 registerTutorialStep({
+  id: "search-jobs",
+  helpSlug: "search-jobs",
+  targetSelector: '[data-tutorial="search-jobs-btn"]',
+  title: "Search for Jobs",
+  body: `Click here to search for job listings across career sites like Google Careers, LinkedIn, Indeed, and more. Found a match? Import it directly into ${BRAND.name} with one click.`,
+  placement: "bottom",
+  route: "/",
+  order: 3,
+});
+
+registerTutorialStep({
   id: "new-app",
   helpSlug: "new-application",
   targetSelector: '[data-tutorial="new-app-btn"]',
@@ -31,7 +42,7 @@ registerTutorialStep({
   body: `Click here to start a new job application. You'll paste a job URL and ${BRAND.name} will generate a full application package for you.`,
   placement: "bottom",
   route: "/",
-  order: 3,
+  order: 4,
 });
 
 registerTutorialStep({

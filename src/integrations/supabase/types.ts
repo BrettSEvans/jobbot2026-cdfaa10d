@@ -1182,7 +1182,7 @@ export type Database = {
       set_active_resume: { Args: { p_resume_id: string }; Returns: undefined }
     }
     Enums: {
-      app_role: "admin" | "user" | "qa" | "marketing"
+      app_role: "admin" | "user" | "qa" | "marketing" | "customer"
       subscription_tier: "free" | "pro" | "premium"
     }
     CompositeTypes: {
@@ -1311,7 +1311,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "user", "qa", "marketing"],
+      app_role: ["admin", "user", "qa", "marketing", "customer"],
       subscription_tier: ["free", "pro", "premium"],
     },
   },

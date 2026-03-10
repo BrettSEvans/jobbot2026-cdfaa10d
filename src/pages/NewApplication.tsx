@@ -142,7 +142,13 @@ const NewApplication = () => {
       toast({ title: "Application created!", description: "Your materials are being generated in the background." });
       navigate(`/applications/${appId}`);
     } catch (err: unknown) {
-      toast({ title: "Error", description: err instanceof Error ? err.message : "Unknown error", variant: "destructive" });
+      const errMsg = err instanceof Error ? err.message : "Unknown error";
+      const isScrapeBlocked = errMsg.includes("blocks automated scraping");
+      if (isScrapeBlocked) {
+        setUseManualInput(true);
+        setBlockedSiteMessage(errMsg);
+      }
+      toast({ title: "Error", description: errMsg, variant: "destructive" });
       setStep("input");
     }
   };

@@ -119,7 +119,7 @@ registerTutorialStep({
   helpSlug: "dynamic-assets",
   targetSelector: '[data-tutorial="industry-assets-grid"]',
   title: "Industry-Specific Assets",
-  body: "These are AI-proposed documents tailored to the job's industry — like a RAID Log, Architecture Diagram, or Executive Report. You selected three during setup; click \"Change Asset\" on any to swap it for a new suggestion.",
+  body: "After the separator in the tab strip, you'll find AI-proposed documents tailored to the job's industry — like a RAID Log, Architecture Diagram, or Executive Report. Click any tab to view it, or use the swap icon to replace it.",
   placement: "bottom",
   route: "/applications/:id",
   order: 11,

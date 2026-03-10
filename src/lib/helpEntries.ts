@@ -155,10 +155,11 @@ registerHelp({
   slug: 'profile',
   title: 'Profile',
   summary:
-    'Manage your personal information, resume text, key skills, and preferences. This data is used by the AI to tailor every generated document to your background.',
+    'Manage your personal information, resume text, master cover letter, key skills, and preferences. This data is used by the AI to tailor every generated document to your background and voice.',
   steps: [
     'Fill in your name, years of experience, and target industries.',
     'Paste or edit your master resume text — this feeds into all resume generations.',
+    'Add a master cover letter so the AI captures your unique voice (optional but highly recommended).',
     'Add key skills that should be highlighted across your applications.',
   ],
   tips: [
@@ -166,8 +167,46 @@ registerHelp({
     'Preferred tone (e.g. "professional", "conversational") influences generation style.',
   ],
   route: '/profile',
-  keywords: ['profile', 'resume', 'skills', 'experience', 'tone', 'name'],
-  relatedSlugs: ['style-preferences'],
+  keywords: ['profile', 'resume', 'skills', 'experience', 'tone', 'name', 'cover letter'],
+  relatedSlugs: ['style-preferences', 'master-cover-letter'],
+});
+
+registerHelp({
+  slug: 'master-cover-letter',
+  title: 'Master Cover Letter',
+  summary:
+    'An optional base cover letter that teaches the AI your writing voice. When provided, every tailored cover letter sounds like you instead of a generic template.',
+  steps: [
+    'Navigate to the Profile page from the navigation bar.',
+    'Scroll to the Master Cover Letter card.',
+    'Paste or write your go-to cover letter — the one that best represents your voice.',
+    'Click Save. The AI will use it as a starting point for every future application.',
+  ],
+  tips: [
+    'This field is optional but highly recommended — it makes a noticeable difference in output quality.',
+    'You\'ll be reminded at your 1st, 3rd, and 7th application if you haven\'t added one yet.',
+    'If you don\'t access the app for 30 days the reminder resets, so you get a fresh prompt.',
+  ],
+  route: '/profile',
+  keywords: ['cover letter', 'voice', 'master', 'template', 'tone', 'personal', 'writing style'],
+  relatedSlugs: ['profile', 'cover-letter-tab'],
+});
+
+registerHelp({
+  slug: 'idle-timeout',
+  title: 'Auto-Logout (Session Security)',
+  summary:
+    'For your security, the app automatically signs you out after 30 minutes of inactivity. A warning toast appears at the 25-minute mark so you can stay active.',
+  steps: [
+    'Use the app normally — any mouse, keyboard, or touch interaction resets the timer.',
+    'At 25 minutes of inactivity you\'ll see a "Session expiring soon" toast.',
+    'If no interaction occurs within the next 5 minutes, you\'ll be signed out and redirected to the login page.',
+  ],
+  tips: [
+    'Simply moving your mouse or pressing a key resets the full 30-minute window.',
+    'This policy protects sensitive data like resumes and cover letters from unattended sessions.',
+  ],
+  keywords: ['idle', 'timeout', 'logout', 'security', 'session', 'inactivity', 'auto-logout'],
 });
 
 registerHelp({

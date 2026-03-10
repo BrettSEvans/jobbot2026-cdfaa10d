@@ -229,6 +229,13 @@ export default function Profile() {
               isDirty={dirty.resume} saving={saving} savingCard={savingCard}
               onSave={handleCardSave} cardBorderClass={cardBorderClass(dirty.resume)}
             />
+
+            <CoverLetterCard
+              masterCoverLetter={masterCoverLetter}
+              setMasterCoverLetter={setMasterCoverLetter}
+              isDirty={dirty.coverLetter} saving={saving} savingCard={savingCard}
+              onSave={handleCardSave} cardBorderClass={cardBorderClass(dirty.coverLetter)}
+            />
           </div>
         </div>
 

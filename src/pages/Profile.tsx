@@ -108,6 +108,7 @@ export default function Profile() {
     if (dirty.resume) sections.push("Resume / Background");
     if (dirty.skills) sections.push("Skills & Target Industries");
     if (dirty.tone) sections.push("Writing Preferences");
+    if (dirty.coverLetter) sections.push("Master Cover Letter");
     setDirtySections(sections);
     return () => { setHasUnsavedChanges(false); setDirtySections([]); };
   }, [hasUnsavedChanges, dirty, setHasUnsavedChanges, setDirtySections]);

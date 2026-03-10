@@ -47,6 +47,7 @@ const queryClient = new QueryClient();
 function AuthenticatedApp() {
   const { user, loading, signOut } = useAuth();
   const { isTutorialActive, tutorialMode, dismissTutorial, stopTutorial } = useTutorial();
+  useIdleTimeout(!!user);
   const [approvalStatus, setApprovalStatus] = useState<string | null>(null);
   const [approvalLoading, setApprovalLoading] = useState(true);
 

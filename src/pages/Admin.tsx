@@ -83,6 +83,7 @@ export default function Admin() {
       case "limits": return <AdminRateLimitsTab />;
       case "audit": return <AdminAuditTab />;
       case "prompt-log": return <AdminPromptLogTab />;
+      case "campaigns": return <AdminCampaignsTab />;
       case "qa": return <AdminQATab />;
       case "guide":
         return (

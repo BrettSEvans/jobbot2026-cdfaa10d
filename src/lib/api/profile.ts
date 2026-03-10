@@ -239,7 +239,7 @@ export async function getProfileContextForPrompt(): Promise<string> {
     ]);
 
     if (profile) {
-      const persona: PersonaProfile = {
+      const persona: PersonaProfile & { master_cover_letter?: string | null } = {
         id: profile.id,
         first_name: profile.first_name,
         middle_name: profile.middle_name,
@@ -251,6 +251,7 @@ export async function getProfileContextForPrompt(): Promise<string> {
         key_skills: profile.key_skills,
         target_industries: profile.target_industries,
         isTestUser: false,
+        master_cover_letter: profile.master_cover_letter,
       };
       profileSection = buildProfileContext(persona);
     }

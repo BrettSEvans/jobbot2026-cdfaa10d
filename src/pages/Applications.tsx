@@ -97,96 +97,26 @@ const Applications = () => {
 
   const activeJobCount = useActiveJobCount();
 
-  // 48-hour bookmarked prompt: find oldest bookmarked app that's been sitting > 48h and not dismissed
-  const staleBookmarkedApp = useMemo(() => {
-    const FORTY_EIGHT_HOURS = 48 * 60 * 60 * 1000;
-    const now = Date.now();
-    const dismissed: string[] = JSON.parse(localStorage.getItem('dismissed_bookmarked_prompts') || '[]');
-    return applications
-      .filter((app) => {
-        const stage = app.pipeline_stage || 'bookmarked';
-        if (stage !== 'bookmarked') return false;
-        if (dismissed.includes(app.id)) return false;
-        const changedAt = app.stage_changed_at || app.created_at;
-        return now - new Date(changedAt).getTime() > FORTY_EIGHT_HOURS;
-      })
-      .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())[0] || null;
-  }, [applications]);
+  const { staleApp: staleBookmarkedApp, dismiss: dismissBookmarked } = useStalePipelinePrompt(applications, {
+    stage: 'bookmarked', thresholdMs: 48 * 60 * 60 * 1000, storageKey: 'dismissed_bookmarked_prompts',
+  });
+  const { staleApp: staleAppliedApp, dismiss: dismissApplied } = useStalePipelinePrompt(applications, {
+    stage: 'applied', thresholdMs: 10 * 24 * 60 * 60 * 1000, storageKey: 'dismissed_ghost_prompts',
+  });
+  const { staleApp: staleInterviewingApp, dismiss: dismissInterviewing } = useStalePipelinePrompt(applications, {
+    stage: 'interviewing', thresholdMs: 7 * 24 * 60 * 60 * 1000, storageKey: 'dismissed_ghost_interview_prompts',
+  });
 
-  // 10-day ghosted prompt for applied apps
-  const staleAppliedApp = useMemo(() => {
-    const TEN_DAYS = 10 * 24 * 60 * 60 * 1000;
-    const now = Date.now();
-    const dismissed: string[] = JSON.parse(localStorage.getItem('dismissed_ghost_prompts') || '[]');
-    return applications
-      .filter((app) => {
-        const stage = app.pipeline_stage || 'bookmarked';
-        if (stage !== 'applied') return false;
-        if (dismissed.includes(app.id)) return false;
-        const changedAt = app.stage_changed_at || app.created_at;
-        return now - new Date(changedAt).getTime() > TEN_DAYS;
-      })
-      .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())[0] || null;
-  }, [applications]);
-
-  // 7-day ghosted prompt for interviewing apps
-  const staleInterviewingApp = useMemo(() => {
-    const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
-    const now = Date.now();
-    const dismissed: string[] = JSON.parse(localStorage.getItem('dismissed_ghost_interview_prompts') || '[]');
-    return applications
-      .filter((app) => {
-        const stage = app.pipeline_stage || 'bookmarked';
-        if (stage !== 'interviewing') return false;
-        if (dismissed.includes(app.id)) return false;
-        const changedAt = app.stage_changed_at || app.created_at;
-        return now - new Date(changedAt).getTime() > SEVEN_DAYS;
-      })
-      .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())[0] || null;
-  }, [applications]);
-
-  const dismissBookmarkedPrompt = useCallback((appId: string) => {
-    const dismissed: string[] = JSON.parse(localStorage.getItem('dismissed_bookmarked_prompts') || '[]');
-    dismissed.push(appId);
-    localStorage.setItem('dismissed_bookmarked_prompts', JSON.stringify(dismissed));
-    setApplications((prev) => [...prev]);
-  }, []);
-
-  const dismissGhostPrompt = useCallback((appId: string) => {
-    const dismissed: string[] = JSON.parse(localStorage.getItem('dismissed_ghost_prompts') || '[]');
-    dismissed.push(appId);
-    localStorage.setItem('dismissed_ghost_prompts', JSON.stringify(dismissed));
-    setApplications((prev) => [...prev]);
-  }, []);
-
-  const dismissInterviewGhostPrompt = useCallback((appId: string) => {
-    const dismissed: string[] = JSON.parse(localStorage.getItem('dismissed_ghost_interview_prompts') || '[]');
-    dismissed.push(appId);
-    localStorage.setItem('dismissed_ghost_interview_prompts', JSON.stringify(dismissed));
-    setApplications((prev) => [...prev]);
-  }, []);
-
-  const markAsGhosted = useCallback(async (appId: string) => {
+  const markStaleAsGhosted = useCallback(async (appId: string, fromStage: PipelineStage, dismiss: (id: string) => void) => {
     try {
-      await updatePipelineStage(appId, 'applied', 'ghosted');
-      dismissGhostPrompt(appId);
+      await updatePipelineStage(appId, fromStage, 'ghosted');
+      dismiss(appId);
       loadApplications();
       toast({ title: "Marked as ghosted", description: "Application moved to Ghosted stage." });
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      toast({ title: "Error", description: err instanceof Error ? err.message : "Unknown error", variant: "destructive" });
     }
-  }, [dismissGhostPrompt, toast]);
-
-  const markInterviewAsGhosted = useCallback(async (appId: string) => {
-    try {
-      await updatePipelineStage(appId, 'interviewing', 'ghosted');
-      dismissInterviewGhostPrompt(appId);
-      loadApplications();
-      toast({ title: "Marked as ghosted", description: "Application moved to Ghosted stage." });
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
-    }
-  }, [dismissInterviewGhostPrompt, toast]);
+  }, [toast]);
 
   // Check if any apps are missing icons
   const needsBackfill = useMemo(

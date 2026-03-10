@@ -488,8 +488,8 @@ const Applications = () => {
                           key={app.id}
                           app={app}
                           onDelete={handleSoftDelete}
-                          onCopyCoverLetter={handleCopyCoverLetter}
-                          onCopyHtml={handleCopyHtml}
+                          onCopyCoverLetter={(text, e) => handleCopyToClipboard(text, "Cover letter", e)}
+                          onCopyHtml={(html, e) => handleCopyToClipboard(html, "Dashboard HTML", e)}
                           onPreview={(id) => { setIsClosing(false); setPreviewId(id); }}
                         />
                       ))}

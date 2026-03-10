@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ADD COLUMN master_cover_letter text DEFAULT NULL;

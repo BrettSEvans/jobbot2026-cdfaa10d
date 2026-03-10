@@ -122,6 +122,27 @@ export default function AdminPromptLogTab() {
                         {e.category && <Badge variant="secondary" className="text-xs font-normal">{e.category}</Badge>}
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground">{isExpanded ? e.outcome : truncate(e.outcome, 50)}</TableCell>
+                      <TableCell>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7"
+                                onClick={(ev) => {
+                                  ev.stopPropagation();
+                                  navigator.clipboard.writeText(e.prompt);
+                                  toast({ title: "Copied to clipboard" });
+                                }}
+                              >
+                                <Copy className="h-3.5 w-3.5" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Copy prompt</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </TableCell>
                     </TableRow>
                   );
                 })}

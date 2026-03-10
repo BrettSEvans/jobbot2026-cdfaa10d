@@ -10,7 +10,8 @@ import CompanyIcon from "@/components/CompanyIcon";
 import KanbanBoard from "@/components/KanbanBoard";
 import PipelineAnalytics from "@/components/PipelineAnalytics";
 import GhostPromptDialog from "@/components/GhostPromptDialog";
-import { updatePipelineStage, type PipelineStage } from "@/lib/pipelineStages";
+import { updatePipelineStage, PIPELINE_STAGES, STAGE_LABELS, STAGE_COLORS, type PipelineStage } from "@/lib/pipelineStages";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useStalePipelinePrompt } from "@/hooks/useStalePipelinePrompt";
 import {
   getJobApplications,

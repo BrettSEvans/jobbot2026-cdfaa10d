@@ -13,7 +13,8 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, ChevronDown, ChevronRight, Loader2, MessageSquareText } from "lucide-react";
+import { Plus, ChevronDown, ChevronRight, Loader2, MessageSquareText, Copy } from "lucide-react";
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { format } from "date-fns";
 
 interface PromptEntry {

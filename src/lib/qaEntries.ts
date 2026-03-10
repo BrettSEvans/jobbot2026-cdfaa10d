@@ -1200,3 +1200,46 @@ registerTest({
   requiresAuth: true,
   requiresAdmin: false,
 });
+
+registerTest({
+  id: 'qa-job-search-location-filter',
+  title: 'Job search — location filter',
+  area: 'Job Search',
+  route: '/search-jobs',
+  steps: [
+    'Navigate to /search-jobs.',
+    'Enter a job query (e.g. "Software Engineer").',
+    'Expand Filters and enter a location (e.g. "San Francisco, CA").',
+    'Click Search.',
+  ],
+  expectedResults: [
+    'Results are returned that relate to the specified location.',
+    'Results display job titles and source domains.',
+  ],
+  tags: ['regression'],
+  estimatedMinutes: 3,
+  requiresAuth: true,
+  requiresAdmin: false,
+});
+
+registerTest({
+  id: 'qa-job-search-work-mode-filter',
+  title: 'Job search — work mode filter (remote/hybrid)',
+  area: 'Job Search',
+  route: '/search-jobs',
+  steps: [
+    'Navigate to /search-jobs.',
+    'Enter a job query.',
+    'Expand Filters and select "Remote" from Work Mode.',
+    'Click Search.',
+    'Repeat with "Hybrid".',
+  ],
+  expectedResults: [
+    'Results reflect remote or hybrid job listings.',
+    'Changing the filter and re-searching updates results accordingly.',
+  ],
+  tags: ['regression'],
+  estimatedMinutes: 3,
+  requiresAuth: true,
+  requiresAdmin: false,
+});

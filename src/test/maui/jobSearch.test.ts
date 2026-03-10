@@ -1,9 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { SITE_FILTERS, extractCompanyFromUrl } from "@/lib/api/jobSearch";
+import { SITE_FILTERS, WORK_MODES, JOB_TYPES, extractCompanyFromUrl, buildFilterSummary } from "@/lib/api/jobSearch";
 
 describe("Job Search — query helpers", () => {
   it("rejects empty query client-side", async () => {
-    // searchJobs returns error for empty input without calling edge function
     const { searchJobs } = await import("@/lib/api/jobSearch");
     const result = await searchJobs("   ");
     expect(result.success).toBe(false);
@@ -11,7 +10,6 @@ describe("Job Search — query helpers", () => {
   });
 
   it("trims whitespace — non-empty after trim passes validation", () => {
-    // Verify the trim logic: "  test  ".trim() is non-empty so it passes client validation
     const query = "  test  ";
     const trimmed = query.trim();
     expect(trimmed).toBe("test");
@@ -26,15 +24,50 @@ describe("Job Search — site filters", () => {
     expect(allSites!.value).toBe("");
   });
 
-  it("includes Google Careers filter", () => {
-    const google = SITE_FILTERS.find((f) => f.value.includes("google"));
+  it("Google Jobs targets google.com/search aggregator", () => {
+    const google = SITE_FILTERS.find((f) => f.label === "Google Jobs");
     expect(google).toBeDefined();
+    expect(google!.value).toBe("google.com/search");
+  });
+
+  it("LinkedIn targets individual job postings via /jobs/view", () => {
+    const linkedin = SITE_FILTERS.find((f) => f.label === "LinkedIn");
+    expect(linkedin).toBeDefined();
+    expect(linkedin!.value).toBe("linkedin.com/jobs/view");
   });
 
   it("each filter has non-empty label", () => {
     SITE_FILTERS.forEach((f) => {
       expect(f.label.length).toBeGreaterThan(0);
     });
+  });
+});
+
+describe("Job Search — filter constants", () => {
+  it("WORK_MODES includes Remote and Any", () => {
+    expect(WORK_MODES.find((m) => m.value === "remote")).toBeDefined();
+    expect(WORK_MODES.find((m) => m.value === "")).toBeDefined();
+  });
+
+  it("JOB_TYPES includes full-time, part-time, contract, internship", () => {
+    expect(JOB_TYPES.find((t) => t.value === "full-time")).toBeDefined();
+    expect(JOB_TYPES.find((t) => t.value === "part-time")).toBeDefined();
+    expect(JOB_TYPES.find((t) => t.value === "contract")).toBeDefined();
+    expect(JOB_TYPES.find((t) => t.value === "internship")).toBeDefined();
+  });
+});
+
+describe("Job Search — buildFilterSummary", () => {
+  it("returns empty for no filters", () => {
+    expect(buildFilterSummary({})).toBe("");
+  });
+
+  it("joins location and workMode", () => {
+    expect(buildFilterSummary({ location: "NYC", workMode: "remote" })).toBe("NYC · remote");
+  });
+
+  it("includes all three filters", () => {
+    expect(buildFilterSummary({ location: "SF", workMode: "hybrid", jobType: "contract" })).toBe("SF · hybrid · contract");
   });
 });
 

@@ -716,3 +716,29 @@ registerHelp({
   keywords: ['ats', 'score', 'health', 'keywords', 'impact', 'repetition', 'formatting', 'resume analysis'],
   relatedSlugs: ['application-detail', 'resume-tab'],
 });
+
+// ── Search Jobs ────────────────────────────────────────
+
+registerHelp({
+  slug: 'search-jobs',
+  title: 'Search Jobs',
+  summary:
+    'Search for job listings across career sites like Google Careers, LinkedIn, Indeed, and more using Firecrawl-powered web search. Import any result directly into your application pipeline with one click.',
+  steps: [
+    'Navigate to the Search Jobs page via the "Search Jobs" button on the Applications dashboard.',
+    'Enter a job title, company name, or keywords into the search bar.',
+    'Optionally select a site filter (e.g. Google Careers, LinkedIn) to narrow results.',
+    'Click "Search" to find matching job listings.',
+    'Review the results — each card shows the job title, website, and a description snippet.',
+    'Click "View" to open the original posting, or "Import" to add it to your applications.',
+    'Imported jobs appear in your Applications list ready for asset generation.',
+  ],
+  tips: [
+    'Use specific job titles and company names for better results.',
+    'The site filter prepends "site:" to your query — great for targeting specific career portals.',
+    'Imported jobs pre-fill the job URL and description, saving you the manual paste step.',
+    'After importing, navigate to the application to generate your resume, cover letter, and other assets.',
+  ],
+  route: '/search-jobs',
+  keywords: ['search', 'find', 'jobs', 'listings', 'import', 'firecrawl', 'career sites', 'google careers', 'linkedin', 'indeed'],
+});

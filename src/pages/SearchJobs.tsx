@@ -10,9 +10,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Search, ArrowLeft, Import, ExternalLink, Globe } from "lucide-react";
-import { searchJobs, SITE_FILTERS, extractCompanyFromUrl, type JobSearchResult } from "@/lib/api/jobSearch";
+import { Loader2, Search, ArrowLeft, Import, ExternalLink, Globe, SlidersHorizontal } from "lucide-react";
+import {
+  searchJobs,
+  SITE_FILTERS,
+  WORK_MODES,
+  JOB_TYPES,
+  extractCompanyFromUrl,
+  type JobSearchResult,
+  type SearchFilters,
+} from "@/lib/api/jobSearch";
 import { saveJobApplication } from "@/lib/api/jobApplication";
 import { BRAND } from "@/lib/branding";
 
@@ -25,6 +38,12 @@ const SearchJobs = () => {
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
   const [importingUrl, setImportingUrl] = useState<string | null>(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [filters, setFilters] = useState<SearchFilters>({
+    location: "",
+    workMode: "",
+    jobType: "",
+  });
 
   const handleSearch = async (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -33,7 +52,13 @@ const SearchJobs = () => {
     setLoading(true);
     setSearched(true);
     try {
-      const response = await searchJobs(query, site || undefined);
+      const activeFilters: SearchFilters = {
+        location: filters.location?.trim() || undefined,
+        workMode: filters.workMode || undefined,
+        jobType: filters.jobType || undefined,
+      };
+      const hasFilters = activeFilters.location || activeFilters.workMode || activeFilters.jobType;
+      const response = await searchJobs(query, site || undefined, undefined, hasFilters ? activeFilters : undefined);
       if (response.success && response.results) {
         setResults(response.results);
         if (response.results.length === 0) {
@@ -70,6 +95,8 @@ const SearchJobs = () => {
       setImportingUrl(null);
     }
   };
+
+  const activeFilterCount = [filters.location, filters.workMode, filters.jobType].filter(Boolean).length;
 
   return (
     <div className="container max-w-4xl mx-auto px-4 py-8 space-y-6">
@@ -115,6 +142,70 @@ const SearchJobs = () => {
           Search
         </Button>
       </form>
+
+      {/* Collapsible filters */}
+      <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>
+        <CollapsibleTrigger asChild>
+          <Button variant="outline" size="sm" className="gap-2">
+            <SlidersHorizontal className="h-3.5 w-3.5" />
+            Filters
+            {activeFilterCount > 0 && (
+              <span className="ml-1 rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-medium text-primary-foreground">
+                {activeFilterCount}
+              </span>
+            )}
+          </Button>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="pt-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 rounded-lg border border-border bg-muted/30 p-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground">Location</label>
+              <Input
+                placeholder="e.g. San Francisco, CA"
+                value={filters.location}
+                onChange={(e) => setFilters((f) => ({ ...f, location: e.target.value }))}
+                className="h-9"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground">Work Mode</label>
+              <Select
+                value={filters.workMode || "any"}
+                onValueChange={(v) => setFilters((f) => ({ ...f, workMode: v === "any" ? "" : v as SearchFilters["workMode"] }))}
+              >
+                <SelectTrigger className="h-9">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {WORK_MODES.map((m) => (
+                    <SelectItem key={m.value || "any"} value={m.value || "any"}>
+                      {m.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground">Job Type</label>
+              <Select
+                value={filters.jobType || "any"}
+                onValueChange={(v) => setFilters((f) => ({ ...f, jobType: v === "any" ? "" : v as SearchFilters["jobType"] }))}
+              >
+                <SelectTrigger className="h-9">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {JOB_TYPES.map((t) => (
+                    <SelectItem key={t.value || "any"} value={t.value || "any"}>
+                      {t.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
 
       {/* Results */}
       {loading && (

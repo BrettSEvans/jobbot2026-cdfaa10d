@@ -18,7 +18,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { query, site, limit } = await req.json();
+    const { query, site, limit, filters } = await req.json();
 
     if (!query || !query.trim()) {
       return new Response(
@@ -35,8 +35,20 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Build search query with optional site filter
+    // Build search query with optional site filter and constraint filters
     let searchQuery = query.trim();
+
+    // Append filter constraints as keywords
+    if (filters?.location) {
+      searchQuery += ` "${filters.location}"`;
+    }
+    if (filters?.workMode) {
+      searchQuery += ` ${filters.workMode}`;
+    }
+    if (filters?.jobType) {
+      searchQuery += ` ${filters.jobType}`;
+    }
+
     if (site) {
       searchQuery = `site:${site} ${searchQuery}`;
     }

@@ -144,7 +144,7 @@ registerTutorialStep({
   body: "After the separator in the tab strip, you'll find AI-proposed documents tailored to the job's industry — like a RAID Log, Architecture Diagram, or Executive Report. Click any tab to view it, or use the swap icon to replace it.",
   placement: "bottom",
   route: "/applications/:id",
-  order: 12,
+  order: 13,
 });
 
 registerTutorialStep({

@@ -251,19 +251,21 @@ registerHelp({
   slug: 'dynamic-assets',
   title: 'Industry Materials',
   summary:
-    'AI-proposed supplementary documents specific to the job and industry — such as RAID logs, roadmaps, architecture diagrams, or executive reports.',
+    'AI-proposed supplementary documents specific to the job and industry — such as RAID logs, roadmaps, architecture diagrams, or executive reports. They appear as tabs alongside Resume and Cover Letter in the unified tab strip.',
   steps: [
-    'Click "Propose Materials" to have the AI suggest relevant documents.',
+    'Click "+ Add Materials" at the end of the tab strip (or the "Propose Materials" CTA) to have the AI suggest relevant documents.',
     'Review and confirm the proposed documents.',
-    'Each document is auto-generated and appears in the Industry Materials bar.',
+    'Each document appears as a new tab in the unified tab strip with a status indicator dot.',
+    'Use the swap icon next to any industry tab to replace it with a different document type.',
   ],
   tips: [
-    'You can swap a document for a different type using the change button.',
-    'Each industry document has its own revision history and Vibe Edit chat.',
+    'Industry material tabs show colored status dots: green = complete, yellow = generating, red = error.',
+    'Each industry document has its own Vibe Edit chat, revision history, and PDF download via the shared action bar.',
+    'The ⋯ overflow menu provides access to Regenerate, Copy Text, and Revision History.',
   ],
   route: '/applications/:id',
-  keywords: ['dynamic', 'industry', 'propose', 'raid', 'roadmap', 'architecture', 'executive'],
-  relatedSlugs: ['asset-proposal', 'change-asset'],
+  keywords: ['dynamic', 'industry', 'propose', 'raid', 'roadmap', 'architecture', 'executive', 'tab'],
+  relatedSlugs: ['asset-proposal', 'change-asset', 'application-detail'],
 });
 
 registerHelp({

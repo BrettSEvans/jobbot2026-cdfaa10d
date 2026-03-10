@@ -165,7 +165,7 @@ export default function AssetActionBar({
           {hasContent && onEdit && (
             <DropdownMenuItem onClick={onEdit} disabled={isLocked || isPreviewOnly}>
               <Edit3 className="mr-2 h-4 w-4" />
-              {isEditing ? "Cancel Edit" : "Edit HTML"}
+              {isEditing ? "Cancel Edit" : "Edit Text"}
             </DropdownMenuItem>
           )}
 

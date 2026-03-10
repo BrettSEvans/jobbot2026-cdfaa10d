@@ -98,7 +98,6 @@ export default function AdminPromptLogTab() {
                   <TableHead>Prompt</TableHead>
                   <TableHead className="w-36">Category</TableHead>
                   <TableHead className="w-48">Outcome</TableHead>
-                  <TableHead className="w-10"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

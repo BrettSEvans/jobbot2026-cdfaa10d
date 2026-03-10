@@ -83,7 +83,7 @@ const Applications = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [applications, setApplications] = useState<JobApplication[]>([]);
-  const [deletedApps, setDeletedApps] = useState<any[]>([]);
+  const [deletedApps, setDeletedApps] = useState<JobApplication[]>([]);
   const [loading, setLoading] = useState(true);
   const [trashLoading, setTrashLoading] = useState(false);
   const [previewId, setPreviewId] = useState<string | null>(null);

@@ -19,16 +19,17 @@ import AdminSubscriptionsTab from "@/components/admin/AdminSubscriptionsTab";
 import AdminQATab from "@/components/admin/AdminQATab";
 import AdminGuideTab from "@/components/admin/AdminGuideTab";
 import AdminPromptLogTab from "@/components/admin/AdminPromptLogTab";
+import AdminCampaignsTab from "@/components/admin/AdminCampaignsTab";
 import AdminSidebar, { getVisibleSections } from "@/components/admin/AdminSidebar";
 
 export default function Admin() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { isAdmin, isQA, hasAnyRole, loading: roleLoading } = useUserRoles();
+  const { isAdmin, isQA, isMarketing, hasAnyRole, loading: roleLoading } = useUserRoles();
   const [activeBuildLabel, setActiveBuildLabel] = useState<string | null>(null);
 
   // Determine default section based on role
-  const visible = getVisibleSections(isAdmin, isQA);
+  const visible = getVisibleSections(isAdmin, isQA, isMarketing);
   const defaultSection = visible[0]?.id || "qa";
   const [activeSection, setActiveSection] = useState(defaultSection);
 
@@ -82,6 +83,7 @@ export default function Admin() {
       case "limits": return <AdminRateLimitsTab />;
       case "audit": return <AdminAuditTab />;
       case "prompt-log": return <AdminPromptLogTab />;
+      case "campaigns": return <AdminCampaignsTab />;
       case "qa": return <AdminQATab />;
       case "guide":
         return (
@@ -119,7 +121,7 @@ export default function Admin() {
               )}
             </div>
             <p className="text-sm text-muted-foreground">
-              {isAdmin && isQA ? "Full admin & QA access" : isAdmin ? "Administrator access" : "QA tester access"}
+              {isAdmin && isQA ? "Full admin & QA access" : isAdmin ? "Administrator access" : isMarketing ? "Marketing access" : "QA tester access"}
             </p>
           </div>
         </div>
@@ -131,6 +133,7 @@ export default function Admin() {
             onSectionChange={setActiveSection}
             isAdmin={isAdmin}
             isQA={isQA}
+            isMarketing={isMarketing}
           />
           <div className="flex-1 min-w-0">
             {renderSection()}

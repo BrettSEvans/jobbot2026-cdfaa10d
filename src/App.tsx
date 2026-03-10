@@ -38,6 +38,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { BRAND } from "@/lib/branding";
 import { initAnalytics, analytics } from "@/lib/analytics";
+import { captureAttribution, getStoredAttribution, clearAttribution } from "@/lib/marketingAttribution";
 import "@/lib/helpEntries"; // register all help topics
 import "@/lib/qaEntries"; // register all QA test cases
 import "@/lib/tutorial/steps"; // register tutorial steps
@@ -59,16 +60,26 @@ function AuthenticatedApp() {
       return;
     }
     // Identify user in analytics
-    analytics.identify(user.id, { email: user.email });
+    const attribution = getStoredAttribution();
+    analytics.identify(user.id, { email: user.email, ...(attribution ?? {}) });
 
     supabase
       .from("profiles")
-      .select("approval_status")
+      .select("approval_status, referral_source")
       .eq("id", user.id)
       .single()
       .then(({ data }) => {
         setApprovalStatus(data?.approval_status ?? "pending");
         setApprovalLoading(false);
+
+        // Persist attribution to profile if not already stored
+        if (attribution && !data?.referral_source) {
+          supabase
+            .from("profiles")
+            .update({ referral_source: attribution as any })
+            .eq("id", user.id)
+            .then(() => clearAttribution());
+        }
       });
   }, [user]);
 
@@ -141,8 +152,8 @@ function AuthenticatedApp() {
 const App = () => {
   useEffect(() => {
     document.title = `${BRAND.name} — ${BRAND.tagline}`;
-    // Initialize analytics (no-op without API key — debug mode in dev)
     initAnalytics(import.meta.env.VITE_POSTHOG_KEY);
+    captureAttribution(); // Capture UTM/ref params before auth redirect
   }, []);
 
   return (

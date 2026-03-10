@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 import {
-  UserCheck, FileText, FileCode, Users, CreditCard, Gauge, ScrollText, BookOpen, FlaskConical, MessageSquareText,
+  UserCheck, FileText, FileCode, Users, CreditCard, Gauge, ScrollText, BookOpen, FlaskConical, MessageSquareText, Megaphone,
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 

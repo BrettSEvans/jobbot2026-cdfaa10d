@@ -78,11 +78,14 @@ export function useApplicationDetail(id: string | undefined): ApplicationState {
   const bgJob = useBackgroundJob(id);
   const isBgGenerating = !!(bgJob && !["complete", "error"].includes(bgJob.status));
 
+  const editingCoverLetterRef = useRef(editingCoverLetter);
+  useEffect(() => { editingCoverLetterRef.current = editingCoverLetter; }, [editingCoverLetter]);
+
   const loadApplication = async (appId: string) => {
     try {
       const data = await getJobApplication(appId);
       setApp(data);
-      if (!editingCoverLetter) {
+      if (!editingCoverLetterRef.current) {
         setCoverLetter(data.cover_letter || "");
       }
       setJobDescription(data.job_description_markdown || "");

@@ -31,7 +31,10 @@ import {
   Layers,
   FileUser,
   ChevronDown,
+  Info,
 } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { isBlockedSite, getBlockedReason } from "@/lib/blockedScrapeSites";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -55,6 +58,7 @@ const NewApplication = () => {
   const [companyUrl, setCompanyUrl] = useState("");
   const [manualJobDescription, setManualJobDescription] = useState("");
   const [useManualInput, setUseManualInput] = useState(false);
+  const [blockedSiteMessage, setBlockedSiteMessage] = useState<string | null>(null);
 
   // State
   const [step, setStep] = useState<Step>("input");
@@ -87,6 +91,22 @@ const NewApplication = () => {
       else if (resumes.length > 0) setSelectedSourceResumeId(resumes[0].id);
     }).catch(console.warn);
   }, []);
+
+  // Auto-detect blocked scraping sites when URL changes
+  useEffect(() => {
+    if (!jobUrl.trim() || useManualInput) {
+      setBlockedSiteMessage(null);
+      return;
+    }
+    if (isBlockedSite(jobUrl)) {
+      const reason = getBlockedReason(jobUrl);
+      setBlockedSiteMessage(reason);
+      setUseManualInput(true);
+    } else {
+      setBlockedSiteMessage(null);
+    }
+  }, [jobUrl]);
+
 
   const isValidUrl = (str: string) => {
     try {
@@ -122,7 +142,13 @@ const NewApplication = () => {
       toast({ title: "Application created!", description: "Your materials are being generated in the background." });
       navigate(`/applications/${appId}`);
     } catch (err: unknown) {
-      toast({ title: "Error", description: err instanceof Error ? err.message : "Unknown error", variant: "destructive" });
+      const errMsg = err instanceof Error ? err.message : "Unknown error";
+      const isScrapeBlocked = errMsg.includes("blocks automated scraping");
+      if (isScrapeBlocked) {
+        setUseManualInput(true);
+        setBlockedSiteMessage(errMsg);
+      }
+      toast({ title: "Error", description: errMsg, variant: "destructive" });
       setStep("input");
     }
   };
@@ -177,14 +203,20 @@ const NewApplication = () => {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => setUseManualInput(!useManualInput)}
+                      onClick={() => { setUseManualInput(!useManualInput); setBlockedSiteMessage(null); }}
                       className="text-xs"
                     >
                       {useManualInput ? "Use URL instead" : "Paste text instead"}
                     </Button>
                   </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-3">
+                  {blockedSiteMessage && (
+                    <Alert>
+                      <Info className="h-4 w-4" />
+                      <AlertDescription>{blockedSiteMessage}</AlertDescription>
+                    </Alert>
+                  )}
                   {useManualInput ? (
                     <Textarea
                       placeholder="Paste the full job description text here..."

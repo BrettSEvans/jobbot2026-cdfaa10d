@@ -11,6 +11,7 @@ import {
   searchCompanyIcon,
 } from "@/lib/api/jobApplication";
 import { scrapeJob, streamTailoredLetter } from "@/lib/api/coverLetter";
+import { addBlockedSite, removeSiteBlock } from "@/lib/blockedScrapeSites";
 import { getProfileContextForPrompt } from "@/lib/api/profile";
 import { streamResumeGeneration, getResumeStyle } from "@/lib/api/resume";
 import { cleanHtml } from "@/lib/cleanHtml";
@@ -201,12 +202,17 @@ class BackgroundGenerationManager {
         try {
           const result = await scrapeJob(jobUrl);
           markdown = result.markdown;
+          // Successful scrape — if this was a recheck of a previously blocked site, unblock it
+          const scrapedHost = new URL(jobUrl.startsWith("http") ? jobUrl : `https://${jobUrl}`).hostname;
+          removeSiteBlock(scrapedHost);
         } catch (scrapeErr: unknown) {
           const msg = scrapeErr instanceof Error ? scrapeErr.message : String(scrapeErr);
           const isUnsupported = msg.includes("do not support this site") || msg.includes("403");
           if (isUnsupported) {
+            const blockedHost = new URL(jobUrl.startsWith("http") ? jobUrl : `https://${jobUrl}`).hostname;
+            addBlockedSite(blockedHost);
             throw new Error(
-              `This site (${new URL(jobUrl.startsWith("http") ? jobUrl : `https://${jobUrl}`).hostname}) blocks automated scraping. Please use "Paste text instead" to enter the job description manually.`
+              `This site (${blockedHost}) blocks automated scraping. Please use "Paste text instead" to enter the job description manually.`
             );
           }
           throw scrapeErr;

@@ -52,10 +52,6 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         query: searchQuery,
         limit: Math.min(limit || 10, 20),
-        scrapeOptions: {
-          formats: ['markdown'],
-          onlyMainContent: true,
-        },
       }),
     });
 

@@ -1,5 +1,5 @@
 /**
- * AssetProposalCard - Shows 6 AI-proposed document types, lets user select exactly 3.
+ * AssetProposalCard - Shows AI-proposed document types for user selection.
  */
 import { useState } from "react";
 import { Button } from "@/components/ui/button";

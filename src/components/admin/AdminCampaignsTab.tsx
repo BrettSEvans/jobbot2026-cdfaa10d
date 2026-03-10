@@ -29,6 +29,7 @@ interface Campaign {
   utm_content: string | null;
   utm_term: string | null;
   ref_code: string | null;
+  max_signups: number | null;
   created_at: string;
 }
 

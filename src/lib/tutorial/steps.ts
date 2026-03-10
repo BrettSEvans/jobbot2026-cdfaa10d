@@ -133,7 +133,7 @@ registerTutorialStep({
   body: "Each resume is tailored to the specific job posting. Choose from different resume styles, regenerate with fresh content, and download as a professionally formatted PDF.",
   placement: "bottom",
   route: "/applications/:id",
-  order: 11,
+  order: 12,
 });
 
 registerTutorialStep({

@@ -204,6 +204,11 @@ const ApplicationDetail = () => {
       const { getLayoutStyleForAsset } = await import("@/lib/assetLayoutStyles");
       const layoutStyle = getLayoutStyleForAsset(asset.asset_name, dynamicAssets.map(a => a.asset_name));
 
+      const siblingStructures = buildSiblingStructures(
+        dynamicAssets.map(a => ({ asset_name: a.asset_name, html: a.html })),
+        asset.asset_name,
+      );
+
       let accumulated = "";
       await streamDynamicAssetGeneration({
         assetName: asset.asset_name,
@@ -214,6 +219,7 @@ const ApplicationDetail = () => {
         jobTitle: state.jobTitle,
         branding: state.app?.branding,
         layoutStyle,
+        siblingStructures,
         onDelta: (text) => { accumulated += text; },
         onDone: () => {},
       });

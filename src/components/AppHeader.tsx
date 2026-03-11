@@ -1,7 +1,7 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { LogOut, Moon, Sun, ArrowRightLeft, Menu, Shield } from "lucide-react";
+import { LogOut, Moon, Sun, ArrowRightLeft, Menu, Shield, Briefcase, Layout, CreditCard, User, Search } from "lucide-react";
 import BrandLogo from "@/components/BrandLogo";
 import { useTheme } from "@/hooks/useTheme";
 import { useNavigationGuard } from "@/hooks/useNavigationGuard";
@@ -38,11 +38,12 @@ export default function AppHeader({ onSignOut }: AppHeaderProps) {
     : "";
 
   const links = [
-    { to: "/", label: "Applications", match: (p: string) => p === "/" || p === "/applications" },
-    { to: "/templates", label: "Templates", match: (p: string) => p === "/templates" },
-    { to: "/pricing", label: "Membership", match: (p: string) => p === "/pricing" },
-    { to: "/profile", label: "Profile", match: (p: string) => p === "/profile" },
-    ...(!rolesLoading && hasAnyRole ? [{ to: "/admin", label: "Admin", match: (p: string) => p === "/admin" }] : []),
+    { to: "/", label: "Applications", icon: Briefcase, match: (p: string) => p === "/" || p === "/applications" },
+    { to: "/templates", label: "Templates", icon: Layout, match: (p: string) => p === "/templates" },
+    { to: "/search-jobs", label: "Search Jobs", icon: Search, match: (p: string) => p === "/search-jobs" },
+    { to: "/pricing", label: "Membership", icon: CreditCard, match: (p: string) => p === "/pricing" },
+    { to: "/profile", label: "Profile", icon: User, match: (p: string) => p === "/profile" },
+    ...(!rolesLoading && hasAnyRole ? [{ to: "/admin", label: "Admin", icon: Shield, match: (p: string) => p === "/admin" }] : []),
   ];
 
   const trialBadgeLabel = tier === "free"
@@ -101,7 +102,7 @@ export default function AppHeader({ onSignOut }: AppHeaderProps) {
             </button>
             {/* Desktop nav — hidden on mobile */}
             <nav className="hidden md:flex items-center gap-1">
-              {links.map((l) => (
+              {links.filter(l => l.to !== "/search-jobs").map((l) => (
                 <button
                   key={l.to}
                   onClick={() => guardedNavigate(() => navigate(l.to))}
@@ -167,21 +168,25 @@ export default function AppHeader({ onSignOut }: AppHeaderProps) {
                   </SheetTitle>
                 </SheetHeader>
                 <nav className="flex flex-col p-2">
-                  {links.map((l) => (
-                    <SheetClose asChild key={l.to}>
-                      <button
-                        onClick={() => guardedNavigate(() => navigate(l.to))}
-                        className={cn(
-                          "w-full text-left px-4 py-3 rounded-md text-sm font-medium transition-colors",
-                          l.match(pathname)
-                            ? "bg-accent text-accent-foreground"
-                            : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
-                        )}
-                      >
-                        {l.label}
-                      </button>
-                    </SheetClose>
-                  ))}
+                  {links.map((l) => {
+                    const Icon = l.icon;
+                    return (
+                      <SheetClose asChild key={l.to}>
+                        <button
+                          onClick={() => guardedNavigate(() => navigate(l.to))}
+                          className={cn(
+                            "w-full text-left flex items-center gap-3 px-4 py-3.5 rounded-md text-sm font-medium transition-colors min-h-[44px]",
+                            l.match(pathname)
+                              ? "bg-accent text-accent-foreground"
+                              : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                          )}
+                        >
+                          <Icon className="h-4.5 w-4.5 shrink-0" />
+                          {l.label}
+                        </button>
+                      </SheetClose>
+                    );
+                  })}
                 </nav>
                 <div className="border-t p-4 space-y-3">
                   {displayName && (

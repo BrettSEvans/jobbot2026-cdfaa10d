@@ -1023,6 +1023,18 @@ function TestCaseCard({
             {detailsOpen ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
           </Button>
 
+          {isCustom && onDelete && !isCompleted && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+              title="Delete custom test"
+              onClick={() => setDeleteConfirm(true)}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          )}
+
           {isFailed && !isFixed && !isCompleted && (
             <Button
               variant="ghost"

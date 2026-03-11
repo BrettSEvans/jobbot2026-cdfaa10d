@@ -168,21 +168,25 @@ export default function AppHeader({ onSignOut }: AppHeaderProps) {
                   </SheetTitle>
                 </SheetHeader>
                 <nav className="flex flex-col p-2">
-                  {links.map((l) => (
-                    <SheetClose asChild key={l.to}>
-                      <button
-                        onClick={() => guardedNavigate(() => navigate(l.to))}
-                        className={cn(
-                          "w-full text-left px-4 py-3 rounded-md text-sm font-medium transition-colors",
-                          l.match(pathname)
-                            ? "bg-accent text-accent-foreground"
-                            : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
-                        )}
-                      >
-                        {l.label}
-                      </button>
-                    </SheetClose>
-                  ))}
+                  {links.map((l) => {
+                    const Icon = l.icon;
+                    return (
+                      <SheetClose asChild key={l.to}>
+                        <button
+                          onClick={() => guardedNavigate(() => navigate(l.to))}
+                          className={cn(
+                            "w-full text-left flex items-center gap-3 px-4 py-3.5 rounded-md text-sm font-medium transition-colors min-h-[44px]",
+                            l.match(pathname)
+                              ? "bg-accent text-accent-foreground"
+                              : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                          )}
+                        >
+                          <Icon className="h-4.5 w-4.5 shrink-0" />
+                          {l.label}
+                        </button>
+                      </SheetClose>
+                    );
+                  })}
                 </nav>
                 <div className="border-t p-4 space-y-3">
                   {displayName && (

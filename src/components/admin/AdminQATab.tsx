@@ -787,6 +787,104 @@ export default function AdminQATab() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Add Custom Test Dialog */}
+      <Dialog open={addTestOpen} onOpenChange={setAddTestOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Custom Test Case</DialogTitle>
+            <DialogDescription>Create a new manual QA test. It will be available in future test runs.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 max-h-[60vh] overflow-y-auto">
+            <div>
+              <Label>Title *</Label>
+              <Input
+                placeholder="e.g. Verify export works on Safari"
+                value={newTest.title}
+                onChange={(e) => setNewTest((p) => ({ ...p, title: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label>Area</Label>
+              <Input
+                placeholder="e.g. Cross-cutting, Admin, Auth"
+                value={newTest.area}
+                onChange={(e) => setNewTest((p) => ({ ...p, area: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label>Route (optional)</Label>
+              <Input
+                placeholder="e.g. /applications"
+                value={newTest.route}
+                onChange={(e) => setNewTest((p) => ({ ...p, route: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label>Steps (one per line) *</Label>
+              <Textarea
+                placeholder={"Navigate to /page.\nClick the button.\nVerify the result."}
+                value={newTest.steps}
+                onChange={(e) => setNewTest((p) => ({ ...p, steps: e.target.value }))}
+                rows={4}
+              />
+            </div>
+            <div>
+              <Label>Expected Results (one per line) *</Label>
+              <Textarea
+                placeholder={"The page loads correctly.\nData is displayed."}
+                value={newTest.expectedResults}
+                onChange={(e) => setNewTest((p) => ({ ...p, expectedResults: e.target.value }))}
+                rows={3}
+              />
+            </div>
+            <div>
+              <Label>Tags (comma-separated)</Label>
+              <Input
+                placeholder="e.g. smoke, regression"
+                value={newTest.tags}
+                onChange={(e) => setNewTest((p) => ({ ...p, tags: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label>Estimated Minutes</Label>
+              <Input
+                type="number"
+                min={1}
+                max={60}
+                value={newTest.estimatedMinutes}
+                onChange={(e) => setNewTest((p) => ({ ...p, estimatedMinutes: parseInt(e.target.value) || 3 }))}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddTestOpen(false)}>Cancel</Button>
+            <Button
+              disabled={!newTest.title.trim() || !newTest.steps.trim() || !newTest.expectedResults.trim()}
+              onClick={async () => {
+                const ok = await customTests.addCustomTest({
+                  title: newTest.title.trim(),
+                  area: newTest.area.trim() || "Custom",
+                  route: newTest.route.trim() || undefined,
+                  steps: newTest.steps.split("\n").map((s) => s.trim()).filter(Boolean),
+                  expectedResults: newTest.expectedResults.split("\n").map((s) => s.trim()).filter(Boolean),
+                  tags: newTest.tags.split(",").map((s) => s.trim()).filter(Boolean),
+                  estimatedMinutes: newTest.estimatedMinutes,
+                  requiresAuth: true,
+                  requiresAdmin: false,
+                  preconditions: [],
+                });
+                if (ok) {
+                  setAddTestOpen(false);
+                  setNewTest({ title: "", area: "Custom", route: "", steps: "", expectedResults: "", tags: "", estimatedMinutes: 3 });
+                }
+              }}
+            >
+              Add Test
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

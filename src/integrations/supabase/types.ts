@@ -576,9 +576,11 @@ export type Database = {
           id: string
           key_skills: string[] | null
           last_name: string | null
+          linkedin_url: string | null
           master_cover_letter: string | null
           middle_name: string | null
           onboarding_completed_at: string | null
+          phone: string | null
           preferred_tone: string | null
           referral_source: Json | null
           resume_text: string | null
@@ -596,9 +598,11 @@ export type Database = {
           id: string
           key_skills?: string[] | null
           last_name?: string | null
+          linkedin_url?: string | null
           master_cover_letter?: string | null
           middle_name?: string | null
           onboarding_completed_at?: string | null
+          phone?: string | null
           preferred_tone?: string | null
           referral_source?: Json | null
           resume_text?: string | null
@@ -616,9 +620,11 @@ export type Database = {
           id?: string
           key_skills?: string[] | null
           last_name?: string | null
+          linkedin_url?: string | null
           master_cover_letter?: string | null
           middle_name?: string | null
           onboarding_completed_at?: string | null
+          phone?: string | null
           preferred_tone?: string | null
           referral_source?: Json | null
           resume_text?: string | null
@@ -1213,6 +1219,10 @@ export type Database = {
       }
       campaign_auto_approve: {
         Args: { _user_id: string; _utm_campaign: string }
+        Returns: boolean
+      }
+      check_duplicate_trial_signup: {
+        Args: { p_email?: string; p_linkedin?: string; p_phone?: string }
         Returns: boolean
       }
       delete_and_reassign_resume: {

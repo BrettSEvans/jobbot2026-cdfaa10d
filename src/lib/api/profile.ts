@@ -15,6 +15,8 @@ export interface UserProfile {
   key_skills: string[];
   preferred_tone: string;
   master_cover_letter: string | null;
+  phone: string | null;
+  linkedin_url: string | null;
 }
 
 export interface UserResume {
@@ -51,6 +53,8 @@ export async function getProfile(): Promise<UserProfile | null> {
     key_skills: data.key_skills ?? [],
     preferred_tone: data.preferred_tone ?? "professional",
     master_cover_letter: data.master_cover_letter ?? null,
+    phone: data.phone ?? null,
+    linkedin_url: data.linkedin_url ?? null,
   };
 }
 
@@ -58,6 +62,7 @@ const ALLOWED_PROFILE_FIELDS = [
   "first_name", "middle_name", "last_name", "display_name",
   "resume_text", "years_experience", "target_industries",
   "key_skills", "preferred_tone", "master_cover_letter",
+  "phone", "linkedin_url",
 ] as const;
 
 export async function updateProfile(updates: Partial<Omit<UserProfile, "id">>): Promise<void> {
@@ -78,6 +83,40 @@ export async function updateProfile(updates: Partial<Omit<UserProfile, "id">>): 
     .eq("id", user.id);
 
   if (error) throw error;
+}
+
+export interface ResumeContactInfo {
+  phone: string | null;
+  email: string | null;
+  linkedin_url: string | null;
+}
+
+export async function extractResumeContactInfo(storagePath: string): Promise<ResumeContactInfo> {
+  const { data, error } = await supabase.functions.invoke("extract-resume-contact-info", {
+    body: { storagePath },
+  });
+  if (error) {
+    console.error("Resume contact extraction failed:", error);
+    return { phone: null, email: null, linkedin_url: null };
+  }
+  return {
+    phone: data?.phone ?? null,
+    email: data?.email ?? null,
+    linkedin_url: data?.linkedin_url ?? null,
+  };
+}
+
+export async function checkDuplicateTrialSignup(phone: string | null, linkedin: string | null): Promise<boolean> {
+  const { data, error } = await supabase.rpc("check_duplicate_trial_signup", {
+    p_email: null,
+    p_phone: phone,
+    p_linkedin: linkedin,
+  });
+  if (error) {
+    console.error("Duplicate trial check failed:", error);
+    return false;
+  }
+  return !!data;
 }
 
 export async function extractResumeText(storagePath: string): Promise<string> {

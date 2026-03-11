@@ -1,95 +1,297 @@
+# JobBot Maui Plan — Architect-Reviewed Rewrite
 
+Based on competitive landscape analysis, product critique, and a critical architect review that identified 17 gaps across data model design, error handling, performance, security, and testing strategy.
 
-## Plan: Remove Free Trial Limits, Align Pricing, Extract Contact Info from Resume Upload
+---
 
-### Part 1: Remove Portfolio Limits & Fix Pricing Text
+## Feature Priority Matrix
 
-**`src/lib/subscriptionTiers.ts`**
-- Set `portfolioItemsPerApp: -1` for free tier
-- Update free tier features: `"5 resumes"` → `"5 applications per month"`, remove `"2 portfolio items per resume"`, add `"Resume & cover letter per app"`
+| # | Update | Priority | Effort | Status |
+|---|--------|----------|--------|--------|
+| 1 | Subscription Infrastructure | CRITICAL | 1–2 weeks | ✅ DONE |
+| 2 | Public Landing Page | CRITICAL | 3–5 days | ✅ DONE |
+| 3 | ATS Match Score | HIGH | 3–5 days | 🔲 TODO |
+| 4 | Pipeline Stages (Kanban) | HIGH | 5–7 days | 🔲 TODO |
+| 5 | DOCX Export | HIGH | 2–3 days | 🔲 TODO |
+| 6 | Mobile Responsive UI | MEDIUM | 5–7 days | 🔲 TODO |
+| 7 | Selective Asset Generation | MEDIUM | 3–4 days | 🔲 TODO |
+| 8 | Onboarding Flow | MEDIUM | 3–4 days | 🔲 TODO |
+| 9 | Code Cleanup | LOW | 3–4 days | 🔲 TODO |
+| 10 | Chrome Extension (Infra) | LOW | 2–3 days | 🔲 TODO |
 
-No changes needed in Landing.tsx or Pricing.tsx — they render features directly from `TIER_CONFIGS`.
+---
 
-### Part 2: Block Duplicate Free Trial Signups (Passive Collection from Resume)
+## Phased Schedule
 
-Instead of forcing users to enter phone/email/LinkedIn at signup, we extract these from the resume when uploaded.
+### Phase 1 — Launch-Blocking (COMPLETE)
+- ✅ Subscription Infrastructure: 3-tier model, feature gating, rate limiting
+- ✅ Public Landing Page: Hero, features, pricing, CTA
 
-**Database migration:**
-- Add `phone`, `linkedin_url` columns (text, nullable) to `profiles` table with unique partial indexes (only enforce uniqueness when non-null)
-- Create `check_duplicate_trial_signup(p_email text, p_phone text, p_linkedin text)` — a `SECURITY DEFINER` function that returns true if any *other* profile has matching phone or linkedin_url. Email is already enforced by auth.
+### Phase 2 — Competitive Parity
+Items 3–5. Close visible feature gaps vs Teal, Rezi, Swooped.
 
-**New edge function or extend `extract-resume-text`:**
-- Create a new edge function `extract-resume-contact-info` that uses Gemini to scan the resume PDF and return structured JSON: `{ phone, email, linkedin_url }`.
-- This is a separate, lightweight call from the text extraction — runs in parallel or sequentially after upload.
+### Phase 3 — Retention & Polish
+Items 6–8. Mobile support, faster generation, onboarding.
 
-**`src/components/profile/ResumeCard.tsx`** — After resume upload succeeds:
-- Show a spinner overlay on the card with text "Gathering resume information..." for at least 2 seconds
-- Call `extract-resume-contact-info` with the storage path
-- On response, populate `phone` and `linkedin_url` on the profile (save to DB)
-- Present newly found phone and LinkedIn as editable fields in the IdentityCard (they appear after extraction completes)
+### Phase 4 — Maintenance & Future
+Items 9–10. Tech debt cleanup, Chrome extension infra.
 
-**`src/components/profile/IdentityCard.tsx`** — Add phone and LinkedIn URL fields:
-- Two new optional Input fields: "Phone" and "LinkedIn URL"
-- Pre-populated from profile data; user can edit and save
-- These are always visible (empty until resume scan fills them)
+---
 
-**`src/pages/Profile.tsx`** — Wire new state for `phone` and `linkedinUrl`:
-- Add state vars, include in dirty tracking, include in save payload
+## Feature 1: ATS Match Score
 
-**`src/lib/api/profile.ts`** — Add `phone` and `linkedin_url` to:
-- `UserProfile` interface
-- `getProfile()` mapping
-- `ALLOWED_PROFILE_FIELDS` whitelist
+### Database
+```sql
+ALTER TABLE job_applications
+  ADD COLUMN ats_score jsonb DEFAULT NULL,
+  ADD COLUMN ats_scored_at timestamptz DEFAULT NULL;
+```
+Add `ats_score` and `ats_scored_at` to `ALLOWED_JOB_APP_FIELDS`.
 
-**`src/pages/Auth.tsx`** — On signup, after account creation:
-- No UI changes at signup (no phone/LinkedIn fields)
-- The duplicate check happens passively: when a resume is uploaded and contact info is extracted, we call `check_duplicate_trial_signup` — if a match is found on a *different* user, we show a warning toast: "It looks like you may already have an account. Please sign in with your original credentials or upgrade."
-- The check is informational (warning) rather than blocking, since the contact info comes from a resume and could be shared legitimately
+### Edge Function: `score-ats-match/index.ts`
+- Input: `{ jobDescription, resumeHtml }`
+- Model: `google/gemini-2.5-flash` with tool-calling for structured output
+- Output schema:
+  ```json
+  {
+    "score": 78,
+    "matchedKeywords": ["React", "TypeScript"],
+    "missingKeywords": ["Kubernetes", "Terraform"],
+    "suggestions": ["Add cloud infrastructure experience"],
+    "keywordGroups": { "React": ["React", "React.js", "ReactJS"] }
+  }
+  ```
+- Keyword grouping: prompt instructs model to cluster synonyms
+- Score calibration rubric: 0–30 poor, 31–60 partial, 61–80 strong, 81–100 near-perfect
 
-**Wait — re-reading the requirement**: The user said "block any user who tries to sign up as free if the same phone number, email address or linkedin account has been before." This means we need to actually *prevent* duplicate free trials.
+### Caching & Invalidation
+- Store in `ats_score` column with `ats_scored_at` timestamp
+- Re-score only when: (a) user clicks "Rescan", (b) `resume_html` changes (hash comparison), (c) score > 7 days old
+- Tier gating: Free = 2 scores/day, Pro = 20/day, Premium = unlimited
 
-**Revised approach for blocking:**
-- The `check_duplicate_trial_signup` RPC is called during resume upload after extraction
-- If a duplicate is found, we surface a prominent warning but still allow the upload (the account already exists at this point)
-- The real gate: modify `handle_new_user()` trigger — when a new user signs up, their profile starts as `pending`. When contact info is later extracted from resume and matches an existing profile, we flag the account
-- Better: Add a `trial_blocked` boolean to profiles. When resume contact extraction finds a duplicate phone/linkedin, set `trial_blocked = true` and show an upgrade gate
+### UI: `AtsScoreCard.tsx`
+- Circular gauge (0–100), color-coded (red < 50, yellow 50–79, green 80+)
+- Expandable keyword panel with matched/missing lists
+- "Rescan" button with cooldown indicator
+- Placed in ApplicationDetail header
 
-Actually, the simplest robust approach: since we can't check at signup (we don't have the info yet), we check when resume is uploaded. If duplicates are found, we block trial access by setting the subscription to expired.
+### Auto-trigger
+After resume generation completes in `backgroundGenerator.ts`, queue ATS scoring as non-blocking follow-up step.
 
-### Part 3: Resume Upload Spinner UX
+### Acceptance Criteria
+- Score latency < 5s for 95th percentile
+- Score variance ≤ ±5 points on identical inputs across 10 runs
+- Free tier enforces 2/day limit with upgrade gate
 
-**`src/components/profile/ResumeCard.tsx`**:
-- After `uploadResumePdf()` succeeds, show a scanning state: a spinner + "Gathering resume information..." message overlaying the resume list area
-- Minimum display time: 2 seconds (use `Promise.all` with a `delay(2000)`)
-- During this time, call the new `extract-resume-contact-info` edge function
-- On completion: update profile fields, dismiss spinner, show toast with what was found
+---
 
-### Part 4: New Edge Function `extract-resume-contact-info`
+## Feature 2: Application Pipeline Stages (Kanban)
 
-**`supabase/functions/extract-resume-contact-info/index.ts`**:
-- Input: `{ storagePath }`
-- Downloads PDF from storage, sends to Gemini with prompt: "Extract contact information from this resume. Return JSON: { phone, email, linkedin_url }. Return null for any field not found."
-- Returns the structured JSON
-- Add to `supabase/config.toml`: `[functions.extract-resume-contact-info]` with `verify_jwt = false`
+### Database
+```sql
+ALTER TABLE job_applications
+  ADD COLUMN pipeline_stage text NOT NULL DEFAULT 'applied',
+  ADD COLUMN stage_changed_at timestamptz DEFAULT now();
 
-### Part 5: Update Help, Tutorial, QA
+CREATE TABLE pipeline_stage_history (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  application_id uuid NOT NULL REFERENCES job_applications(id) ON DELETE CASCADE,
+  from_stage text,
+  to_stage text NOT NULL,
+  changed_at timestamptz NOT NULL DEFAULT now(),
+  user_id uuid NOT NULL
+);
+ALTER TABLE pipeline_stage_history ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can CRUD own stage history"
+  ON pipeline_stage_history FOR ALL
+  USING (user_id = auth.uid());
+```
+Add `pipeline_stage` and `stage_changed_at` to `ALLOWED_JOB_APP_FIELDS`.
 
-**`src/lib/helpEntries.ts`** — Update profile help entry to mention that phone and LinkedIn are auto-extracted from resume upload.
+### Stage Definitions (`src/lib/pipelineStages.ts`)
+```
+bookmarked → applied → interviewing → offer → accepted
+                                    ↘ rejected
+```
+- All transitions allowed but "illogical" moves show confirmation dialog
+- `updatePipelineStage()` writes to both `job_applications` and `pipeline_stage_history`
 
-**`src/lib/qaEntries.ts`** — Add QA test case for resume contact extraction: upload PDF → spinner shows for 2+ seconds → phone/LinkedIn fields populated in Identity card.
+### UI: `KanbanBoard.tsx`
+- Uses `@hello-pangea/dnd` (maintained fork, touch support built-in)
+- Cards: company icon, role, days-in-stage badge, ATS score mini-badge
+- View toggle in `Applications.tsx` header: List (default) | Kanban
+- Stage dropdown in `ApplicationDetail.tsx` header
+- Mobile: horizontal scroll with CSS snap
 
-### Files to Change
+### Accessibility
+- Keyboard navigation: arrow keys between columns, Enter to drop
+- ARIA labels on all drag handles
+- Screen reader announcements for stage changes
 
-| File | Change |
+---
+
+## Feature 3: DOCX Export
+
+### Edge Function: `export-docx/index.ts`
+- Uses `docx` npm package via Deno npm: specifier
+- Input: `{ html, assetType, filename }`
+- Output: binary blob, `Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document`
+- Limits: max 500KB input HTML, 60s timeout, graceful error on oversized input
+
+### Client: `src/lib/docxExport.ts`
+- `downloadAsDocx(html, filename)` — calls edge function, triggers blob download
+- Naming: `{asset-type}-{company}-{role}.docx`
+
+### UI
+- DOCX button alongside PDF in `HtmlAssetTab.tsx` for resume and cover letter only
+- `FileDown` icon with "DOCX" label
+- Tier gating: Free = PDF only, Pro/Premium = PDF + DOCX (upgrade gate for Free)
+
+---
+
+## Feature 4: Mobile Responsive UI
+
+### Breakpoint Strategy
+| Breakpoint | Layout |
 |---|---|
-| `src/lib/subscriptionTiers.ts` | Fix free tier limits & features |
-| DB migration | Add `phone`, `linkedin_url` to profiles; create `check_duplicate_trial_signup` RPC; partial unique indexes |
-| `supabase/functions/extract-resume-contact-info/index.ts` | New edge function |
-| `supabase/config.toml` | — auto-configured, no manual edit needed |
-| `src/lib/api/profile.ts` | Add phone, linkedin_url to interface + whitelist |
-| `src/components/profile/IdentityCard.tsx` | Add phone + LinkedIn fields |
-| `src/components/profile/ResumeCard.tsx` | Add post-upload scanning spinner + contact extraction call |
-| `src/pages/Profile.tsx` | Wire phone/linkedinUrl state + dirty tracking |
-| `src/lib/helpEntries.ts` | Update profile help |
-| `src/lib/qaEntries.ts` | Add contact extraction QA test |
+| `< 640px` (sm) | Single column, card layouts, hamburger nav, full-width inputs |
+| `640–1024px` (md) | Two-column where appropriate, condensed table |
+| `> 1024px` (lg) | Current desktop layout unchanged |
 
+### Component Changes
+| Component | Mobile behavior |
+|---|---|
+| `AppHeader` | Hamburger → `Sheet` drawer with nav links, theme toggle, sign out |
+| `Applications` table | Card list with company icon, role, status badge |
+| `ApplicationDetail` tabs | Horizontal scrollable tab bar, full-width iframe at 50vh |
+| `NewApplication` form | Single column, sticky "Generate" CTA at bottom |
+| `KanbanBoard` | Horizontal scroll with snap, sticky column headers |
+| `WysiwygEditor` | Simplified toolbar, larger touch targets |
+| `Profile` | Fix card padding |
+
+### Touch Audit
+- Asset preview iframes: `touch-action: pan-x pan-y` for pinch-to-zoom
+- Kanban: handled by `@hello-pangea/dnd` touch support
+- Disable hover-only interactions; add explicit tap targets
+
+### Accessibility
+- All new interactive elements get `aria-label`, keyboard-focusable, visible focus rings
+
+---
+
+## Feature 5: Selective Asset Generation
+
+### Database
+```sql
+ALTER TABLE job_applications
+  ADD COLUMN selected_assets jsonb DEFAULT NULL;
+```
+Add `selected_assets` to `ALLOWED_JOB_APP_FIELDS`.
+
+### UI: `AssetSelector.tsx`
+- Checkbox grid in `NewApplication.tsx` before generation starts
+- Default selections per tier: Free = resume + cover_letter (locked), Pro = all core, Premium = all + dynamic
+- "Essentials Only" / "All Assets" quick buttons
+- Locked assets show tier badge + tooltip → pricing page
+- Selection persisted to `selected_assets` column
+
+### Pipeline Changes (`backgroundGenerator.ts`)
+- `startFullGeneration()` accepts `selectedAssets?: string[]`
+- `runPipeline()` filters parallel generation array based on selection
+- `totalAssets` calculated dynamically from selected count
+- Cover letter always generated (foundational)
+- Backward compat: null/undefined `selectedAssets` → generate all
+
+---
+
+## Feature 6: Onboarding Flow
+
+### Database
+```sql
+ALTER TABLE profiles
+  ADD COLUMN onboarding_completed_at timestamptz DEFAULT NULL;
+```
+
+### UI: `src/components/onboarding/OnboardingWizard.tsx`
+- Full-screen modal, 4 steps:
+  1. **Welcome** — brand intro, value prop
+  2. **Profile basics** — first name, last name, experience level
+  3. **Resume upload** — drag-and-drop, auto-extract skills via `extract-style-signals`
+  4. **First application** — paste job URL, CTA to start
+
+### Behavior
+- Progress dots, skip button on every step, animated transitions
+- Each step saves incrementally to `profiles` table
+- Completion: set `onboarding_completed_at`, navigate to `/applications/new`
+- Show conditions: authenticated AND `onboarding_completed_at IS NULL` AND 0 applications
+- Re-access: Help menu → "Restart Onboarding"
+
+---
+
+## Feature 7: Code Cleanup
+
+### Phase 7a — Baseline tests BEFORE extraction
+Render `Profile.tsx`, `NewApplication.tsx`, `Applications.tsx` with mocked data → capture DOM snapshots as regression safety net.
+
+### Phase 7b — Extract components
+
+| Source | Extracted components |
+|---|---|
+| `Profile.tsx` (746 lines) | `IdentityCard`, `ResumeCard`, `SkillsCard`, `ToneCard`, `useProfileForm` hook |
+| `NewApplication.tsx` (787 lines) | `JobInputStep`, `AnalyzingStep`, `PreviewStep`, `useNewApplication` hook |
+| `Applications.tsx` (724 lines) | `ApplicationsTable`, `TrashTab`, `DashboardPreviewOverlay` |
+
+### Phase 7c — Remove `as any` casts
+- Audit all files, replace with proper types from `types.ts`
+- For tables not in generated types, add manual type interfaces
+
+---
+
+## Feature 8: Chrome Extension (Infrastructure Only)
+
+### Edge Function: `import-job-external/index.ts`
+- Input: `{ source, url, jobTitle?, companyName?, jobDescription? }`
+- Requires valid JWT (verify_jwt = true)
+- Rate limited: 10 imports/hour per user
+- CORS restricted to app domain only
+- Creates `job_applications` row with `pipeline_stage = 'bookmarked'`
+
+### Import Page: `/import` route
+- Parses `?url=...&source=linkedin` query params
+- Confirmation card before creating application
+- Redirects to application detail on success
+
+### Documentation: `docs/CHROME_EXTENSION.md`
+
+---
+
+## Cross-Cutting Requirements
+
+### Analytics Events
+Every feature ships with `trackEvent()`:
+`ats_score_generated`, `pipeline_stage_changed`, `docx_exported`, `asset_selection_changed`, `onboarding_step_completed`, `kanban_view_toggled`, `import_job_external`
+
+### Error Handling
+All edge functions return `{ error: string, code: string }`. Client-side toast for user-facing errors.
+
+### Accessibility
+WCAG 2.1 AA for all new components.
+
+---
+
+## Test Suite: Maui Tests
+
+```
+src/test/maui/
+  fixtures/          — shared mock data
+  atsScore.test.ts
+  kanbanBoard.test.ts
+  docxExport.test.ts
+  mobileResponsive.test.ts
+  assetSelector.test.ts
+  onboardingWizard.test.ts
+  codeCleanup.test.ts
+  externalImport.test.ts
+```
+
+All tests use Vitest + React Testing Library. Run via `vitest --dir src/test/maui`.

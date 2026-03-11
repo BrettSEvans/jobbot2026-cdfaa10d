@@ -43,21 +43,24 @@ export default function Profile() {
   const [newIndustry, setNewIndustry] = useState("");
   const [newSkill, setNewSkill] = useState("");
   const [masterCoverLetter, setMasterCoverLetter] = useState("");
+  const [phone, setPhone] = useState("");
+  const [linkedinUrl, setLinkedinUrl] = useState("");
   // Saved values (snapshot from last load/save)
   const [saved, setSaved] = useState({
     firstName: "", middleName: "", lastName: "", displayName: "",
     resumeText: "", yearsExperience: "", preferredTone: "professional",
     industries: [] as string[], skills: [] as string[], masterCoverLetter: "",
+    phone: "", linkedinUrl: "",
   });
 
   // Compute dirty state per card
   const dirty = useMemo(() => ({
-    identity: firstName !== saved.firstName || middleName !== saved.middleName || lastName !== saved.lastName || displayName !== saved.displayName || yearsExperience !== saved.yearsExperience,
+    identity: firstName !== saved.firstName || middleName !== saved.middleName || lastName !== saved.lastName || displayName !== saved.displayName || yearsExperience !== saved.yearsExperience || phone !== saved.phone || linkedinUrl !== saved.linkedinUrl,
     resume: resumeText !== saved.resumeText,
     skills: JSON.stringify(skills) !== JSON.stringify(saved.skills) || JSON.stringify(industries) !== JSON.stringify(saved.industries) || newSkill.trim() !== "" || newIndustry.trim() !== "",
     tone: preferredTone !== saved.preferredTone,
     coverLetter: masterCoverLetter !== saved.masterCoverLetter,
-  }), [displayName, resumeText, yearsExperience, preferredTone, industries, skills, saved, newSkill, newIndustry, middleName, firstName, lastName, masterCoverLetter]);
+  }), [displayName, resumeText, yearsExperience, preferredTone, industries, skills, saved, newSkill, newIndustry, middleName, firstName, lastName, masterCoverLetter, phone, linkedinUrl]);
 
   const hasUnsavedChanges = dirty.identity || dirty.resume || dirty.skills || dirty.tone || dirty.coverLetter;
 
@@ -73,12 +76,16 @@ export default function Profile() {
       yearsExperience: p.years_experience || "", preferredTone: p.preferred_tone || "professional",
       industries: p.target_industries || [], skills: p.key_skills || [],
       masterCoverLetter: 'master_cover_letter' in p ? (p as unknown as Record<string, unknown>).master_cover_letter as string || "" : "",
+      phone: 'phone' in p ? (p as unknown as Record<string, unknown>).phone as string || "" : "",
+      linkedinUrl: 'linkedin_url' in p ? (p as unknown as Record<string, unknown>).linkedin_url as string || "" : "",
     };
     setFirstName(vals.firstName); setMiddleName(vals.middleName); setLastName(vals.lastName);
     setDisplayName(vals.displayName); setResumeText(vals.resumeText);
     setYearsExperience(vals.yearsExperience); setPreferredTone(vals.preferredTone);
     setIndustries(vals.industries); setSkills(vals.skills);
-    setMasterCoverLetter(vals.masterCoverLetter); setSaved(vals);
+    setMasterCoverLetter(vals.masterCoverLetter);
+    setPhone(vals.phone); setLinkedinUrl(vals.linkedinUrl);
+    setSaved(vals);
   }, []);
 
   // Load profile
@@ -122,6 +129,7 @@ export default function Profile() {
         resume_text: resumeText || null, years_experience: yearsExperience || null,
         target_industries: industries, key_skills: skills, preferred_tone: preferredTone,
         master_cover_letter: masterCoverLetter || null,
+        phone: phone || null, linkedin_url: linkedinUrl || null,
       };
       if (isImpersonating && activePersona) {
         await updateTestUser(activePersona.id, updates);
@@ -138,6 +146,7 @@ export default function Profile() {
       setSaved({
         firstName, middleName, lastName, displayName, resumeText, yearsExperience, preferredTone,
         industries: [...industries], skills: [...skills], masterCoverLetter,
+        phone, linkedinUrl,
       });
       toast({ title: "Profile saved", description: "Your preferences will personalize future AI outputs." });
     } catch (err: unknown) {
@@ -145,7 +154,7 @@ export default function Profile() {
     } finally {
       setSaving(false);
     }
-  }, [firstName, middleName, lastName, displayName, resumeText, yearsExperience, preferredTone, industries, skills, masterCoverLetter, toast, refreshRoot, isImpersonating, activePersona, updateActivePersona]);
+  }, [firstName, middleName, lastName, displayName, resumeText, yearsExperience, preferredTone, industries, skills, masterCoverLetter, phone, linkedinUrl, toast, refreshRoot, isImpersonating, activePersona, updateActivePersona]);
 
   const handleCardSave = async (cardName: string) => {
     setSavingCard(cardName);
@@ -203,6 +212,8 @@ export default function Profile() {
               lastName={lastName} setLastName={setLastName}
               displayName={displayName} setDisplayName={setDisplayName}
               yearsExperience={yearsExperience} setYearsExperience={setYearsExperience}
+              phone={phone} setPhone={setPhone}
+              linkedinUrl={linkedinUrl} setLinkedinUrl={setLinkedinUrl}
               isDirty={dirty.identity} saving={saving} savingCard={savingCard}
               onSave={handleCardSave} cardBorderClass={cardBorderClass(dirty.identity)}
             />
@@ -228,6 +239,10 @@ export default function Profile() {
               isImpersonating={isImpersonating}
               isDirty={dirty.resume} saving={saving} savingCard={savingCard}
               onSave={handleCardSave} cardBorderClass={cardBorderClass(dirty.resume)}
+              onContactExtracted={(contact) => {
+                if (contact.phone) setPhone(contact.phone);
+                if (contact.linkedin_url) setLinkedinUrl(contact.linkedin_url);
+              }}
             />
 
             <CoverLetterCard

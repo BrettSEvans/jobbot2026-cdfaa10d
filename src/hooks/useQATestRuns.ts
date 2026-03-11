@@ -10,6 +10,7 @@ export interface QATestRun {
   created_by: string;
   created_at: string;
   status: string;
+  snapshot_test_ids: string[] | null;
 }
 
 export interface QATestResult {
@@ -40,11 +41,15 @@ export function useQATestRuns() {
       toast({ title: "Error loading runs", description: error.message, variant: "destructive" });
       return;
     }
-    setRuns(data || []);
-    // Auto-select most recent in_progress run, or latest
-    if (!activeRunId || !(data || []).find((r: QATestRun) => r.id === activeRunId)) {
-      const inProgress = (data || []).find((r: QATestRun) => r.status === "in_progress");
-      setActiveRunId(inProgress?.id || data?.[0]?.id || null);
+    // Cast snapshot_test_ids from jsonb
+    const parsed: QATestRun[] = (data || []).map((r: any) => ({
+      ...r,
+      snapshot_test_ids: Array.isArray(r.snapshot_test_ids) ? r.snapshot_test_ids : null,
+    }));
+    setRuns(parsed);
+    if (!activeRunId || !parsed.find((r) => r.id === activeRunId)) {
+      const inProgress = parsed.find((r) => r.status === "in_progress");
+      setActiveRunId(inProgress?.id || parsed[0]?.id || null);
     }
   }, [activeRunId, toast]);
 
@@ -70,7 +75,7 @@ export function useQATestRuns() {
     else setResults([]);
   }, [activeRunId, loadResults]);
 
-  const createRun = async (buildLabel: string, buildTimestamp: string, notes?: string) => {
+  const createRun = async (buildLabel: string, buildTimestamp: string, notes?: string, snapshotTestIds?: string[]) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
     const { error } = await supabase.from("qa_test_runs").insert({
@@ -78,7 +83,8 @@ export function useQATestRuns() {
       build_timestamp: buildTimestamp,
       notes: notes || null,
       created_by: user.id,
-    });
+      snapshot_test_ids: snapshotTestIds || null,
+    } as any);
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
       return;

@@ -27,9 +27,10 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import {
   getAllTests, getAllAreas, getAllTags, getTestsByArea,
-  getTotalEstimatedMinutes, type ManualTestCase,
+  getTotalEstimatedMinutes, getTestById, type ManualTestCase,
 } from "@/lib/qaRegistry";
 import { useQATestRuns, type QATestResult } from "@/hooks/useQATestRuns";
+import { useQACustomTests } from "@/hooks/useQACustomTests";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 
 type TestResult = "pass" | "fail" | "skip" | null;

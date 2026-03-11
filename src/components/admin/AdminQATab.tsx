@@ -252,6 +252,7 @@ export default function AdminQATab() {
       ["Status", run?.status || ""],
       ["Pass", String(passCount)],
       ["Fail", String(failCount)],
+      ["Prompt Fix", String(promptFixCount)],
       ["Skip", String(skipCount)],
       ["Untested", String(untestedCount)],
       ["Completion %", `${completionPercent}%`],

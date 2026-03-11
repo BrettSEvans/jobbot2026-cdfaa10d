@@ -72,7 +72,7 @@ registerTutorialStep({
   helpSlug: "master-cover-letter",
   targetSelector: '[data-tutorial="master-cover-letter"]',
   title: "Add Your Master Cover Letter",
-  body: "Paste your go-to cover letter here. It's optional, but when provided the AI uses your voice and style as a starting point — making every tailored letter sound like you instead of a generic template.",
+  body: "Upload a cover letter, paste one in, or just jot down a few ideas about what makes you a great fit. ResuVibe will do the rest! Accepts PDF, DOCX, or TXT files.",
   placement: "top",
   route: "/profile",
   order: 7,

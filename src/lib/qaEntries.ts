@@ -669,6 +669,32 @@ registerTest({
   requiresAdmin: false,
 });
 
+registerTest({
+  id: 'qa-profile-cover-letter-upload',
+  title: 'Upload / paste / jot cover letter ideas',
+  area: 'Profile',
+  route: '/profile',
+  helpSlug: 'master-cover-letter',
+  steps: [
+    'Navigate to /profile.',
+    'Scroll to Master Cover Letter card.',
+    'Upload a .txt file via the drop zone → verify text populates the textarea.',
+    'Clear the textarea, then upload a .pdf file → verify extracted text appears.',
+    'Clear the textarea, type a few bullet-point ideas (e.g. "I love scaling teams").',
+    'Click Save on the card.',
+  ],
+  expectedResults: [
+    'TXT upload: textarea is populated with file contents.',
+    'PDF upload: textarea is populated with extracted text.',
+    'Typing a few ideas and saving succeeds without error.',
+    'Card description encourages jotting down ideas and mentions ResuVibe will do the rest.',
+  ],
+  tags: ['regression'],
+  estimatedMinutes: 4,
+  requiresAuth: true,
+  requiresAdmin: false,
+});
+
 // ── Templates ──────────────────────────────────────────
 
 registerTest({

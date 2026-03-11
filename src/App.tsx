@@ -132,6 +132,7 @@ function AuthenticatedApp() {
               <Route path="/terms" element={<Terms />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/cookies" element={<CookiePolicy />} />
+              <Route path="/author" element={<Author />} />
               <Route path="*" element={<NotFound />} />
             </>
           ) : (

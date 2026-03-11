@@ -33,8 +33,8 @@ import { useQATestRuns, type QATestResult } from "@/hooks/useQATestRuns";
 import { useQACustomTests } from "@/hooks/useQACustomTests";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 
-type TestResult = "pass" | "fail" | "skip" | null;
-type ResultFilter = "all" | "untested" | "pass" | "fail" | "skip";
+type TestResult = "pass" | "fail" | "skip" | "prompt_fix" | null;
+type ResultFilter = "all" | "untested" | "pass" | "fail" | "skip" | "prompt_fix";
 
 export default function AdminQATab() {
   const { toast } = useToast();

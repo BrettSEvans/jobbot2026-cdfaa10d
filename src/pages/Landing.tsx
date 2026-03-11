@@ -35,8 +35,26 @@ import {
 /*  Sub-components                                                     */
 /* ------------------------------------------------------------------ */
 
+const NAV_SECTIONS = [
+  { label: "Portfolio", id: "portfolio" },
+  { label: "How It Works", id: "how-it-works" },
+  { label: "Features", id: "features" },
+  { label: "Pricing", id: "pricing" },
+  { label: "Reviews", id: "reviews" },
+  { label: "FAQ", id: "faq" },
+];
+
 function LandingNav() {
   const navigate = useNavigate();
+  const [sheetOpen, setSheetOpen] = useState(false);
+
+  const scrollTo = (id: string) => {
+    setSheetOpen(false);
+    setTimeout(() => {
+      document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+    }, 100);
+  };
+
   return (
     <nav className="sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-md">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
@@ -44,6 +62,11 @@ function LandingNav() {
 
         {/* Desktop nav */}
         <div className="hidden sm:flex items-center gap-2">
+          {NAV_SECTIONS.map((s) => (
+            <Button key={s.id} variant="ghost" size="sm" onClick={() => scrollTo(s.id)}>
+              {s.label}
+            </Button>
+          ))}
           <Button variant="ghost" size="sm" onClick={() => navigate("/auth")}>
             Sign In
           </Button>
@@ -54,7 +77,7 @@ function LandingNav() {
 
         {/* Mobile hamburger */}
         <div className="sm:hidden">
-          <Sheet>
+          <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="h-9 w-9">
                 <Menu className="h-5 w-5" />
@@ -67,7 +90,13 @@ function LandingNav() {
                   <BrandLogo size="sm" />
                 </SheetTitle>
               </SheetHeader>
-              <div className="mt-6 flex flex-col gap-3">
+              <div className="mt-6 flex flex-col gap-1">
+                {NAV_SECTIONS.map((s) => (
+                  <Button key={s.id} variant="ghost" className="justify-start" onClick={() => scrollTo(s.id)}>
+                    {s.label}
+                  </Button>
+                ))}
+                <div className="my-2 border-t border-border/60" />
                 <Button variant="ghost" className="justify-start" onClick={() => navigate("/auth")}>
                   Sign In
                 </Button>

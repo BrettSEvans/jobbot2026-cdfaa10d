@@ -49,9 +49,9 @@ type Step = "input" | "analyzing" | "complete";
 const NewApplication = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { appLimit, tier } = useSubscription();
+  const { appLimit, tier, isTrialExpired } = useSubscription();
   const { data: appsUsed = 0 } = useAppUsage();
-  const isAtLimit = appLimit !== -1 && appsUsed >= appLimit;
+  const isAtLimit = isTrialExpired || (appLimit !== -1 && appsUsed >= appLimit);
 
   // Inputs
   const [jobUrl, setJobUrl] = useState("");

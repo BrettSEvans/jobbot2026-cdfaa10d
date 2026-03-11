@@ -664,25 +664,26 @@ export default function AdminQATab() {
                         const isCustom = customTests.customTests.some((ct) => ct.test_id === tc.id);
                         return (
                         <TestCaseCard
-                          key={tc.id}
-                          testCase={tc}
-                          savedResult={resultMap.get(tc.id) || null}
-                          compareResult={compareResults.get(tc.id) || null}
-                          runId={qa.activeRunId!}
-                          onResult={(r) => handleSetResult(tc.id, r)}
-                          onClear={() => handleClearResult(tc.id)}
-                          onUpdateNotes={(notes) =>
-                            qa.updateFailureNotes(qa.activeRunId!, tc.id, notes)
-                          }
-                          onFixRegression={() =>
-                            qa.fixRegression(qa.activeRunId!, tc.id)
-                          }
-                          isCompleted={qa.activeRun?.status === "completed"}
-                          isSelected={selectedTests.has(tc.id)}
-                          onToggleSelect={() => handleToggleSelect(tc.id)}
-                          isCustom={isCustom}
-                          onDelete={isCustom ? () => customTests.deleteCustomTest(tc.id) : undefined}
-                        />
+                           key={tc.id}
+                           testCase={tc}
+                           savedResult={resultMap.get(tc.id) || null}
+                           compareResult={compareResults.get(tc.id) || null}
+                           runId={qa.activeRunId!}
+                           buildLabel={qa.activeRun?.build_label || ""}
+                           onResult={(r) => handleSetResult(tc.id, r)}
+                           onClear={() => handleClearResult(tc.id)}
+                           onUpdateNotes={(notes) =>
+                             qa.updateFailureNotes(qa.activeRunId!, tc.id, notes)
+                           }
+                           onFixRegression={() =>
+                             qa.fixRegression(qa.activeRunId!, tc.id)
+                           }
+                           isCompleted={qa.activeRun?.status === "completed"}
+                           isSelected={selectedTests.has(tc.id)}
+                           onToggleSelect={() => handleToggleSelect(tc.id)}
+                           isCustom={isCustom}
+                           onDelete={isCustom ? () => customTests.deleteCustomTest(tc.id) : undefined}
+                         />
                         );
                       })}
                     </div>

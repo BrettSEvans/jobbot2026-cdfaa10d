@@ -5,6 +5,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { TIER_CONFIGS, type TierConfig } from "@/lib/subscriptionTiers";
 import {
   LayoutDashboard,
@@ -24,6 +25,7 @@ import {
   Trophy,
   Users,
   Quote,
+  Mail,
 } from "lucide-react";
 
 /* ------------------------------------------------------------------ */

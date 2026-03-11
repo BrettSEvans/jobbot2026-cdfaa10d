@@ -158,7 +158,9 @@ export default function AdminQATab() {
   const handleCreateRun = () => {
     if (!newBuildLabel.trim()) return;
     const ts = newBuildTimestamp ? new Date(newBuildTimestamp).toISOString() : new Date().toISOString();
-    qa.createRun(newBuildLabel.trim(), ts, newRunNotes.trim() || undefined);
+    // Snapshot current test IDs at creation time
+    const snapshotIds = getAllTests().map((t) => t.id);
+    qa.createRun(newBuildLabel.trim(), ts, newRunNotes.trim() || undefined, snapshotIds);
     setNewRunOpen(false);
     setNewBuildLabel("");
     setNewBuildTimestamp("");

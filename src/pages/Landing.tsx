@@ -24,6 +24,8 @@ import {
   Check,
   ArrowRight,
   Menu,
+  Star,
+  Zap,
 } from "lucide-react";
 
 /* ------------------------------------------------------------------ */

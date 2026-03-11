@@ -261,12 +261,14 @@ function ExampleAssets() {
         <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-5">
           {EXAMPLES.map((ex) => (
             <Card key={ex.label} className="overflow-hidden group transition-all hover:shadow-[var(--shadow-elevated)] hover:-translate-y-0.5">
-              <div className="overflow-hidden">
-                <img
-                  src={ex.img}
-                  alt={`${ex.label} mockup`}
-                  className="h-52 w-full object-cover object-top transition-transform duration-300 group-hover:scale-105"
+              <div className="h-52 w-full overflow-hidden relative bg-muted/30">
+                <iframe
+                  src={ex.src}
+                  title={`${ex.label} mockup`}
+                  className="pointer-events-none border-0 origin-top-left"
+                  style={{ width: 800, height: 1040, transform: "scale(0.25)", transformOrigin: "top left" }}
                   loading="lazy"
+                  tabIndex={-1}
                 />
               </div>
               <CardContent className="p-4">

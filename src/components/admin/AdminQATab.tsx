@@ -1150,12 +1150,15 @@ function TestCaseCard({
               )}
             </>
           )}
+          {isPromptFix && !isCompleted && (
+            <Badge className="text-xs bg-indigo-500 text-white">Prompt Fix</Badge>
+          )}
           {isCompleted && result && (
             <Badge
               variant={result === "pass" ? "default" : result === "fail" ? "destructive" : "secondary"}
-              className="text-xs"
+              className={`text-xs ${result === "prompt_fix" ? "bg-indigo-500 text-white" : ""}`}
             >
-              {result}
+              {result === "prompt_fix" ? "Prompt Fix" : result}
             </Badge>
           )}
         </div>

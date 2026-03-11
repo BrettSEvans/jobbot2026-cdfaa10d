@@ -500,7 +500,7 @@ export default function Landing() {
       <HowItWorks />
       <Features />
       <Pricing />
-      <Testimonials />
+      <SocialProof />
       <CtaFooter />
       <footer className="border-t border-border/60 py-6 text-center text-xs text-muted-foreground space-y-2">
         <div className="flex items-center justify-center gap-4">

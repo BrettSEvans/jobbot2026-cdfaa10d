@@ -914,11 +914,34 @@ export default function AdminQATab() {
 
 /* ─── Individual Test Case Card ─── */
 
+function generateFixPrompt(tc: ManualTestCase, savedResult: QATestResult | null, buildLabel: string): string {
+  const lines: string[] = [
+    `Fix the following QA test failure:`,
+    ``,
+    `**Test:** ${tc.title}`,
+    `**Area:** ${tc.area}${tc.route ? ` | **Route:** ${tc.route}` : ""}`,
+    `**Build:** ${buildLabel}`,
+    ``,
+    `**Steps to Reproduce:**`,
+    ...tc.steps.map((s, i) => `${i + 1}. ${s}`),
+    ``,
+    `**What Went Wrong:**`,
+    savedResult?.failure_notes || "(no details provided)",
+    ``,
+    `**Success Criteria (all must pass):**`,
+    ...tc.expectedResults.map((e) => `- ${e}`),
+    ``,
+    `Please investigate and fix this issue. After fixing, verify all success criteria are met.`,
+  ];
+  return lines.join("\n");
+}
+
 function TestCaseCard({
   testCase: tc,
   savedResult,
   compareResult,
   runId,
+  buildLabel,
   onResult,
   onClear,
   onUpdateNotes,
@@ -933,6 +956,7 @@ function TestCaseCard({
   savedResult: QATestResult | null;
   compareResult: QATestResult | null;
   runId: string;
+  buildLabel: string;
   onResult: (r: TestResult) => void;
   onClear: () => void;
   onUpdateNotes: (notes: string) => void;

@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { BRAND } from "@/lib/branding";
 import BrandLogo from "@/components/BrandLogo";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import mockupResume from "@/assets/mockup-resume.jpg";
 import mockupCoverLetter from "@/assets/mockup-cover-letter.jpg";
 import mockupDashboard from "@/assets/mockup-dashboard.jpg";

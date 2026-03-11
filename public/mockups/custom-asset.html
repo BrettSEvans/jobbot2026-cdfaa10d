@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=800">
+<link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', sans-serif; width: 800px; min-height: 1040px; background: #fafafa; color: #1a1a2e; font-size: 13px; }
+  .page { padding: 32px 28px; }
+  .raid-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 3px solid #4A52A0; }
+  .raid-header .left h1 { font-family: 'Merriweather', serif; font-size: 22px; font-weight: 700; color: #4A52A0; }
+  .raid-header .left .sub { font-size: 12px; color: #666; margin-top: 4px; }
+  .raid-header .left .sub strong { color: #E8A317; }
+  .raid-header .right { text-align: right; }
+  .raid-header .right .name { font-family: 'Merriweather', serif; font-size: 14px; font-weight: 700; color: #333; }
+  .raid-header .right .date { font-size: 11px; color: #888; margin-top: 2px; }
+  .layout { display: grid; grid-template-columns: 1fr 220px; gap: 18px; }
+  .main-area { }
+  .sidebar { }
+  .raid-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 18px; }
+  .raid-card { background: #fff; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); overflow: hidden; }
+  .raid-card-header { padding: 10px 14px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #fff; display: flex; align-items: center; gap: 8px; }
+  .raid-card-header.risks { background: #4A52A0; }
+  .raid-card-header.actions { background: linear-gradient(135deg, #4A52A0, #5a62b0); }
+  .raid-card-header.issues { background: #E8A317; color: #1a1a2e; }
+  .raid-card-header.decisions { background: linear-gradient(135deg, #E8A317, #d4941a); color: #1a1a2e; }
+  .raid-card-header .count { font-size: 18px; font-weight: 700; }
+  .raid-card-body { padding: 14px; }
+  .raid-item { padding: 8px 0; border-bottom: 1px solid #f0f0f0; }
+  .raid-item:last-child { border-bottom: none; }
+  .raid-item .item-title { font-size: 12px; font-weight: 600; color: #333; margin-bottom: 3px; }
+  .raid-item .item-desc { font-size: 11px; color: #666; line-height: 1.5; }
+  .severity { display: inline-block; font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.5px; margin-left: 6px; }
+  .sev-high { background: #E8A317; color: #fff; }
+  .sev-med { background: rgba(232,163,23,0.2); color: #b8860b; }
+  .sev-low { background: rgba(74,82,160,0.1); color: #4A52A0; }
+  .sidebar-card { background: #fff; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); padding: 18px; margin-bottom: 14px; }
+  .sidebar-card h4 { font-family: 'Merriweather', serif; font-size: 12px; font-weight: 700; color: #4A52A0; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .metric { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #f5f5f5; }
+  .metric:last-child { border-bottom: none; }
+  .metric .m-label { font-size: 11px; color: #666; }
+  .metric .m-value { font-size: 14px; font-weight: 700; color: #E8A317; }
+  .metric .m-value.navy { color: #4A52A0; }
+  .donut-placeholder { width: 100%; height: 120px; background: linear-gradient(135deg, rgba(74,82,160,0.06), rgba(232,163,23,0.06)); border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; }
+  .donut { width: 90px; height: 90px; border-radius: 50%; border: 10px solid #4A52A0; border-top-color: #E8A317; border-right-color: #E8A317; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700; color: #4A52A0; }
+  .timeline-section { background: #fff; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); padding: 18px; }
+  .timeline-section h4 { font-family: 'Merriweather', serif; font-size: 12px; font-weight: 700; color: #4A52A0; margin-bottom: 14px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .timeline { position: relative; padding-left: 20px; }
+  .timeline::before { content: ''; position: absolute; left: 6px; top: 4px; bottom: 4px; width: 2px; background: linear-gradient(to bottom, #4A52A0, #E8A317); }
+  .tl-item { position: relative; margin-bottom: 14px; }
+  .tl-item::before { content: ''; position: absolute; left: -17px; top: 4px; width: 10px; height: 10px; border-radius: 50%; background: #4A52A0; border: 2px solid #fff; box-shadow: 0 0 0 2px #4A52A0; }
+  .tl-item:nth-child(even)::before { background: #E8A317; box-shadow: 0 0 0 2px #E8A317; }
+  .tl-item .tl-date { font-size: 10px; font-weight: 600; color: #E8A317; text-transform: uppercase; }
+  .tl-item .tl-text { font-size: 11px; color: #444; margin-top: 2px; }
+</style>
+</head>
+<body>
+  <div class="page">
+    <div class="raid-header">
+      <div class="left">
+        <h1>RAID Log & Risk Scorecard</h1>
+        <div class="sub">UP Academy · <strong>Head of School</strong></div>
+      </div>
+      <div class="right">
+        <div class="name">Jordan A. Castillo</div>
+        <div class="date">March 2026</div>
+      </div>
+    </div>
+
+    <div class="layout">
+      <div class="main-area">
+        <div class="raid-grid">
+          <!-- Risks -->
+          <div class="raid-card">
+            <div class="raid-card-header risks"><span class="count">R</span> Risks</div>
+            <div class="raid-card-body">
+              <div class="raid-item">
+                <div class="item-title">Staff retention during transition <span class="severity sev-high">High</span></div>
+                <div class="item-desc">Teacher turnover risk during leadership change. Mitigation: 1:1 meetings within first 2 weeks, retention incentive proposal by Day 30.</div>
+              </div>
+              <div class="raid-item">
+                <div class="item-title">Curriculum alignment gaps <span class="severity sev-med">Med</span></div>
+                <div class="item-desc">State standards adoption may require curriculum overhaul. Conduct audit in Phase 1; engage curriculum consultants if needed.</div>
+              </div>
+              <div class="raid-item">
+                <div class="item-title">Budget constraints for technology <span class="severity sev-low">Low</span></div>
+                <div class="item-desc">Limited capital for LMS modernization. Explore grant funding and phased rollout.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="raid-card">
+            <div class="raid-card-header actions"><span class="count">A</span> Actions</div>
+            <div class="raid-card-body">
+              <div class="raid-item">
+                <div class="item-title">Complete staff capability assessment <span class="severity sev-high">High</span></div>
+                <div class="item-desc">Survey and interview all department heads. Deliverable: skills matrix and PD plan by Day 21.</div>
+              </div>
+              <div class="raid-item">
+                <div class="item-title">Establish parent communication cadence <span class="severity sev-med">Med</span></div>
+                <div class="item-desc">Bi-weekly newsletter, monthly town hall. Launch first communication by Day 14.</div>
+              </div>
+              <div class="raid-item">
+                <div class="item-title">Review vendor contracts <span class="severity sev-low">Low</span></div>
+                <div class="item-desc">Audit catering, transportation, and facilities contracts for cost optimization by Day 45.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Issues -->
+          <div class="raid-card">
+            <div class="raid-card-header issues"><span class="count">I</span> Issues</div>
+            <div class="raid-card-body">
+              <div class="raid-item">
+                <div class="item-title">Outdated student information system <span class="severity sev-high">High</span></div>
+                <div class="item-desc">Current SIS lacks reporting capabilities. Immediate: manual workaround; 60-day plan for vendor evaluation.</div>
+              </div>
+              <div class="raid-item">
+                <div class="item-title">Incomplete compliance documentation <span class="severity sev-med">Med</span></div>
+                <div class="item-desc">Missing safety audit records from Q4. Priority remediation with operations team.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Decisions -->
+          <div class="raid-card">
+            <div class="raid-card-header decisions"><span class="count">D</span> Decisions</div>
+            <div class="raid-card-body">
+              <div class="raid-item">
+                <div class="item-title">Adopt block scheduling model <span class="severity sev-high">High</span></div>
+                <div class="item-desc">Transition from traditional to block schedule for 2026-27 academic year. Pilot in Q4 2026.</div>
+              </div>
+              <div class="raid-item">
+                <div class="item-title">Hire Dean of Students <span class="severity sev-med">Med</span></div>
+                <div class="item-desc">New role to manage student affairs and disciplinary framework. Post position by Day 30.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="timeline-section">
+          <h4>Implementation Timeline</h4>
+          <div class="timeline">
+            <div class="tl-item"><div class="tl-date">Week 1–2</div><div class="tl-text">Staff listening tour + parent introductions + SIS assessment</div></div>
+            <div class="tl-item"><div class="tl-date">Week 3–4</div><div class="tl-text">Skills matrix complete + first parent newsletter + compliance remediation</div></div>
+            <div class="tl-item"><div class="tl-date">Week 5–6</div><div class="tl-text">Curriculum audit results + block schedule pilot plan drafted</div></div>
+            <div class="tl-item"><div class="tl-date">Week 7–8</div><div class="tl-text">Vendor contract audit + Dean of Students posting live</div></div>
+            <div class="tl-item"><div class="tl-date">Week 9–12</div><div class="tl-text">90-day impact report + board presentation + 2026-27 strategic plan draft</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar">
+        <div class="sidebar-card">
+          <h4>Risk Summary</h4>
+          <div class="donut-placeholder">
+            <div class="donut">72%</div>
+          </div>
+          <div class="metric"><span class="m-label">Overall Readiness</span><span class="m-value">72%</span></div>
+          <div class="metric"><span class="m-label">High Priority Items</span><span class="m-value navy">4</span></div>
+          <div class="metric"><span class="m-label">Medium Priority</span><span class="m-value">4</span></div>
+          <div class="metric"><span class="m-label">Low Priority</span><span class="m-value navy">2</span></div>
+        </div>
+
+        <div class="sidebar-card">
+          <h4>Key Metrics</h4>
+          <div class="metric"><span class="m-label">Staff Size</span><span class="m-value navy">42</span></div>
+          <div class="metric"><span class="m-label">Student Body</span><span class="m-value">580</span></div>
+          <div class="metric"><span class="m-label">Retention Target</span><span class="m-value navy">95%</span></div>
+          <div class="metric"><span class="m-label">Budget</span><span class="m-value">$4.2M</span></div>
+        </div>
+
+        <div class="sidebar-card">
+          <h4>Stakeholders</h4>
+          <div class="metric"><span class="m-label">Board Members</span><span class="m-value navy">7</span></div>
+          <div class="metric"><span class="m-label">Dept Heads</span><span class="m-value">6</span></div>
+          <div class="metric"><span class="m-label">Parent Council</span><span class="m-value navy">12</span></div>
+          <div class="metric"><span class="m-label">District Liaisons</span><span class="m-value">3</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

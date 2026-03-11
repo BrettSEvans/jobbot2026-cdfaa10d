@@ -67,6 +67,9 @@ function LandingNav() {
               {s.label}
             </Button>
           ))}
+          <Button variant="ghost" size="sm" onClick={() => navigate("/author")}>
+            Author
+          </Button>
           <Button variant="ghost" size="sm" onClick={() => navigate("/auth")}>
             Sign In
           </Button>
@@ -96,6 +99,9 @@ function LandingNav() {
                     {s.label}
                   </Button>
                 ))}
+                <Button variant="ghost" className="justify-start" onClick={() => navigate("/author")}>
+                  Author
+                </Button>
                 <div className="my-2 border-t border-border/60" />
                 <Button variant="ghost" className="justify-start" onClick={() => navigate("/auth")}>
                   Sign In

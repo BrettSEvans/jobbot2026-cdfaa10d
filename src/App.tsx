@@ -28,6 +28,7 @@ import TutorialOverlay from "./components/tutorial/TutorialOverlay";
 import TutorialDemo from "./pages/TutorialDemo";
 import ImportJob from "./pages/ImportJob";
 import SearchJobs from "./pages/SearchJobs";
+import Author from "./pages/Author";
 
 import { useAuth } from "./hooks/useAuth";
 import { useTutorial } from "./hooks/useTutorial";
@@ -131,6 +132,7 @@ function AuthenticatedApp() {
               <Route path="/terms" element={<Terms />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/cookies" element={<CookiePolicy />} />
+              <Route path="/author" element={<Author />} />
               <Route path="*" element={<NotFound />} />
             </>
           ) : (
@@ -151,6 +153,7 @@ function AuthenticatedApp() {
               <Route path="/terms" element={<Terms />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/cookies" element={<CookiePolicy />} />
+              <Route path="/author" element={<Author />} />
               <Route path="*" element={<NotFound />} />
             </>
           )}

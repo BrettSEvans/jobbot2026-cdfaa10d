@@ -54,6 +54,8 @@ export default function AdminQATab() {
   const [selectedTests, setSelectedTests] = useState<Set<string>>(new Set());
   const [compareRunId, setCompareRunId] = useState<string | null>(null);
   const [compareResults, setCompareResults] = useState<Map<string, QATestResult>>(new Map());
+  const [addTestOpen, setAddTestOpen] = useState(false);
+  const [newTest, setNewTest] = useState({ title: "", area: "Custom", route: "", steps: "", expectedResults: "", tags: "", estimatedMinutes: 3 });
 
   const areas = useMemo(() => getAllAreas(), []);
   const tags = useMemo(() => getAllTags(), []);

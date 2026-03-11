@@ -595,6 +595,7 @@ export default function AdminQATab() {
                   <SelectItem value="untested">⬜ Untested ({untestedCount})</SelectItem>
                   <SelectItem value="pass">✅ Pass ({passCount})</SelectItem>
                   <SelectItem value="fail">❌ Fail ({failCount})</SelectItem>
+                  <SelectItem value="prompt_fix">🪄 Prompt Fix ({promptFixCount})</SelectItem>
                   <SelectItem value="skip">⏭ Skip ({skipCount})</SelectItem>
                 </SelectContent>
               </Select>

@@ -580,8 +580,9 @@ const FAQ_ITEMS = [
 ];
 
 function Faq() {
+  const [faqOpen, setFaqOpen] = useState(false);
   return (
-    <section className="py-20 sm:py-24">
+    <section id="faq" className="py-20 sm:py-24">
       <div className="mx-auto max-w-3xl px-4 sm:px-6">
         <h2 className="text-center font-heading text-3xl font-bold text-foreground sm:text-4xl">
           Frequently Asked Questions
@@ -589,18 +590,30 @@ function Faq() {
         <p className="mx-auto mt-3 max-w-xl text-center text-muted-foreground">
           Everything you need to know about the AI-powered job application toolkit.
         </p>
-        <Accordion type="single" collapsible className="mt-10">
-          {FAQ_ITEMS.map((item, i) => (
-            <AccordionItem key={i} value={`faq-${i}`}>
-              <AccordionTrigger className="text-left text-foreground">
-                {item.q}
-              </AccordionTrigger>
-              <AccordionContent className="text-muted-foreground leading-relaxed">
-                {item.a}
-              </AccordionContent>
-            </AccordionItem>
-          ))}
-        </Accordion>
+        <Collapsible open={faqOpen} onOpenChange={setFaqOpen} className="mt-8">
+          <div className="flex justify-center">
+            <CollapsibleTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                {faqOpen ? "Hide FAQ" : "Show FAQ"}
+                <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${faqOpen ? "rotate-180" : ""}`} />
+              </Button>
+            </CollapsibleTrigger>
+          </div>
+          <CollapsibleContent className="mt-6">
+            <Accordion type="single" collapsible>
+              {FAQ_ITEMS.map((item, i) => (
+                <AccordionItem key={i} value={`faq-${i}`}>
+                  <AccordionTrigger className="text-left text-foreground">
+                    {item.q}
+                  </AccordionTrigger>
+                  <AccordionContent className="text-muted-foreground leading-relaxed">
+                    {item.a}
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          </CollapsibleContent>
+        </Collapsible>
       </div>
     </section>
   );

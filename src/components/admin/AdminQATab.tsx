@@ -373,9 +373,14 @@ export default function AdminQATab() {
             <CardTitle className="text-base flex items-center gap-2">
               <FlaskConical className="h-4 w-4 text-primary" /> Manual QA Suite
             </CardTitle>
-            <Button size="sm" onClick={handleOpenNewRun}>
-              <Plus className="h-3.5 w-3.5 mr-1" /> New Test Run
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" onClick={() => setAddTestOpen(true)}>
+                <Plus className="h-3.5 w-3.5 mr-1" /> Add Test
+              </Button>
+              <Button size="sm" onClick={handleOpenNewRun}>
+                <Plus className="h-3.5 w-3.5 mr-1" /> New Test Run
+              </Button>
+            </div>
           </div>
           {qa.activeRun ? (
             <div className="flex items-center gap-2 flex-wrap mt-1">

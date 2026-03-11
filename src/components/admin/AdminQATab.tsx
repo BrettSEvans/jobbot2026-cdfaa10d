@@ -39,6 +39,7 @@ type ResultFilter = "all" | "untested" | "pass" | "fail" | "skip";
 export default function AdminQATab() {
   const { toast } = useToast();
   const qa = useQATestRuns();
+  const customTests = useQACustomTests();
 
   const [areaFilter, setAreaFilter] = useState<string>("all");
   const [tagFilter, setTagFilter] = useState<string>("all");

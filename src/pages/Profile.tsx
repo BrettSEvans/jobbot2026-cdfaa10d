@@ -76,12 +76,16 @@ export default function Profile() {
       yearsExperience: p.years_experience || "", preferredTone: p.preferred_tone || "professional",
       industries: p.target_industries || [], skills: p.key_skills || [],
       masterCoverLetter: 'master_cover_letter' in p ? (p as unknown as Record<string, unknown>).master_cover_letter as string || "" : "",
+      phone: 'phone' in p ? (p as unknown as Record<string, unknown>).phone as string || "" : "",
+      linkedinUrl: 'linkedin_url' in p ? (p as unknown as Record<string, unknown>).linkedin_url as string || "" : "",
     };
     setFirstName(vals.firstName); setMiddleName(vals.middleName); setLastName(vals.lastName);
     setDisplayName(vals.displayName); setResumeText(vals.resumeText);
     setYearsExperience(vals.yearsExperience); setPreferredTone(vals.preferredTone);
     setIndustries(vals.industries); setSkills(vals.skills);
-    setMasterCoverLetter(vals.masterCoverLetter); setSaved(vals);
+    setMasterCoverLetter(vals.masterCoverLetter);
+    setPhone(vals.phone); setLinkedinUrl(vals.linkedinUrl);
+    setSaved(vals);
   }, []);
 
   // Load profile

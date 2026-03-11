@@ -124,20 +124,19 @@ export default function AdminQATab() {
     return openAreas;
   }, [groupedByArea, resultMap]);
 
-  // Stats
-  const allTests = getAllTests();
-  const totalCount = allTests.length;
-  const passCount = allTests.filter((t) => resultMap.get(t.id)?.result === "pass").length;
-  const failCount = allTests.filter((t) => resultMap.get(t.id)?.result === "fail").length;
-  const skipCount = allTests.filter((t) => resultMap.get(t.id)?.result === "skip").length;
+  // Stats — scoped to run snapshot
+  const totalCount = allRunTests.length;
+  const passCount = allRunTests.filter((t) => resultMap.get(t.id)?.result === "pass").length;
+  const failCount = allRunTests.filter((t) => resultMap.get(t.id)?.result === "fail").length;
+  const skipCount = allRunTests.filter((t) => resultMap.get(t.id)?.result === "skip").length;
   const untestedCount = totalCount - passCount - failCount - skipCount;
-  const openRegressions = allTests.filter(
+  const openRegressions = allRunTests.filter(
     (t) => resultMap.get(t.id)?.result === "fail" && !resultMap.get(t.id)?.regression_fixed_at
   ).length;
   const completionPercent = totalCount > 0 ? Math.round(((totalCount - untestedCount) / totalCount) * 100) : 0;
 
   // Time remaining (based on untested)
-  const untestedTests = allTests.filter((t) => !resultMap.get(t.id)?.result);
+  const untestedTests = allRunTests.filter((t) => !resultMap.get(t.id)?.result);
   const remainingMinutes = getTotalEstimatedMinutes(untestedTests);
   const remHours = Math.floor(remainingMinutes / 60);
   const remMins = remainingMinutes % 60;

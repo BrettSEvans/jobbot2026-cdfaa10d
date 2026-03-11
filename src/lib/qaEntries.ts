@@ -648,6 +648,31 @@ registerTest({
 });
 
 registerTest({
+  id: 'qa-profile-resume-contact-extraction',
+  title: 'Resume upload extracts phone & LinkedIn',
+  area: 'Profile',
+  route: '/profile',
+  helpSlug: 'profile',
+  steps: [
+    'Upload a PDF resume that contains a phone number and LinkedIn URL.',
+    'Observe the "Gathering resume information..." spinner for at least 2 seconds.',
+    'Wait for the spinner to dismiss.',
+    'Check the Identity card for Phone and LinkedIn URL fields.',
+  ],
+  expectedResults: [
+    'Spinner shows for at least 2 seconds with "Gathering resume information..." text.',
+    'Phone field is auto-populated with the number from the resume.',
+    'LinkedIn URL field is auto-populated with the URL from the resume.',
+    'A toast confirms which contact info was found.',
+    'Fields are editable after extraction.',
+  ],
+  tags: ['regression'],
+  estimatedMinutes: 4,
+  requiresAuth: true,
+  requiresAdmin: false,
+});
+
+registerTest({
   id: 'qa-profile-save-bar',
   title: 'Save changes (sticky bar)',
   area: 'Profile',

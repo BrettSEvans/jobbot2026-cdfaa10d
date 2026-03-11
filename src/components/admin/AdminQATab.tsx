@@ -1054,15 +1054,19 @@ function TestCaseCard({
         </div>
         <div className="flex items-center gap-1 shrink-0">
           {/* Details toggle */}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 w-7 p-0 text-muted-foreground"
-            onClick={() => setDetailsOpen(!detailsOpen)}
-            title={detailsOpen ? "Hide details" : "Show details"}
-          >
-            {detailsOpen ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 w-7 p-0 text-muted-foreground"
+                onClick={() => setDetailsOpen(!detailsOpen)}
+              >
+                {detailsOpen ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{detailsOpen ? "Hide details" : "Show details"}</TooltipContent>
+          </Tooltip>
 
           {isCustom && onDelete && !isCompleted && (
             <Button

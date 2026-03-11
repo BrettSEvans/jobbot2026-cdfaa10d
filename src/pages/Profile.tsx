@@ -129,6 +129,7 @@ export default function Profile() {
         resume_text: resumeText || null, years_experience: yearsExperience || null,
         target_industries: industries, key_skills: skills, preferred_tone: preferredTone,
         master_cover_letter: masterCoverLetter || null,
+        phone: phone || null, linkedin_url: linkedinUrl || null,
       };
       if (isImpersonating && activePersona) {
         await updateTestUser(activePersona.id, updates);

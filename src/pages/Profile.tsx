@@ -60,7 +60,7 @@ export default function Profile() {
     skills: JSON.stringify(skills) !== JSON.stringify(saved.skills) || JSON.stringify(industries) !== JSON.stringify(saved.industries) || newSkill.trim() !== "" || newIndustry.trim() !== "",
     tone: preferredTone !== saved.preferredTone,
     coverLetter: masterCoverLetter !== saved.masterCoverLetter,
-  }), [displayName, resumeText, yearsExperience, preferredTone, industries, skills, saved, newSkill, newIndustry, middleName, firstName, lastName, masterCoverLetter]);
+  }), [displayName, resumeText, yearsExperience, preferredTone, industries, skills, saved, newSkill, newIndustry, middleName, firstName, lastName, masterCoverLetter, phone, linkedinUrl]);
 
   const hasUnsavedChanges = dirty.identity || dirty.resume || dirty.skills || dirty.tone || dirty.coverLetter;
 

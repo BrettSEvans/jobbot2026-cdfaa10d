@@ -1293,7 +1293,7 @@ function copyAsMarkdown(
     for (const t of tests) {
       const r = resultMap.get(t.id);
       const result = r?.result;
-      const icon = result === "pass" ? "✅" : result === "fail" ? "❌" : result === "skip" ? "⏭" : "⬜";
+      const icon = result === "pass" ? "✅" : result === "fail" ? "❌" : result === "prompt_fix" ? "🪄" : result === "skip" ? "⏭" : "⬜";
       const fixed = r?.regression_fixed_at ? " (FIXED)" : "";
       lines.push(`### ${icon} ${t.title}${fixed}`);
       if (result === "fail" && r?.failure_notes) {

@@ -7,6 +7,8 @@ import {
   isAssetAllowed,
   canRefine,
   getAppLimit,
+  getPortfolioLimit,
+  isTrialExpired as checkTrialExpired,
 } from "@/lib/subscriptionTiers";
 
 export interface UserSubscription {
@@ -36,14 +38,14 @@ export function useSubscription() {
       if (error) {
         if (error.code === "PGRST116") {
           // No subscription row — this should be created by the handle_new_user trigger.
-          // Return a default free subscription to avoid breaking the UI.
+          // Return a default free trial subscription to avoid breaking the UI.
           return {
             id: "",
             user_id: user!.id,
             tier: "free" as const,
             status: "active",
             current_period_start: new Date().toISOString(),
-            current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+            current_period_end: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
             stripe_customer_id: null,
             stripe_subscription_id: null,
           } as UserSubscription;
@@ -70,6 +72,12 @@ export function useSubscription() {
   const tier: SubscriptionTier = (subscription?.tier as SubscriptionTier) ?? "free";
   const tierConfig = TIER_CONFIGS[tier];
 
+  // Trial expiration logic
+  const trialExpired = tier === "free" && checkTrialExpired(subscription?.current_period_end ?? null);
+  const trialDaysRemaining = tier === "free" && subscription?.current_period_end
+    ? Math.max(0, Math.ceil((new Date(subscription.current_period_end).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+    : 0;
+
   return {
     subscription,
     isLoading,
@@ -78,6 +86,9 @@ export function useSubscription() {
     isAssetAllowed: (assetType: string) => isAssetAllowed(tier, assetType),
     canRefine: canRefine(tier),
     appLimit: getAppLimit(tier),
+    portfolioLimit: getPortfolioLimit(tier),
+    isTrialExpired: trialExpired,
+    trialDaysRemaining,
     upgrade: upgradeMutation.mutateAsync,
     isUpgrading: upgradeMutation.isPending,
   };

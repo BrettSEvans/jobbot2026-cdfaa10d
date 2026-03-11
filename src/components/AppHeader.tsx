@@ -28,7 +28,7 @@ export default function AppHeader({ onSignOut }: AppHeaderProps) {
   const { theme, toggle } = useTheme();
   const { guardedNavigate } = useNavigationGuard();
   const { activePersona, isImpersonating, switchToSelf } = useImpersonation();
-  const { tier, isLoading: subLoading } = useSubscription();
+  const { tier, isLoading: subLoading, isTrialExpired, trialDaysRemaining } = useSubscription();
   const { hasAnyRole, loading: rolesLoading } = useUserRoles();
 
   const displayName = activePersona
@@ -44,6 +44,22 @@ export default function AppHeader({ onSignOut }: AppHeaderProps) {
     { to: "/profile", label: "Profile", match: (p: string) => p === "/profile" },
     ...(!rolesLoading && hasAnyRole ? [{ to: "/admin", label: "Admin", match: (p: string) => p === "/admin" }] : []),
   ];
+
+  const trialBadgeLabel = tier === "free"
+    ? isTrialExpired
+      ? "Trial Expired"
+      : `Trial · ${trialDaysRemaining}d left`
+    : tier === "pro"
+      ? "Pro"
+      : "Premium";
+
+  const trialBadgeVariant = tier === "free"
+    ? isTrialExpired
+      ? "destructive" as const
+      : "outline" as const
+    : tier === "premium"
+      ? "default" as const
+      : "secondary" as const;
 
   return (
     <>
@@ -106,11 +122,11 @@ export default function AppHeader({ onSignOut }: AppHeaderProps) {
           <div className="flex items-center gap-1.5">
             {!subLoading && (
               <Badge
-                variant={tier === "premium" ? "default" : tier === "pro" ? "secondary" : "outline"}
+                variant={trialBadgeVariant}
                 className="text-[10px] py-0 px-1.5 cursor-pointer hidden sm:inline-flex"
                 onClick={() => guardedNavigate(() => navigate("/pricing"))}
               >
-                {tier === "free" ? "Free" : tier === "pro" ? "Pro" : "Premium"}
+                {trialBadgeLabel}
               </Badge>
             )}
             {displayName && (
@@ -173,11 +189,11 @@ export default function AppHeader({ onSignOut }: AppHeaderProps) {
                   )}
                   {!subLoading && (
                     <Badge
-                      variant={tier === "premium" ? "default" : tier === "pro" ? "secondary" : "outline"}
+                      variant={trialBadgeVariant}
                       className="text-xs cursor-pointer"
                       onClick={() => navigate("/pricing")}
                     >
-                      {tier === "free" ? "Free" : tier === "pro" ? "Pro" : "Premium"} plan
+                      {trialBadgeLabel}
                     </Badge>
                   )}
                   <Button

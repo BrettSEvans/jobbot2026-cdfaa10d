@@ -48,7 +48,7 @@ function LandingNav() {
             Sign In
           </Button>
           <Button size="sm" className="shadow-[var(--shadow-warm)]" onClick={() => navigate("/auth")}>
-            Get Started Free
+            Start Free Trial
           </Button>
         </div>
 
@@ -72,7 +72,7 @@ function LandingNav() {
                   Sign In
                 </Button>
                 <Button className="shadow-[var(--shadow-warm)]" onClick={() => navigate("/auth")}>
-                  Get Started Free
+                  Start Free Trial
                 </Button>
               </div>
             </SheetContent>
@@ -117,14 +117,14 @@ function Hero() {
         </p>
         <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Button size="lg" className="gap-2 shadow-[var(--shadow-warm)] text-base px-8" onClick={() => navigate("/auth")}>
-            Start for Free <ArrowRight className="h-4 w-4" />
+            Start Your Free Trial <ArrowRight className="h-4 w-4" />
           </Button>
           <Button size="lg" variant="outline" className="text-base" onClick={scrollToPricing}>
             See Pricing
           </Button>
         </div>
         <p className="mt-4 text-xs text-muted-foreground">
-          No credit card required · Multiple documents per application · Free forever
+          No credit card required · Multiple documents per application · 7-day free trial
         </p>
       </div>
     </section>
@@ -309,7 +309,11 @@ function PricingCard({ config }: { config: TierConfig }) {
           <span className="font-heading text-4xl font-extrabold text-foreground">
             ${config.price}
           </span>
-          {config.price > 0 && <span className="mb-1 text-sm text-muted-foreground">/mo</span>}
+          {config.price > 0 ? (
+            <span className="mb-1 text-sm text-muted-foreground">/mo</span>
+          ) : (
+            <span className="mb-1 text-sm text-muted-foreground">for 7 days</span>
+          )}
         </div>
         <ul className="flex-1 space-y-2">
           {config.features.map((f) => (
@@ -341,7 +345,7 @@ function Pricing() {
           Simple, Transparent Pricing
         </h2>
         <p className="mx-auto mt-3 max-w-xl text-center text-muted-foreground">
-          Start free. Upgrade when you need more power.
+          Start with a 7-day free trial. Upgrade anytime.
         </p>
         <div className="mt-12 grid gap-6 sm:grid-cols-3">
           {tiers.map((t) => (
@@ -352,20 +356,6 @@ function Pricing() {
     </section>
   );
 }
-
-/* ---------------------- Testimonials (archived) ----------------- */
-/*
- * ARCHIVED: Original marquee testimonials — preserved for reference.
- *
- * const TESTIMONIALS = [
- *   { name: "Sarah M.", company: "Deloitte", quote: "..." },
- *   ... (16 items total)
- * ];
- * function TestimonialCard({ t }) { ... }
- * const ROW1 = TESTIMONIALS.slice(0, 8);
- * const ROW2 = TESTIMONIALS.slice(8);
- * function Testimonials() { ... }
- */
 
 /* -------------------- Social Proof (enhancv-style) -------------- */
 
@@ -506,7 +496,7 @@ function CtaFooter() {
           Join professionals who land interviews with complete career portfolios — not just resumes.
         </p>
         <Button size="lg" className="mt-8 gap-2 shadow-[var(--shadow-warm)] text-base px-8" onClick={() => navigate("/auth")}>
-          Get Started Free <ArrowRight className="h-4 w-4" />
+          Start Free Trial <ArrowRight className="h-4 w-4" />
         </Button>
       </div>
     </section>

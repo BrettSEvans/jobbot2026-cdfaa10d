@@ -270,7 +270,7 @@ export default function Auth() {
                         className="text-primary font-medium hover:underline underline-offset-4"
                         onClick={() => setMode("signup")}
                       >
-                        Sign up free
+                        Start free trial
                       </button>
                     </p>
                   </>

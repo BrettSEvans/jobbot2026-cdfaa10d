@@ -3,35 +3,40 @@ export type SubscriptionTier = "free" | "pro" | "premium";
 export interface TierConfig {
   tier: SubscriptionTier;
   label: string;
-  price: number; // monthly USD, 0 = free
+  price: number; // monthly USD, 0 = free trial
   description: string;
   limits: {
     appsPerMonth: number; // -1 = unlimited
     allowedAssets: string[]; // asset type slugs allowed
     canRefine: boolean;
+    portfolioItemsPerApp: number; // -1 = unlimited
   };
   features: string[];
   cta: string;
   highlighted?: boolean;
+  trialDays?: number; // only for free trial tier
 }
 
 export const TIER_CONFIGS: Record<SubscriptionTier, TierConfig> = {
   free: {
     tier: "free",
-    label: "Free",
+    label: "Free Trial",
     price: 0,
-    description: "Get started with the basics",
+    description: "Try everything for 7 days",
     limits: {
-      appsPerMonth: 2,
+      appsPerMonth: 5,
       allowedAssets: ["resume", "cover_letter"],
       canRefine: false,
+      portfolioItemsPerApp: 2,
     },
     features: [
-      "2 applications per month",
-      "Resume & cover letter",
+      "7-day free trial",
+      "5 resumes",
+      "2 portfolio items per resume",
       "ATS score analysis",
     ],
-    cta: "Current Plan",
+    cta: "Start Free Trial",
+    trialDays: 7,
   },
   pro: {
     tier: "pro",
@@ -49,9 +54,10 @@ export const TIER_CONFIGS: Record<SubscriptionTier, TierConfig> = {
         "architecture_diagram",
       ],
       canRefine: true,
+      portfolioItemsPerApp: -1,
     },
     features: [
-      "Everything in Free +",
+      "Everything in Trial +",
       "20 applications per month",
       "Executive reports & roadmaps",
       "AI refinement chat",
@@ -78,6 +84,7 @@ export const TIER_CONFIGS: Record<SubscriptionTier, TierConfig> = {
         "dynamic",
       ],
       canRefine: true,
+      portfolioItemsPerApp: -1,
     },
     features: [
       "Everything in Pro +",
@@ -105,4 +112,15 @@ export function canRefine(tier: SubscriptionTier): boolean {
 /** Get monthly app limit (-1 = unlimited) */
 export function getAppLimit(tier: SubscriptionTier): number {
   return TIER_CONFIGS[tier].limits.appsPerMonth;
+}
+
+/** Get portfolio items per app limit (-1 = unlimited) */
+export function getPortfolioLimit(tier: SubscriptionTier): number {
+  return TIER_CONFIGS[tier].limits.portfolioItemsPerApp;
+}
+
+/** Check if a free trial has expired based on period end date */
+export function isTrialExpired(periodEnd: string | null): boolean {
+  if (!periodEnd) return false;
+  return new Date(periodEnd) < new Date();
 }

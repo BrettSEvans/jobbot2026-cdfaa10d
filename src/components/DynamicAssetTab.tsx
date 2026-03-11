@@ -2,7 +2,7 @@
  * DynamicAssetTab - Renders a single dynamic (AI-proposed) asset with full feature parity:
  * Generate, Vibe Edit, PDF Download, Copy Text, Revision History.
  * After download, regeneration/refinement/swap are locked.
- * In preview mode (free tier), buttons are disabled with upgrade tooltips and content is watermarked.
+ * In preview mode (free trial), buttons are disabled with upgrade tooltips and content is watermarked.
  */
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";

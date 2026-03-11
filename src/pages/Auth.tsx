@@ -164,7 +164,7 @@ export default function Auth() {
                   ? "Enter your email to receive a reset link"
                   : mode === "login"
                     ? "Sign in to access your applications"
-                    : "Get started with your free account"}
+                    : "Start your 7-day free trial"}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -270,7 +270,7 @@ export default function Auth() {
                         className="text-primary font-medium hover:underline underline-offset-4"
                         onClick={() => setMode("signup")}
                       >
-                        Sign up free
+                        Start free trial
                       </button>
                     </p>
                   </>

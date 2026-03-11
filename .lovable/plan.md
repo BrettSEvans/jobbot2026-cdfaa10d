@@ -1,129 +1,297 @@
+# JobBot Maui Plan — Architect-Reviewed Rewrite
 
+Based on competitive landscape analysis, product critique, and a critical architect review that identified 17 gaps across data model design, error handling, performance, security, and testing strategy.
 
-## Change Free Tier to 7-Day Trial with New Limits
+---
 
-### Summary
-Transform the permanent "Free" tier into a "7-Day Free Trial" with limits of 5 resumes and 2 portfolio items per resume. This requires changes across 13 files plus a database migration.
+## Feature Priority Matrix
 
-### All Identified Locations Requiring Changes
+| # | Update | Priority | Effort | Status |
+|---|--------|----------|--------|--------|
+| 1 | Subscription Infrastructure | CRITICAL | 1–2 weeks | ✅ DONE |
+| 2 | Public Landing Page | CRITICAL | 3–5 days | ✅ DONE |
+| 3 | ATS Match Score | HIGH | 3–5 days | 🔲 TODO |
+| 4 | Pipeline Stages (Kanban) | HIGH | 5–7 days | 🔲 TODO |
+| 5 | DOCX Export | HIGH | 2–3 days | 🔲 TODO |
+| 6 | Mobile Responsive UI | MEDIUM | 5–7 days | 🔲 TODO |
+| 7 | Selective Asset Generation | MEDIUM | 3–4 days | 🔲 TODO |
+| 8 | Onboarding Flow | MEDIUM | 3–4 days | 🔲 TODO |
+| 9 | Code Cleanup | LOW | 3–4 days | 🔲 TODO |
+| 10 | Chrome Extension (Infra) | LOW | 2–3 days | 🔲 TODO |
 
-**1. Core Config — `src/lib/subscriptionTiers.ts`**
-- Add `trialDays` and `portfolioItemsPerApp` to `TierConfig` interface
-- Add `isTrialExpired(periodEnd: string)` helper function
-- Add `getPortfolioLimit(tier)` helper
-- Update free tier config:
-  - `label`: "Free" → "Free Trial"
-  - `description`: "Get started with the basics" → "Try everything for 7 days"
-  - `appsPerMonth`: 2 → 5
-  - Add `portfolioItemsPerApp: 2`
-  - `features`: update to ["7-day free trial", "5 resumes", "2 portfolio items per resume", "ATS score analysis"]
-  - `cta`: "Current Plan" → "Start Free Trial"
-  - Add `trialDays: 7`
-- Update pro `features[0]`: "Everything in Free +" → "Everything in Trial +"
+---
 
-**2. Subscription Hook — `src/hooks/useSubscription.ts`**
-- Import `isTrialExpired` helper
-- Change fallback `current_period_end` from 30 days to 7 days
-- Export `isTrialExpired` boolean and `trialDaysRemaining` number
-- Export `portfolioLimit` from tier config
+## Phased Schedule
 
-**3. Landing Page — `src/pages/Landing.tsx`** (5 locations)
-- Line 51: "Get Started Free" → "Start Free Trial"
-- Line 75: "Get Started Free" → "Start Free Trial"
-- Line 120: "Start for Free" → "Start Your Free Trial"
-- Line 127: "Free forever" → "7-day free trial"
-- Line 344: "Start free. Upgrade when you need more power." → "Start with a 7-day free trial. Upgrade anytime."
-- Line 509: "Get Started Free" → "Start Free Trial"
-- Landing pricing card: "$0" label should show "for 7 days"
+### Phase 1 — Launch-Blocking (COMPLETE)
+- ✅ Subscription Infrastructure: 3-tier model, feature gating, rate limiting
+- ✅ Public Landing Page: Hero, features, pricing, CTA
 
-**4. Auth Page — `src/pages/Auth.tsx`**
-- Line 167: "Get started with your free account" → "Start your 7-day free trial"
+### Phase 2 — Competitive Parity
+Items 3–5. Close visible feature gaps vs Teal, Rezi, Swooped.
 
-**5. App Header — `src/components/AppHeader.tsx`** (2 locations)
-- Line 113: "Free" → "Trial" (desktop badge), add "Trial Expired" destructive variant when expired
-- Line 180: "Free" → "Trial" (mobile badge)
+### Phase 3 — Retention & Polish
+Items 6–8. Mobile support, faster generation, onboarding.
 
-**6. Pricing Page — `src/pages/Pricing.tsx`** (8 locations)
-- Line 78: "You're now on the Free plan." → "You're now on the Free Trial."
-- Line 110: Show badge for free trial users too (with days remaining)
-- Lines 118-131: Usage bar — hardcoded `/ 2` → use `appLimit`, also show trial days remaining
-- Line 151: highlight logic unchanged (still works)
-- Line 196: "$0" display → add "for 7 days" subtext
-- Line 247: "Cancel your plan?" → "End your trial?" when free
-- Line 253: "return to the Free plan" → "Your trial has ended"
-- Line 280: "Switch to Free" → "Cancel to Trial"
+### Phase 4 — Maintenance & Future
+Items 9–10. Tech debt cleanup, Chrome extension infra.
 
-**7. ProUsageBar — `src/components/ProUsageBar.tsx`**
-- Currently only shows for `tier === "pro"` — extend to also show for free trial users with days remaining counter
+---
 
-**8. NewApplication — `src/pages/NewApplication.tsx`**
-- Line 173: Update message to mention trial context when tier is free and trial is expired
-- Add trial expiration gate: if trial expired, block creation with "Your 7-day free trial has ended" + upgrade CTA
+## Feature 1: ATS Match Score
 
-**9. ApplicationDetail — `src/pages/ApplicationDetail.tsx`**
-- Line 360: `isPreviewOnly={tier === "free"}` — also check trial expiration (expired trial = fully locked, active trial = allow usage within limits)
-
-**10. Watermark utility — `src/lib/watermarkHtml.ts`**
-- Line 2: Comment update only ("free tier" → "free trial")
-
-**11. Help & QA entries — `src/lib/helpEntries.ts`, `src/lib/qaEntries.ts`**
-- helpEntries line ~595: "free plan" → "free trial"
-- qaEntries line ~964: "free tier" → "free trial"
-
-**12. DynamicAssetTab — `src/components/DynamicAssetTab.tsx`**
-- Line 5: Comment update ("free tier" → "free trial")
-
-**13. Test fixtures — `src/test/maui/fixtures/index.ts`**
-- Update `mockSubscription.free` period end to 7 days from start
-
-**14. Test files** — `src/test/maui/assetSelector.test.ts`, `src/test/maui/docxExport.test.ts`, `src/test/maui/atsScore.test.ts`
-- Update descriptions from "free tier" → "free trial"
-
-### Database Migration
-
-Update the `handle_new_user` trigger to set `current_period_end` to 7 days instead of relying on the column default of 30 days:
-
+### Database
 ```sql
--- Update handle_new_user to set 7-day trial period
-CREATE OR REPLACE FUNCTION public.handle_new_user() ...
-  INSERT INTO public.user_subscriptions (user_id, tier, status, current_period_end)
-  VALUES (NEW.id, 'free', 'active', now() + interval '7 days');
+ALTER TABLE job_applications
+  ADD COLUMN ats_score jsonb DEFAULT NULL,
+  ADD COLUMN ats_scored_at timestamptz DEFAULT NULL;
 ```
+Add `ats_score` and `ats_scored_at` to `ALLOWED_JOB_APP_FIELDS`.
 
-Also update the column default:
+### Edge Function: `score-ats-match/index.ts`
+- Input: `{ jobDescription, resumeHtml }`
+- Model: `google/gemini-2.5-flash` with tool-calling for structured output
+- Output schema:
+  ```json
+  {
+    "score": 78,
+    "matchedKeywords": ["React", "TypeScript"],
+    "missingKeywords": ["Kubernetes", "Terraform"],
+    "suggestions": ["Add cloud infrastructure experience"],
+    "keywordGroups": { "React": ["React", "React.js", "ReactJS"] }
+  }
+  ```
+- Keyword grouping: prompt instructs model to cluster synonyms
+- Score calibration rubric: 0–30 poor, 31–60 partial, 61–80 strong, 81–100 near-perfect
+
+### Caching & Invalidation
+- Store in `ats_score` column with `ats_scored_at` timestamp
+- Re-score only when: (a) user clicks "Rescan", (b) `resume_html` changes (hash comparison), (c) score > 7 days old
+- Tier gating: Free = 2 scores/day, Pro = 20/day, Premium = unlimited
+
+### UI: `AtsScoreCard.tsx`
+- Circular gauge (0–100), color-coded (red < 50, yellow 50–79, green 80+)
+- Expandable keyword panel with matched/missing lists
+- "Rescan" button with cooldown indicator
+- Placed in ApplicationDetail header
+
+### Auto-trigger
+After resume generation completes in `backgroundGenerator.ts`, queue ATS scoring as non-blocking follow-up step.
+
+### Acceptance Criteria
+- Score latency < 5s for 95th percentile
+- Score variance ≤ ±5 points on identical inputs across 10 runs
+- Free tier enforces 2/day limit with upgrade gate
+
+---
+
+## Feature 2: Application Pipeline Stages (Kanban)
+
+### Database
 ```sql
-ALTER TABLE public.user_subscriptions 
-  ALTER COLUMN current_period_end SET DEFAULT (now() + interval '7 days');
+ALTER TABLE job_applications
+  ADD COLUMN pipeline_stage text NOT NULL DEFAULT 'applied',
+  ADD COLUMN stage_changed_at timestamptz DEFAULT now();
+
+CREATE TABLE pipeline_stage_history (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  application_id uuid NOT NULL REFERENCES job_applications(id) ON DELETE CASCADE,
+  from_stage text,
+  to_stage text NOT NULL,
+  changed_at timestamptz NOT NULL DEFAULT now(),
+  user_id uuid NOT NULL
+);
+ALTER TABLE pipeline_stage_history ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can CRUD own stage history"
+  ON pipeline_stage_history FOR ALL
+  USING (user_id = auth.uid());
+```
+Add `pipeline_stage` and `stage_changed_at` to `ALLOWED_JOB_APP_FIELDS`.
+
+### Stage Definitions (`src/lib/pipelineStages.ts`)
+```
+bookmarked → applied → interviewing → offer → accepted
+                                    ↘ rejected
+```
+- All transitions allowed but "illogical" moves show confirmation dialog
+- `updatePipelineStage()` writes to both `job_applications` and `pipeline_stage_history`
+
+### UI: `KanbanBoard.tsx`
+- Uses `@hello-pangea/dnd` (maintained fork, touch support built-in)
+- Cards: company icon, role, days-in-stage badge, ATS score mini-badge
+- View toggle in `Applications.tsx` header: List (default) | Kanban
+- Stage dropdown in `ApplicationDetail.tsx` header
+- Mobile: horizontal scroll with CSS snap
+
+### Accessibility
+- Keyboard navigation: arrow keys between columns, Enter to drop
+- ARIA labels on all drag handles
+- Screen reader announcements for stage changes
+
+---
+
+## Feature 3: DOCX Export
+
+### Edge Function: `export-docx/index.ts`
+- Uses `docx` npm package via Deno npm: specifier
+- Input: `{ html, assetType, filename }`
+- Output: binary blob, `Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document`
+- Limits: max 500KB input HTML, 60s timeout, graceful error on oversized input
+
+### Client: `src/lib/docxExport.ts`
+- `downloadAsDocx(html, filename)` — calls edge function, triggers blob download
+- Naming: `{asset-type}-{company}-{role}.docx`
+
+### UI
+- DOCX button alongside PDF in `HtmlAssetTab.tsx` for resume and cover letter only
+- `FileDown` icon with "DOCX" label
+- Tier gating: Free = PDF only, Pro/Premium = PDF + DOCX (upgrade gate for Free)
+
+---
+
+## Feature 4: Mobile Responsive UI
+
+### Breakpoint Strategy
+| Breakpoint | Layout |
+|---|---|
+| `< 640px` (sm) | Single column, card layouts, hamburger nav, full-width inputs |
+| `640–1024px` (md) | Two-column where appropriate, condensed table |
+| `> 1024px` (lg) | Current desktop layout unchanged |
+
+### Component Changes
+| Component | Mobile behavior |
+|---|---|
+| `AppHeader` | Hamburger → `Sheet` drawer with nav links, theme toggle, sign out |
+| `Applications` table | Card list with company icon, role, status badge |
+| `ApplicationDetail` tabs | Horizontal scrollable tab bar, full-width iframe at 50vh |
+| `NewApplication` form | Single column, sticky "Generate" CTA at bottom |
+| `KanbanBoard` | Horizontal scroll with snap, sticky column headers |
+| `WysiwygEditor` | Simplified toolbar, larger touch targets |
+| `Profile` | Fix card padding |
+
+### Touch Audit
+- Asset preview iframes: `touch-action: pan-x pan-y` for pinch-to-zoom
+- Kanban: handled by `@hello-pangea/dnd` touch support
+- Disable hover-only interactions; add explicit tap targets
+
+### Accessibility
+- All new interactive elements get `aria-label`, keyboard-focusable, visible focus rings
+
+---
+
+## Feature 5: Selective Asset Generation
+
+### Database
+```sql
+ALTER TABLE job_applications
+  ADD COLUMN selected_assets jsonb DEFAULT NULL;
+```
+Add `selected_assets` to `ALLOWED_JOB_APP_FIELDS`.
+
+### UI: `AssetSelector.tsx`
+- Checkbox grid in `NewApplication.tsx` before generation starts
+- Default selections per tier: Free = resume + cover_letter (locked), Pro = all core, Premium = all + dynamic
+- "Essentials Only" / "All Assets" quick buttons
+- Locked assets show tier badge + tooltip → pricing page
+- Selection persisted to `selected_assets` column
+
+### Pipeline Changes (`backgroundGenerator.ts`)
+- `startFullGeneration()` accepts `selectedAssets?: string[]`
+- `runPipeline()` filters parallel generation array based on selection
+- `totalAssets` calculated dynamically from selected count
+- Cover letter always generated (foundational)
+- Backward compat: null/undefined `selectedAssets` → generate all
+
+---
+
+## Feature 6: Onboarding Flow
+
+### Database
+```sql
+ALTER TABLE profiles
+  ADD COLUMN onboarding_completed_at timestamptz DEFAULT NULL;
 ```
 
-### Portfolio Items Per Resume Limit (New Concept)
+### UI: `src/components/onboarding/OnboardingWizard.tsx`
+- Full-screen modal, 4 steps:
+  1. **Welcome** — brand intro, value prop
+  2. **Profile basics** — first name, last name, experience level
+  3. **Resume upload** — drag-and-drop, auto-extract skills via `extract-style-signals`
+  4. **First application** — paste job URL, CTA to start
 
-The current system has no concept of "portfolio items per resume." The `allowedAssets` array controls which asset *types* are available per tier. To implement "2 portfolio items per resume":
+### Behavior
+- Progress dots, skip button on every step, animated transitions
+- Each step saves incrementally to `profiles` table
+- Completion: set `onboarding_completed_at`, navigate to `/applications/new`
+- Show conditions: authenticated AND `onboarding_completed_at IS NULL` AND 0 applications
+- Re-access: Help menu → "Restart Onboarding"
 
-- Add `portfolioItemsPerApp: 2` to the free trial tier config (pro/premium get higher or unlimited values)
-- In `backgroundGenerator.ts`, when generating assets for free trial users, limit non-resume/non-cover-letter assets to 2
-- In `ApplicationDetail.tsx`, enforce the count of visible portfolio tabs
+---
 
-### Trial Expiration Enforcement
+## Feature 7: Code Cleanup
 
-New `isTrialExpired` helper in `subscriptionTiers.ts`:
-```typescript
-export function isTrialExpired(periodEnd: string | null): boolean {
-  if (!periodEnd) return false;
-  return new Date(periodEnd) < new Date();
-}
+### Phase 7a — Baseline tests BEFORE extraction
+Render `Profile.tsx`, `NewApplication.tsx`, `Applications.tsx` with mocked data → capture DOM snapshots as regression safety net.
+
+### Phase 7b — Extract components
+
+| Source | Extracted components |
+|---|---|
+| `Profile.tsx` (746 lines) | `IdentityCard`, `ResumeCard`, `SkillsCard`, `ToneCard`, `useProfileForm` hook |
+| `NewApplication.tsx` (787 lines) | `JobInputStep`, `AnalyzingStep`, `PreviewStep`, `useNewApplication` hook |
+| `Applications.tsx` (724 lines) | `ApplicationsTable`, `TrashTab`, `DashboardPreviewOverlay` |
+
+### Phase 7c — Remove `as any` casts
+- Audit all files, replace with proper types from `types.ts`
+- For tables not in generated types, add manual type interfaces
+
+---
+
+## Feature 8: Chrome Extension (Infrastructure Only)
+
+### Edge Function: `import-job-external/index.ts`
+- Input: `{ source, url, jobTitle?, companyName?, jobDescription? }`
+- Requires valid JWT (verify_jwt = true)
+- Rate limited: 10 imports/hour per user
+- CORS restricted to app domain only
+- Creates `job_applications` row with `pipeline_stage = 'bookmarked'`
+
+### Import Page: `/import` route
+- Parses `?url=...&source=linkedin` query params
+- Confirmation card before creating application
+- Redirects to application detail on success
+
+### Documentation: `docs/CHROME_EXTENSION.md`
+
+---
+
+## Cross-Cutting Requirements
+
+### Analytics Events
+Every feature ships with `trackEvent()`:
+`ats_score_generated`, `pipeline_stage_changed`, `docx_exported`, `asset_selection_changed`, `onboarding_step_completed`, `kanban_view_toggled`, `import_job_external`
+
+### Error Handling
+All edge functions return `{ error: string, code: string }`. Client-side toast for user-facing errors.
+
+### Accessibility
+WCAG 2.1 AA for all new components.
+
+---
+
+## Test Suite: Maui Tests
+
+```
+src/test/maui/
+  fixtures/          — shared mock data
+  atsScore.test.ts
+  kanbanBoard.test.ts
+  docxExport.test.ts
+  mobileResponsive.test.ts
+  assetSelector.test.ts
+  onboardingWizard.test.ts
+  codeCleanup.test.ts
+  externalImport.test.ts
 ```
 
-When trial is expired:
-- `NewApplication`: block new app creation entirely
-- `ApplicationDetail`: read-only mode (existing apps still viewable)
-- `AppHeader`: badge shows "Trial Expired" in destructive color
-- `Pricing`: show "Trial ended" banner instead of usage bar
-
-### Files Not Needing Changes
-- `UpgradeGate.tsx` — generic, works with any tier check
-- `useAppUsage.ts` — counts apps regardless of tier, no changes needed
-- Edge functions — tier enforcement is client-side currently
-- RLS policies — unchanged
-- `supabase/config.toml` — unchanged
-
+All tests use Vitest + React Testing Library. Run via `vitest --dir src/test/maui`.

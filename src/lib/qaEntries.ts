@@ -961,7 +961,7 @@ registerTest({
   title: 'Upgrade gate (tier-locked features)',
   area: 'Cross-cutting',
   helpSlug: 'upgrade-gate',
-  preconditions: ['User is on the free tier.'],
+  preconditions: ['User is on the free trial.'],
   steps: [
     'Navigate to a feature gated behind a paid tier.',
     'Attempt to use the feature.',

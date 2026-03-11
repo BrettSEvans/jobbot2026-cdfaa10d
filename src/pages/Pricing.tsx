@@ -33,7 +33,7 @@ const TIER_ICONS: Record<SubscriptionTier, React.ReactNode> = {
 };
 
 export default function Pricing() {
-  const { tier: currentTier, upgrade, isUpgrading } = useSubscription();
+  const { tier: currentTier, upgrade, isUpgrading, appLimit, isTrialExpired, trialDaysRemaining } = useSubscription();
   const { data: appsUsed = 0 } = useAppUsage();
   const [pendingTier, setPendingTier] = useState<SubscriptionTier | null>(null);
 
@@ -75,7 +75,7 @@ export default function Pricing() {
         title: pendingTier === "free" ? "Plan cancelled" : "Plan downgraded",
         description:
           pendingTier === "free"
-            ? "You're now on the Free plan."
+            ? "You're now on the Free Trial."
             : `You're now on the ${TIER_CONFIGS[pendingTier].label} plan.`,
       });
     } catch {
@@ -114,17 +114,28 @@ export default function Pricing() {
         )}
       </div>
 
-      {/* Usage bar for free users */}
+      {/* Trial status for free users */}
       {currentTier === "free" && (
-        <div className="mb-8 max-w-md mx-auto">
+        <div className="mb-8 max-w-md mx-auto space-y-3">
+          {isTrialExpired ? (
+            <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+              <AlertTriangle className="h-4 w-4 shrink-0" />
+              <span>Your 7-day free trial has ended. Upgrade to continue creating applications.</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-primary">
+              <Zap className="h-4 w-4 shrink-0" />
+              <span><strong>{trialDaysRemaining} day{trialDaysRemaining !== 1 ? "s" : ""}</strong> remaining in your free trial</span>
+            </div>
+          )}
           <div className="flex justify-between text-sm text-muted-foreground mb-1">
             <span>Applications this month</span>
-            <span>{appsUsed} / 2</span>
+            <span>{appsUsed} / {appLimit}</span>
           </div>
           <div className="h-2 rounded-full bg-muted overflow-hidden">
             <div
               className="h-full rounded-full bg-primary transition-all"
-              style={{ width: `${Math.min((appsUsed / 2) * 100, 100)}%` }}
+              style={{ width: `${Math.min((appsUsed / appLimit) * 100, 100)}%` }}
             />
           </div>
         </div>
@@ -193,10 +204,12 @@ export default function Pricing() {
                 <CardDescription>{config.description}</CardDescription>
                 <div className="mt-3">
                   <span className="text-3xl font-heading font-bold text-foreground">
-                    {config.price === 0 ? "Free" : `$${config.price}`}
+                    {config.price === 0 ? "$0" : `$${config.price}`}
                   </span>
-                  {config.price > 0 && (
+                  {config.price > 0 ? (
                     <span className="text-muted-foreground text-sm">/mo</span>
+                  ) : (
+                    <span className="text-muted-foreground text-sm"> for 7 days</span>
                   )}
                 </div>
               </CardHeader>
@@ -244,13 +257,13 @@ export default function Pricing() {
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-destructive" />
-              {pendingTier === "free" ? "Cancel your plan?" : "Downgrade your plan?"}
+              {pendingTier === "free" ? "End your trial?" : "Downgrade your plan?"}
             </AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-3">
                 <p>
                   {pendingTier === "free"
-                    ? "You'll lose access to all paid features and return to the Free plan."
+                    ? "You'll lose access to all paid features. Your trial has ended."
                     : `You'll be moving from ${TIER_CONFIGS[currentTier].label} to ${TIER_CONFIGS[pendingTier!]?.label}.`}
                 </p>
                 {lostFeatures.length > 0 && (
@@ -277,7 +290,7 @@ export default function Pricing() {
               onClick={confirmDowngrade}
               disabled={isUpgrading}
             >
-              {pendingTier === "free" ? "Switch to Free" : `Switch to ${TIER_CONFIGS[pendingTier!]?.label}`}
+              {pendingTier === "free" ? "Cancel to Trial" : `Switch to ${TIER_CONFIGS[pendingTier!]?.label}`}
             </AlertDialogCancel>
             <AlertDialogAction>
               Keep current plan

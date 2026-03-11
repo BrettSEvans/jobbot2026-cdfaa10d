@@ -66,7 +66,7 @@ export const mockJobApplication = {
 };
 
 export const mockSubscription = {
-  free: { id: "sub-free", user_id: mockUser.id, tier: "free" as const, status: "active", current_period_start: "2025-06-01", current_period_end: "2025-07-01", stripe_customer_id: null, stripe_subscription_id: null },
+  free: { id: "sub-free", user_id: mockUser.id, tier: "free" as const, status: "active", current_period_start: "2025-06-01", current_period_end: "2025-06-08", stripe_customer_id: null, stripe_subscription_id: null },
   pro: { id: "sub-pro", user_id: mockUser.id, tier: "pro" as const, status: "active", current_period_start: "2025-06-01", current_period_end: "2025-07-01", stripe_customer_id: null, stripe_subscription_id: null },
   premium: { id: "sub-prem", user_id: mockUser.id, tier: "premium" as const, status: "active", current_period_start: "2025-06-01", current_period_end: "2025-07-01", stripe_customer_id: null, stripe_subscription_id: null },
 };

@@ -29,7 +29,7 @@ function filterPipeline(allAssets: readonly string[], selected: string[] | null)
 }
 
 describe("Asset Selector — Default Selections", () => {
-  it("free tier defaults to resume + cover_letter only", () => {
+  it("free trial defaults to resume + cover_letter only", () => {
     const selection = getDefaultSelection("free");
     expect(selection).toEqual(["resume", "cover_letter"]);
   });

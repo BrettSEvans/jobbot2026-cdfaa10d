@@ -1192,6 +1192,16 @@ function TestCaseCard({
         </div>
       </div>
 
+      {/* Fix Prompt Preview */}
+      {isFailed && !isFixed && !isCompleted && savedResult?.failure_notes && (
+        <div className="space-y-1">
+          <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">Fix Prompt Preview</span>
+          <pre className="bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800 rounded p-2 text-xs whitespace-pre-wrap font-mono text-foreground/80 max-h-48 overflow-y-auto">
+            {generateFixPrompt(tc, savedResult, buildLabel)}
+          </pre>
+        </div>
+      )}
+
       {/* Failure notes textarea */}
       {(isFailed || isPromptFix) && (
         <div className="space-y-1">

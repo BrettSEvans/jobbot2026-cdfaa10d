@@ -967,8 +967,10 @@ function TestCaseCard({
   isCustom?: boolean;
   onDelete?: () => void;
 }) {
+  const { toast } = useToast();
   const result = (savedResult?.result as TestResult) || null;
   const isFailed = result === "fail";
+  const isPromptFix = result === "prompt_fix";
   const isFixed = !!savedResult?.regression_fixed_at;
   const [notes, setNotes] = useState(savedResult?.failure_notes || "");
   const [fixConfirm, setFixConfirm] = useState(false);

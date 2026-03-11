@@ -26,6 +26,9 @@ import {
   Menu,
   Star,
   Zap,
+  Trophy,
+  Users,
+  Quote,
 } from "lucide-react";
 
 /* ------------------------------------------------------------------ */

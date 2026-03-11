@@ -43,11 +43,14 @@ export default function Profile() {
   const [newIndustry, setNewIndustry] = useState("");
   const [newSkill, setNewSkill] = useState("");
   const [masterCoverLetter, setMasterCoverLetter] = useState("");
+  const [phone, setPhone] = useState("");
+  const [linkedinUrl, setLinkedinUrl] = useState("");
   // Saved values (snapshot from last load/save)
   const [saved, setSaved] = useState({
     firstName: "", middleName: "", lastName: "", displayName: "",
     resumeText: "", yearsExperience: "", preferredTone: "professional",
     industries: [] as string[], skills: [] as string[], masterCoverLetter: "",
+    phone: "", linkedinUrl: "",
   });
 
   // Compute dirty state per card

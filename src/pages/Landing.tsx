@@ -34,11 +34,11 @@ function LandingNav() {
     <nav className="sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-md">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
         <BrandLogo size="md" />
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2">
           <Button variant="ghost" size="sm" onClick={() => navigate("/auth")}>
             Sign In
           </Button>
-          <Button size="sm" className="shadow-[var(--shadow-warm)]" onClick={() => navigate("/auth")}>
+          <Button size="sm" className="hidden sm:inline-flex shadow-[var(--shadow-warm)]" onClick={() => navigate("/auth")}>
             Get Started Free
           </Button>
         </div>

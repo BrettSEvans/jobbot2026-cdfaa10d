@@ -239,6 +239,10 @@ export default function Profile() {
               isImpersonating={isImpersonating}
               isDirty={dirty.resume} saving={saving} savingCard={savingCard}
               onSave={handleCardSave} cardBorderClass={cardBorderClass(dirty.resume)}
+              onContactExtracted={(contact) => {
+                if (contact.phone) setPhone(contact.phone);
+                if (contact.linkedin_url) setLinkedinUrl(contact.linkedin_url);
+              }}
             />
 
             <CoverLetterCard

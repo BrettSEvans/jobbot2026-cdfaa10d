@@ -446,6 +446,13 @@ export default function AdminQATab() {
                     title={`${failCount} failed`}
                   />
                 )}
+                {promptFixCount > 0 && (
+                  <div
+                    className="h-full bg-indigo-400 transition-all"
+                    style={{ width: `${(promptFixCount / totalCount) * 100}%` }}
+                    title={`${promptFixCount} prompt fix`}
+                  />
+                )}
                 {skipCount > 0 && (
                   <div
                     className="h-full bg-muted-foreground/40 transition-all"

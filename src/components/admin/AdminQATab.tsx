@@ -517,17 +517,17 @@ export default function AdminQATab() {
                 </Select>
                 {compareRunId && (
                   <Badge variant="outline" className="text-xs">
-                    {(() => {
-                      const regressions = allTests.filter((t) => {
-                        const prev = compareResults.get(t.id)?.result;
-                        const curr = resultMap.get(t.id)?.result;
-                        return prev === "pass" && curr === "fail";
-                      }).length;
-                      const fixes = allTests.filter((t) => {
-                        const prev = compareResults.get(t.id)?.result;
-                        const curr = resultMap.get(t.id)?.result;
-                        return prev === "fail" && curr === "pass";
-                      }).length;
+                     {(() => {
+                       const regressions = allRunTests.filter((t) => {
+                         const prev = compareResults.get(t.id)?.result;
+                         const curr = resultMap.get(t.id)?.result;
+                         return prev === "pass" && curr === "fail";
+                       }).length;
+                       const fixes = allRunTests.filter((t) => {
+                         const prev = compareResults.get(t.id)?.result;
+                         const curr = resultMap.get(t.id)?.result;
+                         return prev === "fail" && curr === "pass";
+                       }).length;
                       return `${regressions} regressions · ${fixes} fixes`;
                     })()}
                   </Badge>

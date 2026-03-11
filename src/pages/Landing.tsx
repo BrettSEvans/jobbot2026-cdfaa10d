@@ -506,6 +506,66 @@ function CtaFooter() {
 /*  Landing Page                                                     */
 /* ---------------------------------------------------------------- */
 
+/* ----------------------------- FAQ ------------------------------ */
+
+const FAQ_ITEMS = [
+  {
+    q: "What is an AI resume builder?",
+    a: "An AI resume builder uses artificial intelligence to create tailored, ATS-optimized resumes from your experience and a job description. ResuVibe goes further — it generates an entire career portfolio including cover letters, executive dashboards, 90-day roadmaps, and risk logs, all branded to the target company.",
+  },
+  {
+    q: "How does ResuVibe compare to other resume tools like Teal or Rezi?",
+    a: "Most resume tools generate a single document. ResuVibe creates a complete application portfolio — multiple professional deliverables per job application — with company-specific branding, colors, and logos scraped automatically. It's the difference between handing in a resume and handing in a business case.",
+  },
+  {
+    q: "What documents does ResuVibe generate?",
+    a: "Each application can include a tailored resume, cover letter, executive dashboard, 90-day roadmap, RAID log (risk/action/issue/decision matrix), architecture diagrams, and AI-proposed custom assets specific to your industry and role.",
+  },
+  {
+    q: "Is ResuVibe free to use?",
+    a: "Yes — ResuVibe offers a 7-day free trial with no credit card required. You can generate complete application portfolios during your trial. Pro and Premium plans unlock additional features like DOCX export, unlimited generations, and priority support.",
+  },
+  {
+    q: "How does company branding work?",
+    a: "When you paste a job URL, ResuVibe automatically researches the company, scrapes their logo and brand colors, and applies them across all generated documents. Your deliverables look like they were created in-house.",
+  },
+  {
+    q: "Can I edit the generated documents?",
+    a: "Absolutely. Every document includes an inline editor and an AI chat 'vibe edit' feature — describe what you want changed in plain English and the AI refines it instantly. You can also edit the HTML directly for pixel-perfect control.",
+  },
+];
+
+function Faq() {
+  return (
+    <section className="py-20 sm:py-24">
+      <div className="mx-auto max-w-3xl px-4 sm:px-6">
+        <h2 className="text-center font-heading text-3xl font-bold text-foreground sm:text-4xl">
+          Frequently Asked Questions
+        </h2>
+        <p className="mx-auto mt-3 max-w-xl text-center text-muted-foreground">
+          Everything you need to know about the AI-powered job application toolkit.
+        </p>
+        <Accordion type="single" collapsible className="mt-10">
+          {FAQ_ITEMS.map((item, i) => (
+            <AccordionItem key={i} value={`faq-${i}`}>
+              <AccordionTrigger className="text-left text-foreground">
+                {item.q}
+              </AccordionTrigger>
+              <AccordionContent className="text-muted-foreground leading-relaxed">
+                {item.a}
+              </AccordionContent>
+            </AccordionItem>
+          ))}
+        </Accordion>
+      </div>
+    </section>
+  );
+}
+
+/* ---------------------------------------------------------------- */
+/*  Landing Page                                                     */
+/* ---------------------------------------------------------------- */
+
 export default function Landing() {
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -516,8 +576,15 @@ export default function Landing() {
       <Features />
       <Pricing />
       <SocialProof />
+      <Faq />
       <CtaFooter />
       <footer className="border-t border-border/60 py-6 text-center text-xs text-muted-foreground space-y-2 pb-[280px] sm:pb-6">
+        <p className="flex items-center justify-center gap-2 text-sm font-bold text-foreground">
+          <Mail className="h-4 w-4" />
+          <a href="mailto:Helpdesk@ResuVibe.com" className="hover:text-primary transition-colors">
+            Helpdesk@ResuVibe.com
+          </a>
+        </p>
         <div className="flex items-center justify-center gap-4">
           <a href="/terms" className="hover:text-foreground transition-colors">Terms of Service</a>
           <span className="text-border">·</span>

@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=800">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', sans-serif; width: 800px; min-height: 1040px; display: flex; background: #fff; color: #1a1a2e; font-size: 13px; line-height: 1.5; }
+  .sidebar { width: 260px; background: #4A52A0; color: #fff; padding: 40px 24px 32px; flex-shrink: 0; }
+  .main { flex: 1; padding: 40px 32px 32px; }
+  .name-block { margin-bottom: 28px; }
+  .name-block h1 { font-size: 22px; font-weight: 700; color: #fff; letter-spacing: 0.5px; }
+  .name-block .accent { color: #E8A317; }
+  .name-block .title { font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.8); margin-top: 4px; letter-spacing: 1px; text-transform: uppercase; }
+  .contact-section { margin-bottom: 24px; }
+  .contact-section h3 { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #E8A317; margin-bottom: 10px; border-bottom: 1px solid rgba(232,163,23,0.4); padding-bottom: 6px; }
+  .contact-item { font-size: 11px; color: rgba(255,255,255,0.9); margin-bottom: 6px; display: flex; align-items: flex-start; gap: 6px; }
+  .contact-item .icon { color: #E8A317; font-size: 11px; flex-shrink: 0; margin-top: 1px; }
+  .sidebar-section { margin-bottom: 22px; }
+  .sidebar-section h3 { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #E8A317; margin-bottom: 10px; border-bottom: 1px solid rgba(232,163,23,0.4); padding-bottom: 6px; }
+  .skill-tag { display: inline-block; background: rgba(232,163,23,0.15); color: #fff; font-size: 10px; padding: 3px 8px; border-radius: 3px; margin: 2px 3px 2px 0; }
+  .cert-item { font-size: 11px; color: rgba(255,255,255,0.9); margin-bottom: 6px; }
+  .cert-item strong { color: #fff; }
+  .main h2 { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #4A52A0; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 2px solid #E8A317; }
+  .section { margin-bottom: 20px; }
+  .job { margin-bottom: 16px; }
+  .job-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 2px; }
+  .job-title { font-size: 13px; font-weight: 700; color: #1a1a2e; }
+  .job-date { font-size: 11px; color: #666; font-weight: 500; }
+  .job-company { font-size: 12px; color: #4A52A0; font-weight: 600; margin-bottom: 4px; }
+  .job ul { padding-left: 16px; }
+  .job li { font-size: 11.5px; color: #333; margin-bottom: 3px; }
+  .job li::marker { color: #E8A317; }
+  .edu-item { margin-bottom: 8px; }
+  .edu-item .school { font-size: 12px; font-weight: 700; color: #1a1a2e; }
+  .edu-item .degree { font-size: 11px; color: #4A52A0; }
+  .edu-item .year { font-size: 11px; color: #666; }
+</style>
+</head>
+<body>
+  <div class="sidebar">
+    <div class="name-block">
+      <h1>Jordan <span class="accent">A.</span> Castillo</h1>
+      <div class="title">Senior Technical Program Manager</div>
+    </div>
+
+    <div class="contact-section">
+      <h3>Contact</h3>
+      <div class="contact-item"><span class="icon">✉</span> jordan.castillo@email.com</div>
+      <div class="contact-item"><span class="icon">☎</span> (415) 555-0247</div>
+      <div class="contact-item"><span class="icon">⌘</span> linkedin.com/in/jordancastillo</div>
+      <div class="contact-item"><span class="icon">◉</span> San Francisco, CA</div>
+    </div>
+
+    <div class="sidebar-section">
+      <h3>Core Skills</h3>
+      <span class="skill-tag">Program Management</span>
+      <span class="skill-tag">Agile / Scrum</span>
+      <span class="skill-tag">Stakeholder Mgmt</span>
+      <span class="skill-tag">Risk Mitigation</span>
+      <span class="skill-tag">Cross-Functional</span>
+      <span class="skill-tag">Vendor Relations</span>
+      <span class="skill-tag">Data Pipelines</span>
+      <span class="skill-tag">Cloud (GCP/AWS)</span>
+      <span class="skill-tag">CI/CD</span>
+      <span class="skill-tag">JIRA / Confluence</span>
+      <span class="skill-tag">SQL / Python</span>
+      <span class="skill-tag">OKR Frameworks</span>
+    </div>
+
+    <div class="sidebar-section">
+      <h3>Certifications</h3>
+      <div class="cert-item"><strong>PMP</strong> — Project Management Institute</div>
+      <div class="cert-item"><strong>CSM</strong> — Scrum Alliance</div>
+      <div class="cert-item"><strong>AWS Solutions Architect</strong> — Associate</div>
+    </div>
+
+    <div class="sidebar-section">
+      <h3>Languages</h3>
+      <div class="cert-item">English (Native)</div>
+      <div class="cert-item">Spanish (Professional)</div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="section">
+      <h2>Professional Experience</h2>
+
+      <div class="job">
+        <div class="job-header">
+          <span class="job-title">Senior Technical Program Manager</span>
+          <span class="job-date">2021 – Present</span>
+        </div>
+        <div class="job-company">Appen · Remote (San Francisco)</div>
+        <ul>
+          <li>Led end-to-end delivery of AI data annotation platform serving 1M+ contributors across 180 countries, managing $12M annual budget</li>
+          <li>Drove migration of legacy monolith to microservices architecture on GCP, reducing deployment cycle time by 65%</li>
+          <li>Established cross-functional program governance for 4 engineering pods (28 engineers), implementing OKR-based tracking that improved on-time delivery from 62% to 91%</li>
+          <li>Orchestrated vendor consolidation initiative saving $2.4M annually while maintaining 99.7% platform uptime SLA</li>
+          <li>Designed and launched real-time quality scoring pipeline processing 50K+ annotations/hour with &lt;200ms latency</li>
+        </ul>
+      </div>
+
+      <div class="job">
+        <div class="job-header">
+          <span class="job-title">Technical Program Manager II</span>
+          <span class="job-date">2018 – 2021</span>
+        </div>
+        <div class="job-company">Google Cloud · Sunnyvale, CA</div>
+        <ul>
+          <li>Managed cross-organizational programs spanning Cloud AI, Infrastructure, and Developer Relations teams (60+ stakeholders)</li>
+          <li>Shipped BigQuery ML feature set on schedule, coordinating 3 geo-distributed teams across US, EU, and APAC</li>
+          <li>Reduced program risk backlog by 40% by implementing automated dependency tracking and escalation workflows</li>
+          <li>Led security compliance program achieving SOC 2 Type II and FedRAMP certification for cloud data products</li>
+        </ul>
+      </div>
+
+      <div class="job">
+        <div class="job-header">
+          <span class="job-title">Program Manager</span>
+          <span class="job-date">2015 – 2018</span>
+        </div>
+        <div class="job-company">Guckenheimer (Google Campus Dining) · Mountain View, CA</div>
+        <ul>
+          <li>Directed technology integration program for 35 dining locations across Google campus, serving 65K+ daily meals</li>
+          <li>Built supply chain analytics dashboard reducing food waste by 22% and saving $1.8M in first year</li>
+          <li>Managed POS system modernization across all locations, training 400+ staff with 98% adoption rate</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Education</h2>
+      <div class="edu-item">
+        <div class="school">University of California, Berkeley</div>
+        <div class="degree">M.B.A., Technology Management</div>
+        <div class="year">2015</div>
+      </div>
+      <div class="edu-item">
+        <div class="school">San José State University</div>
+        <div class="degree">B.S., Industrial & Systems Engineering</div>
+        <div class="year">2012</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

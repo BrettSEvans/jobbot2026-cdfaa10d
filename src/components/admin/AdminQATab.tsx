@@ -271,7 +271,7 @@ export default function AdminQATab() {
     });
 
     // Color fills for result column (index 3)
-    const fillMap: Record<string, string> = { pass: "C6EFCE", fail: "FFC7CE", skip: "FFEB9C", untested: "D9D9D9" };
+    const fillMap: Record<string, string> = { pass: "C6EFCE", fail: "FFC7CE", prompt_fix: "C7D2FE", skip: "FFEB9C", untested: "D9D9D9" };
 
     // Build sheet XML helper
     const buildSheet = (headers: string[], rows: string[][]) => {

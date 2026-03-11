@@ -628,11 +628,11 @@ export default function Landing() {
     <div className="min-h-screen bg-background text-foreground">
       <LandingNav />
       <Hero />
-      <ExampleAssets />
-      <HowItWorks />
-      <Features />
+      <section id="portfolio"><ExampleAssets /></section>
+      <section id="how-it-works"><HowItWorks /></section>
+      <section id="features"><Features /></section>
       <Pricing />
-      <SocialProof />
+      <section id="reviews"><SocialProof /></section>
       <Faq />
       <CtaFooter />
       <footer className="border-t border-border/60 py-6 text-center text-xs text-muted-foreground space-y-2 pb-[280px] sm:pb-6">

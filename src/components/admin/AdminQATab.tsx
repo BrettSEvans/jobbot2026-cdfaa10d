@@ -20,7 +20,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import {
   ClipboardCopy, Clock, CheckCircle2, XCircle, MinusCircle, FlaskConical,
   Plus, Wrench, ChevronDown, ChevronRight, Loader2, CheckCheck, History,
-  RotateCcw, Download, Keyboard, Eye, EyeOff, FileSpreadsheet, Trash2,
+  RotateCcw, Download, Keyboard, Eye, EyeOff, FileSpreadsheet, Trash2, Wand2,
 } from "lucide-react";
 import JSZip from "jszip";
 import { useToast } from "@/hooks/use-toast";
@@ -33,8 +33,8 @@ import { useQATestRuns, type QATestResult } from "@/hooks/useQATestRuns";
 import { useQACustomTests } from "@/hooks/useQACustomTests";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 
-type TestResult = "pass" | "fail" | "skip" | null;
-type ResultFilter = "all" | "untested" | "pass" | "fail" | "skip";
+type TestResult = "pass" | "fail" | "skip" | "prompt_fix" | null;
+type ResultFilter = "all" | "untested" | "pass" | "fail" | "skip" | "prompt_fix";
 
 export default function AdminQATab() {
   const { toast } = useToast();
@@ -129,7 +129,8 @@ export default function AdminQATab() {
   const passCount = allRunTests.filter((t) => resultMap.get(t.id)?.result === "pass").length;
   const failCount = allRunTests.filter((t) => resultMap.get(t.id)?.result === "fail").length;
   const skipCount = allRunTests.filter((t) => resultMap.get(t.id)?.result === "skip").length;
-  const untestedCount = totalCount - passCount - failCount - skipCount;
+  const promptFixCount = allRunTests.filter((t) => resultMap.get(t.id)?.result === "prompt_fix").length;
+  const untestedCount = totalCount - passCount - failCount - skipCount - promptFixCount;
   const openRegressions = allRunTests.filter(
     (t) => resultMap.get(t.id)?.result === "fail" && !resultMap.get(t.id)?.regression_fixed_at
   ).length;
@@ -251,6 +252,7 @@ export default function AdminQATab() {
       ["Status", run?.status || ""],
       ["Pass", String(passCount)],
       ["Fail", String(failCount)],
+      ["Prompt Fix", String(promptFixCount)],
       ["Skip", String(skipCount)],
       ["Untested", String(untestedCount)],
       ["Completion %", `${completionPercent}%`],
@@ -269,7 +271,7 @@ export default function AdminQATab() {
     });
 
     // Color fills for result column (index 3)
-    const fillMap: Record<string, string> = { pass: "C6EFCE", fail: "FFC7CE", skip: "FFEB9C", untested: "D9D9D9" };
+    const fillMap: Record<string, string> = { pass: "C6EFCE", fail: "FFC7CE", prompt_fix: "C7D2FE", skip: "FFEB9C", untested: "D9D9D9" };
 
     // Build sheet XML helper
     const buildSheet = (headers: string[], rows: string[][]) => {
@@ -347,6 +349,7 @@ export default function AdminQATab() {
   const chartData = [
     { name: "Pass", value: passCount, color: "hsl(var(--chart-2))" },
     { name: "Fail", value: failCount, color: "hsl(var(--destructive))" },
+    { name: "Prompt Fix", value: promptFixCount, color: "#818cf8" },
     { name: "Skip", value: skipCount, color: "hsl(var(--muted-foreground))" },
     { name: "Untested", value: untestedCount, color: "hsl(var(--border))" },
   ].filter((d) => d.value > 0);
@@ -444,6 +447,13 @@ export default function AdminQATab() {
                     title={`${failCount} failed`}
                   />
                 )}
+                {promptFixCount > 0 && (
+                  <div
+                    className="h-full bg-indigo-400 transition-all"
+                    style={{ width: `${(promptFixCount / totalCount) * 100}%` }}
+                    title={`${promptFixCount} prompt fix`}
+                  />
+                )}
                 {skipCount > 0 && (
                   <div
                     className="h-full bg-muted-foreground/40 transition-all"
@@ -455,6 +465,9 @@ export default function AdminQATab() {
               <div className="flex items-center gap-3 text-xs">
                 <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-green-500 inline-block" /> {passCount} pass</span>
                 <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-destructive inline-block" /> {failCount} fail</span>
+                {promptFixCount > 0 && (
+                  <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-indigo-400 inline-block" /> {promptFixCount} prompt fix</span>
+                )}
                 <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-muted-foreground/40 inline-block" /> {skipCount} skip</span>
                 <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-secondary inline-block border border-border" /> {untestedCount} untested</span>
                 {openRegressions > 0 && (
@@ -583,6 +596,7 @@ export default function AdminQATab() {
                   <SelectItem value="untested">⬜ Untested ({untestedCount})</SelectItem>
                   <SelectItem value="pass">✅ Pass ({passCount})</SelectItem>
                   <SelectItem value="fail">❌ Fail ({failCount})</SelectItem>
+                  <SelectItem value="prompt_fix">🪄 Prompt Fix ({promptFixCount})</SelectItem>
                   <SelectItem value="skip">⏭ Skip ({skipCount})</SelectItem>
                 </SelectContent>
               </Select>
@@ -650,25 +664,26 @@ export default function AdminQATab() {
                         const isCustom = customTests.customTests.some((ct) => ct.test_id === tc.id);
                         return (
                         <TestCaseCard
-                          key={tc.id}
-                          testCase={tc}
-                          savedResult={resultMap.get(tc.id) || null}
-                          compareResult={compareResults.get(tc.id) || null}
-                          runId={qa.activeRunId!}
-                          onResult={(r) => handleSetResult(tc.id, r)}
-                          onClear={() => handleClearResult(tc.id)}
-                          onUpdateNotes={(notes) =>
-                            qa.updateFailureNotes(qa.activeRunId!, tc.id, notes)
-                          }
-                          onFixRegression={() =>
-                            qa.fixRegression(qa.activeRunId!, tc.id)
-                          }
-                          isCompleted={qa.activeRun?.status === "completed"}
-                          isSelected={selectedTests.has(tc.id)}
-                          onToggleSelect={() => handleToggleSelect(tc.id)}
-                          isCustom={isCustom}
-                          onDelete={isCustom ? () => customTests.deleteCustomTest(tc.id) : undefined}
-                        />
+                           key={tc.id}
+                           testCase={tc}
+                           savedResult={resultMap.get(tc.id) || null}
+                           compareResult={compareResults.get(tc.id) || null}
+                           runId={qa.activeRunId!}
+                           buildLabel={qa.activeRun?.build_label || ""}
+                           onResult={(r) => handleSetResult(tc.id, r)}
+                           onClear={() => handleClearResult(tc.id)}
+                           onUpdateNotes={(notes) =>
+                             qa.updateFailureNotes(qa.activeRunId!, tc.id, notes)
+                           }
+                           onFixRegression={() =>
+                             qa.fixRegression(qa.activeRunId!, tc.id)
+                           }
+                           isCompleted={qa.activeRun?.status === "completed"}
+                           isSelected={selectedTests.has(tc.id)}
+                           onToggleSelect={() => handleToggleSelect(tc.id)}
+                           isCustom={isCustom}
+                           onDelete={isCustom ? () => customTests.deleteCustomTest(tc.id) : undefined}
+                         />
                         );
                       })}
                     </div>
@@ -899,11 +914,34 @@ export default function AdminQATab() {
 
 /* ─── Individual Test Case Card ─── */
 
+function generateFixPrompt(tc: ManualTestCase, savedResult: QATestResult | null, buildLabel: string): string {
+  const lines: string[] = [
+    `Fix the following QA test failure:`,
+    ``,
+    `**Test:** ${tc.title}`,
+    `**Area:** ${tc.area}${tc.route ? ` | **Route:** ${tc.route}` : ""}`,
+    `**Build:** ${buildLabel}`,
+    ``,
+    `**Steps to Reproduce:**`,
+    ...tc.steps.map((s, i) => `${i + 1}. ${s}`),
+    ``,
+    `**What Went Wrong:**`,
+    savedResult?.failure_notes || "(no details provided)",
+    ``,
+    `**Success Criteria (all must pass):**`,
+    ...tc.expectedResults.map((e) => `- ${e}`),
+    ``,
+    `Please investigate and fix this issue. After fixing, verify all success criteria are met.`,
+  ];
+  return lines.join("\n");
+}
+
 function TestCaseCard({
   testCase: tc,
   savedResult,
   compareResult,
   runId,
+  buildLabel,
   onResult,
   onClear,
   onUpdateNotes,
@@ -918,6 +956,7 @@ function TestCaseCard({
   savedResult: QATestResult | null;
   compareResult: QATestResult | null;
   runId: string;
+  buildLabel: string;
   onResult: (r: TestResult) => void;
   onClear: () => void;
   onUpdateNotes: (notes: string) => void;
@@ -928,8 +967,10 @@ function TestCaseCard({
   isCustom?: boolean;
   onDelete?: () => void;
 }) {
+  const { toast } = useToast();
   const result = (savedResult?.result as TestResult) || null;
   const isFailed = result === "fail";
+  const isPromptFix = result === "prompt_fix";
   const isFixed = !!savedResult?.regression_fixed_at;
   const [notes, setNotes] = useState(savedResult?.failure_notes || "");
   const [fixConfirm, setFixConfirm] = useState(false);
@@ -1035,6 +1076,27 @@ function TestCaseCard({
             </Button>
           )}
 
+          {isFailed && !isFixed && !isCompleted && savedResult?.failure_notes && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 w-7 p-0 text-indigo-500 hover:text-indigo-600"
+                  title="Copy Fix Prompt"
+                  onClick={() => {
+                    const prompt = generateFixPrompt(tc, savedResult, buildLabel);
+                    navigator.clipboard.writeText(prompt);
+                    onResult("prompt_fix");
+                    toast({ title: "Fix prompt copied", description: "Paste into Lovable chat to fix this issue." });
+                  }}
+                >
+                  <Wand2 className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Copy Fix Prompt</TooltipContent>
+            </Tooltip>
+          )}
           {isFailed && !isFixed && !isCompleted && (
             <Button
               variant="ghost"
@@ -1088,19 +1150,22 @@ function TestCaseCard({
               )}
             </>
           )}
+          {isPromptFix && !isCompleted && (
+            <Badge className="text-xs bg-indigo-500 text-white">Prompt Fix</Badge>
+          )}
           {isCompleted && result && (
             <Badge
               variant={result === "pass" ? "default" : result === "fail" ? "destructive" : "secondary"}
-              className="text-xs"
+              className={`text-xs ${result === "prompt_fix" ? "bg-indigo-500 text-white" : ""}`}
             >
-              {result}
+              {result === "prompt_fix" ? "Prompt Fix" : result}
             </Badge>
           )}
         </div>
       </div>
 
       {/* Failure notes textarea */}
-      {isFailed && (
+      {(isFailed || isPromptFix) && (
         <div className="space-y-1">
           <Textarea
             placeholder="Describe what went wrong…"
@@ -1228,7 +1293,7 @@ function copyAsMarkdown(
     for (const t of tests) {
       const r = resultMap.get(t.id);
       const result = r?.result;
-      const icon = result === "pass" ? "✅" : result === "fail" ? "❌" : result === "skip" ? "⏭" : "⬜";
+      const icon = result === "pass" ? "✅" : result === "fail" ? "❌" : result === "prompt_fix" ? "🪄" : result === "skip" ? "⏭" : "⬜";
       const fixed = r?.regression_fixed_at ? " (FIXED)" : "";
       lines.push(`### ${icon} ${t.title}${fixed}`);
       if (result === "fail" && r?.failure_notes) {

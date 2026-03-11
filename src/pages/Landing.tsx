@@ -23,6 +23,7 @@ import {
   Download,
   Check,
   ArrowRight,
+  Menu,
 } from "lucide-react";
 
 /* ------------------------------------------------------------------ */

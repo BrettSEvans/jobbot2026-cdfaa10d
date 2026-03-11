@@ -1,8 +1,9 @@
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 import {
-  UserCheck, FileText, FileCode, Users, CreditCard, Gauge, ScrollText, BookOpen, FlaskConical, MessageSquareText, Megaphone,
+  UserCheck, FileText, FileCode, Users, CreditCard, Gauge, ScrollText, BookOpen, FlaskConical, MessageSquareText, Megaphone, ChevronDown,
 } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 export interface AdminSection {
   id: string;
@@ -35,6 +36,61 @@ export function getVisibleSections(isAdmin: boolean, isQA: boolean, isMarketing:
     if (s.requiresMarketing && !isMarketing && !isAdmin) return false;
     return true;
   });
+}
+
+interface MobileAdminNavProps {
+  visible: AdminSection[];
+  activeSection: string;
+  onSectionChange: (id: string) => void;
+}
+
+function MobileAdminNav({ visible, activeSection, onSectionChange }: MobileAdminNavProps) {
+  const [open, setOpen] = useState(false);
+  const active = visible.find((s) => s.id === activeSection);
+  const ActiveIcon = active?.icon;
+  const groups = [...new Set(visible.map((s) => s.group))];
+
+  return (
+    <div className="md:hidden">
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <button className="w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-md border border-input bg-background text-sm font-medium transition-colors hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+            <span className="flex items-center gap-2">
+              {ActiveIcon && <ActiveIcon className="h-4 w-4 text-primary" />}
+              {active?.label ?? "Menu"}
+            </span>
+            <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", open && "rotate-180")} />
+          </button>
+        </PopoverTrigger>
+        <PopoverContent align="start" sideOffset={4} className="w-[var(--radix-popover-trigger-width)] p-1.5 z-50">
+          {groups.map((group) => (
+            <div key={group} className="mb-1 last:mb-0">
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-2 pt-1.5 pb-0.5">{group}</p>
+              {visible.filter((s) => s.group === group).map((s) => {
+                const Icon = s.icon;
+                const isActive = activeSection === s.id;
+                return (
+                  <button
+                    key={s.id}
+                    onClick={() => { onSectionChange(s.id); setOpen(false); }}
+                    className={cn(
+                      "w-full flex items-center gap-2 px-2 py-2.5 rounded-md text-sm font-medium transition-colors text-left min-h-[44px]",
+                      isActive
+                        ? "bg-accent text-accent-foreground"
+                        : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                    )}
+                  >
+                    <Icon className="h-4 w-4 shrink-0" />
+                    {s.label}
+                  </button>
+                );
+              })}
+            </div>
+          ))}
+        </PopoverContent>
+      </Popover>
+    </div>
+  );
 }
 
 interface AdminSidebarProps {
@@ -82,26 +138,12 @@ export default function AdminSidebar({ activeSection, onSectionChange, isAdmin, 
         ))}
       </nav>
 
-      {/* Mobile dropdown */}
-      <div className="md:hidden">
-        <Select value={activeSection} onValueChange={onSectionChange}>
-          <SelectTrigger className="w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {visible.map((s) => {
-              const Icon = s.icon;
-              return (
-                <SelectItem key={s.id} value={s.id}>
-                  <span className="flex items-center gap-2">
-                    <Icon className="h-4 w-4" /> {s.label}
-                  </span>
-                </SelectItem>
-              );
-            })}
-          </SelectContent>
-        </Select>
-      </div>
+      {/* Mobile popover nav */}
+      <MobileAdminNav
+        visible={visible}
+        activeSection={activeSection}
+        onSectionChange={onSectionChange}
+      />
     </>
   );
 }

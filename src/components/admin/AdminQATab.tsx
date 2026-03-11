@@ -77,7 +77,7 @@ export default function AdminQATab() {
   }, [qa.results]);
 
   const filteredTests = useMemo(() => {
-    let tests = areaFilter === "all" ? getAllTests() : getTestsByArea(areaFilter);
+    let tests = areaFilter === "all" ? allRunTests : allRunTests.filter((t) => t.area === areaFilter);
     if (tagFilter !== "all") tests = tests.filter((t) => t.tags.includes(tagFilter));
     if (search.trim()) {
       const q = search.toLowerCase();
@@ -97,7 +97,7 @@ export default function AdminQATab() {
       });
     }
     return tests;
-  }, [areaFilter, tagFilter, search, resultFilter, resultMap]);
+  }, [areaFilter, tagFilter, search, resultFilter, resultMap, allRunTests]);
 
   const groupedByArea = useMemo(() => {
     const map = new Map<string, ManualTestCase[]>();

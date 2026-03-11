@@ -85,6 +85,40 @@ export async function updateProfile(updates: Partial<Omit<UserProfile, "id">>): 
   if (error) throw error;
 }
 
+export interface ResumeContactInfo {
+  phone: string | null;
+  email: string | null;
+  linkedin_url: string | null;
+}
+
+export async function extractResumeContactInfo(storagePath: string): Promise<ResumeContactInfo> {
+  const { data, error } = await supabase.functions.invoke("extract-resume-contact-info", {
+    body: { storagePath },
+  });
+  if (error) {
+    console.error("Resume contact extraction failed:", error);
+    return { phone: null, email: null, linkedin_url: null };
+  }
+  return {
+    phone: data?.phone ?? null,
+    email: data?.email ?? null,
+    linkedin_url: data?.linkedin_url ?? null,
+  };
+}
+
+export async function checkDuplicateTrialSignup(phone: string | null, linkedin: string | null): Promise<boolean> {
+  const { data, error } = await supabase.rpc("check_duplicate_trial_signup", {
+    p_email: null,
+    p_phone: phone,
+    p_linkedin: linkedin,
+  });
+  if (error) {
+    console.error("Duplicate trial check failed:", error);
+    return false;
+  }
+  return !!data;
+}
+
 export async function extractResumeText(storagePath: string): Promise<string> {
   const { data, error } = await supabase.functions.invoke("extract-resume-text", {
     body: { storagePath },

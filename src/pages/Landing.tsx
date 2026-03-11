@@ -1,11 +1,13 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { BRAND } from "@/lib/branding";
 import BrandLogo from "@/components/BrandLogo";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetClose } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { TIER_CONFIGS, type TierConfig } from "@/lib/subscriptionTiers";
 import {
   LayoutDashboard,
@@ -26,14 +28,33 @@ import {
   Users,
   Quote,
   Mail,
+  ChevronDown,
 } from "lucide-react";
 
 /* ------------------------------------------------------------------ */
 /*  Sub-components                                                     */
 /* ------------------------------------------------------------------ */
 
+const NAV_SECTIONS = [
+  { label: "Portfolio", id: "portfolio" },
+  { label: "How It Works", id: "how-it-works" },
+  { label: "Features", id: "features" },
+  { label: "Pricing", id: "pricing" },
+  { label: "Reviews", id: "reviews" },
+  { label: "FAQ", id: "faq" },
+];
+
 function LandingNav() {
   const navigate = useNavigate();
+  const [sheetOpen, setSheetOpen] = useState(false);
+
+  const scrollTo = (id: string) => {
+    setSheetOpen(false);
+    setTimeout(() => {
+      document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+    }, 100);
+  };
+
   return (
     <nav className="sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-md">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
@@ -41,6 +62,11 @@ function LandingNav() {
 
         {/* Desktop nav */}
         <div className="hidden sm:flex items-center gap-2">
+          {NAV_SECTIONS.map((s) => (
+            <Button key={s.id} variant="ghost" size="sm" onClick={() => scrollTo(s.id)}>
+              {s.label}
+            </Button>
+          ))}
           <Button variant="ghost" size="sm" onClick={() => navigate("/auth")}>
             Sign In
           </Button>
@@ -51,7 +77,7 @@ function LandingNav() {
 
         {/* Mobile hamburger */}
         <div className="sm:hidden">
-          <Sheet>
+          <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="h-9 w-9">
                 <Menu className="h-5 w-5" />
@@ -64,7 +90,13 @@ function LandingNav() {
                   <BrandLogo size="sm" />
                 </SheetTitle>
               </SheetHeader>
-              <div className="mt-6 flex flex-col gap-3">
+              <div className="mt-6 flex flex-col gap-1">
+                {NAV_SECTIONS.map((s) => (
+                  <Button key={s.id} variant="ghost" className="justify-start" onClick={() => scrollTo(s.id)}>
+                    {s.label}
+                  </Button>
+                ))}
+                <div className="my-2 border-t border-border/60" />
                 <Button variant="ghost" className="justify-start" onClick={() => navigate("/auth")}>
                   Sign In
                 </Button>
@@ -533,11 +565,24 @@ const FAQ_ITEMS = [
     q: "Can I edit the generated documents?",
     a: "Absolutely. Every document includes an inline editor and an AI chat 'vibe edit' feature — describe what you want changed in plain English and the AI refines it instantly. You can also edit the HTML directly for pixel-perfect control.",
   },
+  {
+    q: "How is ResuVibe different from other resume builders?",
+    a: "Unlike competitors that only provide generic resumes, ResuVibe generates a complete, company-branded interview portfolio. By simply pasting a job URL, you automatically receive an ATS-optimized resume, a tailored cover letter, a 90-day onboarding roadmap, and a RAID log, proving you are ready for day one.",
+  },
+  {
+    q: "How does the AI editing work?",
+    a: "ResuVibe features an interactive AI \"vibe editing\" chat that allows you to continuously iterate on any generated asset. Instead of manually rewriting sections, you simply chat with the AI to refine the tone, formatting, and specific industry terminology across your entire application portfolio.",
+  },
+  {
+    q: "Can I track my job applications within ResuVibe?",
+    a: "Yes. ResuVibe includes a built-in Kanban board and pipeline analytics system. You can easily track your application stages, manage multiple assets per job, and utilize background batch generation to create all the necessary documents for a specific role with a single click.",
+  },
 ];
 
 function Faq() {
+  const [faqOpen, setFaqOpen] = useState(false);
   return (
-    <section className="py-20 sm:py-24">
+    <section id="faq" className="py-20 sm:py-24">
       <div className="mx-auto max-w-3xl px-4 sm:px-6">
         <h2 className="text-center font-heading text-3xl font-bold text-foreground sm:text-4xl">
           Frequently Asked Questions
@@ -545,18 +590,30 @@ function Faq() {
         <p className="mx-auto mt-3 max-w-xl text-center text-muted-foreground">
           Everything you need to know about the AI-powered job application toolkit.
         </p>
-        <Accordion type="single" collapsible className="mt-10">
-          {FAQ_ITEMS.map((item, i) => (
-            <AccordionItem key={i} value={`faq-${i}`}>
-              <AccordionTrigger className="text-left text-foreground">
-                {item.q}
-              </AccordionTrigger>
-              <AccordionContent className="text-muted-foreground leading-relaxed">
-                {item.a}
-              </AccordionContent>
-            </AccordionItem>
-          ))}
-        </Accordion>
+        <Collapsible open={faqOpen} onOpenChange={setFaqOpen} className="mt-8">
+          <div className="flex justify-center">
+            <CollapsibleTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                {faqOpen ? "Hide FAQ" : "Show FAQ"}
+                <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${faqOpen ? "rotate-180" : ""}`} />
+              </Button>
+            </CollapsibleTrigger>
+          </div>
+          <CollapsibleContent className="mt-6">
+            <Accordion type="single" collapsible>
+              {FAQ_ITEMS.map((item, i) => (
+                <AccordionItem key={i} value={`faq-${i}`}>
+                  <AccordionTrigger className="text-left text-foreground">
+                    {item.q}
+                  </AccordionTrigger>
+                  <AccordionContent className="text-muted-foreground leading-relaxed">
+                    {item.a}
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          </CollapsibleContent>
+        </Collapsible>
       </div>
     </section>
   );
@@ -571,11 +628,11 @@ export default function Landing() {
     <div className="min-h-screen bg-background text-foreground">
       <LandingNav />
       <Hero />
-      <ExampleAssets />
-      <HowItWorks />
-      <Features />
+      <section id="portfolio"><ExampleAssets /></section>
+      <section id="how-it-works"><HowItWorks /></section>
+      <section id="features"><Features /></section>
       <Pricing />
-      <SocialProof />
+      <section id="reviews"><SocialProof /></section>
       <Faq />
       <CtaFooter />
       <footer className="border-t border-border/60 py-6 text-center text-xs text-muted-foreground space-y-2 pb-[280px] sm:pb-6">

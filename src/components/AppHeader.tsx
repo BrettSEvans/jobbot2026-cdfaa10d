@@ -102,7 +102,7 @@ export default function AppHeader({ onSignOut }: AppHeaderProps) {
             </button>
             {/* Desktop nav — hidden on mobile */}
             <nav className="hidden md:flex items-center gap-1">
-              {links.map((l) => (
+              {links.filter(l => l.to !== "/search-jobs").map((l) => (
                 <button
                   key={l.to}
                   onClick={() => guardedNavigate(() => navigate(l.to))}

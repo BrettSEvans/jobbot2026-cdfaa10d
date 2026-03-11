@@ -57,8 +57,17 @@ export default function AdminQATab() {
   const [addTestOpen, setAddTestOpen] = useState(false);
   const [newTest, setNewTest] = useState({ title: "", area: "Custom", route: "", steps: "", expectedResults: "", tags: "", estimatedMinutes: 3 });
 
-  const areas = useMemo(() => getAllAreas(), []);
-  const tags = useMemo(() => getAllTags(), []);
+  const areas = useMemo(() => getAllAreas(), [customTests.customTests]);
+  const tags = useMemo(() => getAllTags(), [customTests.customTests]);
+
+  // Get tests scoped to the active run's snapshot (or all tests for legacy runs without snapshot)
+  const snapshotTestIds = qa.activeRun?.snapshot_test_ids;
+  const allRunTests = useMemo(() => {
+    const all = getAllTests();
+    if (!snapshotTestIds || snapshotTestIds.length === 0) return all;
+    const idSet = new Set(snapshotTestIds);
+    return all.filter((t) => idSet.has(t.id));
+  }, [snapshotTestIds, customTests.customTests]);
 
   // Build a map of test_case_id -> QATestResult for the active run
   const resultMap = useMemo(() => {

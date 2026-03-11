@@ -36,13 +36,42 @@ function LandingNav() {
     <nav className="sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-md">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
         <BrandLogo size="md" />
-        <div className="flex items-center gap-1 sm:gap-2">
+
+        {/* Desktop nav */}
+        <div className="hidden sm:flex items-center gap-2">
           <Button variant="ghost" size="sm" onClick={() => navigate("/auth")}>
             Sign In
           </Button>
-          <Button size="sm" className="hidden sm:inline-flex shadow-[var(--shadow-warm)]" onClick={() => navigate("/auth")}>
+          <Button size="sm" className="shadow-[var(--shadow-warm)]" onClick={() => navigate("/auth")}>
             Get Started Free
           </Button>
+        </div>
+
+        {/* Mobile hamburger */}
+        <div className="sm:hidden">
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-9 w-9">
+                <Menu className="h-5 w-5" />
+                <span className="sr-only">Open menu</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-64">
+              <SheetHeader>
+                <SheetTitle>
+                  <BrandLogo size="sm" />
+                </SheetTitle>
+              </SheetHeader>
+              <div className="mt-6 flex flex-col gap-3">
+                <Button variant="ghost" className="justify-start" onClick={() => navigate("/auth")}>
+                  Sign In
+                </Button>
+                <Button className="shadow-[var(--shadow-warm)]" onClick={() => navigate("/auth")}>
+                  Get Started Free
+                </Button>
+              </div>
+            </SheetContent>
+          </Sheet>
         </div>
       </div>
     </nav>

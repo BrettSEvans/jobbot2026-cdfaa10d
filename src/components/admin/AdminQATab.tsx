@@ -1054,26 +1054,34 @@ function TestCaseCard({
         </div>
         <div className="flex items-center gap-1 shrink-0">
           {/* Details toggle */}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 w-7 p-0 text-muted-foreground"
-            onClick={() => setDetailsOpen(!detailsOpen)}
-            title={detailsOpen ? "Hide details" : "Show details"}
-          >
-            {detailsOpen ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 w-7 p-0 text-muted-foreground"
+                onClick={() => setDetailsOpen(!detailsOpen)}
+              >
+                {detailsOpen ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{detailsOpen ? "Hide details" : "Show details"}</TooltipContent>
+          </Tooltip>
 
           {isCustom && onDelete && !isCompleted && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 w-7 p-0 text-destructive hover:text-destructive"
-              title="Delete custom test"
-              onClick={() => setDeleteConfirm(true)}
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                  onClick={() => setDeleteConfirm(true)}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Delete custom test</TooltipContent>
+            </Tooltip>
           )}
 
           {isFailed && !isFixed && !isCompleted && savedResult?.failure_notes && (
@@ -1098,55 +1106,75 @@ function TestCaseCard({
             </Tooltip>
           )}
           {isFailed && !isFixed && !isCompleted && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 w-7 p-0 text-amber-600"
-              title="Fix Regression"
-              onClick={() => setFixConfirm(true)}
-            >
-              <Wrench className="h-4 w-4" />
-            </Button>
-          )}
-          {!isCompleted && (
-            <>
-              <Button
-                variant={result === "pass" ? "default" : "ghost"}
-                size="sm"
-                className={result === "pass" ? "bg-green-600 hover:bg-green-700 text-white h-7 w-7 p-0" : "h-7 w-7 p-0 text-muted-foreground"}
-                onClick={() => onResult("pass")}
-                title="Pass (P)"
-              >
-                <CheckCircle2 className="h-4 w-4" />
-              </Button>
-              <Button
-                variant={result === "fail" ? "default" : "ghost"}
-                size="sm"
-                className={result === "fail" ? "bg-destructive hover:bg-destructive/90 text-destructive-foreground h-7 w-7 p-0" : "h-7 w-7 p-0 text-muted-foreground"}
-                onClick={() => onResult("fail")}
-                title="Fail (F)"
-              >
-                <XCircle className="h-4 w-4" />
-              </Button>
-              <Button
-                variant={result === "skip" ? "default" : "ghost"}
-                size="sm"
-                className={result === "skip" ? "bg-muted text-muted-foreground h-7 w-7 p-0" : "h-7 w-7 p-0 text-muted-foreground"}
-                onClick={() => onResult("skip")}
-                title="Skip (S)"
-              >
-                <MinusCircle className="h-4 w-4" />
-              </Button>
-              {result && (
+            <Tooltip>
+              <TooltipTrigger asChild>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-7 w-7 p-0 text-muted-foreground"
-                  onClick={onClear}
-                  title="Clear / Retest"
+                  className="h-7 w-7 p-0 text-amber-600"
+                  onClick={() => setFixConfirm(true)}
                 >
-                  <RotateCcw className="h-3.5 w-3.5" />
+                  <Wrench className="h-4 w-4" />
                 </Button>
+              </TooltipTrigger>
+              <TooltipContent>Fix Regression</TooltipContent>
+            </Tooltip>
+          )}
+          {!isCompleted && (
+            <>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={result === "pass" ? "default" : "ghost"}
+                    size="sm"
+                    className={result === "pass" ? "bg-green-600 hover:bg-green-700 text-white h-7 w-7 p-0" : "h-7 w-7 p-0 text-muted-foreground"}
+                    onClick={() => onResult("pass")}
+                  >
+                    <CheckCircle2 className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Pass (P)</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={result === "fail" ? "default" : "ghost"}
+                    size="sm"
+                    className={result === "fail" ? "bg-destructive hover:bg-destructive/90 text-destructive-foreground h-7 w-7 p-0" : "h-7 w-7 p-0 text-muted-foreground"}
+                    onClick={() => onResult("fail")}
+                  >
+                    <XCircle className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Fail (F)</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={result === "skip" ? "default" : "ghost"}
+                    size="sm"
+                    className={result === "skip" ? "bg-muted text-muted-foreground h-7 w-7 p-0" : "h-7 w-7 p-0 text-muted-foreground"}
+                    onClick={() => onResult("skip")}
+                  >
+                    <MinusCircle className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Skip (S)</TooltipContent>
+              </Tooltip>
+              {result && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 p-0 text-muted-foreground"
+                      onClick={onClear}
+                    >
+                      <RotateCcw className="h-3.5 w-3.5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Clear / Retest</TooltipContent>
+                </Tooltip>
               )}
             </>
           )}
@@ -1163,6 +1191,16 @@ function TestCaseCard({
           )}
         </div>
       </div>
+
+      {/* Fix Prompt Preview */}
+      {isFailed && !isFixed && !isCompleted && savedResult?.failure_notes && (
+        <div className="space-y-1">
+          <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">Fix Prompt Preview</span>
+          <pre className="bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800 rounded p-2 text-xs whitespace-pre-wrap font-mono text-foreground/80 max-h-48 overflow-y-auto">
+            {generateFixPrompt(tc, savedResult, buildLabel)}
+          </pre>
+        </div>
+      )}
 
       {/* Failure notes textarea */}
       {(isFailed || isPromptFix) && (

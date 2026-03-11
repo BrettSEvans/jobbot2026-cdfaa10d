@@ -696,6 +696,57 @@ export type Database = {
           },
         ]
       }
+      qa_custom_tests: {
+        Row: {
+          area: string
+          created_at: string
+          created_by: string
+          estimated_minutes: number
+          expected_results: string[]
+          id: string
+          preconditions: string[] | null
+          requires_admin: boolean
+          requires_auth: boolean
+          route: string | null
+          steps: string[]
+          tags: string[] | null
+          test_id: string
+          title: string
+        }
+        Insert: {
+          area?: string
+          created_at?: string
+          created_by: string
+          estimated_minutes?: number
+          expected_results?: string[]
+          id?: string
+          preconditions?: string[] | null
+          requires_admin?: boolean
+          requires_auth?: boolean
+          route?: string | null
+          steps?: string[]
+          tags?: string[] | null
+          test_id: string
+          title: string
+        }
+        Update: {
+          area?: string
+          created_at?: string
+          created_by?: string
+          estimated_minutes?: number
+          expected_results?: string[]
+          id?: string
+          preconditions?: string[] | null
+          requires_admin?: boolean
+          requires_auth?: boolean
+          route?: string | null
+          steps?: string[]
+          tags?: string[] | null
+          test_id?: string
+          title?: string
+        }
+        Relationships: []
+      }
       qa_test_results: {
         Row: {
           created_at: string
@@ -748,6 +799,7 @@ export type Database = {
           created_by: string
           id: string
           notes: string | null
+          snapshot_test_ids: Json | null
           status: string
         }
         Insert: {
@@ -757,6 +809,7 @@ export type Database = {
           created_by: string
           id?: string
           notes?: string | null
+          snapshot_test_ids?: Json | null
           status?: string
         }
         Update: {
@@ -766,6 +819,7 @@ export type Database = {
           created_by?: string
           id?: string
           notes?: string | null
+          snapshot_test_ids?: Json | null
           status?: string
         }
         Relationships: []

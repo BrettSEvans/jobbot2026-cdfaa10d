@@ -27,9 +27,10 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import {
   getAllTests, getAllAreas, getAllTags, getTestsByArea,
-  getTotalEstimatedMinutes, type ManualTestCase,
+  getTotalEstimatedMinutes, getTestById, type ManualTestCase,
 } from "@/lib/qaRegistry";
 import { useQATestRuns, type QATestResult } from "@/hooks/useQATestRuns";
+import { useQACustomTests } from "@/hooks/useQACustomTests";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 
 type TestResult = "pass" | "fail" | "skip" | null;
@@ -38,6 +39,7 @@ type ResultFilter = "all" | "untested" | "pass" | "fail" | "skip";
 export default function AdminQATab() {
   const { toast } = useToast();
   const qa = useQATestRuns();
+  const customTests = useQACustomTests();
 
   const [areaFilter, setAreaFilter] = useState<string>("all");
   const [tagFilter, setTagFilter] = useState<string>("all");
@@ -52,9 +54,20 @@ export default function AdminQATab() {
   const [selectedTests, setSelectedTests] = useState<Set<string>>(new Set());
   const [compareRunId, setCompareRunId] = useState<string | null>(null);
   const [compareResults, setCompareResults] = useState<Map<string, QATestResult>>(new Map());
+  const [addTestOpen, setAddTestOpen] = useState(false);
+  const [newTest, setNewTest] = useState({ title: "", area: "Custom", route: "", steps: "", expectedResults: "", tags: "", estimatedMinutes: 3 });
 
-  const areas = useMemo(() => getAllAreas(), []);
-  const tags = useMemo(() => getAllTags(), []);
+  const areas = useMemo(() => getAllAreas(), [customTests.customTests]);
+  const tags = useMemo(() => getAllTags(), [customTests.customTests]);
+
+  // Get tests scoped to the active run's snapshot (or all tests for legacy runs without snapshot)
+  const snapshotTestIds = qa.activeRun?.snapshot_test_ids;
+  const allRunTests = useMemo(() => {
+    const all = getAllTests();
+    if (!snapshotTestIds || snapshotTestIds.length === 0) return all;
+    const idSet = new Set(snapshotTestIds);
+    return all.filter((t) => idSet.has(t.id));
+  }, [snapshotTestIds, customTests.customTests]);
 
   // Build a map of test_case_id -> QATestResult for the active run
   const resultMap = useMemo(() => {
@@ -64,7 +77,7 @@ export default function AdminQATab() {
   }, [qa.results]);
 
   const filteredTests = useMemo(() => {
-    let tests = areaFilter === "all" ? getAllTests() : getTestsByArea(areaFilter);
+    let tests = areaFilter === "all" ? allRunTests : allRunTests.filter((t) => t.area === areaFilter);
     if (tagFilter !== "all") tests = tests.filter((t) => t.tags.includes(tagFilter));
     if (search.trim()) {
       const q = search.toLowerCase();
@@ -84,7 +97,7 @@ export default function AdminQATab() {
       });
     }
     return tests;
-  }, [areaFilter, tagFilter, search, resultFilter, resultMap]);
+  }, [areaFilter, tagFilter, search, resultFilter, resultMap, allRunTests]);
 
   const groupedByArea = useMemo(() => {
     const map = new Map<string, ManualTestCase[]>();
@@ -111,20 +124,19 @@ export default function AdminQATab() {
     return openAreas;
   }, [groupedByArea, resultMap]);
 
-  // Stats
-  const allTests = getAllTests();
-  const totalCount = allTests.length;
-  const passCount = allTests.filter((t) => resultMap.get(t.id)?.result === "pass").length;
-  const failCount = allTests.filter((t) => resultMap.get(t.id)?.result === "fail").length;
-  const skipCount = allTests.filter((t) => resultMap.get(t.id)?.result === "skip").length;
+  // Stats — scoped to run snapshot
+  const totalCount = allRunTests.length;
+  const passCount = allRunTests.filter((t) => resultMap.get(t.id)?.result === "pass").length;
+  const failCount = allRunTests.filter((t) => resultMap.get(t.id)?.result === "fail").length;
+  const skipCount = allRunTests.filter((t) => resultMap.get(t.id)?.result === "skip").length;
   const untestedCount = totalCount - passCount - failCount - skipCount;
-  const openRegressions = allTests.filter(
+  const openRegressions = allRunTests.filter(
     (t) => resultMap.get(t.id)?.result === "fail" && !resultMap.get(t.id)?.regression_fixed_at
   ).length;
   const completionPercent = totalCount > 0 ? Math.round(((totalCount - untestedCount) / totalCount) * 100) : 0;
 
   // Time remaining (based on untested)
-  const untestedTests = allTests.filter((t) => !resultMap.get(t.id)?.result);
+  const untestedTests = allRunTests.filter((t) => !resultMap.get(t.id)?.result);
   const remainingMinutes = getTotalEstimatedMinutes(untestedTests);
   const remHours = Math.floor(remainingMinutes / 60);
   const remMins = remainingMinutes % 60;
@@ -146,7 +158,9 @@ export default function AdminQATab() {
   const handleCreateRun = () => {
     if (!newBuildLabel.trim()) return;
     const ts = newBuildTimestamp ? new Date(newBuildTimestamp).toISOString() : new Date().toISOString();
-    qa.createRun(newBuildLabel.trim(), ts, newRunNotes.trim() || undefined);
+    // Snapshot current test IDs at creation time
+    const snapshotIds = getAllTests().map((t) => t.id);
+    qa.createRun(newBuildLabel.trim(), ts, newRunNotes.trim() || undefined, snapshotIds);
     setNewRunOpen(false);
     setNewBuildLabel("");
     setNewBuildTimestamp("");
@@ -240,7 +254,7 @@ export default function AdminQATab() {
       ["Skip", String(skipCount)],
       ["Untested", String(untestedCount)],
       ["Completion %", `${completionPercent}%`],
-      ["Total Est. Minutes", String(getTotalEstimatedMinutes())],
+      ["Total Est. Minutes", String(getTotalEstimatedMinutes(allRunTests))],
     ];
 
     // Results sheet
@@ -359,9 +373,14 @@ export default function AdminQATab() {
             <CardTitle className="text-base flex items-center gap-2">
               <FlaskConical className="h-4 w-4 text-primary" /> Manual QA Suite
             </CardTitle>
-            <Button size="sm" onClick={handleOpenNewRun}>
-              <Plus className="h-3.5 w-3.5 mr-1" /> New Test Run
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" onClick={() => setAddTestOpen(true)}>
+                <Plus className="h-3.5 w-3.5 mr-1" /> Add Test
+              </Button>
+              <Button size="sm" onClick={handleOpenNewRun}>
+                <Plus className="h-3.5 w-3.5 mr-1" /> New Test Run
+              </Button>
+            </div>
           </div>
           {qa.activeRun ? (
             <div className="flex items-center gap-2 flex-wrap mt-1">
@@ -383,6 +402,9 @@ export default function AdminQATab() {
               <span className="text-xs text-muted-foreground">
                 {format(new Date(qa.activeRun.build_timestamp), "MMM d, yyyy HH:mm")}
               </span>
+              <Badge variant="outline" className="text-xs">
+                {totalCount} tests snapshotted
+              </Badge>
               {qa.activeRun.status === "in_progress" && (
                 <Button
                   variant="outline"
@@ -503,17 +525,17 @@ export default function AdminQATab() {
                 </Select>
                 {compareRunId && (
                   <Badge variant="outline" className="text-xs">
-                    {(() => {
-                      const regressions = allTests.filter((t) => {
-                        const prev = compareResults.get(t.id)?.result;
-                        const curr = resultMap.get(t.id)?.result;
-                        return prev === "pass" && curr === "fail";
-                      }).length;
-                      const fixes = allTests.filter((t) => {
-                        const prev = compareResults.get(t.id)?.result;
-                        const curr = resultMap.get(t.id)?.result;
-                        return prev === "fail" && curr === "pass";
-                      }).length;
+                     {(() => {
+                       const regressions = allRunTests.filter((t) => {
+                         const prev = compareResults.get(t.id)?.result;
+                         const curr = resultMap.get(t.id)?.result;
+                         return prev === "pass" && curr === "fail";
+                       }).length;
+                       const fixes = allRunTests.filter((t) => {
+                         const prev = compareResults.get(t.id)?.result;
+                         const curr = resultMap.get(t.id)?.result;
+                         return prev === "fail" && curr === "pass";
+                       }).length;
                       return `${regressions} regressions · ${fixes} fixes`;
                     })()}
                   </Badge>
@@ -768,6 +790,104 @@ export default function AdminQATab() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Add Custom Test Dialog */}
+      <Dialog open={addTestOpen} onOpenChange={setAddTestOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Custom Test Case</DialogTitle>
+            <DialogDescription>Create a new manual QA test. It will be available in future test runs.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 max-h-[60vh] overflow-y-auto">
+            <div>
+              <Label>Title *</Label>
+              <Input
+                placeholder="e.g. Verify export works on Safari"
+                value={newTest.title}
+                onChange={(e) => setNewTest((p) => ({ ...p, title: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label>Area</Label>
+              <Input
+                placeholder="e.g. Cross-cutting, Admin, Auth"
+                value={newTest.area}
+                onChange={(e) => setNewTest((p) => ({ ...p, area: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label>Route (optional)</Label>
+              <Input
+                placeholder="e.g. /applications"
+                value={newTest.route}
+                onChange={(e) => setNewTest((p) => ({ ...p, route: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label>Steps (one per line) *</Label>
+              <Textarea
+                placeholder={"Navigate to /page.\nClick the button.\nVerify the result."}
+                value={newTest.steps}
+                onChange={(e) => setNewTest((p) => ({ ...p, steps: e.target.value }))}
+                rows={4}
+              />
+            </div>
+            <div>
+              <Label>Expected Results (one per line) *</Label>
+              <Textarea
+                placeholder={"The page loads correctly.\nData is displayed."}
+                value={newTest.expectedResults}
+                onChange={(e) => setNewTest((p) => ({ ...p, expectedResults: e.target.value }))}
+                rows={3}
+              />
+            </div>
+            <div>
+              <Label>Tags (comma-separated)</Label>
+              <Input
+                placeholder="e.g. smoke, regression"
+                value={newTest.tags}
+                onChange={(e) => setNewTest((p) => ({ ...p, tags: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label>Estimated Minutes</Label>
+              <Input
+                type="number"
+                min={1}
+                max={60}
+                value={newTest.estimatedMinutes}
+                onChange={(e) => setNewTest((p) => ({ ...p, estimatedMinutes: parseInt(e.target.value) || 3 }))}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddTestOpen(false)}>Cancel</Button>
+            <Button
+              disabled={!newTest.title.trim() || !newTest.steps.trim() || !newTest.expectedResults.trim()}
+              onClick={async () => {
+                const ok = await customTests.addCustomTest({
+                  title: newTest.title.trim(),
+                  area: newTest.area.trim() || "Custom",
+                  route: newTest.route.trim() || undefined,
+                  steps: newTest.steps.split("\n").map((s) => s.trim()).filter(Boolean),
+                  expectedResults: newTest.expectedResults.split("\n").map((s) => s.trim()).filter(Boolean),
+                  tags: newTest.tags.split(",").map((s) => s.trim()).filter(Boolean),
+                  estimatedMinutes: newTest.estimatedMinutes,
+                  requiresAuth: true,
+                  requiresAdmin: false,
+                  preconditions: [],
+                });
+                if (ok) {
+                  setAddTestOpen(false);
+                  setNewTest({ title: "", area: "Custom", route: "", steps: "", expectedResults: "", tags: "", estimatedMinutes: 3 });
+                }
+              }}
+            >
+              Add Test
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

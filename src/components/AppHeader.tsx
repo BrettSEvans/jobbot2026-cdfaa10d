@@ -38,11 +38,12 @@ export default function AppHeader({ onSignOut }: AppHeaderProps) {
     : "";
 
   const links = [
-    { to: "/", label: "Applications", match: (p: string) => p === "/" || p === "/applications" },
-    { to: "/templates", label: "Templates", match: (p: string) => p === "/templates" },
-    { to: "/pricing", label: "Membership", match: (p: string) => p === "/pricing" },
-    { to: "/profile", label: "Profile", match: (p: string) => p === "/profile" },
-    ...(!rolesLoading && hasAnyRole ? [{ to: "/admin", label: "Admin", match: (p: string) => p === "/admin" }] : []),
+    { to: "/", label: "Applications", icon: Briefcase, match: (p: string) => p === "/" || p === "/applications" },
+    { to: "/templates", label: "Templates", icon: Layout, match: (p: string) => p === "/templates" },
+    { to: "/search-jobs", label: "Search Jobs", icon: Search, match: (p: string) => p === "/search-jobs" },
+    { to: "/pricing", label: "Membership", icon: CreditCard, match: (p: string) => p === "/pricing" },
+    { to: "/profile", label: "Profile", icon: User, match: (p: string) => p === "/profile" },
+    ...(!rolesLoading && hasAnyRole ? [{ to: "/admin", label: "Admin", icon: Shield, match: (p: string) => p === "/admin" }] : []),
   ];
 
   const trialBadgeLabel = tier === "free"

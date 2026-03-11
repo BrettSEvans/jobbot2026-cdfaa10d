@@ -402,6 +402,9 @@ export default function AdminQATab() {
               <span className="text-xs text-muted-foreground">
                 {format(new Date(qa.activeRun.build_timestamp), "MMM d, yyyy HH:mm")}
               </span>
+              <Badge variant="outline" className="text-xs">
+                {totalCount} tests snapshotted
+              </Badge>
               {qa.activeRun.status === "in_progress" && (
                 <Button
                   variant="outline"

@@ -1122,43 +1122,59 @@ function TestCaseCard({
           )}
           {!isCompleted && (
             <>
-              <Button
-                variant={result === "pass" ? "default" : "ghost"}
-                size="sm"
-                className={result === "pass" ? "bg-green-600 hover:bg-green-700 text-white h-7 w-7 p-0" : "h-7 w-7 p-0 text-muted-foreground"}
-                onClick={() => onResult("pass")}
-                title="Pass (P)"
-              >
-                <CheckCircle2 className="h-4 w-4" />
-              </Button>
-              <Button
-                variant={result === "fail" ? "default" : "ghost"}
-                size="sm"
-                className={result === "fail" ? "bg-destructive hover:bg-destructive/90 text-destructive-foreground h-7 w-7 p-0" : "h-7 w-7 p-0 text-muted-foreground"}
-                onClick={() => onResult("fail")}
-                title="Fail (F)"
-              >
-                <XCircle className="h-4 w-4" />
-              </Button>
-              <Button
-                variant={result === "skip" ? "default" : "ghost"}
-                size="sm"
-                className={result === "skip" ? "bg-muted text-muted-foreground h-7 w-7 p-0" : "h-7 w-7 p-0 text-muted-foreground"}
-                onClick={() => onResult("skip")}
-                title="Skip (S)"
-              >
-                <MinusCircle className="h-4 w-4" />
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={result === "pass" ? "default" : "ghost"}
+                    size="sm"
+                    className={result === "pass" ? "bg-green-600 hover:bg-green-700 text-white h-7 w-7 p-0" : "h-7 w-7 p-0 text-muted-foreground"}
+                    onClick={() => onResult("pass")}
+                  >
+                    <CheckCircle2 className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Pass (P)</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={result === "fail" ? "default" : "ghost"}
+                    size="sm"
+                    className={result === "fail" ? "bg-destructive hover:bg-destructive/90 text-destructive-foreground h-7 w-7 p-0" : "h-7 w-7 p-0 text-muted-foreground"}
+                    onClick={() => onResult("fail")}
+                  >
+                    <XCircle className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Fail (F)</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={result === "skip" ? "default" : "ghost"}
+                    size="sm"
+                    className={result === "skip" ? "bg-muted text-muted-foreground h-7 w-7 p-0" : "h-7 w-7 p-0 text-muted-foreground"}
+                    onClick={() => onResult("skip")}
+                  >
+                    <MinusCircle className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Skip (S)</TooltipContent>
+              </Tooltip>
               {result && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 w-7 p-0 text-muted-foreground"
-                  onClick={onClear}
-                  title="Clear / Retest"
-                >
-                  <RotateCcw className="h-3.5 w-3.5" />
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 p-0 text-muted-foreground"
+                      onClick={onClear}
+                    >
+                      <RotateCcw className="h-3.5 w-3.5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Clear / Retest</TooltipContent>
+                </Tooltip>
               )}
             </>
           )}

@@ -127,7 +127,7 @@ export default function Admin() {
         </div>
 
         {/* Sidebar + Content */}
-        <div className="flex gap-6">
+        <div className="flex flex-col md:flex-row gap-4 md:gap-6">
           <AdminSidebar
             activeSection={activeSection}
             onSectionChange={setActiveSection}

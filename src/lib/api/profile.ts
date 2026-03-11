@@ -53,6 +53,8 @@ export async function getProfile(): Promise<UserProfile | null> {
     key_skills: data.key_skills ?? [],
     preferred_tone: data.preferred_tone ?? "professional",
     master_cover_letter: data.master_cover_letter ?? null,
+    phone: data.phone ?? null,
+    linkedin_url: data.linkedin_url ?? null,
   };
 }
 

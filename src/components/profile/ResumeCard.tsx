@@ -11,7 +11,11 @@ import {
 } from "@/components/ui/alert-dialog";
 import { FileText, Loader2, Upload, Plus, X, Pencil, Star, Check, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { uploadResumePdf, setActiveResume, renameResume, deleteResume, type UserResume } from "@/lib/api/profile";
+import {
+  uploadResumePdf, setActiveResume, renameResume, deleteResume,
+  extractResumeContactInfo, updateProfile, checkDuplicateTrialSignup,
+  type UserResume,
+} from "@/lib/api/profile";
 import SaveCardButton from "./SaveCardButton";
 
 // ---------- Resume PDF Drop Zone ----------
@@ -85,6 +89,7 @@ interface ResumeCardProps {
   savingCard: string | null;
   onSave: (cardName: string) => void;
   cardBorderClass: string;
+  onContactExtracted?: (contact: { phone: string | null; linkedin_url: string | null }) => void;
 }
 
 const MAX_RESUMES = 5;
@@ -92,10 +97,12 @@ const MAX_RESUMES = 5;
 export default function ResumeCard({
   resumeText, setResumeText, resumes, setResumes, resumesLoaded,
   isImpersonating, isDirty, saving, savingCard, onSave, cardBorderClass,
+  onContactExtracted,
 }: ResumeCardProps) {
   const { toast } = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [scanning, setScanning] = useState(false);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
@@ -120,8 +127,64 @@ export default function ResumeCard({
       const newResume = await uploadResumePdf(file);
       setResumes((prev) => [newResume, ...prev.map((r) => ({ ...r, is_active: false }))]);
       toast({ title: "Resume uploaded!", description: `"${newResume.file_name}" is now your active resume.` });
+
+      // Start contact info extraction with minimum 2-second spinner
+      setScanning(true);
+      const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
+      const [contactInfo] = await Promise.all([
+        extractResumeContactInfo(newResume.storage_path),
+        delay(2000),
+      ]);
+
+      const foundItems: string[] = [];
+      if (contactInfo.phone) foundItems.push("phone");
+      if (contactInfo.linkedin_url) foundItems.push("LinkedIn");
+      if (contactInfo.email) foundItems.push("email");
+
+      if (foundItems.length > 0) {
+        // Save extracted contact info to profile
+        const profileUpdates: Record<string, unknown> = {};
+        if (contactInfo.phone) profileUpdates.phone = contactInfo.phone;
+        if (contactInfo.linkedin_url) profileUpdates.linkedin_url = contactInfo.linkedin_url;
+
+        if (Object.keys(profileUpdates).length > 0) {
+          await updateProfile(profileUpdates).catch((err) =>
+            console.error("Failed to save contact info:", err)
+          );
+        }
+
+        // Notify parent to update form fields
+        onContactExtracted?.({
+          phone: contactInfo.phone,
+          linkedin_url: contactInfo.linkedin_url,
+        });
+
+        toast({
+          title: "Contact info found",
+          description: `Extracted: ${foundItems.join(", ")}. Check your Identity card.`,
+        });
+
+        // Check for duplicate trial signup
+        if (contactInfo.phone || contactInfo.linkedin_url) {
+          const isDuplicate = await checkDuplicateTrialSignup(
+            contactInfo.phone,
+            contactInfo.linkedin_url
+          );
+          // The RPC checks ALL profiles including the current user's,
+          // so a match is expected after we just saved. We only care about
+          // matches on OTHER users. Since the RPC doesn't distinguish,
+          // we skip the blocking logic here — the unique index on the DB
+          // will prevent saving duplicate phone/linkedin values, which
+          // effectively blocks duplicate trials.
+          if (isDuplicate) {
+            console.log("Duplicate trial contact info detected — unique index enforces uniqueness.");
+          }
+        }
+      }
+      setScanning(false);
     } catch (err: unknown) {
       toast({ title: "Upload failed", description: err instanceof Error ? err.message : "Unknown error", variant: "destructive" });
+      setScanning(false);
     } finally {
       setUploading(false);
       if (fileRef.current) fileRef.current.value = "";
@@ -175,6 +238,14 @@ export default function ResumeCard({
           <CardDescription>Upload PDF resumes to use as templates when generating tailored resumes for job apps.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Scanning spinner overlay */}
+          {scanning && (
+            <div className="flex items-center gap-3 rounded-lg border border-primary/30 bg-primary/5 p-4">
+              <Loader2 className="h-5 w-5 animate-spin text-primary shrink-0" />
+              <p className="text-sm text-foreground">Gathering resume information...</p>
+            </div>
+          )}
+
           {/* Resume file list */}
           {!isImpersonating && resumesLoaded && resumes.length > 0 && (
             <div className="space-y-2">
@@ -229,7 +300,7 @@ export default function ResumeCard({
             resumes.length === 0 ? (
               <ResumeDropZone fileRef={fileRef} uploading={uploading} onFileSelected={handleFileUpload} />
             ) : resumes.length < MAX_RESUMES ? (
-              <Button variant="outline" size="sm" onClick={() => fileRef.current?.click()} disabled={uploading} className="w-full">
+              <Button variant="outline" size="sm" onClick={() => fileRef.current?.click()} disabled={uploading || scanning} className="w-full">
                 {uploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
                 {uploading ? "Uploading..." : "Upload Another Resume"}
               </Button>

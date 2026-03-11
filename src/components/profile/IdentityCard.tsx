@@ -18,6 +18,10 @@ interface IdentityCardProps {
   setDisplayName: (v: string) => void;
   yearsExperience: string;
   setYearsExperience: (v: string) => void;
+  phone: string;
+  setPhone: (v: string) => void;
+  linkedinUrl: string;
+  setLinkedinUrl: (v: string) => void;
   isDirty: boolean;
   saving: boolean;
   savingCard: string | null;
@@ -29,6 +33,7 @@ export default function IdentityCard({
   firstName, setFirstName, middleName, setMiddleName,
   lastName, setLastName, displayName, setDisplayName,
   yearsExperience, setYearsExperience,
+  phone, setPhone, linkedinUrl, setLinkedinUrl,
   isDirty, saving, savingCard, onSave, cardBorderClass,
 }: IdentityCardProps) {
   return (
@@ -70,6 +75,14 @@ export default function IdentityCard({
               ))}
             </SelectContent>
           </Select>
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="phone">Phone <span className="text-muted-foreground text-xs">(auto-extracted from resume)</span></Label>
+          <Input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="e.g. +1 555-123-4567" />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="linkedinUrl">LinkedIn URL <span className="text-muted-foreground text-xs">(auto-extracted from resume)</span></Label>
+          <Input id="linkedinUrl" type="url" value={linkedinUrl} onChange={(e) => setLinkedinUrl(e.target.value)} placeholder="e.g. https://linkedin.com/in/yourname" />
         </div>
       </CardContent>
       <SaveCardButton cardName="identity" isDirty={isDirty} saving={saving} savingCard={savingCard} onSave={onSave} />

@@ -241,11 +241,11 @@ function HowItWorks() {
 /* ---------------------- Example Assets -------------------------- */
 
 const EXAMPLES = [
-  { label: "Tailored Resume", img: mockupResume },
-  { label: "Cover Letter", img: mockupCoverLetter },
-  { label: "Executive Dashboard", img: mockupDashboard },
-  { label: "90-Day Roadmap", img: mockupRoadmap },
-  { label: "Custom Asset", img: mockupCustomAsset },
+  { label: "Tailored Resume", src: "/mockups/resume.html" },
+  { label: "Cover Letter", src: "/mockups/cover-letter.html" },
+  { label: "Executive Dashboard", src: "/mockups/dashboard.html" },
+  { label: "90-Day Roadmap", src: "/mockups/roadmap.html" },
+  { label: "RAID Log", src: "/mockups/custom-asset.html" },
 ];
 
 function ExampleAssets() {

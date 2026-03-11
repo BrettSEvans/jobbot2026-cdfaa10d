@@ -20,7 +20,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import {
   ClipboardCopy, Clock, CheckCircle2, XCircle, MinusCircle, FlaskConical,
   Plus, Wrench, ChevronDown, ChevronRight, Loader2, CheckCheck, History,
-  RotateCcw, Download, Keyboard, Eye, EyeOff, FileSpreadsheet, Trash2,
+  RotateCcw, Download, Keyboard, Eye, EyeOff, FileSpreadsheet, Trash2, Wand2,
 } from "lucide-react";
 import JSZip from "jszip";
 import { useToast } from "@/hooks/use-toast";

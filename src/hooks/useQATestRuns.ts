@@ -138,7 +138,9 @@ export function useQATestRuns() {
       .eq("test_case_id", testCaseId);
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
+      return;
     }
+    await loadResults(runId);
   };
 
   const fixRegression = async (runId: string, testCaseId: string) => {

@@ -24,6 +24,8 @@ import {
   Check,
   ArrowRight,
   Menu,
+  Star,
+  Zap,
 } from "lucide-react";
 
 /* ------------------------------------------------------------------ */
@@ -348,73 +350,115 @@ function Pricing() {
   );
 }
 
-/* ---------------------- Testimonials ---------------------------- */
+/* ---------------------- Testimonials (archived) ----------------- */
+/*
+ * ARCHIVED: Original marquee testimonials — preserved for reference.
+ *
+ * const TESTIMONIALS = [
+ *   { name: "Sarah M.", company: "Deloitte", quote: "..." },
+ *   ... (16 items total)
+ * ];
+ * function TestimonialCard({ t }) { ... }
+ * const ROW1 = TESTIMONIALS.slice(0, 8);
+ * const ROW2 = TESTIMONIALS.slice(8);
+ * function Testimonials() { ... }
+ */
 
-const TESTIMONIALS = [
-  { name: "Sarah M.", company: "Deloitte", quote: `${BRAND.name} helped me stand out from 500+ applicants. The branded dashboard blew the hiring manager away!` },
-  { name: "James T.", company: "Cleveland Clinic", quote: "I landed my dream healthcare admin role in 3 weeks. The tailored cover letter was incredibly compelling." },
-  { name: "Priya K.", company: "JPMorgan Chase", quote: "The RAID log showed I was ready for day one. My interviewer said it was unlike anything they'd seen." },
-  { name: "Marcus L.", company: "Target", quote: `Went from zero callbacks to 4 offers. ${BRAND.name} completely transformed my application strategy.` },
-  { name: "Elena R.", company: "Pfizer", quote: "The executive dashboard made me look like a senior strategist. Got the offer within a week!" },
-  { name: "David W.", company: "Accenture", quote: "Every asset was perfectly branded. It felt like I had a professional design team behind me." },
-  { name: "Aisha B.", company: "Southwest Airlines", quote: `${BRAND.name}'s AI resume matched every keyword in the JD. Recruiter told me it was a perfect fit.` },
-  { name: "Tom H.", company: "KPMG", quote: "The 90-day roadmap sealed the deal. They said no other candidate came that prepared." },
-  { name: "Nina C.", company: "Whole Foods", quote: "I was skeptical at first, but the quality of the generated assets is genuinely impressive." },
-  { name: "Ryan P.", company: "State Farm", quote: `Applied to 5 roles with ${BRAND.name} materials — got interviews at all 5. Absolute game-changer.` },
-  { name: "Lisa G.", company: "HCA Healthcare", quote: "As a nurse manager, the cover letter nailed my clinical leadership experience perfectly." },
-  { name: "Carlos D.", company: "FedEx", quote: "The architecture diagram helped me land a logistics tech role I didn't think I was qualified for." },
-  { name: "Monica J.", company: "Hilton", quote: "Switched from retail to hospitality management. The generated assets made my transferable skills shine." },
-  { name: "Kevin R.", company: "Ernst & Young", quote: "The executive report positioned me as a thought leader. Got a senior consultant offer on the first try." },
-  { name: "Diane F.", company: "Mayo Clinic", quote: `Transitioning from military to civilian healthcare — ${BRAND.name} translated my experience beautifully.` },
-  { name: "Andre W.", company: "Home Depot", quote: `I'm not tech-savvy at all, but ${BRAND.name} made my operations manager application look world-class.` },
+/* -------------------- Social Proof (enhancv-style) -------------- */
+
+const STATS = [
+  { value: "600,000+", label: "Portfolios Created" },
+  { value: "1M+", label: "Resumes Created" },
+  { value: "4.9", label: "Average Rating", isStar: true },
+  { value: "4×", label: "Faster to Dream Job", isZap: true },
 ];
 
-function TestimonialCard({ t }: { t: typeof TESTIMONIALS[number] }) {
+const REVIEWS = [
+  {
+    name: "Sarah M.",
+    company: "Deloitte",
+    quote: `${BRAND.name} helped me stand out from 500+ applicants. The branded dashboard blew the hiring manager away!`,
+    timeAgo: "2 weeks ago",
+  },
+  {
+    name: "Tom H.",
+    company: "KPMG",
+    quote: "The 90-day roadmap sealed the deal. They said no other candidate came that prepared.",
+    timeAgo: "3 weeks ago",
+  },
+  {
+    name: "Ryan P.",
+    company: "State Farm",
+    quote: `Applied to 5 roles with ${BRAND.name} materials — got interviews at all 5. Absolute game-changer.`,
+    timeAgo: "1 month ago",
+  },
+];
+
+function SocialProof() {
   return (
-    <Card className="min-w-[320px] max-w-[360px] shrink-0 border-border/60">
-      <CardContent className="p-5 flex flex-col gap-3">
-        <p className="text-sm leading-relaxed text-muted-foreground italic">"{t.quote}"</p>
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/15 text-primary text-xs font-bold">
-            {t.name.charAt(0)}
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-foreground">{t.name}</p>
-            <p className="text-xs text-muted-foreground">Hired at {t.company}</p>
-          </div>
+    <section className="border-t border-border/60 py-20 sm:py-24">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6">
+        <div className="text-center mb-14">
+          <h2 className="font-heading text-3xl font-bold text-foreground sm:text-4xl">
+            Trusted by Professionals
+          </h2>
+          <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
+            Join thousands who landed their dream role.
+          </p>
         </div>
-      </CardContent>
-    </Card>
-  );
-}
 
-const ROW1 = TESTIMONIALS.slice(0, 8);
-const ROW2 = TESTIMONIALS.slice(8);
+        {/* Stats bar */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 sm:gap-8 mb-16">
+          {STATS.map((s) => (
+            <div key={s.label} className="text-center">
+              <div className="flex items-center justify-center gap-1.5">
+                <span className="font-heading text-3xl sm:text-4xl font-extrabold text-foreground">
+                  {s.value}
+                </span>
+                {s.isStar && <Star className="h-5 w-5 fill-primary text-primary" />}
+                {s.isZap && <Zap className="h-5 w-5 fill-primary text-primary" />}
+              </div>
+              <p className="mt-1 text-sm text-muted-foreground">{s.label}</p>
+            </div>
+          ))}
+        </div>
 
-function Testimonials() {
-  return (
-    <section className="border-t border-border/60 py-16 overflow-hidden">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 mb-10 text-center">
-        <h2 className="font-heading text-3xl font-bold text-foreground sm:text-4xl">
-          Loved by Job Seekers Everywhere
-        </h2>
-        <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
-          Real results from professionals across every industry.
-        </p>
-      </div>
+        {/* Aggregate badge */}
+        <div className="flex items-center justify-center gap-2 mb-10">
+          <div className="flex">
+            {[...Array(5)].map((_, i) => (
+              <Star key={i} className="h-5 w-5 fill-primary text-primary" />
+            ))}
+          </div>
+          <span className="text-sm font-semibold text-foreground">4.9 / 5</span>
+          <span className="text-sm text-muted-foreground">from 2,400+ reviews</span>
+        </div>
 
-      {/* Row 1 — scrolls left */}
-      <div className="relative flex gap-6 py-2 animate-marquee hover:[animation-play-state:paused]">
-        {[...ROW1, ...ROW1].map((t, i) => (
-          <TestimonialCard key={`r1-${i}`} t={t} />
-        ))}
-      </div>
-
-      {/* Row 2 — scrolls right */}
-      <div className="relative flex gap-6 py-2 mt-4 animate-marquee-reverse hover:[animation-play-state:paused]">
-        {[...ROW2, ...ROW2].map((t, i) => (
-          <TestimonialCard key={`r2-${i}`} t={t} />
-        ))}
+        {/* Review cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {REVIEWS.map((r) => (
+            <Card key={r.name} className="transition-all hover:shadow-[var(--shadow-elevated)] hover:-translate-y-0.5">
+              <CardContent className="p-6 flex flex-col gap-4">
+                <div className="flex">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className="h-4 w-4 fill-primary text-primary" />
+                  ))}
+                </div>
+                <p className="text-sm leading-relaxed text-foreground">"{r.quote}"</p>
+                <div className="flex items-center gap-3 mt-auto pt-2 border-t border-border/60">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/15 text-primary text-sm font-bold">
+                    {r.name.charAt(0)}
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-foreground">{r.name}</p>
+                    <p className="text-xs text-muted-foreground">Hired at {r.company}</p>
+                  </div>
+                  <span className="text-xs text-muted-foreground">{r.timeAgo}</span>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
     </section>
   );
@@ -456,7 +500,7 @@ export default function Landing() {
       <HowItWorks />
       <Features />
       <Pricing />
-      <Testimonials />
+      <SocialProof />
       <CtaFooter />
       <footer className="border-t border-border/60 py-6 text-center text-xs text-muted-foreground space-y-2">
         <div className="flex items-center justify-center gap-4">

@@ -146,6 +146,7 @@ export default function Profile() {
       setSaved({
         firstName, middleName, lastName, displayName, resumeText, yearsExperience, preferredTone,
         industries: [...industries], skills: [...skills], masterCoverLetter,
+        phone, linkedinUrl,
       });
       toast({ title: "Profile saved", description: "Your preferences will personalize future AI outputs." });
     } catch (err: unknown) {

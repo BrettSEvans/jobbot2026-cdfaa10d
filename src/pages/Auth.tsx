@@ -164,7 +164,7 @@ export default function Auth() {
                   ? "Enter your email to receive a reset link"
                   : mode === "login"
                     ? "Sign in to access your applications"
-                    : "Get started with your free account"}
+                    : "Start your 7-day free trial"}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">

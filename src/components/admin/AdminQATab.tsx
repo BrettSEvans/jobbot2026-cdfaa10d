@@ -348,6 +348,7 @@ export default function AdminQATab() {
   const chartData = [
     { name: "Pass", value: passCount, color: "hsl(var(--chart-2))" },
     { name: "Fail", value: failCount, color: "hsl(var(--destructive))" },
+    { name: "Prompt Fix", value: promptFixCount, color: "#818cf8" },
     { name: "Skip", value: skipCount, color: "hsl(var(--muted-foreground))" },
     { name: "Untested", value: untestedCount, color: "hsl(var(--border))" },
   ].filter((d) => d.value > 0);

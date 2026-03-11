@@ -15,6 +15,8 @@ export interface UserProfile {
   key_skills: string[];
   preferred_tone: string;
   master_cover_letter: string | null;
+  phone: string | null;
+  linkedin_url: string | null;
 }
 
 export interface UserResume {

@@ -935,6 +935,7 @@ function TestCaseCard({
   const [fixConfirm, setFixConfirm] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [notesSaved, setNotesSaved] = useState(true);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
   // Sync notes from saved result

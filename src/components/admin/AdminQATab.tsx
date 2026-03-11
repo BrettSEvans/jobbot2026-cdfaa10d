@@ -1076,6 +1076,27 @@ function TestCaseCard({
             </Button>
           )}
 
+          {isFailed && !isFixed && !isCompleted && savedResult?.failure_notes && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 w-7 p-0 text-indigo-500 hover:text-indigo-600"
+                  title="Copy Fix Prompt"
+                  onClick={() => {
+                    const prompt = generateFixPrompt(tc, savedResult, buildLabel);
+                    navigator.clipboard.writeText(prompt);
+                    onResult("prompt_fix");
+                    toast({ title: "Fix prompt copied", description: "Paste into Lovable chat to fix this issue." });
+                  }}
+                >
+                  <Wand2 className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Copy Fix Prompt</TooltipContent>
+            </Tooltip>
+          )}
           {isFailed && !isFixed && !isCompleted && (
             <Button
               variant="ghost"

@@ -911,6 +911,8 @@ function TestCaseCard({
   isCompleted,
   isSelected,
   onToggleSelect,
+  isCustom,
+  onDelete,
 }: {
   testCase: ManualTestCase;
   savedResult: QATestResult | null;
@@ -923,6 +925,8 @@ function TestCaseCard({
   isCompleted?: boolean;
   isSelected?: boolean;
   onToggleSelect?: () => void;
+  isCustom?: boolean;
+  onDelete?: () => void;
 }) {
   const result = (savedResult?.result as TestResult) || null;
   const isFailed = result === "fail";

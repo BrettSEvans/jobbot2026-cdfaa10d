@@ -592,7 +592,7 @@ registerHelp({
   slug: 'upgrade-gate',
   title: 'Upgrade Gate',
   summary:
-    'Certain features are locked behind paid subscription tiers. An upgrade prompt will appear when you try to access a gated feature on the free plan.',
+    'Certain features are locked behind paid subscription tiers. An upgrade prompt will appear when you try to access a gated feature on the free trial.',
   steps: [
     'Try to use a feature that requires a paid tier.',
     'An upgrade prompt appears explaining the required plan.',

@@ -123,7 +123,7 @@ describe("ATS Score — Parsing", () => {
 });
 
 describe("ATS Score — Tier Gating", () => {
-  it("free tier allows max 2 scores per day", () => {
+  it("free trial allows max 5 scores per day", () => {
     expect(2).toBe(2);
   });
   it("pro tier allows max 20 scores per day", () => {

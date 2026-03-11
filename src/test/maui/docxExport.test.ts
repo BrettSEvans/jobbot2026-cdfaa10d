@@ -34,7 +34,7 @@ describe("DOCX Export — Filename Builder", () => {
 });
 
 describe("DOCX Export — Tier Gating", () => {
-  it("free tier cannot export DOCX", () => {
+  it("free trial cannot export DOCX", () => {
     expect(isDocxAllowed("resume", "free")).toBe(false);
     expect(isDocxAllowed("cover_letter", "free")).toBe(false);
   });

@@ -357,7 +357,7 @@ const ApplicationDetail = () => {
                 branding={state.app?.branding}
                 onAssetUpdated={handleAssetUpdated}
                 canRefine={canRefine}
-                isPreviewOnly={tier === "free"}
+                isPreviewOnly={tier === "free" || isTrialExpired}
               />
             </UpgradeGate>
           )}

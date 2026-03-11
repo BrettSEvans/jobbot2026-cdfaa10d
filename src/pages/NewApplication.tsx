@@ -170,10 +170,14 @@ const NewApplication = () => {
           <Card className="border-destructive/50 bg-destructive/5">
             <CardContent className="py-6 text-center space-y-3">
               <p className="text-sm font-medium text-foreground">
-                You've used all {appLimit} applications this month on the {tier.charAt(0).toUpperCase() + tier.slice(1)} plan.
+                {isTrialExpired
+                  ? "Your 7-day free trial has ended."
+                  : `You've used all ${appLimit} applications this month on the ${tier.charAt(0).toUpperCase() + tier.slice(1)} plan.`}
               </p>
               <p className="text-xs text-muted-foreground">
-                Upgrade your plan to create more applications.
+                {isTrialExpired
+                  ? "Upgrade to a paid plan to continue creating applications."
+                  : "Upgrade your plan to create more applications."}
               </p>
               <Button size="sm" onClick={() => navigate("/pricing")}>
                 View Plans

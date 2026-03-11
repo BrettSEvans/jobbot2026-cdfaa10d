@@ -1,5 +1,5 @@
 /**
- * Utility to inject a CSS-based watermark into HTML documents for free tier users.
+ * Utility to inject a CSS-based watermark into HTML documents for free trial users.
  * Creates a diagonal repeating "ResuVibe" watermark at 20% opacity.
  */
 

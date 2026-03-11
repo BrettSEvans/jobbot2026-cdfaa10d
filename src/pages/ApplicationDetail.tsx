@@ -57,7 +57,7 @@ const ApplicationDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const state = useApplicationDetail(id);
-  const { isAssetAllowed, canRefine, tier } = useSubscription();
+  const { isAssetAllowed, canRefine, tier, isTrialExpired } = useSubscription();
   const { isAdmin } = useUserRoles();
   const [activeView, setActiveView] = useState<ActiveView>("resume");
   const { shouldNudge, dismiss: dismissNudge } = useCoverLetterNudge();

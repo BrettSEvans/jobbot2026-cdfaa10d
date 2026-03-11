@@ -254,7 +254,7 @@ export default function AdminQATab() {
       ["Skip", String(skipCount)],
       ["Untested", String(untestedCount)],
       ["Completion %", `${completionPercent}%`],
-      ["Total Est. Minutes", String(getTotalEstimatedMinutes())],
+      ["Total Est. Minutes", String(getTotalEstimatedMinutes(allRunTests))],
     ];
 
     // Results sheet

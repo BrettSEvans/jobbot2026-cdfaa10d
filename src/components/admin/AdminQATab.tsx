@@ -646,7 +646,9 @@ export default function AdminQATab() {
                   </AccordionTrigger>
                   <AccordionContent>
                     <div className="space-y-3">
-                      {tests.map((tc) => (
+                      {tests.map((tc) => {
+                        const isCustom = customTests.customTests.some((ct) => ct.test_id === tc.id);
+                        return (
                         <TestCaseCard
                           key={tc.id}
                           testCase={tc}
@@ -664,8 +666,11 @@ export default function AdminQATab() {
                           isCompleted={qa.activeRun?.status === "completed"}
                           isSelected={selectedTests.has(tc.id)}
                           onToggleSelect={() => handleToggleSelect(tc.id)}
+                          isCustom={isCustom}
+                          onDelete={isCustom ? () => customTests.deleteCustomTest(tc.id) : undefined}
                         />
-                      ))}
+                        );
+                      })}
                     </div>
                   </AccordionContent>
                 </AccordionItem>

@@ -83,26 +83,12 @@ export default function AdminSidebar({ activeSection, onSectionChange, isAdmin, 
         ))}
       </nav>
 
-      {/* Mobile dropdown */}
-      <div className="md:hidden">
-        <Select value={activeSection} onValueChange={onSectionChange}>
-          <SelectTrigger className="w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {visible.map((s) => {
-              const Icon = s.icon;
-              return (
-                <SelectItem key={s.id} value={s.id}>
-                  <span className="flex items-center gap-2">
-                    <Icon className="h-4 w-4" /> {s.label}
-                  </span>
-                </SelectItem>
-              );
-            })}
-          </SelectContent>
-        </Select>
-      </div>
+      {/* Mobile popover nav */}
+      <MobileAdminNav
+        visible={visible}
+        activeSection={activeSection}
+        onSectionChange={onSectionChange}
+      />
     </>
   );
 }

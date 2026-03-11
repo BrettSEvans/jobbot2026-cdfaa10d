@@ -1170,6 +1170,32 @@ function TestCaseCard({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Delete custom test confirm */}
+      {isCustom && onDelete && (
+        <AlertDialog open={deleteConfirm} onOpenChange={setDeleteConfirm}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Custom Test?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Permanently delete "{tc.title}"? It will be removed from future test runs. Existing runs that included it will keep their results.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                onClick={() => {
+                  onDelete();
+                  setDeleteConfirm(false);
+                }}
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
     </div>
   );
 }

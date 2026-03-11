@@ -1165,7 +1165,7 @@ function TestCaseCard({
       </div>
 
       {/* Failure notes textarea */}
-      {isFailed && (
+      {(isFailed || isPromptFix) && (
         <div className="space-y-1">
           <Textarea
             placeholder="Describe what went wrong…"

@@ -129,7 +129,8 @@ export default function AdminQATab() {
   const passCount = allRunTests.filter((t) => resultMap.get(t.id)?.result === "pass").length;
   const failCount = allRunTests.filter((t) => resultMap.get(t.id)?.result === "fail").length;
   const skipCount = allRunTests.filter((t) => resultMap.get(t.id)?.result === "skip").length;
-  const untestedCount = totalCount - passCount - failCount - skipCount;
+  const promptFixCount = allRunTests.filter((t) => resultMap.get(t.id)?.result === "prompt_fix").length;
+  const untestedCount = totalCount - passCount - failCount - skipCount - promptFixCount;
   const openRegressions = allRunTests.filter(
     (t) => resultMap.get(t.id)?.result === "fail" && !resultMap.get(t.id)?.regression_fixed_at
   ).length;

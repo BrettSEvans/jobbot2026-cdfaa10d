@@ -105,7 +105,7 @@ export default function CookieConsentBanner() {
   };
 
   return (
-    <div className={`fixed bottom-0 inset-x-0 z-[9998] p-4 sm:p-6 pointer-events-none transition-opacity duration-300 ${dismissing ? 'opacity-0' : 'opacity-100'}`}>
+    <div className={`fixed bottom-0 inset-x-0 z-40 p-4 sm:p-6 pointer-events-none transition-opacity duration-300 ${dismissing ? 'opacity-0' : 'opacity-100'}`}>
       <div className={`pointer-events-auto mx-auto max-w-lg rounded-xl border border-border bg-card shadow-2xl transition-transform duration-300 ${dismissing ? 'translate-y-4' : 'animate-in slide-in-from-bottom-4 fade-in duration-500'}`}>
         <div className="p-5 space-y-4">
           {/* Header */}

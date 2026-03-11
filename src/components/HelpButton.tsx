@@ -11,7 +11,7 @@ export default function HelpButton() {
       <Button
         onClick={() => setOpen(true)}
         size="icon"
-        className="fixed bottom-6 right-6 z-50 h-12 w-12 rounded-full shadow-lg hover:scale-105 transition-transform"
+        className="fixed bottom-6 right-6 z-40 h-12 w-12 rounded-full shadow-lg hover:scale-105 transition-transform"
         title="Help"
       >
         <HelpCircle className="h-5 w-5" />

@@ -47,8 +47,29 @@ export default function ResetPassword() {
 
   if (!ready) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <p className="text-muted-foreground">Invalid or expired reset link.</p>
+      <div className="min-h-screen flex items-center justify-center bg-background px-4">
+        <div className="w-full max-w-sm space-y-6">
+          <div className="flex justify-center">
+            <BrandLogo size="md" />
+          </div>
+          <Card>
+            <CardHeader className="text-center pb-2">
+              <div className="mx-auto mb-3 h-14 w-14 rounded-full bg-destructive/10 flex items-center justify-center">
+                <ShieldAlert className="h-7 w-7 text-destructive" />
+              </div>
+              <CardTitle className="text-xl font-heading">Link expired</CardTitle>
+              <CardDescription>
+                This password reset link is invalid or has expired. Please request a new one.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button variant="ghost" className="w-full gap-2 text-muted-foreground" onClick={() => navigate("/auth")}>
+                <ArrowLeft className="h-4 w-4" />
+                Back to sign in
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }

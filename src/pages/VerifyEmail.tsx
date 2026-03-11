@@ -20,6 +20,11 @@ export default function VerifyEmail() {
   const params = new URLSearchParams(window.location.search);
   const email = params.get("email") ?? "";
 
+  // If no email param, redirect to auth
+  useEffect(() => {
+    if (!email) navigate("/auth", { replace: true });
+  }, [email, navigate]);
+
   const handleResend = async () => {
     if (!email || cooldown) return;
     setResending(true);

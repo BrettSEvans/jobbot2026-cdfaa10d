@@ -1106,15 +1106,19 @@ function TestCaseCard({
             </Tooltip>
           )}
           {isFailed && !isFixed && !isCompleted && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 w-7 p-0 text-amber-600"
-              title="Fix Regression"
-              onClick={() => setFixConfirm(true)}
-            >
-              <Wrench className="h-4 w-4" />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 w-7 p-0 text-amber-600"
+                  onClick={() => setFixConfirm(true)}
+                >
+                  <Wrench className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Fix Regression</TooltipContent>
+            </Tooltip>
           )}
           {!isCompleted && (
             <>

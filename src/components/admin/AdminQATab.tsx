@@ -464,6 +464,9 @@ export default function AdminQATab() {
               <div className="flex items-center gap-3 text-xs">
                 <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-green-500 inline-block" /> {passCount} pass</span>
                 <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-destructive inline-block" /> {failCount} fail</span>
+                {promptFixCount > 0 && (
+                  <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-indigo-400 inline-block" /> {promptFixCount} prompt fix</span>
+                )}
                 <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-muted-foreground/40 inline-block" /> {skipCount} skip</span>
                 <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-secondary inline-block border border-border" /> {untestedCount} untested</span>
                 {openRegressions > 0 && (

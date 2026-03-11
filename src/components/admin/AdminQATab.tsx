@@ -20,7 +20,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import {
   ClipboardCopy, Clock, CheckCircle2, XCircle, MinusCircle, FlaskConical,
   Plus, Wrench, ChevronDown, ChevronRight, Loader2, CheckCheck, History,
-  RotateCcw, Download, Keyboard, Eye, EyeOff, FileSpreadsheet,
+  RotateCcw, Download, Keyboard, Eye, EyeOff, FileSpreadsheet, Trash2,
 } from "lucide-react";
 import JSZip from "jszip";
 import { useToast } from "@/hooks/use-toast";
@@ -646,7 +646,9 @@ export default function AdminQATab() {
                   </AccordionTrigger>
                   <AccordionContent>
                     <div className="space-y-3">
-                      {tests.map((tc) => (
+                      {tests.map((tc) => {
+                        const isCustom = customTests.customTests.some((ct) => ct.test_id === tc.id);
+                        return (
                         <TestCaseCard
                           key={tc.id}
                           testCase={tc}
@@ -664,8 +666,11 @@ export default function AdminQATab() {
                           isCompleted={qa.activeRun?.status === "completed"}
                           isSelected={selectedTests.has(tc.id)}
                           onToggleSelect={() => handleToggleSelect(tc.id)}
+                          isCustom={isCustom}
+                          onDelete={isCustom ? () => customTests.deleteCustomTest(tc.id) : undefined}
                         />
-                      ))}
+                        );
+                      })}
                     </div>
                   </AccordionContent>
                 </AccordionItem>
@@ -906,6 +911,8 @@ function TestCaseCard({
   isCompleted,
   isSelected,
   onToggleSelect,
+  isCustom,
+  onDelete,
 }: {
   testCase: ManualTestCase;
   savedResult: QATestResult | null;
@@ -918,6 +925,8 @@ function TestCaseCard({
   isCompleted?: boolean;
   isSelected?: boolean;
   onToggleSelect?: () => void;
+  isCustom?: boolean;
+  onDelete?: () => void;
 }) {
   const result = (savedResult?.result as TestResult) || null;
   const isFailed = result === "fail";
@@ -926,6 +935,7 @@ function TestCaseCard({
   const [fixConfirm, setFixConfirm] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [notesSaved, setNotesSaved] = useState(true);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
   // Sync notes from saved result
@@ -987,6 +997,9 @@ function TestCaseCard({
               {isNewFix && (
                 <Badge className="text-xs bg-green-600 text-white">New Fix</Badge>
               )}
+              {isCustom && (
+                <Badge variant="secondary" className="text-xs">Custom</Badge>
+              )}
               {tc.tags.map((tag) => (
                 <Badge key={tag} variant="outline" className="text-xs text-muted-foreground">
                   {tag}
@@ -1009,6 +1022,18 @@ function TestCaseCard({
           >
             {detailsOpen ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
           </Button>
+
+          {isCustom && onDelete && !isCompleted && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+              title="Delete custom test"
+              onClick={() => setDeleteConfirm(true)}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          )}
 
           {isFailed && !isFixed && !isCompleted && (
             <Button
@@ -1145,6 +1170,32 @@ function TestCaseCard({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Delete custom test confirm */}
+      {isCustom && onDelete && (
+        <AlertDialog open={deleteConfirm} onOpenChange={setDeleteConfirm}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Custom Test?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Permanently delete "{tc.title}"? It will be removed from future test runs. Existing runs that included it will keep their results.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                onClick={() => {
+                  onDelete();
+                  setDeleteConfirm(false);
+                }}
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
     </div>
   );
 }

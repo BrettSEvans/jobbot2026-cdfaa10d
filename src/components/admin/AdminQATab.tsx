@@ -997,6 +997,9 @@ function TestCaseCard({
               {isNewFix && (
                 <Badge className="text-xs bg-green-600 text-white">New Fix</Badge>
               )}
+              {isCustom && (
+                <Badge variant="secondary" className="text-xs">Custom</Badge>
+              )}
               {tc.tags.map((tag) => (
                 <Badge key={tag} variant="outline" className="text-xs text-muted-foreground">
                   {tag}

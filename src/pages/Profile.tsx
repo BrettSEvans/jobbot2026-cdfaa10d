@@ -212,6 +212,8 @@ export default function Profile() {
               lastName={lastName} setLastName={setLastName}
               displayName={displayName} setDisplayName={setDisplayName}
               yearsExperience={yearsExperience} setYearsExperience={setYearsExperience}
+              phone={phone} setPhone={setPhone}
+              linkedinUrl={linkedinUrl} setLinkedinUrl={setLinkedinUrl}
               isDirty={dirty.identity} saving={saving} savingCard={savingCard}
               onSave={handleCardSave} cardBorderClass={cardBorderClass(dirty.identity)}
             />

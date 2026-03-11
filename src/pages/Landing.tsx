@@ -26,6 +26,9 @@ import {
   Menu,
   Star,
   Zap,
+  Trophy,
+  Users,
+  Quote,
 } from "lucide-react";
 
 /* ------------------------------------------------------------------ */
@@ -367,10 +370,10 @@ function Pricing() {
 /* -------------------- Social Proof (enhancv-style) -------------- */
 
 const STATS = [
-  { value: "600,000+", label: "Portfolios Created" },
-  { value: "1M+", label: "Resumes Created" },
-  { value: "4.9", label: "Average Rating", isStar: true },
-  { value: "4×", label: "Faster to Dream Job", isZap: true },
+  { value: "600,000+", label: "Portfolios Created", icon: Trophy },
+  { value: "1M+", label: "Resumes Created", icon: FileText },
+  { value: "4.9", label: "Average Rating", icon: Star, isStar: true },
+  { value: "4×", label: "Faster to Dream Job", icon: Zap, isZap: true },
 ];
 
 const REVIEWS = [
@@ -385,6 +388,7 @@ const REVIEWS = [
     company: "KPMG",
     quote: "The 90-day roadmap sealed the deal. They said no other candidate came that prepared.",
     timeAgo: "3 weeks ago",
+    highlighted: true,
   },
   {
     name: "Ryan P.",
@@ -396,8 +400,9 @@ const REVIEWS = [
 
 function SocialProof() {
   return (
-    <section className="border-t border-border/60 py-20 sm:py-24">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6">
+    <section className="relative border-t border-border/60 py-20 sm:py-24 noise-texture">
+      <div className="absolute inset-0 bg-gradient-to-b from-muted/30 via-background to-muted/20" />
+      <div className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6">
         <div className="text-center mb-14">
           <h2 className="font-heading text-3xl font-bold text-foreground sm:text-4xl">
             Trusted by Professionals
@@ -408,50 +413,71 @@ function SocialProof() {
         </div>
 
         {/* Stats bar */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 sm:gap-8 mb-16">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 mb-16">
           {STATS.map((s) => (
-            <div key={s.label} className="text-center">
+            <div
+              key={s.label}
+              className="relative flex flex-col items-center text-center rounded-2xl bg-muted/50 border border-border/40 p-6 transition-all hover:bg-muted/70 hover:shadow-sm"
+            >
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary mb-3">
+                <s.icon className="h-5 w-5" />
+              </div>
               <div className="flex items-center justify-center gap-1.5">
-                <span className="font-heading text-3xl sm:text-4xl font-extrabold text-foreground">
+                <span className="font-heading text-3xl sm:text-4xl lg:text-5xl font-extrabold text-foreground">
                   {s.value}
                 </span>
-                {s.isStar && <Star className="h-5 w-5 fill-primary text-primary" />}
-                {s.isZap && <Zap className="h-5 w-5 fill-primary text-primary" />}
               </div>
-              <p className="mt-1 text-sm text-muted-foreground">{s.label}</p>
+              <p className="mt-1.5 text-sm text-muted-foreground font-medium">{s.label}</p>
             </div>
           ))}
         </div>
 
-        {/* Aggregate badge */}
-        <div className="flex items-center justify-center gap-2 mb-10">
-          <div className="flex">
-            {[...Array(5)].map((_, i) => (
-              <Star key={i} className="h-5 w-5 fill-primary text-primary" />
-            ))}
+        {/* Section divider with aggregate badge */}
+        <div className="relative mb-12">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-border/60" />
           </div>
-          <span className="text-sm font-semibold text-foreground">4.9 / 5</span>
-          <span className="text-sm text-muted-foreground">from 2,400+ reviews</span>
+          <div className="relative flex justify-center">
+            <div className="flex items-center gap-2 bg-background px-5 py-2 rounded-full border border-border/60 shadow-sm">
+              <div className="flex">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="h-4 w-4 fill-primary text-primary" />
+                ))}
+              </div>
+              <span className="text-sm font-semibold text-foreground">4.9 / 5</span>
+              <span className="text-xs text-muted-foreground">from 2,400+ reviews</span>
+            </div>
+          </div>
         </div>
 
         {/* Review cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {REVIEWS.map((r) => (
-            <Card key={r.name} className="transition-all hover:shadow-[var(--shadow-elevated)] hover:-translate-y-0.5">
+            <Card
+              key={r.name}
+              className={`relative overflow-hidden transition-all hover:shadow-[var(--shadow-elevated)] hover:-translate-y-0.5 ${
+                r.highlighted ? "border-t-2 border-t-primary shadow-[var(--shadow-warm)]" : ""
+              }`}
+            >
               <CardContent className="p-6 flex flex-col gap-4">
+                {/* Quote icon */}
+                <Quote className="absolute top-4 right-4 h-8 w-8 text-primary/10" />
+
                 <div className="flex">
                   {[...Array(5)].map((_, i) => (
                     <Star key={i} className="h-4 w-4 fill-primary text-primary" />
                   ))}
                 </div>
-                <p className="text-sm leading-relaxed text-foreground">"{r.quote}"</p>
-                <div className="flex items-center gap-3 mt-auto pt-2 border-t border-border/60">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/15 text-primary text-sm font-bold">
+                <p className="text-base leading-relaxed text-foreground">"{r.quote}"</p>
+                <div className="flex items-center gap-3 mt-auto pt-3 border-t border-border/60">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-primary/20 to-accent/20 text-primary text-sm font-bold ring-2 ring-primary/10">
                     {r.name.charAt(0)}
                   </div>
                   <div className="flex-1">
                     <p className="text-sm font-semibold text-foreground">{r.name}</p>
-                    <p className="text-xs text-muted-foreground">Hired at {r.company}</p>
+                    <Badge variant="outline" className="text-xs mt-0.5">
+                      Hired at {r.company}
+                    </Badge>
                   </div>
                   <span className="text-xs text-muted-foreground">{r.timeAgo}</span>
                 </div>

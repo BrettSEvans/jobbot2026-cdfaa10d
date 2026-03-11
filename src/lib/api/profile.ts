@@ -62,6 +62,7 @@ const ALLOWED_PROFILE_FIELDS = [
   "first_name", "middle_name", "last_name", "display_name",
   "resume_text", "years_experience", "target_industries",
   "key_skills", "preferred_tone", "master_cover_letter",
+  "phone", "linkedin_url",
 ] as const;
 
 export async function updateProfile(updates: Partial<Omit<UserProfile, "id">>): Promise<void> {

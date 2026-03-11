@@ -1069,15 +1069,19 @@ function TestCaseCard({
           </Tooltip>
 
           {isCustom && onDelete && !isCompleted && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 w-7 p-0 text-destructive hover:text-destructive"
-              title="Delete custom test"
-              onClick={() => setDeleteConfirm(true)}
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                  onClick={() => setDeleteConfirm(true)}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Delete custom test</TooltipContent>
+            </Tooltip>
           )}
 
           {isFailed && !isFixed && !isCompleted && savedResult?.failure_notes && (

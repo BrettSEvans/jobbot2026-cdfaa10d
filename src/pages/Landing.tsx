@@ -518,7 +518,7 @@ export default function Landing() {
       <Pricing />
       <SocialProof />
       <CtaFooter />
-      <footer className="border-t border-border/60 py-6 text-center text-xs text-muted-foreground space-y-2">
+      <footer className="border-t border-border/60 py-6 text-center text-xs text-muted-foreground space-y-2 pb-[280px] sm:pb-6">
         <div className="flex items-center justify-center gap-4">
           <a href="/terms" className="hover:text-foreground transition-colors">Terms of Service</a>
           <span className="text-border">·</span>

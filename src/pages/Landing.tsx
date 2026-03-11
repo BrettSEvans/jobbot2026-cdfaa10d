@@ -565,6 +565,18 @@ const FAQ_ITEMS = [
     q: "Can I edit the generated documents?",
     a: "Absolutely. Every document includes an inline editor and an AI chat 'vibe edit' feature — describe what you want changed in plain English and the AI refines it instantly. You can also edit the HTML directly for pixel-perfect control.",
   },
+  {
+    q: "How is ResuVibe different from other resume builders?",
+    a: "Unlike competitors that only provide generic resumes, ResuVibe generates a complete, company-branded interview portfolio. By simply pasting a job URL, you automatically receive an ATS-optimized resume, a tailored cover letter, a 90-day onboarding roadmap, and a RAID log, proving you are ready for day one.",
+  },
+  {
+    q: "How does the AI editing work?",
+    a: "ResuVibe features an interactive AI \"vibe editing\" chat that allows you to continuously iterate on any generated asset. Instead of manually rewriting sections, you simply chat with the AI to refine the tone, formatting, and specific industry terminology across your entire application portfolio.",
+  },
+  {
+    q: "Can I track my job applications within ResuVibe?",
+    a: "Yes. ResuVibe includes a built-in Kanban board and pipeline analytics system. You can easily track your application stages, manage multiple assets per job, and utilize background batch generation to create all the necessary documents for a specific role with a single click.",
+  },
 ];
 
 function Faq() {

@@ -1,8 +1,9 @@
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 import {
-  UserCheck, FileText, FileCode, Users, CreditCard, Gauge, ScrollText, BookOpen, FlaskConical, MessageSquareText, Megaphone,
+  UserCheck, FileText, FileCode, Users, CreditCard, Gauge, ScrollText, BookOpen, FlaskConical, MessageSquareText, Megaphone, ChevronDown,
 } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 export interface AdminSection {
   id: string;

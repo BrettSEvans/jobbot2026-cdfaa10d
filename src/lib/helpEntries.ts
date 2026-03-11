@@ -175,15 +175,17 @@ registerHelp({
   slug: 'master-cover-letter',
   title: 'Master Cover Letter',
   summary:
-    'An optional base cover letter that teaches the AI your writing voice. When provided, every tailored cover letter sounds like you instead of a generic template.',
+    'An optional base cover letter — or even just a few ideas — that teaches the AI your writing voice. Upload a file, paste text, or jot down bullet points. ResuVibe will do the rest!',
   steps: [
     'Navigate to the Profile page from the navigation bar.',
     'Scroll to the Master Cover Letter card.',
-    'Paste or write your go-to cover letter — the one that best represents your voice.',
+    'Upload a PDF, DOCX, or TXT file, or paste/type your content directly.',
+    'Don\'t have a cover letter? Just jot down a few ideas about your strengths — that\'s enough for the AI to work with.',
     'Click Save. The AI will use it as a starting point for every future application.',
   ],
   tips: [
-    'This field is optional but highly recommended — it makes a noticeable difference in output quality.',
+    'Don\'t have a cover letter? Just jot down a few ideas — ResuVibe will do the rest.',
+    'You can upload PDF, DOCX, or TXT files up to 2 MB. The text is extracted automatically.',
     'You\'ll be reminded at your 1st, 3rd, and 7th application if you haven\'t added one yet.',
     'If you don\'t access the app for 30 days the reminder resets, so you get a fresh prompt.',
   ],

@@ -67,6 +67,9 @@ function LandingNav() {
               {s.label}
             </Button>
           ))}
+          <Button variant="ghost" size="sm" onClick={() => navigate("/author")}>
+            Author
+          </Button>
           <Button variant="ghost" size="sm" onClick={() => navigate("/auth")}>
             Sign In
           </Button>

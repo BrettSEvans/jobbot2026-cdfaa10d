@@ -155,9 +155,10 @@ registerHelp({
   slug: 'profile',
   title: 'Profile',
   summary:
-    'Manage your personal information, resume text, master cover letter, key skills, and preferences. This data is used by the AI to tailor every generated document to your background and voice.',
+    'Manage your personal information, resume text, master cover letter, key skills, and preferences. This data is used by the AI to tailor every generated document to your background and voice. Phone and LinkedIn URL are auto-extracted from your resume upload.',
   steps: [
     'Fill in your name, years of experience, and target industries.',
+    'Upload a PDF resume — phone number and LinkedIn URL will be extracted automatically.',
     'Paste or edit your master resume text — this feeds into all resume generations.',
     'Add a master cover letter so the AI captures your unique voice (optional but highly recommended).',
     'Add key skills that should be highlighted across your applications.',
@@ -165,6 +166,7 @@ registerHelp({
   tips: [
     'The more detailed your profile, the better the AI can tailor content.',
     'Preferred tone (e.g. "professional", "conversational") influences generation style.',
+    'Phone and LinkedIn are auto-populated from your resume but you can edit them anytime.',
   ],
   route: '/profile',
   keywords: ['profile', 'resume', 'skills', 'experience', 'tone', 'name', 'cover letter'],

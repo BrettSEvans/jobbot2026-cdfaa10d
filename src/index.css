@@ -2,115 +2,91 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ResuVibe Design System — warm amber/gold + deep indigo identity */
+/* JobBot Design System — distinctive identity with teal/emerald accent */
 
 @layer base {
   :root {
-    --background: 40 25% 97%;
-    --foreground: 234 30% 12%;
+    --background: 210 20% 98%;
+    --foreground: 220 25% 10%;
 
-    --card: 40 20% 99%;
-    --card-foreground: 234 30% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 25% 10%;
 
-    --popover: 40 20% 99%;
-    --popover-foreground: 234 30% 12%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 25% 10%;
 
-    --primary: 36 90% 50%;
-    --primary-foreground: 234 40% 12%;
+    --primary: 168 64% 36%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 234 25% 94%;
-    --secondary-foreground: 234 30% 18%;
+    --secondary: 210 20% 94%;
+    --secondary-foreground: 220 25% 15%;
 
-    --muted: 40 15% 92%;
-    --muted-foreground: 234 10% 42%;
+    --muted: 210 18% 93%;
+    --muted-foreground: 215 14% 40%;
 
-    --accent: 234 45% 52%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 168 40% 92%;
+    --accent-foreground: 168 64% 22%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 40 15% 86%;
-    --input: 40 15% 86%;
-    --ring: 36 90% 50%;
+    --border: 214 20% 88%;
+    --input: 214 20% 88%;
+    --ring: 168 64% 36%;
 
-    --radius: 0.625rem;
+    --radius: 0.5rem;
 
-    --sidebar-background: 40 18% 96%;
-    --sidebar-foreground: 234 15% 30%;
-    --sidebar-primary: 36 90% 50%;
-    --sidebar-primary-foreground: 234 40% 12%;
-    --sidebar-accent: 234 25% 94%;
-    --sidebar-accent-foreground: 234 45% 42%;
-    --sidebar-border: 40 14% 88%;
-    --sidebar-ring: 36 90% 50%;
+    --sidebar-background: 210 18% 96%;
+    --sidebar-foreground: 220 15% 30%;
+    --sidebar-primary: 168 64% 36%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 168 30% 92%;
+    --sidebar-accent-foreground: 168 64% 22%;
+    --sidebar-border: 214 16% 90%;
+    --sidebar-ring: 168 64% 36%;
 
-    --font-heading: 'DM Serif Display', 'Georgia', serif;
-    --font-body: 'DM Sans', 'system-ui', sans-serif;
-
-    --gradient-warm: linear-gradient(135deg, hsl(36 90% 50%), hsl(28 90% 55%));
-    --gradient-indigo: linear-gradient(135deg, hsl(234 45% 52%), hsl(250 50% 60%));
-    --shadow-warm: 0 4px 24px -4px hsl(36 90% 50% / 0.2);
-    --shadow-elevated: 0 8px 32px -8px hsl(234 30% 12% / 0.1);
+    --font-heading: 'Plus Jakarta Sans', system-ui, sans-serif;
+    --font-body: 'Inter', system-ui, sans-serif;
   }
 
   .dark {
-    --background: 234 25% 7%;
-    --foreground: 40 15% 93%;
+    --background: 220 20% 7%;
+    --foreground: 210 20% 95%;
 
-    --card: 234 22% 10%;
-    --card-foreground: 40 15% 93%;
+    --card: 220 18% 10%;
+    --card-foreground: 210 20% 95%;
 
-    --popover: 234 22% 10%;
-    --popover-foreground: 40 15% 93%;
+    --popover: 220 18% 10%;
+    --popover-foreground: 210 20% 95%;
 
-    --primary: 36 85% 55%;
-    --primary-foreground: 234 30% 8%;
+    --primary: 168 55% 45%;
+    --primary-foreground: 220 20% 7%;
 
-    --secondary: 234 18% 16%;
-    --secondary-foreground: 40 15% 88%;
+    --secondary: 220 14% 16%;
+    --secondary-foreground: 210 20% 90%;
 
-    --muted: 234 18% 15%;
-    --muted-foreground: 234 10% 62%;
+    --muted: 220 14% 16%;
+    --muted-foreground: 215 14% 60%;
 
-    --accent: 234 40% 58%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 220 14% 16%;
+    --accent-foreground: 168 55% 55%;
 
     --destructive: 0 62% 40%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 234 18% 18%;
-    --input: 234 18% 18%;
-    --ring: 36 85% 55%;
+    --border: 220 14% 18%;
+    --input: 220 14% 18%;
+    --ring: 168 55% 45%;
 
-    --sidebar-background: 234 22% 8%;
-    --sidebar-foreground: 40 10% 78%;
-    --sidebar-primary: 36 85% 55%;
-    --sidebar-primary-foreground: 234 30% 8%;
-    --sidebar-accent: 234 18% 14%;
-    --sidebar-accent-foreground: 36 85% 60%;
-    --sidebar-border: 234 18% 16%;
-    --sidebar-ring: 36 85% 55%;
-
-    --gradient-warm: linear-gradient(135deg, hsl(36 85% 55%), hsl(28 85% 50%));
-    --gradient-indigo: linear-gradient(135deg, hsl(234 40% 58%), hsl(250 45% 55%));
-    --shadow-warm: 0 4px 24px -4px hsl(36 85% 55% / 0.15);
-    --shadow-elevated: 0 8px 32px -8px hsl(0 0% 0% / 0.3);
+    --sidebar-background: 220 18% 8%;
+    --sidebar-foreground: 210 15% 80%;
+    --sidebar-primary: 168 55% 45%;
+    --sidebar-primary-foreground: 220 20% 7%;
+    --sidebar-accent: 220 14% 14%;
+    --sidebar-accent-foreground: 168 55% 55%;
+    --sidebar-border: 220 14% 16%;
+    --sidebar-ring: 168 55% 45%;
   }
-}
-
-/* Subtle noise texture overlay */
-.noise-texture::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  opacity: 0.03;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  pointer-events: none;
-  z-index: 0;
-}
-.dark .noise-texture::before {
-  opacity: 0.05;
 }
 
 @layer base {
@@ -127,134 +103,3 @@
     font-family: var(--font-heading);
   }
 }
-
-/* Lexical WYSIWYG Editor Theme */
-@layer components {
-  .lexical-editor {
-    @apply text-foreground;
-  }
-
-  .editor-paragraph {
-    @apply mb-2 leading-relaxed;
-  }
-
-  .editor-heading-h1 {
-    font-family: var(--font-heading);
-    @apply text-2xl font-bold mb-3 text-foreground;
-  }
-
-  .editor-heading-h2 {
-    font-family: var(--font-heading);
-    @apply text-xl font-semibold mb-2 text-foreground;
-  }
-
-  .editor-heading-h3 {
-    font-family: var(--font-heading);
-    @apply text-lg font-semibold mb-2 text-foreground;
-  }
-
-  .editor-text-bold {
-    @apply font-bold;
-  }
-
-  .editor-text-italic {
-    @apply italic;
-  }
-
-  .editor-text-underline {
-    @apply underline;
-  }
-
-  .editor-text-strikethrough {
-    @apply line-through;
-  }
-
-  .editor-list-ul {
-    @apply list-disc ml-6 mb-2;
-  }
-
-  .editor-list-ol {
-    @apply list-decimal ml-6 mb-2;
-  }
-
-  .editor-list-item {
-    @apply mb-1;
-  }
-
-  .editor-nested-list-item {
-    @apply list-none;
-  }
-
-  .editor-table {
-    @apply w-full border-collapse mb-3;
-  }
-
-  .editor-table-row {
-    /* row baseline */
-  }
-
-  .editor-table-cell {
-    @apply border border-border p-2 text-sm;
-  }
-
-  .editor-table-header {
-    @apply border border-border p-2 text-sm font-semibold bg-muted;
-  }
-
-  .editor-hr {
-    @apply border-t-2 border-border my-4;
-  }
-
-  .editor-link {
-    @apply text-primary underline cursor-pointer hover:text-primary/80;
-  }
-
-  .editor-hashtag {
-    @apply text-primary/80 font-medium;
-  }
-
-  .editor-mention {
-    @apply bg-accent text-accent-foreground px-1 rounded font-medium;
-  }
-
-  .editor-quote {
-    @apply border-l-4 border-primary/30 pl-4 italic text-muted-foreground my-2;
-  }
-
-  .editor-header-zone {
-    @apply bg-muted/40 px-4 py-3 space-y-2;
-    border-bottom: 2.5px solid hsl(var(--foreground));
-    padding-bottom: 12px;
-  }
-
-  .editor-header-zone input {
-    @apply w-full bg-transparent text-foreground placeholder:text-muted-foreground outline-none;
-  }
-
-  .editor-header-zone input.header-name {
-    font-family: var(--font-heading);
-    @apply text-lg font-semibold;
-  }
-
-  .editor-header-zone input.header-subtitle {
-    @apply text-sm text-muted-foreground;
-  }
-
-  .editor-header-zone .header-date {
-    @apply block text-xs text-muted-foreground mt-1;
-  }
-
-  .editor-header-zone input.header-date {
-    @apply w-full bg-transparent outline-none text-xs text-muted-foreground mt-1;
-  }
-
-  .editor-footer-zone {
-    @apply bg-muted/40 border-t border-border px-4 py-3;
-  }
-
-  .editor-footer-zone textarea {
-    @apply w-full bg-transparent text-sm text-muted-foreground placeholder:text-muted-foreground outline-none resize-none min-h-[40px];
-  }
-}
-
-/* marquee animations archived — previously used by Testimonials carousel */

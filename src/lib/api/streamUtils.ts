@@ -2,7 +2,6 @@
  * Shared SSE stream utilities.
  * Eliminates duplicated SSE parsing logic across asset API files.
  */
-import { supabase } from '@/integrations/supabase/client';
 
 /**
  * Call a Supabase Edge Function that returns an SSE stream,
@@ -43,21 +42,13 @@ export async function streamFromEdgeFunction({
   }
 
   try {
-    // Get the user's session token — require authentication
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.access_token) {
-      throw new Error('Authentication required. Please sign in again.');
-    }
-    const authToken = session.access_token;
-
     const resp = await fetch(
       `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${functionName}`,
       {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${authToken}`,
-          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
         body: JSON.stringify(body),
         signal: controller.signal,

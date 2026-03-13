@@ -7,39 +7,33 @@
 import {
   scrapeCompanyBranding,
   analyzeCompany,
+  streamDashboardGeneration,
   saveJobApplication,
   searchCompanyIcon,
 } from "@/lib/api/jobApplication";
 import { scrapeJob, streamTailoredLetter } from "@/lib/api/coverLetter";
-import { addBlockedSite, removeSiteBlock } from "@/lib/blockedScrapeSites";
 import { getProfileContextForPrompt } from "@/lib/api/profile";
+import { streamExecutiveReport } from "@/lib/api/executiveReport";
+import { streamRaidLog } from "@/lib/api/raidLog";
+import { streamArchitectureDiagram } from "@/lib/api/architectureDiagram";
+import { streamRoadmap } from "@/lib/api/roadmap";
 import { streamResumeGeneration, getResumeStyle } from "@/lib/api/resume";
+import { parseLlmJsonOutput, assembleDashboardHtml } from "@/lib/dashboard/assembler";
 import { cleanHtml } from "@/lib/cleanHtml";
-import {
-  streamDynamicAssetGeneration,
-  updateGeneratedAsset,
-  saveDynamicAssetRevision,
-} from "@/lib/api/dynamicAssets";
-import { supabase } from "@/integrations/supabase/client";
 
 export type GenerationJob = {
   applicationId: string;
-  status: "pending" | "scraping" | "analyzing" | "resume" | "cover-letter" | "generating-asset" | "refining-asset" | "complete" | "error";
+  status: "pending" | "scraping" | "analyzing" | "cover-letter" | "dashboard" | "generating-assets" | "executive-report" | "raid-log" | "architecture-diagram" | "roadmap" | "resume" | "complete" | "error";
   progress: string;
   error?: string;
-  /** Tracks how many of the parallel assets have finished (used by UI) */
+  /** Tracks how many of the 4 parallel assets have finished (used by UI) */
   parallelCompleted?: number;
   parallelTotal?: number;
   /** Timestamp when the job started */
   startedAt?: number;
   /** Timestamp when each stage started */
   stageStartedAt?: number;
-  /** For asset-specific background jobs */
-  assetType?: string;
-  jobLabel?: string;
 };
-
-export type AssetJobResult = { html: string; extraFields?: Record<string, any> };
 
 type Listener = () => void;
 
@@ -47,32 +41,6 @@ class BackgroundGenerationManager {
   private jobs: Map<string, GenerationJob> = new Map();
   private abortControllers: Map<string, AbortController> = new Map();
   private listeners: Set<Listener> = new Set();
-  private cleanupInterval: ReturnType<typeof setInterval> | null = null;
-
-  constructor() {
-    // Auto-cleanup completed/errored jobs after 5 minutes
-    this.cleanupInterval = setInterval(() => this.cleanupStaleJobs(), 60_000);
-  }
-
-  /** Remove completed/errored jobs older than 5 minutes, reset orphaned generating jobs older than 10 minutes */
-  private cleanupStaleJobs() {
-    const now = Date.now();
-    for (const [key, job] of this.jobs.entries()) {
-      if (!job.startedAt) continue;
-      const age = now - job.startedAt;
-      if (["complete", "error"].includes(job.status) && age > 5 * 60_000) {
-        this.jobs.delete(key);
-      } else if (!["complete", "error"].includes(job.status) && age > 10 * 60_000) {
-        // Orphaned generating job — mark as error
-        job.status = "error";
-        job.error = "Generation timed out (orphaned job)";
-        job.progress = "Timed out";
-        this.abortControllers.get(key)?.abort();
-        this.abortControllers.delete(key);
-      }
-    }
-    if (this.jobs.size > 0) this.notify();
-  }
 
   subscribe(listener: Listener) {
     this.listeners.add(listener);
@@ -132,7 +100,6 @@ class BackgroundGenerationManager {
     jobDescription,
     useManualInput,
     resumeStyleId,
-    sourceResumeId,
   }: {
     applicationId?: string;
     jobUrl: string;
@@ -140,7 +107,6 @@ class BackgroundGenerationManager {
     jobDescription?: string;
     useManualInput?: boolean;
     resumeStyleId?: string;
-    sourceResumeId?: string;
   }): Promise<string> {
     // Create a DB record first if we don't have one
     let appId = applicationId;
@@ -150,7 +116,7 @@ class BackgroundGenerationManager {
         company_url: companyUrl,
         status: "generating",
         generation_status: "pending",
-      });
+      } as any);
       appId = saved.id;
     } else {
       await saveJobApplication({
@@ -158,7 +124,7 @@ class BackgroundGenerationManager {
         job_url: jobUrl,
         status: "generating",
         generation_status: "pending",
-      });
+      } as any);
     }
 
     const now = Date.now();
@@ -175,7 +141,7 @@ class BackgroundGenerationManager {
     this.notify();
 
     // Run in background (don't await at call site)
-    this.runPipeline(appId, jobUrl, companyUrl, jobDescription, useManualInput, resumeStyleId, sourceResumeId, abortController.signal);
+    this.runPipeline(appId, jobUrl, companyUrl, jobDescription, useManualInput, resumeStyleId, abortController.signal);
 
     return appId;
   }
@@ -187,7 +153,6 @@ class BackgroundGenerationManager {
     manualDescription?: string,
     useManualInput?: boolean,
     resumeStyleId?: string,
-    sourceResumeId?: string,
     signal?: AbortSignal,
   ) {
     try {
@@ -198,25 +163,9 @@ class BackgroundGenerationManager {
       let markdown = manualDescription || "";
       if (!useManualInput && jobUrl) {
         this.updateJob(appId, { status: "scraping", progress: "Scraping job posting..." });
-        await saveJobApplication({ id: appId, job_url: jobUrl, generation_status: "scraping" });
-        try {
-          const result = await scrapeJob(jobUrl);
-          markdown = result.markdown;
-          // Successful scrape — if this was a recheck of a previously blocked site, unblock it
-          const scrapedHost = new URL(jobUrl.startsWith("http") ? jobUrl : `https://${jobUrl}`).hostname;
-          await removeSiteBlock(scrapedHost);
-        } catch (scrapeErr: unknown) {
-          const msg = scrapeErr instanceof Error ? scrapeErr.message : String(scrapeErr);
-          const isUnsupported = msg.includes("do not support this site") || msg.includes("403");
-          if (isUnsupported) {
-            const blockedHost = new URL(jobUrl.startsWith("http") ? jobUrl : `https://${jobUrl}`).hostname;
-            await addBlockedSite(blockedHost);
-            throw new Error(
-              `This site (${blockedHost}) blocks automated scraping. Please use "Paste text instead" to enter the job description manually.`
-            );
-          }
-          throw scrapeErr;
-        }
+        await saveJobApplication({ id: appId, job_url: jobUrl, generation_status: "scraping" } as any);
+        const result = await scrapeJob(jobUrl);
+        markdown = result.markdown;
       }
       this.updateJob(appId, { status: "scraping", progress: "Job description ready" });
 
@@ -236,7 +185,7 @@ class BackgroundGenerationManager {
 
       // 3. Analyze company
       this.updateJob(appId, { status: "analyzing", progress: "Analyzing company & market..." });
-      await saveJobApplication({ id: appId, job_url: jobUrl, generation_status: "analyzing" });
+      await saveJobApplication({ id: appId, job_url: jobUrl, generation_status: "analyzing" } as any);
       let companyName = "", jobTitle = "", department = "";
       let competitors: string[] = [], customers: string[] = [], products: string[] = [];
       try {
@@ -254,29 +203,20 @@ class BackgroundGenerationManager {
         console.warn("Analysis failed:", e);
       }
 
-      // 3b. Search for company icon (always try external search first for best quality)
-      let companyIconUrl: string | null = null;
-      if (companyName) {
+      // 3b. Logo fallback: if branding scrape found no logo, search external icon repos
+      const hasLogo = brandingData?.logo || brandingData?.images?.logo || brandingData?.images?.favicon;
+      if (!hasLogo && companyName) {
         this.updateJob(appId, { progress: "Searching for company logo..." });
         try {
           const { iconUrl, source } = await searchCompanyIcon(companyName, companyUrl);
           if (iconUrl) {
-            console.log(`Company icon found via ${source}: ${iconUrl}`);
-            companyIconUrl = iconUrl;
+            console.log(`Logo fallback found via ${source}: ${iconUrl}`);
+            if (!brandingData) brandingData = {};
+            brandingData.logo = iconUrl;
           }
         } catch (e) {
-          console.warn("Company icon search failed:", e);
+          console.warn("Logo fallback search failed:", e);
         }
-      }
-      // Fallback: use logo from branding scrape if icon search found nothing
-      if (!companyIconUrl) {
-        companyIconUrl = brandingData?.logo || brandingData?.images?.logo || brandingData?.images?.favicon || null;
-      }
-      // Inject icon into branding for template usage
-      if (companyIconUrl && brandingData) {
-        if (!brandingData.logo) brandingData.logo = companyIconUrl;
-      } else if (companyIconUrl && !brandingData) {
-        brandingData = { logo: companyIconUrl };
       }
 
       // Save intermediate results
@@ -292,56 +232,10 @@ class BackgroundGenerationManager {
         customers,
         products,
         generation_status: "cover-letter",
-        company_icon_url: companyIconUrl,
-        ...(sourceResumeId ? { source_resume_id: sourceResumeId } : {}),
-      });
+      } as any);
 
-      // 4. Generate resume
-      this.updateJob(appId, { status: "resume", progress: "Generating resume..." });
-      await saveJobApplication({ id: appId, job_url: jobUrl, generation_status: "resume" });
-      let resumeHtml: string | null = null;
-      try {
-        let systemPrompt: string | undefined;
-        if (resumeStyleId) {
-          try {
-            const style = await getResumeStyle(resumeStyleId);
-            systemPrompt = style.system_prompt;
-          } catch (e) {
-            console.warn("Failed to fetch resume style, using default:", e);
-          }
-        }
-
-        const { getActiveResumeText } = await import("@/lib/api/profile");
-        let resumeText = "";
-        try {
-          resumeText = await getActiveResumeText();
-        } catch (e) {
-          console.warn("Failed to fetch profile for resume:", e);
-        }
-
-        let accumulated = "";
-        await streamResumeGeneration({
-          jobDescription: markdown,
-          resumeText,
-          systemPrompt,
-          companyName,
-          jobTitle,
-          branding: brandingData,
-          competitors,
-          customers,
-          products,
-          profileContext,
-          onDelta: (text) => { accumulated += text; },
-          onDone: () => {},
-        });
-        resumeHtml = cleanHtml(accumulated);
-      } catch (e) {
-        console.warn("Resume generation failed:", e);
-      }
-
-      // 5. Generate cover letter
+      // 4. Generate cover letter
       this.updateJob(appId, { status: "cover-letter", progress: "Generating cover letter..." });
-      await saveJobApplication({ id: appId, job_url: jobUrl, generation_status: "cover-letter" });
       let coverLetter = "";
       await streamTailoredLetter({
         jobDescription: markdown,
@@ -350,35 +244,225 @@ class BackgroundGenerationManager {
         onDone: () => {},
       });
 
-      // 6a. Save resume immediately so it appears in the UI right away
-      if (resumeHtml) {
-        await saveJobApplication({
-          id: appId,
-          job_url: jobUrl,
-          resume_html: resumeHtml,
-        });
-      }
-
-      // 6b. Save cover letter and mark complete
       await saveJobApplication({
         id: appId,
         job_url: jobUrl,
         cover_letter: coverLetter,
+        generation_status: "dashboard",
+      } as any);
+
+      // 5. Generate dashboard (now outputs JSON, assembled into HTML by templates)
+      this.updateJob(appId, { status: "dashboard", progress: "Generating dashboard..." });
+      let dashboardRaw = "";
+      await streamDashboardGeneration({
+        jobDescription: markdown,
+        branding: brandingData,
+        companyName,
+        jobTitle,
+        competitors,
+        customers,
+        products,
+        department,
+        onDelta: (text) => { dashboardRaw += text; },
+        onDone: () => {},
+      });
+
+      // Parse JSON and assemble HTML from templates
+      let dashboardHtml = "";
+      let dashboardData: any = null;
+      const parsed = parseLlmJsonOutput(dashboardRaw);
+      if (parsed) {
+        // Inject logoUrl from branding if LLM omitted it
+        if (!parsed.meta.logoUrl && brandingData) {
+          const logoUrl = brandingData.logo || brandingData.images?.logo || brandingData.images?.favicon;
+          if (logoUrl) parsed.meta.logoUrl = logoUrl;
+        }
+        dashboardData = parsed;
+        dashboardHtml = assembleDashboardHtml(parsed);
+      } else {
+        // Fallback: treat as raw HTML (backward compat with old prompt)
+        console.warn("Failed to parse dashboard JSON, falling back to raw HTML");
+        dashboardHtml = dashboardRaw;
+        const htmlStart = dashboardHtml.indexOf("<!DOCTYPE html>") !== -1
+          ? dashboardHtml.indexOf("<!DOCTYPE html>")
+          : dashboardHtml.indexOf("<!doctype html>");
+        if (htmlStart > 0) dashboardHtml = dashboardHtml.slice(htmlStart);
+        const htmlEnd = dashboardHtml.lastIndexOf("</html>");
+        if (htmlEnd !== -1) dashboardHtml = dashboardHtml.slice(0, htmlEnd + 7);
+      }
+
+      // 6-9. Generate assets IN PARALLEL (including resume)
+      const totalAssets = 5;
+      this.updateJob(appId, {
+        status: "generating-assets",
+        progress: `Generating additional assets... (0/${totalAssets} completed)`,
+        parallelCompleted: 0,
+        parallelTotal: totalAssets,
+      });
+
+      let parallelDone = 0;
+      const bumpCount = () => {
+        parallelDone++;
+        this.updateJob(appId, {
+          progress: `Generating additional assets... (${parallelDone}/${totalAssets} completed)`,
+          parallelCompleted: parallelDone,
+        });
+      };
+
+      const generateExecReport = async (): Promise<string | null> => {
+        try {
+          let accumulated = "";
+          await streamExecutiveReport({
+            jobDescription: markdown, companyName, jobTitle, competitors, customers, products, department, branding: brandingData, profileContext,
+            onDelta: (text) => { accumulated += text; },
+            onDone: () => {},
+          });
+          return cleanHtml(accumulated);
+        } catch (e) {
+          console.warn("Executive report generation failed:", e);
+          return null;
+        } finally {
+          bumpCount();
+        }
+      };
+
+      const generateRaidLog = async (): Promise<string | null> => {
+        try {
+          let accumulated = "";
+          await streamRaidLog({
+            jobDescription: markdown, companyName, jobTitle, competitors, customers, products, department, branding: brandingData,
+            onDelta: (text) => { accumulated += text; },
+            onDone: () => {},
+          });
+          return cleanHtml(accumulated);
+        } catch (e) {
+          console.warn("RAID log generation failed:", e);
+          return null;
+        } finally {
+          bumpCount();
+        }
+      };
+
+      const generateArchDiagram = async (): Promise<string | null> => {
+        try {
+          let accumulated = "";
+          await streamArchitectureDiagram({
+            jobDescription: markdown, companyName, jobTitle, competitors, customers, products, department, branding: brandingData,
+            onDelta: (text) => { accumulated += text; },
+            onDone: () => {},
+          });
+          return cleanHtml(accumulated);
+        } catch (e) {
+          console.warn("Architecture diagram generation failed:", e);
+          return null;
+        } finally {
+          bumpCount();
+        }
+      };
+
+      const generateRoadmap = async (): Promise<string | null> => {
+        try {
+          let accumulated = "";
+          await streamRoadmap({
+            jobDescription: markdown, companyName, jobTitle, competitors, customers, products, department, branding: brandingData,
+            onDelta: (text) => { accumulated += text; },
+            onDone: () => {},
+          });
+          return cleanHtml(accumulated);
+        } catch (e) {
+          console.warn("Roadmap generation failed:", e);
+          return null;
+        } finally {
+          bumpCount();
+        }
+      };
+
+      const generateResume = async (): Promise<string | null> => {
+        try {
+          // Fetch the selected resume style's system prompt
+          let systemPrompt: string | undefined;
+          if (resumeStyleId) {
+            try {
+              const style = await getResumeStyle(resumeStyleId);
+              systemPrompt = style.system_prompt;
+            } catch (e) {
+              console.warn("Failed to fetch resume style, using default:", e);
+            }
+          }
+
+          // Get user's baseline resume text from profile
+          const { getProfile } = await import("@/lib/api/profile");
+          let resumeText = "";
+          try {
+            const profile = await getProfile();
+            resumeText = profile?.resume_text || "";
+          } catch (e) {
+            console.warn("Failed to fetch profile for resume:", e);
+          }
+
+          let accumulated = "";
+          await streamResumeGeneration({
+            jobDescription: markdown,
+            resumeText,
+            systemPrompt,
+            companyName,
+            jobTitle,
+            branding: brandingData,
+            competitors,
+            customers,
+            products,
+            profileContext,
+            onDelta: (text) => { accumulated += text; },
+            onDone: () => {},
+          });
+          return cleanHtml(accumulated);
+        } catch (e) {
+          console.warn("Resume generation failed:", e);
+          return null;
+        } finally {
+          bumpCount();
+        }
+      };
+
+      const [execResult, raidResult, archResult, roadmapResult, resumeResult] = await Promise.allSettled([
+        generateExecReport(),
+        generateRaidLog(),
+        generateArchDiagram(),
+        generateRoadmap(),
+        generateResume(),
+      ]);
+
+      const execReportHtml = execResult.status === "fulfilled" ? execResult.value : null;
+      const raidLogHtml = raidResult.status === "fulfilled" ? raidResult.value : null;
+      const archDiagramHtml = archResult.status === "fulfilled" ? archResult.value : null;
+      const roadmapHtml = roadmapResult.status === "fulfilled" ? roadmapResult.value : null;
+      const resumeHtml = resumeResult.status === "fulfilled" ? resumeResult.value : null;
+
+      // 10. Single consolidated save
+      await saveJobApplication({
+        id: appId,
+        job_url: jobUrl,
+        dashboard_html: dashboardHtml,
+        dashboard_data: dashboardData,
+        ...(execReportHtml ? { executive_report_html: execReportHtml } : {}),
+        ...(raidLogHtml ? { raid_log_html: raidLogHtml } : {}),
+        ...(archDiagramHtml ? { architecture_diagram_html: archDiagramHtml } : {}),
+        ...(roadmapHtml ? { roadmap_html: roadmapHtml } : {}),
+        ...(resumeHtml ? { resume_html: resumeHtml } : {}),
         status: "complete",
         generation_status: "complete",
-      });
+      } as any);
 
       this.abortControllers.delete(appId);
       this.updateJob(appId, { status: "complete", progress: "Done!" });
-    } catch (err: unknown) {
+    } catch (err: any) {
       this.abortControllers.delete(appId);
       const isCancelled = signal?.aborted;
-      const errMsg = err instanceof Error ? err.message : "Unknown error";
       if (isCancelled) {
         // Already handled by cancelJob — just save the status
       } else {
         console.error("Background generation error:", err);
-        this.updateJob(appId, { status: "error", progress: "Failed", error: errMsg });
+        this.updateJob(appId, { status: "error", progress: "Failed", error: err.message });
       }
       try {
         await saveJobApplication({
@@ -386,124 +470,93 @@ class BackgroundGenerationManager {
           job_url: jobUrl,
           status: "error",
           generation_status: "error",
-          generation_error: errMsg,
-        });
+          generation_error: err.message,
+        } as any);
       } catch (saveErr) { console.warn("Failed to save error status:", saveErr); }
     }
   }
 
-
-  // --- Generic asset job support (keyed as appId::assetType) ---
-
-  private assetJobKey(appId: string, assetType: string): string {
-    return `${appId}::${assetType}`;
-  }
-
-  getAssetJob(appId: string, assetType: string): GenerationJob | undefined {
-    return this.jobs.get(this.assetJobKey(appId, assetType));
-  }
-
-  /** Check if any job (pipeline or asset-specific) is active for a given application */
-  hasActiveJobsForApp(appId: string): boolean {
-    for (const [key, job] of this.jobs.entries()) {
-      if ((key === appId || key.startsWith(`${appId}::`)) && !["complete", "error"].includes(job.status)) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  /** Get all active asset types for an application */
-  getActiveAssetTypesForApp(appId: string): string[] {
-    const types: string[] = [];
-    for (const [key, job] of this.jobs.entries()) {
-      if (key.startsWith(`${appId}::`) && !["complete", "error"].includes(job.status)) {
-        types.push(key.split("::")[1]);
-      }
-    }
-    return types;
-  }
-
   /**
-   * Start a generic asset background job (generate or refine).
-   * runFn does the actual streaming work and returns the result.
-   * The backgroundGenerator manages state and persists to DB.
+   * Start a dashboard refinement in the background.
+   * Continues even if the user navigates away.
    */
-  async startAssetJob({
+  async startRefinement({
     applicationId,
-    assetType,
-    label,
-    dbField,
-    runFn,
-    saveRevisionFn,
-    revisionLabel,
+    currentHtml,
+    currentDashboardData,
+    userMessage,
+    chatHistory,
+    jobUrl,
   }: {
     applicationId: string;
-    assetType: string;
-    label: string;
-    dbField: string;
-    runFn: () => Promise<AssetJobResult>;
-    saveRevisionFn?: (appId: string, html: string, label: string) => Promise<any>;
-    revisionLabel?: string;
+    currentHtml: string;
+    currentDashboardData?: any;
+    userMessage: string;
+    chatHistory: Array<{ role: string; content: string }>;
+    jobUrl: string;
   }): Promise<void> {
-    const jobKey = this.assetJobKey(applicationId, assetType);
-    const now = Date.now();
     const job: GenerationJob = {
       applicationId,
-      status: "generating-asset",
-      progress: `${label}...`,
-      assetType,
-      jobLabel: label,
-      startedAt: now,
-      stageStartedAt: now,
+      status: "dashboard",
+      progress: "Refining dashboard...",
     };
-    this.jobs.set(jobKey, job);
+    this.jobs.set(applicationId, job);
     this.notify();
 
-    // Run in background — don't await at call site
-    this.runAssetJob(jobKey, applicationId, dbField, label, runFn, saveRevisionFn, revisionLabel);
+    this.runRefinement(applicationId, currentHtml, currentDashboardData, userMessage, chatHistory, jobUrl);
   }
 
-  private async runAssetJob(
-    jobKey: string,
+  private async runRefinement(
     appId: string,
-    dbField: string,
-    label: string,
-    runFn: () => Promise<AssetJobResult>,
-    saveRevisionFn?: (appId: string, html: string, label: string) => Promise<any>,
-    revisionLabel?: string,
+    currentHtml: string,
+    currentDashboardData: any | undefined,
+    userMessage: string,
+    chatHistory: Array<{ role: string; content: string }>,
+    jobUrl: string,
   ) {
     try {
-      const result = await runFn();
+      const { streamDashboardRefinement } = await import("@/lib/api/jobApplication");
 
-      // Save to DB
-      const savePayload: Record<string, any> = { [dbField]: result.html };
-      if (result.extraFields) Object.assign(savePayload, result.extraFields);
-
-      // Need job_url for saveJobApplication — fetch it
-      const { getJobApplication } = await import("@/lib/api/jobApplication");
-      const app = await getJobApplication(appId);
-      await saveJobApplication({
-        id: appId,
-        job_url: app.job_url,
-        ...savePayload,
+      let accumulated = "";
+      await streamDashboardRefinement({
+        currentHtml,
+        currentDashboardData,
+        userMessage,
+        chatHistory,
+        onDelta: (text) => { accumulated += text; },
+        onDone: () => {
+          // Try parsing as JSON first (new format)
+          const parsed = parseLlmJsonOutput(accumulated);
+          if (parsed) {
+            accumulated = assembleDashboardHtml(parsed);
+          } else {
+            // Fallback: clean as raw HTML
+            let clean = accumulated;
+            const htmlStart = clean.indexOf("<!DOCTYPE html>");
+            const htmlStartAlt = clean.indexOf("<!doctype html>");
+            const start = htmlStart !== -1 ? htmlStart : htmlStartAlt;
+            if (start > 0) clean = clean.slice(start);
+            const htmlEnd = clean.lastIndexOf("</html>");
+            if (htmlEnd !== -1) clean = clean.slice(0, htmlEnd + 7);
+            accumulated = clean;
+          }
+        },
       });
 
-      // Save revision if provided
-      if (saveRevisionFn && revisionLabel) {
-        try {
-          await saveRevisionFn(appId, result.html, revisionLabel);
-        } catch (e) { console.warn("Failed to save revision:", e); }
-      }
+      const updatedHistory = [...chatHistory, { role: "assistant", content: "✅ Dashboard updated!" }];
+      await saveJobApplication({
+        id: appId,
+        job_url: jobUrl,
+        dashboard_html: accumulated,
+        chat_history: updatedHistory,
+      } as any);
 
-      this.updateJob(jobKey, { status: "complete", progress: `${label} complete!` });
-    } catch (err: unknown) {
-      const errMsg = err instanceof Error ? err.message : "Unknown error";
-      console.error(`Background ${label} error:`, err);
-      this.updateJob(jobKey, { status: "error", progress: `${label} failed`, error: errMsg });
+      this.updateJob(appId, { status: "complete", progress: "Refinement complete!" });
+    } catch (err: any) {
+      console.error("Background refinement error:", err);
+      this.updateJob(appId, { status: "error", progress: "Refinement failed", error: err.message });
     }
   }
-
 }
 
 // Singleton — persists across React navigations

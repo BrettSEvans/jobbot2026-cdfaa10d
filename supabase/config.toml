@@ -56,30 +56,3 @@ verify_jwt = false
 
 [functions.refine-resume]
 verify_jwt = false
-
-[functions.propose-assets]
-verify_jwt = false
-
-[functions.generate-dynamic-asset]
-verify_jwt = false
-
-[functions.refine-dynamic-asset]
-verify_jwt = false
-
-[functions.score-ats-match]
-verify_jwt = false
-
-[functions.export-docx]
-verify_jwt = false
-
-[functions.import-job-external]
-verify_jwt = false
-
-[functions.extract-resume-text]
-verify_jwt = false
-
-[functions.confirm-campaign-signup]
-verify_jwt = false
-
-[functions.search-jobs]
-verify_jwt = false

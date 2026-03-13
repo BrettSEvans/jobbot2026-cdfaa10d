@@ -1,297 +1,259 @@
-# JobBot Maui Plan — Architect-Reviewed Rewrite
+# Custom AI Resume Generation — Product Spec & System Architecture
 
-Based on competitive landscape analysis, product critique, and a critical architect review that identified 17 gaps across data model design, error handling, performance, security, and testing strategy.
+## 1. Feature Overview
 
----
-
-## Feature Priority Matrix
-
-| # | Update | Priority | Effort | Status |
-|---|--------|----------|--------|--------|
-| 1 | Subscription Infrastructure | CRITICAL | 1–2 weeks | ✅ DONE |
-| 2 | Public Landing Page | CRITICAL | 3–5 days | ✅ DONE |
-| 3 | ATS Match Score | HIGH | 3–5 days | 🔲 TODO |
-| 4 | Pipeline Stages (Kanban) | HIGH | 5–7 days | 🔲 TODO |
-| 5 | DOCX Export | HIGH | 2–3 days | 🔲 TODO |
-| 6 | Mobile Responsive UI | MEDIUM | 5–7 days | 🔲 TODO |
-| 7 | Selective Asset Generation | MEDIUM | 3–4 days | 🔲 TODO |
-| 8 | Onboarding Flow | MEDIUM | 3–4 days | 🔲 TODO |
-| 9 | Code Cleanup | LOW | 3–4 days | 🔲 TODO |
-| 10 | Chrome Extension (Infra) | LOW | 2–3 days | 🔲 TODO |
+Add AI-generated, job-tailored resumes to JobBot. Users select a resume style during job creation; the system combines their baseline resume, the job description, and company research to produce a customized resume. An admin panel allows prompt management.
 
 ---
 
-## Phased Schedule
+## 2. User Flow: Job Creation → Resume
 
-### Phase 1 — Launch-Blocking (COMPLETE)
-- ✅ Subscription Infrastructure: 3-tier model, feature gating, rate limiting
-- ✅ Public Landing Page: Hero, features, pricing, CTA
-
-### Phase 2 — Competitive Parity
-Items 3–5. Close visible feature gaps vs Teal, Rezi, Swooped.
-
-### Phase 3 — Retention & Polish
-Items 6–8. Mobile support, faster generation, onboarding.
-
-### Phase 4 — Maintenance & Future
-Items 9–10. Tech debt cleanup, Chrome extension infra.
+1. User clicks **"New Application"** → enters Job URL → system scrapes job description & company info (existing flow).
+2. **NEW**: A "Resume Style" dropdown appears in the creation form, populated from `resume_prompt_styles` table. Default: "Traditional Corporate".
+3. User clicks **"Create"** → background generation kicks off (existing `backgroundGenerator.ts` pattern).
+4. The generation pipeline now includes a **resume generation step** after the cover letter step:
+   - Fetch user's `resume_text` from `profiles`
+   - Fetch selected `resume_prompt_styles` row (system prompt + style instructions)
+   - Fetch company research data (competitors, products, customers, branding)
+   - Call new Edge Function `generate-resume` with all inputs
+   - Store result in `job_applications.resume_html`
+5. User lands on Application Detail → **Resume tab** appears alongside Dashboard and Cover Letter in the primary tabs bar.
+6. Resume tab uses the existing `HtmlAssetTab` component with actions: Download PDF, Copy Text, Refine with AI, Save as Template.
 
 ---
 
-## Feature 1: ATS Match Score
+## 3. Data Model Updates
 
-### Database
-```sql
-ALTER TABLE job_applications
-  ADD COLUMN ats_score jsonb DEFAULT NULL,
-  ADD COLUMN ats_scored_at timestamptz DEFAULT NULL;
+### New Tables
+
+#### `resume_prompt_styles`
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | uuid PK | `gen_random_uuid()` |
+| `label` | text NOT NULL | Display name (e.g., "Traditional Corporate") |
+| `slug` | text NOT NULL UNIQUE | URL-safe key (e.g., "traditional-corporate") |
+| `system_prompt` | text NOT NULL | The full system prompt for the AI |
+| `description` | text | Short description shown to users in the dropdown |
+| `is_active` | boolean DEFAULT true | Soft-disable without deleting |
+| `sort_order` | integer DEFAULT 0 | Controls display order |
+| `created_by` | uuid | FK-free reference to admin who created it |
+| `created_at` | timestamptz DEFAULT now() | |
+| `updated_at` | timestamptz DEFAULT now() | |
+
+**RLS**: 
+- SELECT: `is_active = true` for all authenticated users (they need to see the dropdown)
+- INSERT/UPDATE/DELETE: Only users with admin role
+
+#### `resume_revisions`
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | uuid PK | |
+| `application_id` | uuid NOT NULL | FK → job_applications |
+| `html` | text NOT NULL | |
+| `label` | text | |
+| `revision_number` | integer DEFAULT 1 | |
+| `created_at` | timestamptz DEFAULT now() | |
+
+**RLS**: Same pattern as other revision tables (user owns parent application).
+
+#### `user_roles` (for admin access)
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | uuid PK | |
+| `user_id` | uuid NOT NULL UNIQUE | References auth.users(id) ON DELETE CASCADE |
+| `role` | app_role NOT NULL | Enum: 'admin', 'user' |
+
+**RLS**: 
+- SELECT own role: `user_id = auth.uid()`
+- INSERT/UPDATE/DELETE: Only existing admins via `has_role()` security definer function
+
+### Modified Tables
+
+#### `job_applications` — add columns:
+| Column | Type | Notes |
+|--------|------|-------|
+| `resume_html` | text NULL | Generated resume HTML |
+| `resume_style_id` | uuid NULL | FK-free reference to selected prompt style |
+
+---
+
+## 4. Admin Role System
+
+### Bootstrap
+- Seed `user_roles` with `brettevanssf@gmail.com`'s user ID as `admin` role.
+- Create `has_role(uuid, app_role)` security definer function (per project guidelines).
+
+### Admin Assignment Flow
+1. Admin navigates to Profile page → sees "Admin Settings" button (conditionally rendered).
+2. Admin Panel has a "User Management" section listing current admins.
+3. Admin can add new admins by entering an email → system looks up user ID → inserts into `user_roles`.
+4. Admin can remove other admins (but not themselves).
+
+---
+
+## 5. API / Backend Architecture
+
+### New Edge Function: `generate-resume`
+**Input:**
+```json
+{
+  "jobDescription": "...",
+  "resumeText": "...",
+  "systemPrompt": "...",
+  "companyName": "...",
+  "jobTitle": "...",
+  "branding": {...},
+  "competitors": [...],
+  "customers": [...],
+  "products": [...]
+}
 ```
-Add `ats_score` and `ats_scored_at` to `ALLOWED_JOB_APP_FIELDS`.
+**Behavior:** SSE streaming (same pattern as `generate-dashboard`, `tailor-cover-letter`). Returns styled HTML resume.
 
-### Edge Function: `score-ats-match/index.ts`
-- Input: `{ jobDescription, resumeHtml }`
-- Model: `google/gemini-2.5-flash` with tool-calling for structured output
-- Output schema:
-  ```json
-  {
-    "score": 78,
-    "matchedKeywords": ["React", "TypeScript"],
-    "missingKeywords": ["Kubernetes", "Terraform"],
-    "suggestions": ["Add cloud infrastructure experience"],
-    "keywordGroups": { "React": ["React", "React.js", "ReactJS"] }
-  }
-  ```
-- Keyword grouping: prompt instructs model to cluster synonyms
-- Score calibration rubric: 0–30 poor, 31–60 partial, 61–80 strong, 81–100 near-perfect
+### New Edge Function: `refine-resume`
+Same pattern as `refine-dashboard` — accepts current HTML + user message + chat history, returns refined HTML via SSE.
 
-### Caching & Invalidation
-- Store in `ats_score` column with `ats_scored_at` timestamp
-- Re-score only when: (a) user clicks "Rescan", (b) `resume_html` changes (hash comparison), (c) score > 7 days old
-- Tier gating: Free = 2 scores/day, Pro = 20/day, Premium = unlimited
+### Client-Side API Layer
+- `src/lib/api/resume.ts` — `streamResumeGeneration()`, mirrors `streamDashboardGeneration()`
+- `src/lib/api/resumeRevisions.ts` — Revision CRUD via factory
+- `src/lib/api/adminPrompts.ts` — CRUD for resume_prompt_styles
 
-### UI: `AtsScoreCard.tsx`
-- Circular gauge (0–100), color-coded (red < 50, yellow 50–79, green 80+)
-- Expandable keyword panel with matched/missing lists
-- "Rescan" button with cooldown indicator
-- Placed in ApplicationDetail header
-
-### Auto-trigger
-After resume generation completes in `backgroundGenerator.ts`, queue ATS scoring as non-blocking follow-up step.
-
-### Acceptance Criteria
-- Score latency < 5s for 95th percentile
-- Score variance ≤ ±5 points on identical inputs across 10 runs
-- Free tier enforces 2/day limit with upgrade gate
+### Background Generator Update
+- `src/lib/backgroundGenerator.ts` — add resume generation step after cover letter, using the selected style's prompt.
 
 ---
 
-## Feature 2: Application Pipeline Stages (Kanban)
+## 6. UI/UX Architecture
 
-### Database
-```sql
-ALTER TABLE job_applications
-  ADD COLUMN pipeline_stage text NOT NULL DEFAULT 'applied',
-  ADD COLUMN stage_changed_at timestamptz DEFAULT now();
+### 6a. Job Creation Flow (`NewApplication.tsx`)
 
-CREATE TABLE pipeline_stage_history (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  application_id uuid NOT NULL REFERENCES job_applications(id) ON DELETE CASCADE,
-  from_stage text,
-  to_stage text NOT NULL,
-  changed_at timestamptz NOT NULL DEFAULT now(),
-  user_id uuid NOT NULL
-);
-ALTER TABLE pipeline_stage_history ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users can CRUD own stage history"
-  ON pipeline_stage_history FOR ALL
-  USING (user_id = auth.uid());
+**Addition:** Below the Job URL input, add:
 ```
-Add `pipeline_stage` and `stage_changed_at` to `ALLOWED_JOB_APP_FIELDS`.
-
-### Stage Definitions (`src/lib/pipelineStages.ts`)
+Resume Style: [▾ Traditional Corporate]
 ```
-bookmarked → applied → interviewing → offer → accepted
-                                    ↘ rejected
+- Dropdown fetches from `resume_prompt_styles` where `is_active = true`, ordered by `sort_order`.
+- Each option shows `label` + `description` as a subtitle.
+- Selection stored and passed to background generator.
+
+### 6b. Application Detail View (`ApplicationDetail.tsx`)
+
+**Primary tabs bar update:**
+Currently: `Dashboard | Cover Letter`
+New: `Dashboard | Cover Letter | Resume`
+
+The Resume tab uses the existing `HtmlAssetTab` component with:
+- `assetType: "resume"`
+- `dbField: "resume_html"`
+- `generateFn: streamResumeGeneration`
+- `saveRevisionFn: saveResumeRevision`
+- Actions: Download PDF, Copy Text, Refine with AI, Save as Template
+
+### 6c. Admin Panel (`/admin` route or modal from Profile)
+
+**Access:** Profile page shows "Admin Settings" button only when `has_role(auth.uid(), 'admin')` returns true.
+
+**Admin Page Layout:**
 ```
-- All transitions allowed but "illogical" moves show confirmation dialog
-- `updatePipelineStage()` writes to both `job_applications` and `pipeline_stage_history`
-
-### UI: `KanbanBoard.tsx`
-- Uses `@hello-pangea/dnd` (maintained fork, touch support built-in)
-- Cards: company icon, role, days-in-stage badge, ATS score mini-badge
-- View toggle in `Applications.tsx` header: List (default) | Kanban
-- Stage dropdown in `ApplicationDetail.tsx` header
-- Mobile: horizontal scroll with CSS snap
-
-### Accessibility
-- Keyboard navigation: arrow keys between columns, Enter to drop
-- ARIA labels on all drag handles
-- Screen reader announcements for stage changes
-
----
-
-## Feature 3: DOCX Export
-
-### Edge Function: `export-docx/index.ts`
-- Uses `docx` npm package via Deno npm: specifier
-- Input: `{ html, assetType, filename }`
-- Output: binary blob, `Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document`
-- Limits: max 500KB input HTML, 60s timeout, graceful error on oversized input
-
-### Client: `src/lib/docxExport.ts`
-- `downloadAsDocx(html, filename)` — calls edge function, triggers blob download
-- Naming: `{asset-type}-{company}-{role}.docx`
-
-### UI
-- DOCX button alongside PDF in `HtmlAssetTab.tsx` for resume and cover letter only
-- `FileDown` icon with "DOCX" label
-- Tier gating: Free = PDF only, Pro/Premium = PDF + DOCX (upgrade gate for Free)
-
----
-
-## Feature 4: Mobile Responsive UI
-
-### Breakpoint Strategy
-| Breakpoint | Layout |
-|---|---|
-| `< 640px` (sm) | Single column, card layouts, hamburger nav, full-width inputs |
-| `640–1024px` (md) | Two-column where appropriate, condensed table |
-| `> 1024px` (lg) | Current desktop layout unchanged |
-
-### Component Changes
-| Component | Mobile behavior |
-|---|---|
-| `AppHeader` | Hamburger → `Sheet` drawer with nav links, theme toggle, sign out |
-| `Applications` table | Card list with company icon, role, status badge |
-| `ApplicationDetail` tabs | Horizontal scrollable tab bar, full-width iframe at 50vh |
-| `NewApplication` form | Single column, sticky "Generate" CTA at bottom |
-| `KanbanBoard` | Horizontal scroll with snap, sticky column headers |
-| `WysiwygEditor` | Simplified toolbar, larger touch targets |
-| `Profile` | Fix card padding |
-
-### Touch Audit
-- Asset preview iframes: `touch-action: pan-x pan-y` for pinch-to-zoom
-- Kanban: handled by `@hello-pangea/dnd` touch support
-- Disable hover-only interactions; add explicit tap targets
-
-### Accessibility
-- All new interactive elements get `aria-label`, keyboard-focusable, visible focus rings
-
----
-
-## Feature 5: Selective Asset Generation
-
-### Database
-```sql
-ALTER TABLE job_applications
-  ADD COLUMN selected_assets jsonb DEFAULT NULL;
-```
-Add `selected_assets` to `ALLOWED_JOB_APP_FIELDS`.
-
-### UI: `AssetSelector.tsx`
-- Checkbox grid in `NewApplication.tsx` before generation starts
-- Default selections per tier: Free = resume + cover_letter (locked), Pro = all core, Premium = all + dynamic
-- "Essentials Only" / "All Assets" quick buttons
-- Locked assets show tier badge + tooltip → pricing page
-- Selection persisted to `selected_assets` column
-
-### Pipeline Changes (`backgroundGenerator.ts`)
-- `startFullGeneration()` accepts `selectedAssets?: string[]`
-- `runPipeline()` filters parallel generation array based on selection
-- `totalAssets` calculated dynamically from selected count
-- Cover letter always generated (foundational)
-- Backward compat: null/undefined `selectedAssets` → generate all
-
----
-
-## Feature 6: Onboarding Flow
-
-### Database
-```sql
-ALTER TABLE profiles
-  ADD COLUMN onboarding_completed_at timestamptz DEFAULT NULL;
+┌─────────────────────────────────────────┐
+│  Admin Panel                            │
+├─────────────────────────────────────────┤
+│                                         │
+│  📝 Resume Prompt Styles                │
+│  ┌───────────────────────────────────┐  │
+│  │ Traditional Corporate    [Edit]   │  │
+│  │ Tech Engineering         [Edit]   │  │
+│  │ Career Changer           [Edit]   │  │
+│  │ Creative/Design          [Edit]   │  │
+│  │ Executive Leadership     [Edit]   │  │
+│  └───────────────────────────────────┘  │
+│  [+ Add New Style]                      │
+│                                         │
+│  👥 User Management                     │
+│  ┌───────────────────────────────────┐  │
+│  │ brett@... (you)          [Owner]  │  │
+│  │ other@...                [Remove] │  │
+│  └───────────────────────────────────┘  │
+│  [+ Add Admin]                          │
+│                                         │
+└─────────────────────────────────────────┘
 ```
 
-### UI: `src/components/onboarding/OnboardingWizard.tsx`
-- Full-screen modal, 4 steps:
-  1. **Welcome** — brand intro, value prop
-  2. **Profile basics** — first name, last name, experience level
-  3. **Resume upload** — drag-and-drop, auto-extract skills via `extract-style-signals`
-  4. **First application** — paste job URL, CTA to start
-
-### Behavior
-- Progress dots, skip button on every step, animated transitions
-- Each step saves incrementally to `profiles` table
-- Completion: set `onboarding_completed_at`, navigate to `/applications/new`
-- Show conditions: authenticated AND `onboarding_completed_at IS NULL` AND 0 applications
-- Re-access: Help menu → "Restart Onboarding"
+**Edit Prompt Modal:**
+- Label (text input)
+- Description (text input, shown in user dropdown)
+- System Prompt (large textarea, the actual AI instructions)
+- Active toggle
+- Sort order (number input)
+- Save / Cancel
 
 ---
 
-## Feature 7: Code Cleanup
+## 7. File Checklist
 
-### Phase 7a — Baseline tests BEFORE extraction
-Render `Profile.tsx`, `NewApplication.tsx`, `Applications.tsx` with mocked data → capture DOM snapshots as regression safety net.
+### New Files
+| File | Purpose |
+|------|---------|
+| `supabase/functions/generate-resume/index.ts` | SSE streaming resume generation |
+| `supabase/functions/refine-resume/index.ts` | SSE streaming resume refinement |
+| `src/lib/api/resume.ts` | Client API for resume generation/refinement |
+| `src/lib/api/resumeRevisions.ts` | Revision CRUD via factory |
+| `src/lib/api/adminPrompts.ts` | CRUD for resume_prompt_styles |
+| `src/pages/Admin.tsx` | Admin panel page |
+| `src/hooks/useAdminRole.ts` | Hook to check admin status via `has_role()` |
 
-### Phase 7b — Extract components
+### Modified Files
+| File | Change |
+|------|--------|
+| `src/pages/ApplicationDetail.tsx` | Add Resume to primary tabs |
+| `src/pages/NewApplication.tsx` | Add style dropdown to creation form |
+| `src/pages/Profile.tsx` | Add Admin Panel link (conditional) |
+| `src/lib/backgroundGenerator.ts` | Add resume generation step |
+| `src/lib/api/refineAsset.ts` | Add `"resume"` to `RefinableAssetType` |
+| `src/hooks/useApplicationDetail.ts` | Add `resumeHtml` / `setResumeHtml` state |
+| `src/App.tsx` | Add `/admin` route (protected) |
 
-| Source | Extracted components |
-|---|---|
-| `Profile.tsx` (746 lines) | `IdentityCard`, `ResumeCard`, `SkillsCard`, `ToneCard`, `useProfileForm` hook |
-| `NewApplication.tsx` (787 lines) | `JobInputStep`, `AnalyzingStep`, `PreviewStep`, `useNewApplication` hook |
-| `Applications.tsx` (724 lines) | `ApplicationsTable`, `TrashTab`, `DashboardPreviewOverlay` |
-
-### Phase 7c — Remove `as any` casts
-- Audit all files, replace with proper types from `types.ts`
-- For tables not in generated types, add manual type interfaces
-
----
-
-## Feature 8: Chrome Extension (Infrastructure Only)
-
-### Edge Function: `import-job-external/index.ts`
-- Input: `{ source, url, jobTitle?, companyName?, jobDescription? }`
-- Requires valid JWT (verify_jwt = true)
-- Rate limited: 10 imports/hour per user
-- CORS restricted to app domain only
-- Creates `job_applications` row with `pipeline_stage = 'bookmarked'`
-
-### Import Page: `/import` route
-- Parses `?url=...&source=linkedin` query params
-- Confirmation card before creating application
-- Redirects to application detail on success
-
-### Documentation: `docs/CHROME_EXTENSION.md`
+### Database Migrations
+1. Create `app_role` enum + `user_roles` table + `has_role()` function
+2. Create `resume_prompt_styles` table with RLS
+3. Create `resume_revisions` table with RLS
+4. Add `resume_html` and `resume_style_id` columns to `job_applications`
+5. Seed initial 5 prompt styles
+6. Seed initial admin user
 
 ---
 
-## Cross-Cutting Requirements
+## 8. Security Considerations
 
-### Analytics Events
-Every feature ships with `trackEvent()`:
-`ats_score_generated`, `pipeline_stage_changed`, `docx_exported`, `asset_selection_changed`, `onboarding_step_completed`, `kanban_view_toggled`, `import_job_external`
-
-### Error Handling
-All edge functions return `{ error: string, code: string }`. Client-side toast for user-facing errors.
-
-### Accessibility
-WCAG 2.1 AA for all new components.
+- **Admin access**: Server-side only via `has_role()` security definer function. Never checked client-side via localStorage.
+- **RLS on prompt styles**: All authenticated users can SELECT active styles. Only admins can INSERT/UPDATE/DELETE.
+- **RLS on user_roles**: Users can read their own role. Only admins can manage roles.
+- **Resume content**: Same RLS as other assets — user owns parent job_application.
 
 ---
 
-## Test Suite: Maui Tests
+## 9. Generation Pipeline (Updated)
 
 ```
-src/test/maui/
-  fixtures/          — shared mock data
-  atsScore.test.ts
-  kanbanBoard.test.ts
-  docxExport.test.ts
-  mobileResponsive.test.ts
-  assetSelector.test.ts
-  onboardingWizard.test.ts
-  codeCleanup.test.ts
-  externalImport.test.ts
+User clicks Create
+  → scrape-job (existing)
+  → scrape-company-branding (existing)
+  → analyze-company (existing)
+  → research-company (existing)
+  → generate-dashboard (existing)
+  → tailor-cover-letter (existing)
+  → generate-resume (NEW) ← uses selected style prompt + resume_text + JD + research
 ```
 
-All tests use Vitest + React Testing Library. Run via `vitest --dir src/test/maui`.
+All steps run sequentially in `backgroundGenerator.ts`. Resume is the final step.
+
+---
+
+## 10. Initial Prompt Styles (Seed Data)
+
+| Label | Slug | Description |
+|-------|------|-------------|
+| Traditional Corporate | `traditional-corporate` | Clean, formal format suited for corporate and financial roles |
+| Tech Engineering | `tech-engineering` | Skills-forward layout emphasizing technical projects and stack |
+| Career Changer | `career-changer` | Highlights transferable skills and reframes prior experience |
+| Creative & Design | `creative-design` | Visually distinctive layout for creative and marketing roles |
+| Executive Leadership | `executive-leadership` | Achievement-focused format for senior and C-level positions |

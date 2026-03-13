@@ -34,8 +34,8 @@ export default function CoverLetterRevisions({
     try {
       const data = await getCoverLetterRevisions(applicationId);
       setRevisions(data);
-    } catch (err: unknown) {
-      toast({ title: "Error", description: err instanceof Error ? err.message : "Unknown error", variant: "destructive" });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -67,7 +67,7 @@ export default function CoverLetterRevisions({
   if (revisions.length === 0 && !loading) return null;
 
   return (
-    <Card data-tutorial="revision-history">
+    <Card>
       <CardHeader className="pb-3">
         <CardTitle className="text-sm font-medium flex items-center gap-2">
           <History className="h-4 w-4" />

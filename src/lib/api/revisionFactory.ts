@@ -2,11 +2,6 @@
  * Generic revision CRUD factory.
  * Eliminates 6 near-identical revision files by parameterizing
  * the table name and content column.
- *
- * NOTE: Uses dynamic table names at runtime. Since the Supabase
- * typed client requires literal table names, we use the REST client
- * approach with explicit type assertions. All table names passed here
- * are validated at the call site (known revision tables in our schema).
  */
 
 import { supabase } from '@/integrations/supabase/client';
@@ -26,12 +21,6 @@ export interface RevisionCrud {
   remove: (id: string) => Promise<void>;
 }
 
-// Use the untyped schema access for dynamic table names.
-// This is intentional — revisionFactory is the ONE place where
-// dynamic table names are required by design.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const db = supabase as any;
-
 /**
  * Create save/getAll/remove functions for a specific revision table.
  *
@@ -48,7 +37,7 @@ export function createRevisionCrud(
     label?: string
   ): Promise<RevisionRecord> => {
     // Get next revision number
-    const { data: latest } = await db
+    const { data: latest } = await (supabase as any)
       .from(tableName)
       .select('revision_number')
       .eq('application_id', applicationId)
@@ -56,9 +45,9 @@ export function createRevisionCrud(
       .limit(1)
       .single();
 
-    const nextRevision = ((latest as RevisionRecord | null)?.revision_number ?? 0) + 1;
+    const nextRevision = ((latest as any)?.revision_number ?? 0) + 1;
 
-    const { data, error } = await db
+    const { data, error } = await (supabase as any)
       .from(tableName)
       .insert({
         application_id: applicationId,
@@ -74,7 +63,7 @@ export function createRevisionCrud(
   };
 
   const getAll = async (applicationId: string): Promise<RevisionRecord[]> => {
-    const { data, error } = await db
+    const { data, error } = await (supabase as any)
       .from(tableName)
       .select('*')
       .eq('application_id', applicationId)
@@ -85,7 +74,7 @@ export function createRevisionCrud(
   };
 
   const remove = async (id: string): Promise<void> => {
-    const { error } = await db
+    const { error } = await (supabase as any)
       .from(tableName)
       .delete()
       .eq('id', id);

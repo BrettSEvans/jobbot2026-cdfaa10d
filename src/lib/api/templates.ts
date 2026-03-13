@@ -1,5 +1,4 @@
 import { supabase } from "@/integrations/supabase/client";
-import { getActivePersonaSnapshot } from "@/contexts/ImpersonationContext";
 
 export interface DashboardTemplate {
   id: string;
@@ -16,20 +15,11 @@ export async function getTemplates(filters?: {
   job_function?: string;
   department?: string;
   asset_type?: string;
-  personaId?: string | null;
 }): Promise<DashboardTemplate[]> {
   let query = supabase
-    .from("dashboard_templates")
+    .from("dashboard_templates" as any)
     .select("*")
     .order("created_at", { ascending: false });
-
-  // Filter by persona
-  const personaId = filters?.personaId;
-  if (personaId) {
-    query = query.eq("persona_id", personaId);
-  } else if (personaId === null) {
-    query = query.is("persona_id", null);
-  }
 
   if (filters?.job_function) {
     query = query.ilike("job_function", `%${filters.job_function}%`);
@@ -54,17 +44,11 @@ export async function saveTemplate(template: {
   asset_type?: string;
   source_application_id?: string;
 }): Promise<DashboardTemplate> {
-  const { data: { user } } = await supabase.auth.getUser();
-  const activePersona = getActivePersonaSnapshot();
-  const personaId = activePersona?.isTestUser ? activePersona.id : null;
-
   const { data, error } = await supabase
-    .from("dashboard_templates")
+    .from("dashboard_templates" as any)
     .insert({
       ...template,
       asset_type: template.asset_type || "dashboard",
-      user_id: user?.id || null,
-      persona_id: personaId,
     })
     .select()
     .single();
@@ -74,7 +58,7 @@ export async function saveTemplate(template: {
 
 export async function deleteTemplate(id: string) {
   const { error } = await supabase
-    .from("dashboard_templates")
+    .from("dashboard_templates" as any)
     .delete()
     .eq("id", id);
   if (error) throw new Error(error.message);

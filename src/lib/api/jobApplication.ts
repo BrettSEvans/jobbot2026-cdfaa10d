@@ -1,8 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
-import { getActivePersonaSnapshot } from '@/contexts/ImpersonationContext';
 import { streamFromEdgeFunction, processSSEStream } from './streamUtils';
 import { getStyleContextForPrompt } from './stylePreferences';
-import type { Json, TablesInsert } from '@/integrations/supabase/types';
 
 // --- Search for company icon (three-tier fallback) ---
 export async function searchCompanyIcon(companyName?: string, companyUrl?: string): Promise<{ iconUrl: string | null; source: string | null }> {
@@ -85,7 +83,7 @@ export async function streamDashboardGeneration({
   onDone,
 }: {
   jobDescription: string;
-  branding?: Json;
+  branding?: any;
   companyName?: string;
   jobTitle?: string;
   competitors?: string[];
@@ -93,7 +91,7 @@ export async function streamDashboardGeneration({
   products?: string[];
   department?: string;
   templateHtml?: string;
-  researchedSections?: Array<Record<string, unknown>>;
+  researchedSections?: any[];
   onDelta: (text: string) => void;
   onDone: () => void;
 }) {
@@ -115,7 +113,7 @@ export async function streamDashboardRefinement({
   onDone,
 }: {
   currentHtml: string;
-  currentDashboardData?: Json;
+  currentDashboardData?: any;
   userMessage: string;
   chatHistory?: Array<{ role: string; content: string }>;
   onDelta: (text: string) => void;
@@ -133,28 +131,7 @@ export async function streamDashboardRefinement({
 }
 
 // --- CRUD for job applications ---
-const ALLOWED_JOB_APP_FIELDS = [
-  "job_url", "company_url", "company_name", "job_title",
-  "job_description_markdown", "cover_letter", "branding",
-  "dashboard_html", "dashboard_data", "chat_history",
-  "competitors", "customers", "products", "status",
-  "generation_status", "generation_error", "research_reasoning",
-  "executive_report_html", "raid_log_html", "architecture_diagram_html",
-  "roadmap_html", "resume_html", "resume_style_id", "company_icon_url",
-  "source_resume_id", "persona_id", "deleted_at", "deleted_by",
-  "ats_score", "ats_scored_at", "pipeline_stage", "stage_changed_at",
-  "selected_assets", "design_variability",
-] as const;
-
-function pickAllowed(input: Record<string, unknown>): Record<string, unknown> {
-  const result: Record<string, unknown> = {};
-  for (const key of ALLOWED_JOB_APP_FIELDS) {
-    if (key in input) result[key] = input[key];
-  }
-  return result;
-}
-
-export type SaveJobApplicationInput = {
+export async function saveJobApplication(app: {
   id?: string;
   job_url: string;
   company_url?: string;
@@ -162,16 +139,16 @@ export type SaveJobApplicationInput = {
   job_title?: string;
   job_description_markdown?: string;
   cover_letter?: string;
-  branding?: Json;
+  branding?: any;
   dashboard_html?: string;
-  dashboard_data?: Json;
-  chat_history?: Json;
-  competitors?: Json;
-  customers?: Json;
-  products?: Json;
+  dashboard_data?: any;
+  chat_history?: any[];
+  competitors?: string[];
+  customers?: string[];
+  products?: string[];
   status?: string;
   generation_status?: string;
-  generation_error?: string | null;
+  generation_error?: string;
   research_reasoning?: string;
   executive_report_html?: string;
   raid_log_html?: string;
@@ -179,26 +156,11 @@ export type SaveJobApplicationInput = {
   roadmap_html?: string;
   resume_html?: string;
   resume_style_id?: string;
-  company_icon_url?: string;
-  source_resume_id?: string;
-  persona_id?: string | null;
-  deleted_at?: string | null;
-  deleted_by?: string | null;
-  ats_score?: Json;
-  ats_scored_at?: string;
-  pipeline_stage?: string;
-  stage_changed_at?: string;
-  selected_assets?: Json;
-  design_variability?: Json;
-};
-
-export async function saveJobApplication(app: SaveJobApplicationInput) {
-  const safeFields = pickAllowed(app as Record<string, unknown>);
-
+}) {
   if (app.id) {
     const { data, error } = await supabase
       .from('job_applications')
-      .update({ ...safeFields, updated_at: new Date().toISOString() })
+      .update({ ...app, updated_at: new Date().toISOString() })
       .eq('id', app.id)
       .select()
       .single();
@@ -208,15 +170,9 @@ export async function saveJobApplication(app: SaveJobApplicationInput) {
     // Get current user for user_id
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("Not authenticated");
-
-    // Track which persona created this application
-    const activePersona = getActivePersonaSnapshot();
-    const personaId = activePersona?.isTestUser ? activePersona.id : null;
-
-    const insertPayload = { ...safeFields, user_id: user.id, persona_id: personaId } as TablesInsert<'job_applications'>;
     const { data, error } = await supabase
       .from('job_applications')
-      .insert(insertPayload)
+      .insert({ ...app, user_id: user.id })
       .select()
       .single();
     if (error) throw new Error(error.message);
@@ -224,21 +180,11 @@ export async function saveJobApplication(app: SaveJobApplicationInput) {
   }
 }
 
-export async function getJobApplications(personaId?: string | null) {
-  let query = supabase
+export async function getJobApplications() {
+  const { data, error } = await supabase
     .from('job_applications')
     .select('*')
-    .is('deleted_at', null)
     .order('created_at', { ascending: false });
-
-  // Filter by persona: null = admin's own, uuid = specific test user
-  if (personaId) {
-    query = query.eq('persona_id', personaId);
-  } else {
-    query = query.is('persona_id', null);
-  }
-
-  const { data, error } = await query;
   if (error) throw new Error(error.message);
   return data;
 }
@@ -258,25 +204,18 @@ export async function deleteJobApplication(id: string) {
   const { data: { user } } = await supabase.auth.getUser();
   const { error } = await supabase
     .from('job_applications')
-    .update({ deleted_at: new Date().toISOString(), deleted_by: user?.id || null })
+    .update({ deleted_at: new Date().toISOString(), deleted_by: user?.id || null } as any)
     .eq('id', id);
   if (error) throw new Error(error.message);
 }
 
-export async function getDeletedJobApplications(personaId?: string | null) {
-  let query = supabase
+export async function getDeletedJobApplications() {
+  // RLS policy "Users can view own deleted applications" handles filtering
+  const { data, error } = await (supabase as any)
     .from('job_applications')
     .select('*')
     .not('deleted_at', 'is', null)
     .order('deleted_at', { ascending: false });
-
-  if (personaId) {
-    query = query.eq('persona_id', personaId);
-  } else {
-    query = query.is('persona_id', null);
-  }
-
-  const { data, error } = await query;
   if (error) throw new Error(error.message);
   return data;
 }
@@ -284,7 +223,7 @@ export async function getDeletedJobApplications(personaId?: string | null) {
 export async function restoreJobApplication(id: string) {
   const { error } = await supabase
     .from('job_applications')
-    .update({ deleted_at: null, deleted_by: null })
+    .update({ deleted_at: null, deleted_by: null } as any)
     .eq('id', id);
   if (error) throw new Error(error.message);
 }

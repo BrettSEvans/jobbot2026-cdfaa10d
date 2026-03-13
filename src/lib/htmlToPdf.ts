@@ -23,12 +23,8 @@ export function downloadHtmlAsPdf(
 
   // Inject print-friendly overrides into the HTML
   const printStyles = `<style media="print">
-    @page { size: auto; margin: 0; }
-    body {
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-      padding: 0.5in;
-    }
+    @page { size: auto; margin: 0.5in; }
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   </style>`;
   
   // Insert print styles before </head> or at the start

@@ -1,45 +1,28 @@
-import { marked } from "marked";
-
-/**
- * Detect if a string already contains HTML tags.
- */
-function isHtml(text: string): boolean {
-  return /<[a-z][\s\S]*>/i.test(text);
-}
-
-/**
- * Convert cover letter body (markdown or HTML) to HTML string.
- * Exported so the WYSIWYG editor can initialise from stored content.
- */
-export function coverLetterBodyToHtml(text: string): string {
-  if (!text) return "";
-  if (isHtml(text)) return text;
-  return marked.parse(text, { async: false }) as string;
-}
-
 /**
  * Generates a print-ready cover letter in a hidden iframe and triggers
  * the browser's Save-as-PDF dialog via window.print().
  */
-export function buildCoverLetterHtml(
+export function downloadCoverLetterPdf(
   coverLetter: string,
   companyName: string,
   jobTitle: string,
   applicantName?: string,
-  headerOverride?: string,
-  footerOverride?: string,
-): string {
-  const name = headerOverride?.split("\n")[0]?.trim() || applicantName || "Your Name";
-  const subtitle = headerOverride?.split("\n").slice(1).join(" · ").trim() || "";
+) {
+  const name = applicantName || "Your Name";
   const date = new Date().toLocaleDateString("en-US", {
     year: "numeric",
     month: "long",
     day: "numeric",
   });
 
-  const bodyHtml = coverLetterBodyToHtml(coverLetter);
+  // Split cover letter into paragraphs, preserving blank-line breaks
+  const paragraphs = coverLetter
+    .split(/\n{2,}/)
+    .map((p) => p.replace(/\n/g, "<br/>"))
+    .map((p) => `<p>${p}</p>`)
+    .join("\n");
 
-  return `<!DOCTYPE html>
+  const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
@@ -47,14 +30,12 @@ export function buildCoverLetterHtml(
 <style>
   @page {
     size: letter;
-    margin: 0;
+    margin: 0.75in 1in;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body {
     height: 100%;
-  }
-  @media print {
-    html, body { overflow: hidden; }
+    overflow: hidden;
   }
   body {
     font-family: Georgia, "Times New Roman", serif;
@@ -64,7 +45,6 @@ export function buildCoverLetterHtml(
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
     max-height: 100vh;
-    padding: 0.75in 1in;
   }
   .header {
     margin-bottom: 20pt;
@@ -91,25 +71,6 @@ export function buildCoverLetterHtml(
     margin-bottom: 8pt;
     text-align: justify;
   }
-  .body table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 8pt 0;
-    font-size: 9.5pt;
-  }
-  .body th, .body td {
-    border: 0.75pt solid #ccc;
-    padding: 4pt 6pt;
-    text-align: left;
-  }
-  .body th {
-    background: #f5f5f5;
-    font-weight: 700;
-  }
-  .body strong { font-weight: 700; }
-  .body em { font-style: italic; }
-  .body ul, .body ol { margin: 6pt 0 6pt 18pt; }
-  .body li { margin-bottom: 3pt; }
   .signature {
     margin-top: 24pt;
   }
@@ -124,32 +85,22 @@ export function buildCoverLetterHtml(
 <body>
   <div class="header">
     <div class="name">${escapeHtml(name)}</div>
-    ${subtitle ? `<div class="date">${escapeHtml(subtitle)}</div>` : ""}
     <div class="date">${date}</div>
   </div>
   <div class="recipient">
     ${escapeHtml(companyName)}${jobTitle ? `<br/>${escapeHtml(jobTitle)}` : ""}
   </div>
   <div class="body">
-    ${bodyHtml}
+    ${paragraphs}
   </div>
   <div class="signature">
     <div class="closing">Sincerely,</div>
     <div class="sig-name">${escapeHtml(name)}</div>
   </div>
-  ${footerOverride ? `<div style="margin-top:18pt;font-size:8.5pt;color:#888;border-top:0.5pt solid #ccc;padding-top:6pt;">${escapeHtml(footerOverride)}</div>` : ""}
 </body>
 </html>`;
-}
 
-export function downloadCoverLetterPdf(
-  coverLetter: string,
-  companyName: string,
-  jobTitle: string,
-  applicantName?: string,
-) {
-  const html = buildCoverLetterHtml(coverLetter, companyName, jobTitle, applicantName);
-
+  // Create hidden iframe, print, then clean up
   const iframe = document.createElement("iframe");
   iframe.style.position = "fixed";
   iframe.style.right = "-9999px";
@@ -169,15 +120,18 @@ export function downloadCoverLetterPdf(
   doc.write(html);
   doc.close();
 
+  // Wait for fonts / styles then print
   iframe.onload = () => {
     setTimeout(() => {
       iframe.contentWindow?.print();
+      // Clean up after dialog closes
       setTimeout(() => {
         document.body.removeChild(iframe);
       }, 1000);
     }, 250);
   };
 
+  // Fallback if onload already fired (some browsers)
   if (doc.readyState === "complete") {
     setTimeout(() => {
       iframe.contentWindow?.print();

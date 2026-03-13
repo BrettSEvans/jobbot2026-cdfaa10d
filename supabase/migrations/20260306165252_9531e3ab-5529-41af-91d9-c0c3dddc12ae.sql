@@ -1,1 +1,0 @@
-ALTER TABLE public.job_applications ALTER COLUMN pipeline_stage SET DEFAULT 'bookmarked';

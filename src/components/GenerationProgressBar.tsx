@@ -3,22 +3,28 @@ import { Check, Loader2, XCircle, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
-export type PipelineStage = "scraping" | "analyzing" | "resume" | "cover-letter" | "complete";
+export type PipelineStage = "scraping" | "branding" | "analyzing" | "research" | "cover-letter" | "dashboard" | "generating-assets" | "complete";
 
 const STAGES: { key: PipelineStage; label: string }[] = [
   { key: "scraping", label: "Scraping Job" },
+  { key: "branding", label: "Branding" },
   { key: "analyzing", label: "Analyzing" },
-  { key: "resume", label: "Resume" },
+  { key: "research", label: "Researching" },
   { key: "cover-letter", label: "Cover Letter" },
+  { key: "dashboard", label: "Dashboard" },
+  { key: "generating-assets", label: "Assets" },
   { key: "complete", label: "Done" },
 ];
 
 // Average seconds per stage (empirical estimates)
 const STAGE_ESTIMATES: Record<string, number> = {
   scraping: 8,
+  branding: 10,
   analyzing: 12,
-  resume: 25,
+  research: 15,
   "cover-letter": 20,
+  dashboard: 45,
+  "generating-assets": 60,
 };
 
 function stageIndex(stage: PipelineStage): number {

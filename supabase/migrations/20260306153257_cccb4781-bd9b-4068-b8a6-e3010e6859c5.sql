@@ -1,1 +1,0 @@
-ALTER TABLE public.generated_assets ADD COLUMN downloaded_at timestamptz DEFAULT NULL;

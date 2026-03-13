@@ -1,19 +1,9 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
-import { useUserRoles } from "@/hooks/useUserRoles";
-import { supabase } from "@/integrations/supabase/client";
-import ProUsageBar from "@/components/ProUsageBar";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-import CompanyIcon from "@/components/CompanyIcon";
-import KanbanBoard from "@/components/KanbanBoard";
-import PipelineAnalytics from "@/components/PipelineAnalytics";
-import GhostPromptDialog from "@/components/GhostPromptDialog";
-import { updatePipelineStage, PIPELINE_STAGES, STAGE_LABELS, STAGE_COLORS, type PipelineStage } from "@/lib/pipelineStages";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { useStalePipelinePrompt } from "@/hooks/useStalePipelinePrompt";
 import {
   getJobApplications,
   deleteJobApplication,
@@ -24,12 +14,15 @@ import {
 import type { JobApplication } from "@/hooks/useApplicationDetail";
 import {
   Plus,
+  FileText,
   Trash2,
-  Search,
+  Eye,
+  Copy,
   Loader2,
   LayoutTemplate,
   ArrowUpDown,
-  AlertCircle,
+  ArrowUp,
+  ArrowDown,
   Sparkles,
   Zap,
   FileCheck,
@@ -39,8 +32,6 @@ import {
   Archive,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Kanban } from "lucide-react";
-import { useSearchParams } from "react-router-dom";
 import {
   Table,
   TableBody,
@@ -61,86 +52,27 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { backgroundGenerator } from "@/lib/backgroundGenerator";
 import { useActiveJobCount } from "@/hooks/useBackgroundJob";
 import BatchModePrompt from "@/components/BatchModePrompt";
-import ImpersonationNotice from "@/components/ImpersonationNotice";
-import { useImpersonation } from "@/contexts/ImpersonationContext";
-import { useTutorial } from "@/hooks/useTutorial";
-import { BookOpen } from "lucide-react";
-import { BRAND } from "@/lib/branding";
-import { ImageIcon } from "lucide-react";
-import ApplicationCommandCard from "@/components/ApplicationCommandCard";
-type SortKey = "company_name" | "job_title" | "status" | "created_at" | "updated_at" | "pipeline_stage";
-type SortDir = "asc" | "desc" | "group";
+
+type SortKey = "company_name" | "job_title" | "status" | "created_at" | "updated_at";
+type SortDir = "asc" | "desc";
+
 const Applications = () => {
-  const { activePersona, isImpersonating } = useImpersonation();
-  const { isAdmin } = useUserRoles();
-  const { showTutorial, startTutorial } = useTutorial();
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
   const [applications, setApplications] = useState<JobApplication[]>([]);
-  const [deletedApps, setDeletedApps] = useState<JobApplication[]>([]);
+  const [deletedApps, setDeletedApps] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [trashLoading, setTrashLoading] = useState(false);
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [sortKey, setSortKey] = useState<SortKey>("created_at");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
-  const initialView = searchParams.get("view") === "pipeline" ? "pipeline" : "active";
-  const [activeView, setActiveView] = useState<"active" | "pipeline" | "trash">(initialView);
+  const [activeView, setActiveView] = useState<"active" | "trash">("active");
   const [isClosing, setIsClosing] = useState(false);
-  const [backfilling, setBackfilling] = useState(false);
 
   const activeJobCount = useActiveJobCount();
-
-  const { staleApp: staleBookmarkedApp, dismiss: dismissBookmarked } = useStalePipelinePrompt(applications, {
-    stage: 'bookmarked', thresholdMs: 48 * 60 * 60 * 1000, storageKey: 'dismissed_bookmarked_prompts',
-  });
-  const { staleApp: staleAppliedApp, dismiss: dismissApplied } = useStalePipelinePrompt(applications, {
-    stage: 'applied', thresholdMs: 10 * 24 * 60 * 60 * 1000, storageKey: 'dismissed_ghost_prompts',
-  });
-  const { staleApp: staleInterviewingApp, dismiss: dismissInterviewing } = useStalePipelinePrompt(applications, {
-    stage: 'interviewing', thresholdMs: 7 * 24 * 60 * 60 * 1000, storageKey: 'dismissed_ghost_interview_prompts',
-  });
-
-  const markStaleAsGhosted = useCallback(async (appId: string, fromStage: PipelineStage, dismiss: (id: string) => void) => {
-    try {
-      await updatePipelineStage(appId, fromStage, 'ghosted');
-      dismiss(appId);
-      loadApplications();
-      toast({ title: "Marked as ghosted", description: "Application moved to Ghosted stage." });
-    } catch (err: unknown) {
-      toast({ title: "Error", description: err instanceof Error ? err.message : "Unknown error", variant: "destructive" });
-    }
-  }, [toast]);
-
-  // Check if any apps are missing icons
-  const needsBackfill = useMemo(
-    () => applications.some((a) => a.company_name && !a.company_icon_url),
-    [applications]
-  );
-
-  const handleBackfillIcons = useCallback(async () => {
-    setBackfilling(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('backfill-company-icons');
-      if (error) throw error;
-      toast({ title: "Icons updated", description: `Updated ${data?.updated ?? 0} of ${data?.total ?? 0} applications.` });
-      loadApplications();
-    } catch (err: unknown) {
-      toast({ title: "Error", description: err instanceof Error ? err.message : "Backfill failed", variant: "destructive" });
-    } finally {
-      setBackfilling(false);
-    }
-  }, [toast]);
 
   const handleClosePreview = () => {
     setIsClosing(true);
@@ -152,7 +84,7 @@ const Applications = () => {
 
   useEffect(() => {
     loadApplications();
-  }, [isImpersonating, activePersona?.id]);
+  }, []);
 
   useEffect(() => {
     const unsub = backgroundGenerator.subscribe(() => {
@@ -163,8 +95,7 @@ const Applications = () => {
 
   const loadApplications = async () => {
     try {
-      const personaId = isImpersonating && activePersona?.isTestUser ? activePersona.id : null;
-      const data = await getJobApplications(personaId);
+      const data = await getJobApplications();
       setApplications(data);
     } catch (err: unknown) {
       toast({ title: "Error", description: err instanceof Error ? err.message : "Unknown error", variant: "destructive" });
@@ -176,8 +107,7 @@ const Applications = () => {
   const loadTrash = async () => {
     setTrashLoading(true);
     try {
-      const personaId = isImpersonating && activePersona?.isTestUser ? activePersona.id : null;
-      const data = await getDeletedJobApplications(personaId);
+      const data = await getDeletedJobApplications();
       setDeletedApps(data || []);
     } catch (err: unknown) {
       toast({ title: "Error", description: err instanceof Error ? err.message : "Unknown error", variant: "destructive" });
@@ -236,19 +166,32 @@ const Applications = () => {
     try {
       await permanentlyDeleteJobApplication(id);
       setDeletedApps((prev) => prev.filter((a) => a.id !== id));
-      toast({ title: "Permanently deleted", description: "Application and all materials have been removed." });
+      toast({ title: "Permanently deleted", description: "Application and all assets have been removed." });
     } catch (err: unknown) {
       toast({ title: "Error", description: err instanceof Error ? err.message : "Unknown error", variant: "destructive" });
     }
   };
 
-  const handleCopyToClipboard = useCallback(async (text: string, label: string, e: React.MouseEvent) => {
+  const handleCopyHtml = async (html: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    await navigator.clipboard.writeText(html);
+    toast({ title: "Copied!", description: "Dashboard HTML copied to clipboard." });
+  };
+
+  const handleCopyCoverLetter = async (text: string, e: React.MouseEvent) => {
     e.stopPropagation();
     await navigator.clipboard.writeText(text);
-    toast({ title: "Copied!", description: `${label} copied to clipboard.` });
-  }, [toast]);
+    toast({ title: "Copied!", description: "Cover letter copied to clipboard." });
+  };
 
-  const isGrouped = sortKey === "pipeline_stage" && sortDir === "group";
+  const toggleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+  };
 
   const sorted = useMemo(() => {
     return [...applications].sort((a, b) => {
@@ -259,17 +202,10 @@ const Applications = () => {
     });
   }, [applications, sortKey, sortDir]);
 
-  const groupedByStage = useMemo(() => {
-    if (!isGrouped) return [];
-    return PIPELINE_STAGES
-      .map((stage) => ({
-        stage,
-        label: STAGE_LABELS[stage],
-        colorClass: STAGE_COLORS[stage],
-        apps: applications.filter((a) => (a.pipeline_stage || "bookmarked") === stage),
-      }))
-      .filter((g) => g.apps.length > 0);
-  }, [applications, isGrouped]);
+  const SortIcon = ({ col }: { col: SortKey }) => {
+    if (sortKey !== col) return <ArrowUpDown className="h-3 w-3 ml-1 opacity-40" />;
+    return sortDir === "asc" ? <ArrowUp className="h-3 w-3 ml-1" /> : <ArrowDown className="h-3 w-3 ml-1" />;
+  };
 
   const previewApp = applications.find((a) => a.id === previewId);
 
@@ -283,164 +219,64 @@ const Applications = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-6xl mx-auto p-4 md:p-8 space-y-6">
-        <ImpersonationNotice />
-        {showTutorial && (
-          <div className="flex items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3">
-            <p className="text-sm text-foreground"><strong>New here?</strong> Take a quick tour to learn how {BRAND.name} works.</p>
-            <Button size="sm" variant="outline" onClick={startTutorial} className="shrink-0">
-              <BookOpen className="mr-2 h-4 w-4" /> Take the Tour
-            </Button>
-          </div>
-        )}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-heading font-bold tracking-tight">Job Applications</h1>
-            <p className="text-muted-foreground text-sm">Your career command center</p>
+            <h1 className="text-2xl font-bold tracking-tight">Job Applications</h1>
+            <p className="text-muted-foreground text-sm">Your saved applications and dashboards</p>
           </div>
           <div className="flex gap-2">
-            {needsBackfill && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="outline" size="icon" onClick={handleBackfillIcons} disabled={backfilling} aria-label="Backfill company icons">
-                    {backfilling ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImageIcon className="h-4 w-4" />}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Fetch missing company logos</TooltipContent>
-              </Tooltip>
-            )}
-            {isAdmin && (
-              <Button variant="outline" onClick={() => navigate("/search-jobs")} data-tutorial="search-jobs-btn">
-                <Search className="mr-2 h-4 w-4" /> Search Jobs
-              </Button>
-            )}
             <Button variant="outline" onClick={() => navigate("/templates")}>
               <LayoutTemplate className="mr-2 h-4 w-4" /> Templates
             </Button>
-            <Button data-tutorial="new-app-btn" onClick={() => navigate("/applications/new")}>
+            <Button onClick={() => navigate("/applications/new")}>
               <Plus className="mr-2 h-4 w-4" /> New Application
             </Button>
           </div>
         </div>
 
-        <ProUsageBar />
-
-        {/* 48-hour bookmarked nudge */}
-        {staleBookmarkedApp && (
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-lg border border-yellow-500/30 bg-yellow-500/5 px-4 py-3">
-            <div className="flex items-center gap-2 text-sm">
-              <AlertCircle className="h-4 w-4 text-yellow-600 dark:text-yellow-400 shrink-0" />
-              <p className="text-foreground">
-                Have you applied to <strong>{staleBookmarkedApp.company_name || 'this job'}</strong>? It's been bookmarked for over 48 hours.
-              </p>
-            </div>
-            <div className="flex gap-2 shrink-0 w-full sm:w-auto">
-              <Button size="sm" variant="outline" onClick={() => dismissBookmarked(staleBookmarkedApp.id)} className="flex-1 sm:flex-initial">
-                Dismiss
-              </Button>
-              <Button size="sm" onClick={() => navigate(`/applications/${staleBookmarkedApp.id}`)} className="flex-1 sm:flex-initial">
-                Update Status
-              </Button>
-            </div>
-          </div>
-        )}
-
         {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <Card key={i} className="animate-pulse">
-                <CardContent className="p-4 space-y-3">
-                  <div className="flex items-start gap-3">
-                    <div className="h-12 w-12 rounded-lg bg-muted" />
-                    <div className="flex-1 space-y-2">
-                      <div className="h-4 w-28 bg-muted rounded" />
-                      <div className="h-3 w-36 bg-muted rounded" />
-                    </div>
-                  </div>
-                  <div className="flex gap-3">
-                    {Array.from({ length: 4 }).map((_, j) => (
-                      <div key={j} className="flex items-center gap-1">
-                        <div className="h-2 w-2 rounded-full bg-muted" />
-                        <div className="h-2 w-10 bg-muted rounded" />
-                      </div>
-                    ))}
-                  </div>
-                  <div className="h-1.5 rounded-full bg-muted" />
-                </CardContent>
-              </Card>
-            ))}
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
         ) : applications.length === 0 && activeView === "active" && deletedApps.length === 0 ? (
-          <Card className="border-dashed border-2">
-            <CardContent className="py-16 text-center space-y-8">
-              {/* Hero messaging - Portfolio Builder, not just resumes */}
-              <div className="space-y-3">
-                <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-sm text-primary font-medium">
-                  <Sparkles className="h-4 w-4" />
-                  More than a resume writer
-                </div>
-                <h3 className="text-2xl font-heading font-bold">Build Your Career Portfolio</h3>
-                <p className="text-muted-foreground max-w-lg mx-auto leading-relaxed">
-                  {BRAND.name} creates a complete <strong>job application portfolio</strong> for every role — 
-                  branded dashboards, tailored resumes, cover letters, roadmaps, executive reports, 
-                  and custom industry materials. All matched to the company's visual identity.
+          <Card className="border-dashed">
+            <CardContent className="py-16 text-center space-y-6">
+              <div className="flex justify-center gap-4 text-muted-foreground">
+                <BarChart3 className="h-10 w-10" />
+                <FileCheck className="h-10 w-10" />
+                <Sparkles className="h-10 w-10" />
+              </div>
+              <div>
+                <h3 className="text-lg font-heading font-semibold mb-2">Welcome to JobBot</h3>
+                <p className="text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
+                  Paste a job URL and we'll generate a <strong>branded dashboard</strong>, <strong>tailored cover letter</strong>, and <strong>6 executive reports</strong> — all customized to the company's branding.
                 </p>
               </div>
-
-              {/* Visual proof - what you get */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 max-w-2xl mx-auto">
-                {[
-                  { icon: FileCheck, label: "Tailored Resume" },
-                  { icon: BarChart3, label: "Cover Letter" },
-                  { icon: Sparkles, label: "Brand Dashboard" },
-                  { icon: Zap, label: "90-Day Roadmap" },
-                  { icon: BarChart3, label: "Exec Reports" },
-                  { icon: Sparkles, label: "Custom Assets" },
-                ].map(({ icon: Icon, label }) => (
-                  <div key={label} className="flex flex-col items-center gap-1.5 p-3 rounded-lg bg-muted/50">
-                    <Icon className="h-5 w-5 text-primary" />
-                    <span className="text-xs text-muted-foreground text-center leading-tight">{label}</span>
-                  </div>
-                ))}
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                <Button onClick={() => navigate("/applications/new")} size="lg">
+                  <Zap className="mr-2 h-4 w-4" /> Create Your First Application
+                </Button>
               </div>
-
-              <Button onClick={() => navigate("/applications/new")} size="lg" className="shadow-lg">
-                <Zap className="mr-2 h-4 w-4" /> Create Your First Portfolio
-              </Button>
-
-              {/* How it works - simplified */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-xl mx-auto text-left pt-4 border-t border-border">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-lg mx-auto text-left">
                 <div className="space-y-1">
-                  <p className="text-sm font-semibold text-foreground">1. Paste a job URL</p>
-                  <p className="text-xs text-muted-foreground">Or paste the description directly</p>
+                  <p className="text-sm font-medium">1. Paste a job URL</p>
+                  <p className="text-sm text-muted-foreground">Or paste the description directly</p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-sm font-semibold text-foreground">2. AI builds your portfolio</p>
-                  <p className="text-xs text-muted-foreground">Multiple branded documents in minutes</p>
+                  <p className="text-sm font-medium">2. AI analyzes & builds</p>
+                  <p className="text-sm text-muted-foreground">Scrapes branding, competitors, market data</p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-sm font-semibold text-foreground">3. Refine with AI chat</p>
-                  <p className="text-xs text-muted-foreground">Vibe Edit any document conversationally</p>
+                  <p className="text-sm font-medium">3. Refine with AI chat</p>
+                  <p className="text-sm text-muted-foreground">Iterate on any asset with conversational AI</p>
                 </div>
               </div>
             </CardContent>
           </Card>
         ) : (
-          <Tabs value={activeView} onValueChange={(v) => {
-            const view = v as "active" | "pipeline" | "trash";
-            setActiveView(view);
-            // Sync URL param for pipeline view
-            if (view === "pipeline") {
-              setSearchParams({ view: "pipeline" });
-            } else {
-              searchParams.delete("view");
-              setSearchParams(searchParams);
-            }
-          }}>
+          <Tabs value={activeView} onValueChange={(v) => setActiveView(v as "active" | "trash")}>
             <TabsList>
               <TabsTrigger value="active">Applications</TabsTrigger>
-              <TabsTrigger value="pipeline" data-tutorial="pipeline-tab" className="gap-1.5">
-                <Kanban className="h-3.5 w-3.5" /> Pipeline
-              </TabsTrigger>
               <TabsTrigger value="trash" className="gap-1.5">
                 <Trash2 className="h-3.5 w-3.5" /> Trash
                 {deletedApps.length > 0 && (
@@ -465,112 +301,122 @@ const Applications = () => {
                 </Card>
               ) : (
                 <>
-                  {/* Summary stats + sort */}
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <Badge variant="secondary" className="text-xs gap-1">
-                        {applications.length} Total
-                      </Badge>
-                      <Badge variant="secondary" className="text-xs gap-1 border-green-500/30 text-green-700 dark:text-green-400">
-                        {applications.filter((a) => a.status === "complete" || a.generation_status === "complete").length} Complete
-                      </Badge>
-                      {applications.filter((a) => a.generation_status && !["complete", "error", "idle", "pending"].includes(a.generation_status)).length > 0 && (
-                        <Badge variant="secondary" className="text-xs gap-1 border-primary/30 text-primary">
-                          <Loader2 className="h-3 w-3 animate-spin" />
-                          {applications.filter((a) => a.generation_status && !["complete", "error", "idle", "pending"].includes(a.generation_status)).length} In Progress
-                        </Badge>
-                      )}
-                    </div>
-                    <Select
-                      value={`${sortKey}-${sortDir}`}
-                      onValueChange={(v) => {
-                        if (v === "pipeline_stage-group") {
-                          setSortKey("pipeline_stage" as SortKey);
-                          setSortDir("group" as SortDir);
-                        } else {
-                          const [key, dir] = v.split("-") as [SortKey, SortDir];
-                          setSortKey(key);
-                          setSortDir(dir);
-                        }
-                      }}
-                    >
-                      <SelectTrigger className="w-[180px] h-8 text-xs">
-                        <ArrowUpDown className="h-3 w-3 mr-1" />
-                        <SelectValue placeholder="Sort by..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="created_at-desc">Newest First</SelectItem>
-                        <SelectItem value="created_at-asc">Oldest First</SelectItem>
-                        <SelectItem value="company_name-asc">Company A-Z</SelectItem>
-                        <SelectItem value="company_name-desc">Company Z-A</SelectItem>
-                        <SelectItem value="updated_at-desc">Recently Updated</SelectItem>
-                        <SelectItem value="pipeline_stage-group">Group by Status</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Card grid */}
-                  <div data-tutorial="app-table" className="relative">
-                    {isGrouped ? (
-                      <Accordion type="multiple" defaultValue={[]} className="space-y-2">
-                        {groupedByStage.map((group) => (
-                          <AccordionItem key={group.stage} value={group.stage} className="border rounded-lg px-2">
-                            <AccordionTrigger className="hover:no-underline py-3">
-                              <div className="flex items-center gap-2">
-                                <span className={`inline-block h-2.5 w-2.5 rounded-full ${group.colorClass.split(" ")[0]}`} />
-                                <span className="font-medium text-sm">{group.label}</span>
-                                <Badge variant="secondary" className="text-[10px] h-5 px-1.5">
-                                  {group.apps.length}
-                                </Badge>
-                              </div>
-                            </AccordionTrigger>
-                            <AccordionContent>
-                              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 pt-1 pb-2">
-                                {group.apps.map((app) => (
-                                  <ApplicationCommandCard
-                                    key={app.id}
-                                    app={app}
-                                    onDelete={handleSoftDelete}
-                                    onCopyCoverLetter={(text, e) => handleCopyToClipboard(text, "Cover letter", e)}
-                                    onCopyHtml={(html, e) => handleCopyToClipboard(html, "Dashboard HTML", e)}
-                                    onPreview={(id) => { setIsClosing(false); setPreviewId(id); }}
-                                  />
-                                ))}
-                              </div>
-                            </AccordionContent>
-                          </AccordionItem>
-                        ))}
-                      </Accordion>
-                    ) : (
-                      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                  <div className="relative overflow-hidden rounded-md border min-h-[400px]">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("company_name")}>
+                            <div className="flex items-center">Company <SortIcon col="company_name" /></div>
+                          </TableHead>
+                          <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("job_title")}>
+                            <div className="flex items-center">Role <SortIcon col="job_title" /></div>
+                          </TableHead>
+                          <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("status")}>
+                            <div className="flex items-center">Status <SortIcon col="status" /></div>
+                          </TableHead>
+                          <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("created_at")}>
+                            <div className="flex items-center">Created <SortIcon col="created_at" /></div>
+                          </TableHead>
+                          <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("updated_at")}>
+                            <div className="flex items-center">Updated <SortIcon col="updated_at" /></div>
+                          </TableHead>
+                          <TableHead>Assets</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
                         {sorted.map((app) => (
-                          <ApplicationCommandCard
+                          <TableRow
                             key={app.id}
-                            app={app}
-                            onDelete={handleSoftDelete}
-                            onCopyCoverLetter={(text, e) => handleCopyToClipboard(text, "Cover letter", e)}
-                            onCopyHtml={(html, e) => handleCopyToClipboard(html, "Dashboard HTML", e)}
-                            onPreview={(id) => { setIsClosing(false); setPreviewId(id); }}
-                          />
+                            className="cursor-pointer hover:bg-muted/50"
+                            onClick={() => navigate(`/applications/${app.id}`)}
+                          >
+                            <TableCell className="font-medium">
+                              {app.company_name || "Unknown"}
+                            </TableCell>
+                            <TableCell>{app.job_title || "Unknown"}</TableCell>
+                            <TableCell>
+                              <ApplicationStatusCell appId={app.id} dbStatus={app.status} generationStatus={app.generation_status} />
+                            </TableCell>
+                            <TableCell className="text-sm text-muted-foreground">
+                              {new Date(app.created_at).toLocaleDateString()}
+                            </TableCell>
+                            <TableCell className="text-sm text-muted-foreground">
+                              {new Date(app.updated_at).toLocaleDateString()}
+                            </TableCell>
+                            <TableCell>
+                              <AssetDots app={app} />
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex gap-1 justify-end" onClick={(e) => e.stopPropagation()}>
+                                {app.cover_letter && (
+                                  <Button size="sm" variant="ghost" onClick={(e) => handleCopyCoverLetter(app.cover_letter, e)} title="Copy cover letter">
+                                    <FileText className="h-4 w-4" />
+                                  </Button>
+                                )}
+                                {app.dashboard_html && (
+                                  <>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (previewId === app.id) {
+                                          handleClosePreview();
+                                        } else {
+                                          setIsClosing(false);
+                                          setPreviewId(app.id);
+                                        }
+                                      }}
+                                      title="Preview"
+                                    >
+                                      <Eye className="h-4 w-4" />
+                                    </Button>
+                                    <Button size="sm" variant="ghost" onClick={(e) => handleCopyHtml(app.dashboard_html, e)} title="Copy HTML">
+                                      <Copy className="h-4 w-4" />
+                                    </Button>
+                                  </>
+                                )}
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button size="sm" variant="ghost" title="Move to trash">
+                                      <Trash2 className="h-4 w-4 text-destructive" />
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Move to trash?</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        <strong>{app.company_name || "This application"}</strong> will be moved to trash. You can recover it within 30 days.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                      <AlertDialogAction onClick={() => handleSoftDelete(app.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                        Move to Trash
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              </div>
+                            </TableCell>
+                          </TableRow>
                         ))}
-                      </div>
-                    )}
+                      </TableBody>
+                    </Table>
 
-                    {/* Slide-in preview panel (desktop) */}
+                    {/* Slide-in preview panel */}
                     {previewApp?.dashboard_html && (
                       <div
-                        className={`fixed inset-y-0 right-0 z-50 bg-background flex flex-col w-full md:w-[50%] border-l shadow-lg ${
+                        className={`absolute inset-0 z-10 bg-background flex flex-col w-full md:w-[70%] md:left-auto md:right-0 md:border-l ${
                           isClosing ? "animate-slide-out-right" : "animate-slide-in-right"
                         }`}
                         onClick={(e) => e.stopPropagation()}
                       >
                         <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/50 shrink-0">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <CompanyIcon iconUrl={previewApp.company_icon_url} companyName={previewApp.company_name} size={18} />
-                            <span className="text-sm font-medium text-muted-foreground truncate">
-                              {previewApp.company_name} — {previewApp.job_title}
-                            </span>
-                          </div>
+                          <span className="text-sm font-medium text-muted-foreground truncate">
+                            {previewApp.company_name} — {previewApp.job_title}
+                          </span>
                           <Button size="sm" variant="ghost" onClick={handleClosePreview}>
                             ✕ Close
                           </Button>
@@ -594,11 +440,6 @@ const Applications = () => {
                   </div>
                 </>
               )}
-            </TabsContent>
-
-            <TabsContent value="pipeline" className="space-y-4">
-              <PipelineAnalytics applications={applications} />
-              <KanbanBoard applications={applications} onStageChanged={loadApplications} />
             </TabsContent>
 
             <TabsContent value="trash" className="space-y-4">
@@ -626,16 +467,11 @@ const Applications = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {deletedApps.map((app) => {
+                      {deletedApps.map((app: any) => {
                         const days = getDaysRemaining(app.deleted_at);
                         return (
                           <TableRow key={app.id} className="opacity-70">
-                            <TableCell className="font-medium">
-                              <div className="flex items-center gap-2">
-                                <CompanyIcon iconUrl={app.company_icon_url} companyName={app.company_name} size={20} />
-                                {app.company_name || "Unknown"}
-                              </div>
-                            </TableCell>
+                            <TableCell className="font-medium">{app.company_name || "Unknown"}</TableCell>
                             <TableCell>{app.job_title || "Unknown"}</TableCell>
                             <TableCell className="text-sm text-muted-foreground">
                               {new Date(app.deleted_at).toLocaleDateString()}
@@ -651,16 +487,11 @@ const Applications = () => {
                                   <Undo2 className="mr-1 h-3 w-3" /> Restore
                                 </Button>
                                 <AlertDialog>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <AlertDialogTrigger asChild>
-                                        <Button size="sm" variant="ghost">
-                                          <Trash2 className="h-4 w-4 text-destructive" />
-                                        </Button>
-                                      </AlertDialogTrigger>
-                                    </TooltipTrigger>
-                                    <TooltipContent>Delete permanently</TooltipContent>
-                                  </Tooltip>
+                                  <AlertDialogTrigger asChild>
+                                    <Button size="sm" variant="ghost">
+                                      <Trash2 className="h-4 w-4 text-destructive" />
+                                    </Button>
+                                  </AlertDialogTrigger>
                                   <AlertDialogContent>
                                     <AlertDialogHeader>
                                       <AlertDialogTitle>Delete permanently?</AlertDialogTitle>
@@ -689,31 +520,76 @@ const Applications = () => {
           </Tabs>
         )}
       </div>
-
-      {/* Ghost prompt — applied (10-day trigger, one-time per job) */}
-      {staleAppliedApp && (
-        <GhostPromptDialog
-          open
-          stage="applied"
-          companyName={staleAppliedApp.company_name || "this company"}
-          onMarkGhosted={() => markStaleAsGhosted(staleAppliedApp.id, 'applied', dismissApplied)}
-          onDismiss={() => dismissApplied(staleAppliedApp.id)}
-        />
-      )}
-
-      {/* Ghost prompt — interviewing (7-day trigger, one-time per job, only if no applied prompt) */}
-      {!staleAppliedApp && staleInterviewingApp && (
-        <GhostPromptDialog
-          open
-          stage="interviewing"
-          companyName={staleInterviewingApp.company_name || "this company"}
-          onMarkGhosted={() => markStaleAsGhosted(staleInterviewingApp.id, 'interviewing', dismissInterviewing)}
-          onDismiss={() => dismissInterviewing(staleInterviewingApp.id)}
-        />
-      )}
     </div>
   );
 };
 
+/** Per-row status cell that reacts to background generation state */
+function ApplicationStatusCell({ appId, dbStatus, generationStatus }: { appId: string; dbStatus: string; generationStatus: string }) {
+  const bgJob = backgroundGenerator.getJob(appId);
+  const isActive = bgJob && !["complete", "error"].includes(bgJob.status);
+
+  if (isActive) {
+    return (
+      <Badge variant="secondary" className="flex items-center gap-1.5 w-fit">
+        <Loader2 className="h-3 w-3 animate-spin" />
+        Generating...
+      </Badge>
+    );
+  }
+
+  // Determine display status: trust dbStatus first, fall back to generation_status
+  const isComplete = dbStatus === "complete" || generationStatus === "complete";
+  const isError = dbStatus === "error" || generationStatus === "error";
+  const isGenerating = !isComplete && !isError && generationStatus && !["idle", "pending"].includes(generationStatus);
+
+  if (isGenerating) {
+    return (
+      <Badge variant="secondary" className="flex items-center gap-1.5 w-fit">
+        <Loader2 className="h-3 w-3 animate-spin" />
+        Generating...
+      </Badge>
+    );
+  }
+
+  const label = isComplete ? "Complete" : isError ? "Error" : dbStatus === "draft" ? "Draft" : dbStatus;
+
+  return (
+    <Badge variant={isComplete ? "default" : isError ? "destructive" : "secondary"}>
+      {label}
+    </Badge>
+  );
+}
+
+const ASSET_FIELDS = [
+  { key: "dashboard_html", label: "Dashboard" },
+  { key: "cover_letter", label: "Cover Letter" },
+  { key: "executive_report_html", label: "Executive Report" },
+  { key: "raid_log_html", label: "RAID Log" },
+  { key: "architecture_diagram_html", label: "Architecture" },
+  { key: "roadmap_html", label: "Roadmap" },
+] as const;
+
+function AssetDots({ app }: { app: JobApplication }) {
+  return (
+    <div className="flex items-center gap-1">
+      {ASSET_FIELDS.map((f) => {
+        const has = !!(app as any)[f.key];
+        return (
+          <Tooltip key={f.key}>
+            <TooltipTrigger asChild>
+              <div
+                className={`h-2.5 w-2.5 rounded-full ${has ? "bg-primary" : "bg-muted-foreground/25"}`}
+              />
+            </TooltipTrigger>
+            <TooltipContent side="top" className="text-xs">
+              {f.label}: {has ? "✓" : "—"}
+            </TooltipContent>
+          </Tooltip>
+        );
+      })}
+    </div>
+  );
+}
 
 export default Applications;

@@ -53,12 +53,6 @@ serve(async (req) => {
   }
 
   try {
-    // Auth guard
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-    }
-
     const { jobUrl, companyUrl, jobTitle, companyName, department, jobDescription } = await req.json();
 
     if (!jobDescription && !jobTitle) {
@@ -145,10 +139,6 @@ ${jobDescription || 'No description provided.'}`;
     clean = clean.replace(/(\{|,)\s*([a-zA-Z_]\w*)\s*:/g, '$1 "$2":');
     // Remove control characters except whitespace
     clean = clean.replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g, '');
-    // Remove stray non-ASCII characters that aren't inside quoted strings
-    // (models sometimes inject random CJK / emoji glyphs into JSON structure)
-    clean = clean.replace(/"([^"\\]|\\.)*"/g, (m) => m.replace(/[^\x20-\x7E\\]/g, ''))
-                 .replace(/(?<!["\w])[^\x09\x0a\x0d\x20-\x7E]+(?!["\w])/g, '');
     // Replace literal newlines inside JSON strings with \n escape
     // Walk through and fix unescaped newlines within quoted strings
     clean = clean.replace(/"([^"\\]|\\.)*"/g, (match) => {

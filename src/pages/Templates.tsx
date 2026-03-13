@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -27,8 +26,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import ImpersonationNotice from "@/components/ImpersonationNotice";
-import { useImpersonation } from "@/contexts/ImpersonationContext";
 
 const ASSET_TYPE_OPTIONS = [
   { value: "", label: "All Types" },
@@ -48,7 +45,6 @@ const ASSET_TYPE_LABELS: Record<string, string> = {
 };
 
 const Templates = () => {
-  const { activePersona, isImpersonating } = useImpersonation();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [allTemplates, setAllTemplates] = useState<DashboardTemplate[]>([]);
@@ -59,16 +55,15 @@ const Templates = () => {
 
   useEffect(() => {
     loadTemplates();
-  }, [isImpersonating, activePersona?.id]);
+  }, []);
 
   const loadTemplates = async () => {
     setLoading(true);
     try {
-      const personaId = isImpersonating && activePersona?.isTestUser ? activePersona.id : null;
-      const data = await getTemplates({ personaId });
+      const data = await getTemplates();
       setAllTemplates(data);
-    } catch (err: unknown) {
-      toast({ title: "Error", description: err instanceof Error ? err.message : "Unknown error", variant: "destructive" });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -122,8 +117,8 @@ const Templates = () => {
       await deleteTemplate(id);
       setAllTemplates((prev) => prev.filter((t) => t.id !== id));
       toast({ title: "Deleted", description: "Template removed." });
-    } catch (err: unknown) {
-      toast({ title: "Error", description: err instanceof Error ? err.message : "Unknown error", variant: "destructive" });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
     }
   };
 
@@ -135,14 +130,13 @@ const Templates = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-5xl mx-auto p-4 md:p-8 space-y-6">
-        <ImpersonationNotice />
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="sm" onClick={() => navigate("/")}>
               <ArrowLeft className="h-4 w-4 mr-1" /> Back
             </Button>
             <div>
-              <h1 className="text-2xl font-bold tracking-tight">Templates</h1>
+              <h1 className="text-2xl font-bold tracking-tight">Asset Templates</h1>
               <p className="text-muted-foreground text-sm">
                 {allTemplates.length} template{allTemplates.length !== 1 ? "s" : ""} saved
               </p>
@@ -208,7 +202,7 @@ const Templates = () => {
                 <>
                   <h3 className="text-lg font-medium mb-2">No templates yet</h3>
                   <p className="text-muted-foreground mb-4">
-                    Generate a document and save it as a template to get started.
+                    Generate an asset and save it as a template to get started.
                   </p>
                 </>
               ) : (
@@ -248,29 +242,20 @@ const Templates = () => {
                       </p>
                     </div>
                     <div className="flex gap-1 flex-shrink-0">
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => setPreviewId(previewId === t.id ? null : t.id)}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Preview template</TooltipContent>
-                      </Tooltip>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setPreviewId(previewId === t.id ? null : t.id)}
+                        title="Preview"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
                       <AlertDialog>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <AlertDialogTrigger asChild>
-                              <Button size="sm" variant="ghost">
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                              </Button>
-                            </AlertDialogTrigger>
-                          </TooltipTrigger>
-                          <TooltipContent>Delete template</TooltipContent>
-                        </Tooltip>
+                        <AlertDialogTrigger asChild>
+                          <Button size="sm" variant="ghost" title="Delete">
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
                             <AlertDialogTitle>Delete template?</AlertDialogTitle>

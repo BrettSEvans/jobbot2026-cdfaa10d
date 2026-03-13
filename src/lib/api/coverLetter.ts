@@ -28,15 +28,9 @@ export async function streamTailoredLetter({
   let styleContext = "";
   try { styleContext = await getStyleContextForPrompt(); } catch { /* non-critical */ }
 
-  let generationGuide = "";
-  try {
-    const { getGenerationGuideForPrompt } = await import("@/lib/api/systemDocuments");
-    generationGuide = await getGenerationGuideForPrompt();
-  } catch { /* non-critical — generation continues without guide */ }
-
   await streamFromEdgeFunction({
     functionName: 'tailor-cover-letter',
-    body: { jobDescription, customInstructions, profileContext, styleContext, generationGuide },
+    body: { jobDescription, customInstructions, profileContext, styleContext },
     onDelta,
     onDone,
   });

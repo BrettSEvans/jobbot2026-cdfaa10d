@@ -17,7 +17,7 @@ export async function getStylePreferences(): Promise<StylePreference[]> {
   if (!user) return [];
 
   const { data, error } = await supabase
-    .from("user_style_preferences")
+    .from("user_style_preferences" as any)
     .select("*")
     .eq("user_id", user.id)
     .order("category");
@@ -28,7 +28,7 @@ export async function getStylePreferences(): Promise<StylePreference[]> {
 
 export async function deleteStylePreference(id: string): Promise<void> {
   const { error } = await supabase
-    .from("user_style_preferences")
+    .from("user_style_preferences" as any)
     .delete()
     .eq("id", id);
   if (error) throw error;
@@ -39,7 +39,7 @@ export async function clearAllStylePreferences(): Promise<void> {
   if (!user) throw new Error("Not authenticated");
 
   const { error } = await supabase
-    .from("user_style_preferences")
+    .from("user_style_preferences" as any)
     .delete()
     .eq("user_id", user.id);
   if (error) throw error;

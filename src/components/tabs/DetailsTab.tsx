@@ -5,7 +5,6 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Edit3, Check, X, ExternalLink } from "lucide-react";
 import type { ApplicationState } from "@/hooks/useApplicationDetail";
-import CompanyIcon from "@/components/CompanyIcon";
 
 interface DetailsTabProps {
   state: ApplicationState;
@@ -52,7 +51,7 @@ export default function DetailsTab({ state }: DetailsTabProps) {
             </div>
           ) : (
             <div className="space-y-2">
-              <InfoRow label="Company" value={companyName} iconUrl={app.company_icon_url} />
+              <InfoRow label="Company" value={companyName} />
               <InfoRow label="Job Title" value={jobTitle} />
               <InfoRow label="Job URL" value={app.job_url} isLink />
               <InfoRow label="Company URL" value={companyUrl} isLink />
@@ -89,7 +88,7 @@ export default function DetailsTab({ state }: DetailsTabProps) {
   );
 }
 
-function InfoRow({ label, value, isLink, iconUrl }: { label: string; value?: string | null; isLink?: boolean; iconUrl?: string | null }) {
+function InfoRow({ label, value, isLink }: { label: string; value?: string | null; isLink?: boolean }) {
   return (
     <div className="flex items-center justify-between py-1">
       <span className="text-sm font-medium text-muted-foreground">{label}</span>
@@ -98,10 +97,7 @@ function InfoRow({ label, value, isLink, iconUrl }: { label: string; value?: str
           {value} <ExternalLink className="h-3 w-3 flex-shrink-0" />
         </a>
       ) : (
-        <span className="text-sm flex items-center gap-2">
-          {iconUrl !== undefined && <CompanyIcon iconUrl={iconUrl} companyName={value} size={24} />}
-          {value || "—"}
-        </span>
+        <span className="text-sm">{value || "—"}</span>
       )}
     </div>
   );

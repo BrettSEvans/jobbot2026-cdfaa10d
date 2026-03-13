@@ -18,30 +18,6 @@ function extractDomain(companyUrl?: string, companyName?: string): string {
   return '';
 }
 
-/**
- * Check if a URL is relevant to the company name using word-boundary matching.
- * Prevents false positives like "appen" matching "append".
- */
-function isRelevantUrl(url: string, companyName: string): boolean {
-  const mLower = url.toLowerCase();
-  const nameLower = companyName.toLowerCase().replace(/[^a-z0-9]/g, '');
-  const nameWords = companyName.toLowerCase().split(/\s+/).filter(w => w.length > 2);
-
-  // For the full concatenated name, use word boundary regex
-  const fullNameRegex = new RegExp(`(^|[^a-z])${escapeRegex(nameLower)}([^a-z]|$)`);
-  if (fullNameRegex.test(mLower)) return true;
-
-  // For individual words, also use word boundary checks
-  return nameWords.some(w => {
-    const wordRegex = new RegExp(`(^|[^a-z])${escapeRegex(w)}([^a-z]|$)`);
-    return wordRegex.test(mLower);
-  });
-}
-
-function escapeRegex(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
 async function tryClearbit(domain: string): Promise<string | null> {
   if (!domain) return null;
   const url = `https://logo.clearbit.com/${domain}`;
@@ -66,11 +42,13 @@ async function tryIconIcons(companyName: string, firecrawlKey?: string): Promise
     const markdown = await scrapePageMarkdown(searchUrl, firecrawlKey);
     if (!markdown) return null;
 
+    // Look for image URLs in markdown that point to icon assets
     const imgRegex = /https?:\/\/[^\s\)\"]+\.(png|svg|ico)(?:\?[^\s\)\"]*)?/gi;
     const matches = markdown.match(imgRegex);
     if (matches) {
-      const relevantMatch = matches.find(m => isRelevantUrl(m, companyName));
-      if (relevantMatch) return relevantMatch;
+      // Prefer URLs with /icons/ in the path
+      const iconMatch = matches.find(m => m.includes('/icons/') || m.includes('/icon/'));
+      return iconMatch || matches[0];
     }
   } catch (e) {
     console.warn('icon-icons.com search failed:', e);
@@ -84,15 +62,12 @@ async function trySvgRepo(companyName: string, firecrawlKey?: string): Promise<s
     const markdown = await scrapePageMarkdown(searchUrl, firecrawlKey);
     if (!markdown) return null;
 
+    // Look for SVG URLs
     const imgRegex = /https?:\/\/[^\s\)\"]+\.(svg|png)(?:\?[^\s\)\"]*)?/gi;
     const matches = markdown.match(imgRegex);
     if (matches) {
-      const relevantMatch = matches.find(m => {
-        const mLower = m.toLowerCase();
-        if (mLower.includes('svgrepo.com/logo')) return false;
-        return isRelevantUrl(m, companyName);
-      });
-      if (relevantMatch) return relevantMatch;
+      const svgMatch = matches.find(m => m.endsWith('.svg') || m.includes('/svg/') || m.includes('/show/'));
+      return svgMatch || matches[0];
     }
   } catch (e) {
     console.warn('svgrepo.com search failed:', e);
@@ -136,12 +111,6 @@ serve(async (req) => {
   }
 
   try {
-    // Auth guard
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-    }
-
     const { companyName, companyUrl } = await req.json();
 
     if (!companyName && !companyUrl) {

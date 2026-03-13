@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -78,14 +78,11 @@ export function useApplicationDetail(id: string | undefined): ApplicationState {
   const bgJob = useBackgroundJob(id);
   const isBgGenerating = !!(bgJob && !["complete", "error"].includes(bgJob.status));
 
-  const editingCoverLetterRef = useRef(editingCoverLetter);
-  useEffect(() => { editingCoverLetterRef.current = editingCoverLetter; }, [editingCoverLetter]);
-
   const loadApplication = async (appId: string) => {
     try {
       const data = await getJobApplication(appId);
       setApp(data);
-      if (!editingCoverLetterRef.current) {
+      if (!editingCoverLetter) {
         setCoverLetter(data.cover_letter || "");
       }
       setJobDescription(data.job_description_markdown || "");
@@ -102,7 +99,7 @@ export function useApplicationDetail(id: string | undefined): ApplicationState {
           parsedDashData = parsed;
           html = assembleDashboardHtml(parsed);
           try {
-            await saveJobApplication({ id: appId, job_url: data.job_url, dashboard_html: html, dashboard_data: parsed as unknown as import('@/integrations/supabase/types').Json });
+            await saveJobApplication({ id: appId, job_url: data.job_url, dashboard_html: html, dashboard_data: parsed });
           } catch (e) { console.warn("Non-critical: failed to save migrated dashboard:", e); }
         }
       }
@@ -113,7 +110,7 @@ export function useApplicationDetail(id: string | undefined): ApplicationState {
       setRaidLogHtml(data.raid_log_html || "");
       setArchDiagramHtml(data.architecture_diagram_html || "");
       setRoadmapHtml(data.roadmap_html || "");
-      setResumeHtml(data.resume_html || "");
+      setResumeHtml((data as any).resume_html || "");
       setChatHistory(Array.isArray(data.chat_history) ? data.chat_history as Array<{ role: string; content: string }> : []);
     } catch (err: unknown) {
       toast({ title: "Error", description: err instanceof Error ? err.message : "Unknown error", variant: "destructive" });
@@ -157,7 +154,7 @@ export function useApplicationDetail(id: string | undefined): ApplicationState {
     if (!id) return;
     setSaving(true);
     try {
-      const updated = await saveJobApplication({ id, job_url: app!.job_url, ...fields });
+      const updated = await saveJobApplication({ id, job_url: app!.job_url, ...fields } as any);
       setApp(updated);
       toast({ title: "Saved", description: "Changes saved." });
     } catch (err: unknown) {

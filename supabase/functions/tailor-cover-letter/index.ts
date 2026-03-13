@@ -1,24 +1,24 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
-async function logUsage(req: Request, assetType: string, edgeFunction: string): Promise<Response | null> {
-  try {
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-    const anonClient = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!, { global: { headers: { Authorization: authHeader } } });
-    const { data } = await anonClient.auth.getClaims(authHeader.replace('Bearer ', ''));
-    const userId = data?.claims?.sub;
-    if (!userId) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-    const svc = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
-    await svc.from('generation_usage').insert({ user_id: userId, asset_type: assetType, edge_function: edgeFunction });
-  } catch (e) { console.warn('Usage logging failed, allowing request:', e); }
-  return null;
-}
+const BASE_COVER_LETTER = `To the Gusto GTM Team,
+
+I am excitedly applying for the Head of GTM Process & Tooling position at Gusto. While my previous background spans sales, operations and program management, my true "geek out" passion, and common thread through my career, lies in building the internal systems, AI-driven tools, and streamlined processes that empower teams to excel. I am particularly excited about Gusto's commitment to making complex business tasks simple and personal—a philosophy I apply to the internal tools I build for my own colleagues.
+
+At Gusto, I envision my role as a bridge between data and execution. I want to work alongside the GTM team and stakeholders to create an evolving ecosystem of automated agents and intelligence tools that help our reps exceed their quotas. I believe we are at a tipping point where AI tools allow us to transition from "knowledge workers" to "judgment workers," and I have already begun prototyping how this looks in a GTM environment.
+
+As a demonstration of my vision for Gusto's GTM path, I have developed a functioning mock-up of a Business Intelligence Dashboard. This dashboard represents the "Intel Officer" approach—arming the team with technical ammunition and competitive counters in real-time. Beyond dashboards, I would work with the team and stakeholders/partners to build "Agentic Staff"—automated workflows that act as a force multiplier for the team.
+
+I realize that even the most advanced AI agents and dashboards are simply "arrows in the quiver". The GTM team members are the ones who actually hit the target. My goal is to provide them with vetted, useful tools that eliminate manual friction, allowing them to focus entirely on the hard work of winning business and helping small businesses thrive.
+
+I am eager to see if my vision for interconnected agents and AI-driven operations integrates with the path the Gusto team has already forged.
+
+Sincerely,
+Brett Evans`;
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -26,9 +26,7 @@ serve(async (req) => {
   }
 
   try {
-    await logUsage(req, 'cover-letter', 'tailor-cover-letter');
-
-    const { jobDescription, customInstructions, profileContext, styleContext, generationGuide } = await req.json();
+    const { jobDescription, customInstructions, profileContext, styleContext } = await req.json();
 
     if (!jobDescription) {
       return new Response(
@@ -45,23 +43,21 @@ serve(async (req) => {
       );
     }
 
-    const systemPrompt = `You are an expert cover letter writer. Your task is to create a compelling, tailored cover letter for a specific job posting.
+    const systemPrompt = `You are an expert cover letter writer. You will be given a base cover letter template and a job description. Your task is to create a tailored cover letter that matches the job.
 
 CRITICAL Rules:
-- Write a professional, enthusiastic cover letter tailored to the specific company and role from the job posting
-- Use the correct company name and role title from the job description
-- Address the letter to the appropriate team (e.g., "Dear [Company] Hiring Team")
-- Highlight 2-3 talking points that align with the job's key requirements
-- Keep the letter to approximately one page (400-500 words)
-- Maintain a professional but enthusiastic tone
-- If profile/resume context is provided, use real experiences — do NOT invent new ones
-- NEVER use placeholder text like [Your Name], [Your Phone Number], [Your Email], [Your Address], [City, State], etc. If the candidate's name is provided in the profile, use it. If contact details are not available, simply omit them entirely rather than inserting brackets or placeholder text.
-- Sign the letter with the candidate's real name from the profile context. If no name is available, end with "Sincerely," and no name line.
-- Output ONLY the cover letter text in clean markdown format, no explanations or metadata
-${profileContext ? `\nCandidate background:\n${profileContext}` : ''}
+- You MUST replace EVERY instance of "Gusto" with the actual company name from the job posting. The base letter uses "Gusto" as a placeholder — it is NOT the target company unless the job posting is literally for Gusto.
+- You MUST replace the role title ("Head of GTM Process & Tooling") with the actual role title from the job posting.
+- You MUST replace the greeting ("To the Gusto GTM Team") with an appropriate greeting for the target company and team.
+- Adjust 2-3 talking points to align with the job's key requirements
+- Keep the core narrative, tone, and experience intact
+- Maintain the same general structure and length
+- Keep the letter professional but enthusiastic
+- Do NOT invent new experiences — only reframe existing ones
+- Output ONLY the tailored cover letter text, no explanations or metadata
+${profileContext ? `\n${profileContext}` : ''}
 ${styleContext ? `\n${styleContext}` : ''}
-${customInstructions ? `\nAdditional instructions: ${customInstructions}` : ''}
-${generationGuide ? `\n${generationGuide}` : ''}`;
+${customInstructions ? `\nAdditional instructions: ${customInstructions}` : ''}`;
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -75,7 +71,7 @@ ${generationGuide ? `\n${generationGuide}` : ''}`;
           { role: 'system', content: systemPrompt },
           {
             role: 'user',
-            content: `Write a tailored cover letter for the following job posting:\n\n${jobDescription}`
+            content: `Here is my base cover letter:\n\n${BASE_COVER_LETTER}\n\n---\n\nHere is the job posting I'm applying to:\n\n${jobDescription}`
           },
         ],
         stream: true,

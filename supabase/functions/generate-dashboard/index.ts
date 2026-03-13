@@ -20,33 +20,16 @@ Use the dominant extracted colors as the seed for the Material You tonal palette
   const customerContext = customers?.length ? `\nTarget Customers: ${customers.join(', ')}` : '';
   const productContext = products?.length ? `\nCompany Products: ${products.join(', ')}` : '';
 
-  const now = new Date();
-  const currentQuarter = Math.ceil((now.getMonth() + 1) / 3);
-  const currentYear = now.getFullYear();
-  const startDate = now.toISOString().split('T')[0];
-  const q1Label = `Q${currentQuarter} ${currentYear}`;
-  const q2Num = (currentQuarter % 4) + 1;
-  const q2Year = currentQuarter >= 4 ? currentYear + 1 : currentYear;
-  const q2Label = `Q${q2Num} ${q2Year}`;
-  const q3Num = (q2Num % 4) + 1;
-  const q3Year = q2Num >= 4 ? q2Year + 1 : q2Year;
-  const q3Label = `Q${q3Num} ${q3Year}`;
-  const monthNames = [];
-  for (let i = 0; i < 9; i++) {
-    const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
-    monthNames.push(d.toLocaleString('en-US', { month: 'short' }));
-  }
-
-  // If we have researched sections, take only the FIRST 2 for domain slots
+  // If we have researched sections, use them as the blueprint
   const sectionInstructions = researchedSections?.length
     ? `
 SECTION BLUEPRINT (from Research Agent):
-A research agent has already determined optimal dashboard sections. Use ONLY the first 2 sections below for navigation slots #2 and #3. Ignore any additional sections.
+A research agent has already determined the optimal dashboard sections for this role. Use the following section specifications as your blueprint. Generate the full dashboard JSON following the schema below, but use THESE sections instead of inventing your own. Fill in realistic data for each metric, chart, and table based on the specifications.
 
-Always include these 4 additional navigation entries regardless: "overview" (slot #1), "roadmap" (slot #4), "agentic-workforce" (slot #5), and "cfo-view" (slot #6).
+Always append the 'agentic-workforce' and 'cfo-view' navigation entries and their corresponding data (agenticWorkforce array and cfoScenarios array) regardless of what the research agent returned.
 
-Research Agent Output (use first 2 only):
-${JSON.stringify((researchedSections || []).slice(0, 2), null, 2)}
+Research Agent Output:
+${JSON.stringify(researchedSections, null, 2)}
 
 For each researched section:
 - Use the provided id, label, icon, and description exactly
@@ -57,9 +40,9 @@ For each researched section:
 `
     : `
 SECTION REQUIREMENTS:
-- Exactly 3 data sections: one "overview" (executive summary with KPIs, key charts, summary table), plus 2 role-specific domain sections (e.g., Pipeline, Competitive Intel, Engineering Velocity, Customer Health — pick based on job description)
-- Navigation must also include "roadmap", "agentic-workforce", and "cfo-view" — 6 total tabs
-- Each data section: unique description, 3-5 metrics, 2-3 charts (VARY chart types), 1 table with generateRows count >= 500
+- 6-8 sections covering: Overview, Pipeline/Revenue, Competitors, Customers, Products, Analytics, plus always include "agentic-workforce" and "cfo-view" in navigation
+- Each section: unique description, 3-5 metrics, 2-3 charts (VARY chart types), 1 table with generateRows count >= 500
+- Include at least ONE horizontalBar chart (Gantt-style) with time-based labels
 `;
 
   return `You are a business intelligence data architect. Generate a structured JSON object for a dashboard.
@@ -90,16 +73,11 @@ JSON SCHEMA (follow EXACTLY):
     "fontBody": "Google Font name"
   },
   "navigation": [
-    { "id": "overview", "label": "Executive Overview", "icon": "dashboard" },
-    { "id": "domain-1-id", "label": "Domain Section 1", "icon": "material_icon" },
-    { "id": "domain-2-id", "label": "Domain Section 2", "icon": "material_icon" },
-    { "id": "roadmap", "label": "Roadmap", "icon": "timeline" },
-    { "id": "agentic-workforce", "label": "Agentic Workforce", "icon": "smart_toy" },
-    { "id": "cfo-view", "label": "CFO View", "icon": "account_balance" }
+    { "id": "unique-id", "label": "Section Name", "icon": "material_icon_name" }
   ],
   "sections": [
     {
-      "id": "matches navigation id (overview, domain-1, domain-2 only)",
+      "id": "matches navigation id",
       "title": "Section Title",
       "description": "Unique contextual description (2-3 sentences, specific to this section)",
       "metrics": [
@@ -144,39 +122,6 @@ JSON SCHEMA (follow EXACTLY):
       ]
     }
   ],
-  "roadmap": {
-    "title": "Initiative title specific to company and role",
-    "startDate": "${startDate}",
-    "quarters": ["${q1Label}", "${q2Label}", "${q3Label}"],
-    "months": ${JSON.stringify(monthNames)},
-    "swimlanes": [
-      {
-        "id": "unique-swimlane-id",
-        "department": "Department Name",
-        "color": "#hex (derived from branding palette, distinct per swimlane)",
-        "items": [
-          {
-            "id": "unique-item-id",
-            "label": "Work Item Name",
-            "startMonth": 0,
-            "duration": 2,
-            "type": "feature|infrastructure|milestone",
-            "isCriticalPath": false,
-            "tooltip": "Detailed description of this work item"
-          }
-        ]
-      }
-    ],
-    "dependencies": [
-      { "fromItem": "item-id-1", "toItem": "item-id-2", "label": "Optional dependency description" }
-    ],
-    "legend": [
-      { "type": "feature", "label": "Feature", "color": "#hex" },
-      { "type": "infrastructure", "label": "Infrastructure", "color": "#hex" },
-      { "type": "milestone", "label": "Milestone", "color": "#hex" },
-      { "type": "critical", "label": "Critical Path", "color": "#hex" }
-    ]
-  },
   "agenticWorkforce": [
     {
       "name": "Creative Agent Name",
@@ -194,7 +139,7 @@ JSON SCHEMA (follow EXACTLY):
         { "id": "sliderId", "label": "Slider Label", "min": -30, "max": 30, "step": 1, "default": 0, "unit": "%" }
       ],
       "baseline": { "revenue": 10000000, "volume": 5000 },
-      "quarters": ["${q1Label}", "${q2Label}", "${q3Label}"],
+      "quarters": ["Q1 2026", "Q2 2026", "Q3 2026"],
       "chartType": "line"
     }
   ]
@@ -202,27 +147,13 @@ JSON SCHEMA (follow EXACTLY):
 
 CRITICAL REQUIREMENTS:
 ${sectionInstructions}
-- Navigation MUST have EXACTLY 6 entries in this order: overview, two domain sections, roadmap, agentic-workforce, cfo-view
-- The "sections" array MUST have EXACTLY 3 entries (overview + 2 domain). Do NOT create section objects for roadmap, agentic-workforce, or cfo-view — those are rendered from their own top-level keys.
-
-ROADMAP REQUIREMENTS:
-- 4-6 department swimlanes derived from the job description (e.g., for TPM: Engineering, Product, Design, QA, DevOps; for GTM: Product Marketing, Sales, Customer Success, Revenue Ops)
-- Each swimlane: 3-5 work items with realistic initiative names specific to ${companyName || 'the company'}
-- startMonth is 0-indexed offset from today (0 = this month); duration in months
-- At least 2 dependency connections between swimlanes
-- At least 1 critical path (set isCriticalPath: true on connected items)
-- Milestone items should have duration: 0
-- Swimlane colors must be harmonious but distinct, derived from the branding palette
-- All initiative names must reflect the scope described in the job description
-
+- Navigation MUST include entries with id "agentic-workforce" and "cfo-view" — these are rendered by the template engine
 - 8-10 agentic workforce agents customized to the role
 - 3 CFO scenarios: one "pricing" (sliders: priceChange, elasticity, growthRate), one "headcount" (sliders: newHires, rampTime, quota), one "expansion" (sliders: tam, penetration, investment)
-- meta.logoUrl MUST be set to the company logo URL from the branding data below. This is REQUIRED, not optional. If no logo URL is available, leave it as an empty string.
 - All text must be specific to ${companyName || 'the company'} and the ${jobTitle || 'role'}
 - Branding colors derived from provided branding data using Material You tonal palette principles
 - Chart datasets: use contextual colors derived from branding, not random colors
 - Table generateRows fields: use company-specific options (competitor names, product names, region names from context)
-- DATE REALISM: Today's date is ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}. All reporting periods, chart month labels, and date fields must be realistic relative to today. Use the 3-6 months leading up to today for trend data. Upcoming deadlines should be in the future.
 ${brandingContext}
 ${competitorContext}
 ${customerContext}

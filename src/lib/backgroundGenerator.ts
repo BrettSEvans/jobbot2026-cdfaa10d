@@ -9,37 +9,21 @@ import {
   analyzeCompany,
   streamDashboardGeneration,
   saveJobApplication,
-  searchCompanyIcon,
 } from "@/lib/api/jobApplication";
 import { scrapeJob, streamTailoredLetter } from "@/lib/api/coverLetter";
-import { getProfileContextForPrompt } from "@/lib/api/profile";
-import { streamExecutiveReport } from "@/lib/api/executiveReport";
-import { streamRaidLog } from "@/lib/api/raidLog";
-import { streamArchitectureDiagram } from "@/lib/api/architectureDiagram";
-import { streamRoadmap } from "@/lib/api/roadmap";
-import { streamResumeGeneration, getResumeStyle } from "@/lib/api/resume";
 import { parseLlmJsonOutput, assembleDashboardHtml } from "@/lib/dashboard/assembler";
-import { cleanHtml } from "@/lib/cleanHtml";
 
 export type GenerationJob = {
   applicationId: string;
-  status: "pending" | "scraping" | "analyzing" | "cover-letter" | "dashboard" | "generating-assets" | "executive-report" | "raid-log" | "architecture-diagram" | "roadmap" | "resume" | "complete" | "error";
+  status: "pending" | "scraping" | "analyzing" | "cover-letter" | "dashboard" | "complete" | "error";
   progress: string;
   error?: string;
-  /** Tracks how many of the 4 parallel assets have finished (used by UI) */
-  parallelCompleted?: number;
-  parallelTotal?: number;
-  /** Timestamp when the job started */
-  startedAt?: number;
-  /** Timestamp when each stage started */
-  stageStartedAt?: number;
 };
 
 type Listener = () => void;
 
 class BackgroundGenerationManager {
   private jobs: Map<string, GenerationJob> = new Map();
-  private abortControllers: Map<string, AbortController> = new Map();
   private listeners: Set<Listener> = new Set();
 
   subscribe(listener: Listener) {
@@ -68,25 +52,9 @@ class BackgroundGenerationManager {
   private updateJob(id: string, updates: Partial<GenerationJob>) {
     const job = this.jobs.get(id);
     if (job) {
-      // Track stage transitions with timestamps
-      if (updates.status && updates.status !== job.status) {
-        updates.stageStartedAt = Date.now();
-      }
       Object.assign(job, updates);
       this.notify();
     }
-  }
-
-  /**
-   * Cancel an active generation job.
-   */
-  cancelJob(id: string) {
-    const controller = this.abortControllers.get(id);
-    if (controller) {
-      controller.abort(new Error("Cancelled by user"));
-      this.abortControllers.delete(id);
-    }
-    this.updateJob(id, { status: "error", progress: "Cancelled", error: "Generation cancelled by user" });
   }
 
   /**
@@ -99,14 +67,12 @@ class BackgroundGenerationManager {
     companyUrl,
     jobDescription,
     useManualInput,
-    resumeStyleId,
   }: {
     applicationId?: string;
     jobUrl: string;
     companyUrl?: string;
     jobDescription?: string;
     useManualInput?: boolean;
-    resumeStyleId?: string;
   }): Promise<string> {
     // Create a DB record first if we don't have one
     let appId = applicationId;
@@ -127,21 +93,16 @@ class BackgroundGenerationManager {
       } as any);
     }
 
-    const now = Date.now();
     const job: GenerationJob = {
       applicationId: appId,
       status: "pending",
       progress: "Starting...",
-      startedAt: now,
-      stageStartedAt: now,
     };
     this.jobs.set(appId, job);
-    const abortController = new AbortController();
-    this.abortControllers.set(appId, abortController);
     this.notify();
 
     // Run in background (don't await at call site)
-    this.runPipeline(appId, jobUrl, companyUrl, jobDescription, useManualInput, resumeStyleId, abortController.signal);
+    this.runPipeline(appId, jobUrl, companyUrl, jobDescription, useManualInput);
 
     return appId;
   }
@@ -151,14 +112,9 @@ class BackgroundGenerationManager {
     jobUrl: string,
     companyUrl?: string,
     manualDescription?: string,
-    useManualInput?: boolean,
-    resumeStyleId?: string,
-    signal?: AbortSignal,
+    useManualInput?: boolean
   ) {
     try {
-      // 0. Load user profile context for AI personalization
-      const profileContext = await getProfileContextForPrompt();
-
       // 1. Scrape job
       let markdown = manualDescription || "";
       if (!useManualInput && jobUrl) {
@@ -203,22 +159,6 @@ class BackgroundGenerationManager {
         console.warn("Analysis failed:", e);
       }
 
-      // 3b. Logo fallback: if branding scrape found no logo, search external icon repos
-      const hasLogo = brandingData?.logo || brandingData?.images?.logo || brandingData?.images?.favicon;
-      if (!hasLogo && companyName) {
-        this.updateJob(appId, { progress: "Searching for company logo..." });
-        try {
-          const { iconUrl, source } = await searchCompanyIcon(companyName, companyUrl);
-          if (iconUrl) {
-            console.log(`Logo fallback found via ${source}: ${iconUrl}`);
-            if (!brandingData) brandingData = {};
-            brandingData.logo = iconUrl;
-          }
-        } catch (e) {
-          console.warn("Logo fallback search failed:", e);
-        }
-      }
-
       // Save intermediate results
       await saveJobApplication({
         id: appId,
@@ -239,7 +179,6 @@ class BackgroundGenerationManager {
       let coverLetter = "";
       await streamTailoredLetter({
         jobDescription: markdown,
-        profileContext,
         onDelta: (text) => { coverLetter += text; },
         onDone: () => {},
       });
@@ -272,11 +211,6 @@ class BackgroundGenerationManager {
       let dashboardData: any = null;
       const parsed = parseLlmJsonOutput(dashboardRaw);
       if (parsed) {
-        // Inject logoUrl from branding if LLM omitted it
-        if (!parsed.meta.logoUrl && brandingData) {
-          const logoUrl = brandingData.logo || brandingData.images?.logo || brandingData.images?.favicon;
-          if (logoUrl) parsed.meta.logoUrl = logoUrl;
-        }
         dashboardData = parsed;
         dashboardHtml = assembleDashboardHtml(parsed);
       } else {
@@ -291,179 +225,20 @@ class BackgroundGenerationManager {
         if (htmlEnd !== -1) dashboardHtml = dashboardHtml.slice(0, htmlEnd + 7);
       }
 
-      // 6-9. Generate assets IN PARALLEL (including resume)
-      const totalAssets = 5;
-      this.updateJob(appId, {
-        status: "generating-assets",
-        progress: `Generating additional assets... (0/${totalAssets} completed)`,
-        parallelCompleted: 0,
-        parallelTotal: totalAssets,
-      });
-
-      let parallelDone = 0;
-      const bumpCount = () => {
-        parallelDone++;
-        this.updateJob(appId, {
-          progress: `Generating additional assets... (${parallelDone}/${totalAssets} completed)`,
-          parallelCompleted: parallelDone,
-        });
-      };
-
-      const generateExecReport = async (): Promise<string | null> => {
-        try {
-          let accumulated = "";
-          await streamExecutiveReport({
-            jobDescription: markdown, companyName, jobTitle, competitors, customers, products, department, branding: brandingData, profileContext,
-            onDelta: (text) => { accumulated += text; },
-            onDone: () => {},
-          });
-          return cleanHtml(accumulated);
-        } catch (e) {
-          console.warn("Executive report generation failed:", e);
-          return null;
-        } finally {
-          bumpCount();
-        }
-      };
-
-      const generateRaidLog = async (): Promise<string | null> => {
-        try {
-          let accumulated = "";
-          await streamRaidLog({
-            jobDescription: markdown, companyName, jobTitle, competitors, customers, products, department, branding: brandingData,
-            onDelta: (text) => { accumulated += text; },
-            onDone: () => {},
-          });
-          return cleanHtml(accumulated);
-        } catch (e) {
-          console.warn("RAID log generation failed:", e);
-          return null;
-        } finally {
-          bumpCount();
-        }
-      };
-
-      const generateArchDiagram = async (): Promise<string | null> => {
-        try {
-          let accumulated = "";
-          await streamArchitectureDiagram({
-            jobDescription: markdown, companyName, jobTitle, competitors, customers, products, department, branding: brandingData,
-            onDelta: (text) => { accumulated += text; },
-            onDone: () => {},
-          });
-          return cleanHtml(accumulated);
-        } catch (e) {
-          console.warn("Architecture diagram generation failed:", e);
-          return null;
-        } finally {
-          bumpCount();
-        }
-      };
-
-      const generateRoadmap = async (): Promise<string | null> => {
-        try {
-          let accumulated = "";
-          await streamRoadmap({
-            jobDescription: markdown, companyName, jobTitle, competitors, customers, products, department, branding: brandingData,
-            onDelta: (text) => { accumulated += text; },
-            onDone: () => {},
-          });
-          return cleanHtml(accumulated);
-        } catch (e) {
-          console.warn("Roadmap generation failed:", e);
-          return null;
-        } finally {
-          bumpCount();
-        }
-      };
-
-      const generateResume = async (): Promise<string | null> => {
-        try {
-          // Fetch the selected resume style's system prompt
-          let systemPrompt: string | undefined;
-          if (resumeStyleId) {
-            try {
-              const style = await getResumeStyle(resumeStyleId);
-              systemPrompt = style.system_prompt;
-            } catch (e) {
-              console.warn("Failed to fetch resume style, using default:", e);
-            }
-          }
-
-          // Get user's baseline resume text from profile
-          const { getProfile } = await import("@/lib/api/profile");
-          let resumeText = "";
-          try {
-            const profile = await getProfile();
-            resumeText = profile?.resume_text || "";
-          } catch (e) {
-            console.warn("Failed to fetch profile for resume:", e);
-          }
-
-          let accumulated = "";
-          await streamResumeGeneration({
-            jobDescription: markdown,
-            resumeText,
-            systemPrompt,
-            companyName,
-            jobTitle,
-            branding: brandingData,
-            competitors,
-            customers,
-            products,
-            profileContext,
-            onDelta: (text) => { accumulated += text; },
-            onDone: () => {},
-          });
-          return cleanHtml(accumulated);
-        } catch (e) {
-          console.warn("Resume generation failed:", e);
-          return null;
-        } finally {
-          bumpCount();
-        }
-      };
-
-      const [execResult, raidResult, archResult, roadmapResult, resumeResult] = await Promise.allSettled([
-        generateExecReport(),
-        generateRaidLog(),
-        generateArchDiagram(),
-        generateRoadmap(),
-        generateResume(),
-      ]);
-
-      const execReportHtml = execResult.status === "fulfilled" ? execResult.value : null;
-      const raidLogHtml = raidResult.status === "fulfilled" ? raidResult.value : null;
-      const archDiagramHtml = archResult.status === "fulfilled" ? archResult.value : null;
-      const roadmapHtml = roadmapResult.status === "fulfilled" ? roadmapResult.value : null;
-      const resumeHtml = resumeResult.status === "fulfilled" ? resumeResult.value : null;
-
-      // 10. Single consolidated save
+      // 6. Save final result
       await saveJobApplication({
         id: appId,
         job_url: jobUrl,
         dashboard_html: dashboardHtml,
         dashboard_data: dashboardData,
-        ...(execReportHtml ? { executive_report_html: execReportHtml } : {}),
-        ...(raidLogHtml ? { raid_log_html: raidLogHtml } : {}),
-        ...(archDiagramHtml ? { architecture_diagram_html: archDiagramHtml } : {}),
-        ...(roadmapHtml ? { roadmap_html: roadmapHtml } : {}),
-        ...(resumeHtml ? { resume_html: resumeHtml } : {}),
         status: "complete",
         generation_status: "complete",
       } as any);
 
-      this.abortControllers.delete(appId);
       this.updateJob(appId, { status: "complete", progress: "Done!" });
     } catch (err: any) {
-      this.abortControllers.delete(appId);
-      const isCancelled = signal?.aborted;
-      if (isCancelled) {
-        // Already handled by cancelJob — just save the status
-      } else {
-        console.error("Background generation error:", err);
-        this.updateJob(appId, { status: "error", progress: "Failed", error: err.message });
-      }
+      console.error("Background generation error:", err);
+      this.updateJob(appId, { status: "error", progress: "Failed", error: err.message });
       try {
         await saveJobApplication({
           id: appId,
@@ -472,7 +247,7 @@ class BackgroundGenerationManager {
           generation_status: "error",
           generation_error: err.message,
         } as any);
-      } catch (saveErr) { console.warn("Failed to save error status:", saveErr); }
+      } catch {}
     }
   }
 

@@ -150,44 +150,17 @@ export function getScriptsJs(): string {
     }
   }
 
-  // === LOGO ===
-  function buildLogo(meta) {
-    var container = document.getElementById('sidebar-logo');
-    if (!container) return;
-
-    var logoUrl = meta.logoUrl || '';
-    var name = meta.companyName || 'Dashboard';
-
-    if (logoUrl) {
-      var img = document.createElement('img');
-      img.src = logoUrl;
-      img.alt = name + ' logo';
-      img.crossOrigin = 'anonymous';
-      img.onerror = function() {
-        // Fallback to letter avatar
-        img.remove();
-        var letter = el('span', { className: 'logo-letter' }, name.charAt(0).toUpperCase());
-        container.insertBefore(letter, container.firstChild);
-      };
-      container.appendChild(img);
-    } else {
-      container.appendChild(el('span', { className: 'logo-letter' }, name.charAt(0).toUpperCase()));
-    }
-
-    container.appendChild(el('span', { className: 'logo-name' }, name));
-  }
-
   // === NAVIGATION ===
   function buildNavigation(nav, meta) {
     var header = document.getElementById('sidebar-header');
+    header.appendChild(el('h2', {}, meta.companyName || 'Dashboard'));
     header.appendChild(el('p', {}, meta.jobTitle || ''));
 
     var navEl = document.getElementById('sidebar-nav');
     nav.forEach(function(item) {
-      var label = el('span', { className: 'nav-label' }, item.label);
-      var link = el('a', { className: 'nav-link', 'data-section': item.id, 'data-tooltip': item.label, href: '#' },
+      var link = el('a', { className: 'nav-link', 'data-section': item.id, href: '#' },
         el('span', { className: 'material-icons-outlined' }, item.icon || 'dashboard'),
-        label
+        document.createTextNode(' ' + item.label)
       );
       link.addEventListener('click', function(e) {
         e.preventDefault();
@@ -201,7 +174,7 @@ export function getScriptsJs(): string {
       navEl.appendChild(link);
     });
 
-    document.getElementById('page-title').textContent = meta.companyName + ' \\u2014 ' + (meta.department || '') + ' Dashboard';
+    document.getElementById('page-title').textContent = meta.companyName + ' \\u2014 ' + meta.department + ' Dashboard';
   }
 
   function showSection(id) {
@@ -373,190 +346,6 @@ export function getScriptsJs(): string {
     var overlay = document.getElementById('drilldown-overlay');
     overlay.classList.remove('visible');
     setTimeout(function() { overlay.classList.add('hidden'); overlay.innerHTML = ''; }, 300);
-  }
-
-  // === ROADMAP (GANTT) ===
-  function renderRoadmap(roadmap, sectionEl) {
-    var totalMonths = roadmap.months.length || 9;
-    var container = el('div', { className: 'roadmap-container' });
-
-    // --- Timeline header ---
-    var headerGrid = el('div', { className: 'roadmap-header' });
-    // Quarter row
-    var quarterRow = el('div', { className: 'roadmap-quarter-row' });
-    quarterRow.appendChild(el('div', { className: 'roadmap-dept-label' })); // spacer
-    var quarters = roadmap.quarters || [];
-    quarters.forEach(function(q) {
-      var qCell = el('div', { className: 'roadmap-quarter-cell' }, q);
-      quarterRow.appendChild(qCell);
-    });
-    headerGrid.appendChild(quarterRow);
-
-    // Month row
-    var monthRow = el('div', { className: 'roadmap-month-row' });
-    monthRow.appendChild(el('div', { className: 'roadmap-dept-label' }, 'Department'));
-    roadmap.months.forEach(function(m) {
-      monthRow.appendChild(el('div', { className: 'roadmap-month-cell' }, m));
-    });
-    headerGrid.appendChild(monthRow);
-    container.appendChild(headerGrid);
-
-    // --- Today line position ---
-    var todayOffset = 0; // first month = current month = 0
-    var todayPct = ((todayOffset + 0.5) / totalMonths) * 100;
-
-    // --- Swimlanes ---
-    var allItems = {}; // id -> { el, swimlaneIdx, startMonth, duration }
-    var swimlanesEl = el('div', { className: 'roadmap-swimlanes' });
-
-    roadmap.swimlanes.forEach(function(lane, laneIdx) {
-      var row = el('div', { className: 'roadmap-swimlane-row' });
-      var label = el('div', { className: 'roadmap-dept-label' });
-      var dot = el('span', { className: 'roadmap-dept-dot' });
-      dot.style.backgroundColor = lane.color;
-      label.appendChild(dot);
-      label.appendChild(document.createTextNode(lane.department));
-      row.appendChild(label);
-
-      var timeline = el('div', { className: 'roadmap-timeline' });
-      // Grid lines
-      for (var g = 0; g < totalMonths; g++) {
-        var gridLine = el('div', { className: 'roadmap-grid-line' });
-        gridLine.style.left = ((g / totalMonths) * 100) + '%';
-        timeline.appendChild(gridLine);
-      }
-
-      // Today line
-      var todayLine = el('div', { className: 'roadmap-today-line' });
-      todayLine.style.left = todayPct + '%';
-      timeline.appendChild(todayLine);
-
-      // Items
-      (lane.items || []).forEach(function(item) {
-        var leftPct = (item.startMonth / totalMonths) * 100;
-        var widthPct = Math.max((item.duration || 0.3) / totalMonths * 100, 1.5);
-
-        if (item.type === 'milestone' || item.duration === 0) {
-          // Diamond milestone
-          var diamond = el('div', { className: 'roadmap-milestone' });
-          diamond.style.left = leftPct + '%';
-          diamond.style.borderColor = lane.color;
-          diamond.setAttribute('data-tooltip', item.tooltip || item.label);
-          diamond.title = item.label + (item.tooltip ? '\\n' + item.tooltip : '');
-          timeline.appendChild(diamond);
-          allItems[item.id] = { el: diamond, laneIdx: laneIdx, startMonth: item.startMonth, duration: 0 };
-        } else {
-          var bar = el('div', { className: 'roadmap-bar' + (item.isCriticalPath ? ' critical' : '') });
-          bar.style.left = leftPct + '%';
-          bar.style.width = widthPct + '%';
-          bar.style.backgroundColor = item.isCriticalPath ? '' : lane.color;
-          if (item.isCriticalPath) {
-            bar.style.background = 'linear-gradient(90deg, ' + lane.color + ', ' + lane.color + 'cc)';
-            bar.style.boxShadow = '0 0 8px ' + lane.color + '66';
-          }
-          bar.textContent = item.label;
-          bar.title = item.label + (item.tooltip ? '\\n' + item.tooltip : '');
-          timeline.appendChild(bar);
-          allItems[item.id] = { el: bar, laneIdx: laneIdx, startMonth: item.startMonth, duration: item.duration };
-        }
-      });
-
-      row.appendChild(timeline);
-      swimlanesEl.appendChild(row);
-    });
-
-    container.appendChild(swimlanesEl);
-
-    // --- Dependency arrows (SVG overlay) ---
-    if (roadmap.dependencies && roadmap.dependencies.length) {
-      // Defer SVG drawing until DOM is laid out
-      setTimeout(function() {
-        var svgNS = 'http://www.w3.org/2000/svg';
-        var svg = document.createElementNS(svgNS, 'svg');
-        svg.setAttribute('class', 'roadmap-dep-svg');
-        var rect = swimlanesEl.getBoundingClientRect();
-        svg.setAttribute('width', String(rect.width));
-        svg.setAttribute('height', String(rect.height));
-        svg.style.width = rect.width + 'px';
-        svg.style.height = rect.height + 'px';
-
-        // Arrowhead marker
-        var defs = document.createElementNS(svgNS, 'defs');
-        var marker = document.createElementNS(svgNS, 'marker');
-        marker.setAttribute('id', 'roadmap-arrow');
-        marker.setAttribute('viewBox', '0 0 10 10');
-        marker.setAttribute('refX', '10');
-        marker.setAttribute('refY', '5');
-        marker.setAttribute('markerWidth', '6');
-        marker.setAttribute('markerHeight', '6');
-        marker.setAttribute('orient', 'auto');
-        var arrowPath = document.createElementNS(svgNS, 'path');
-        arrowPath.setAttribute('d', 'M 0 0 L 10 5 L 0 10 z');
-        arrowPath.setAttribute('fill', 'var(--md-outline, #79747E)');
-        marker.appendChild(arrowPath);
-        defs.appendChild(marker);
-        svg.appendChild(defs);
-
-        roadmap.dependencies.forEach(function(dep) {
-          var from = allItems[dep.fromItem];
-          var to = allItems[dep.toItem];
-          if (!from || !to || !from.el || !to.el) return;
-
-          var fromRect = from.el.getBoundingClientRect();
-          var toRect = to.el.getBoundingClientRect();
-          var baseRect = swimlanesEl.getBoundingClientRect();
-
-          var x1 = fromRect.right - baseRect.left;
-          var y1 = fromRect.top + fromRect.height / 2 - baseRect.top;
-          var x2 = toRect.left - baseRect.left;
-          var y2 = toRect.top + toRect.height / 2 - baseRect.top;
-
-          var line = document.createElementNS(svgNS, 'line');
-          line.setAttribute('x1', String(x1));
-          line.setAttribute('y1', String(y1));
-          line.setAttribute('x2', String(x2));
-          line.setAttribute('y2', String(y2));
-          line.setAttribute('stroke', 'var(--md-outline, #79747E)');
-          line.setAttribute('stroke-width', '1.5');
-          line.setAttribute('stroke-dasharray', '6,3');
-          line.setAttribute('marker-end', 'url(#roadmap-arrow)');
-          svg.appendChild(line);
-        });
-
-        swimlanesEl.style.position = 'relative';
-        swimlanesEl.appendChild(svg);
-      }, 200);
-    }
-
-    // --- Legend ---
-    if (roadmap.legend && roadmap.legend.length) {
-      var legendRow = el('div', { className: 'roadmap-legend' });
-      roadmap.legend.forEach(function(item) {
-        var entry = el('div', { className: 'roadmap-legend-item' });
-        var swatch = el('span', { className: 'roadmap-legend-swatch' });
-        if (item.type === 'milestone') {
-          swatch.className = 'roadmap-legend-swatch milestone';
-          swatch.style.borderColor = item.color;
-        } else if (item.type === 'critical') {
-          swatch.style.backgroundColor = item.color;
-          swatch.style.boxShadow = '0 0 6px ' + item.color + '66';
-        } else {
-          swatch.style.backgroundColor = item.color;
-        }
-        entry.appendChild(swatch);
-        entry.appendChild(document.createTextNode(item.label));
-        legendRow.appendChild(entry);
-      });
-      // Today legend
-      var todayEntry = el('div', { className: 'roadmap-legend-item' });
-      var todaySwatch = el('span', { className: 'roadmap-legend-swatch today-swatch' });
-      todayEntry.appendChild(todaySwatch);
-      todayEntry.appendChild(document.createTextNode('Today'));
-      legendRow.appendChild(todayEntry);
-      container.appendChild(legendRow);
-    }
-
-    sectionEl.appendChild(container);
   }
 
   // === AGENTIC WORKFORCE ===
@@ -767,18 +556,6 @@ export function getScriptsJs(): string {
       }
     });
 
-    // Roadmap
-    if (data.roadmap && data.roadmap.swimlanes && data.roadmap.swimlanes.length) {
-      var rmSection = document.getElementById('section-roadmap');
-      if (rmSection) {
-        var rmHeader = el('div', { className: 'section-header' });
-        rmHeader.appendChild(el('h2', {}, data.roadmap.title || 'Cross-Functional Roadmap'));
-        rmHeader.appendChild(el('p', {}, 'Strategic delivery timeline across departments. Hover over bars for details.'));
-        rmSection.appendChild(rmHeader);
-        renderRoadmap(data.roadmap, rmSection);
-      }
-    }
-
     // Agentic Workforce
     if (data.agenticWorkforce && data.agenticWorkforce.length) {
       var awSection = document.getElementById('section-agentic-workforce');
@@ -812,7 +589,6 @@ export function getScriptsJs(): string {
     }
 
     applyBranding(data.branding);
-    buildLogo(data.meta);
     buildNavigation(data.navigation, data.meta);
     renderSections(data);
 
@@ -823,194 +599,18 @@ export function getScriptsJs(): string {
       if (firstLink) firstLink.classList.add('active');
     }
 
-    // Restore collapsed state from localStorage
-    var sidebar = document.getElementById('sidebar');
-    var savedCollapsed = false;
-    try { savedCollapsed = localStorage.getItem('dashboard-sidebar-collapsed') === 'true'; } catch(e) {}
-    if (savedCollapsed && window.innerWidth > 768) {
-      sidebar.classList.add('collapsed');
-    }
-
-    // Hamburger toggle — icon strip, not hide
+    // Hamburger
     document.getElementById('hamburger-btn').addEventListener('click', function() {
-      sidebar.classList.toggle('collapsed');
-      try { localStorage.setItem('dashboard-sidebar-collapsed', sidebar.classList.contains('collapsed')); } catch(e) {}
+      document.getElementById('sidebar').classList.toggle('collapsed');
     });
 
-    // Escape key closes drill-down or chat
+    // Escape key closes drill-down
     document.addEventListener('keydown', function(e) {
-      if (e.key === 'Escape') {
-        closeDrillDown();
-        var panel = document.getElementById('ai-chat-panel');
-        if (panel && !panel.classList.contains('ai-chat-hidden')) {
-          panel.classList.add('ai-chat-hidden');
-        }
-      }
+      if (e.key === 'Escape') closeDrillDown();
     });
 
     showToast('Dashboard loaded successfully');
-
-    // === AI CHAT WIDGET ===
-    initAiChat(data);
   });
-
-  function initAiChat(data) {
-    var fab = document.getElementById('ai-chat-fab');
-    var panel = document.getElementById('ai-chat-panel');
-    var closeBtn = document.getElementById('ai-chat-close');
-    var input = document.getElementById('ai-chat-input');
-    var sendBtn = document.getElementById('ai-chat-send');
-    var messagesEl = document.getElementById('ai-chat-messages');
-    var messages = [];
-    var isThinking = false;
-
-    var companyName = (data.meta && data.meta.companyName) || 'this company';
-    var jobTitle = (data.meta && data.meta.jobTitle) || 'this role';
-
-    function getActiveSection() {
-      var active = document.querySelector('.nav-link.active');
-      return active ? active.textContent.trim() : 'Overview';
-    }
-
-    fab.addEventListener('click', function() {
-      panel.classList.toggle('ai-chat-hidden');
-      if (!panel.classList.contains('ai-chat-hidden')) {
-        input.focus();
-      }
-    });
-
-    closeBtn.addEventListener('click', function() {
-      panel.classList.add('ai-chat-hidden');
-    });
-
-    input.addEventListener('keydown', function(e) {
-      if (e.key === 'Enter') send();
-    });
-
-    sendBtn.addEventListener('click', send);
-
-    function send() {
-      var text = input.value.trim();
-      if (!text || isThinking) return;
-      input.value = '';
-      addMessage('user', text);
-      isThinking = true;
-      showTyping();
-
-      var section = getActiveSection();
-      setTimeout(function() {
-        removeTyping();
-        addMessage('assistant', getAIResponse(text, { companyName: companyName, jobTitle: jobTitle, activeSection: section, dashboardData: data }));
-        isThinking = false;
-      }, 1500);
-    }
-
-    function addMessage(role, content) {
-      // Remove placeholder
-      var ph = messagesEl.querySelector('.ai-chat-placeholder');
-      if (ph) ph.remove();
-
-      messages.push({ role: role, content: content });
-      var div = document.createElement('div');
-      div.className = 'ai-chat-msg ' + role;
-      div.textContent = content;
-      messagesEl.appendChild(div);
-      messagesEl.scrollTop = messagesEl.scrollHeight;
-    }
-
-    function showTyping() {
-      var dots = document.createElement('div');
-      dots.className = 'ai-chat-typing';
-      dots.id = 'ai-chat-typing';
-      dots.innerHTML = '<span></span><span></span><span></span>';
-      messagesEl.appendChild(dots);
-      messagesEl.scrollTop = messagesEl.scrollHeight;
-    }
-
-    function removeTyping() {
-      var t = document.getElementById('ai-chat-typing');
-      if (t) t.remove();
-    }
-  }
-
-  function getActiveSectionData(context) {
-    var data = context.dashboardData;
-    var sectionLabel = context.activeSection;
-    if (!data || !data.sections) return null;
-    // Match by label via navigation
-    var navItem = (data.navigation || []).find(function(n) { return n.label === sectionLabel; });
-    if (!navItem) return null;
-    return data.sections.find(function(s) { return s.id === navItem.id; }) || null;
-  }
-
-  function getAIResponse(userMsg, context) {
-    var q = userMsg.toLowerCase();
-    var section = context.activeSection;
-    var company = context.companyName;
-    var data = context.dashboardData;
-    var sd = getActiveSectionData(context);
-
-    // Section-specific counts
-    var metricCount = sd && sd.metrics ? sd.metrics.length : 0;
-    var chartCount = sd && sd.charts ? sd.charts.length : 0;
-    var tableCount = sd && sd.tables ? sd.tables.length : 0;
-    var firstMetric = metricCount > 0 ? sd.metrics[0].label + ' (' + sd.metrics[0].value + ')' : '';
-    var firstChart = chartCount > 0 ? sd.charts[0].title : '';
-
-    // CFO section detection
-    var isCFO = section.toLowerCase().indexOf('cfo') !== -1 || section.toLowerCase().indexOf('scenario') !== -1;
-    var isAgentic = section.toLowerCase().indexOf('agentic') !== -1 || section.toLowerCase().indexOf('workforce') !== -1;
-
-    // Keyword-triggered responses
-    if (q.includes('competitor') || q.includes('market')) {
-      return 'Looking at the ' + section + ' view for ' + company + ', I can highlight competitive positioning, market share trends, and pricing dynamics shown in the data. Which aspect interests you?';
-    }
-    if (q.includes('chart') || q.includes('graph') || q.includes('visual')) {
-      var chartInfo = firstChart ? ' The \\u201C' + firstChart + '\\u201D chart is a good starting point.' : '';
-      return 'The ' + section + ' section has ' + chartCount + ' chart(s).' + chartInfo + ' I can suggest alternative chart types or highlight key data patterns. What would you like to explore?';
-    }
-    if (q.includes('metric') || q.includes('kpi') || q.includes('number')) {
-      var metricInfo = firstMetric ? ' For example, ' + firstMetric + '.' : '';
-      return 'There are ' + metricCount + ' KPIs in ' + section + '.' + metricInfo + ' Want me to break down what\\u2019s driving any of these trends?';
-    }
-    if (q.includes('table') || q.includes('data') || q.includes('record')) {
-      return 'The ' + section + ' section includes ' + tableCount + ' data table(s). You can click any row for a drill-down view. Want me to highlight notable patterns in the records?';
-    }
-    if (q.includes('color') || q.includes('brand') || q.includes('theme') || q.includes('design')) {
-      return 'This dashboard uses ' + company + '\\u2019s brand palette. I can suggest adjustments to the color scheme, contrast, or typography. What would you like to change?';
-    }
-    if (q.includes('export') || q.includes('download') || q.includes('share')) {
-      return 'You can download this dashboard as a ZIP or single HTML file from the main application page. The exported file is fully self-contained.';
-    }
-    if (q.includes('slider') || q.includes('scenario') || q.includes('what-if') || q.includes('forecast')) {
-      var scenarioNames = data.cfoScenarios ? data.cfoScenarios.map(function(s) { return s.title; }).join(', ') : 'pricing, headcount, expansion';
-      return 'The CFO scenarios let you model different outcomes: ' + scenarioNames + '. Adjust the sliders to see projected revenue impact across quarters. Which scenario would you like to explore?';
-    }
-    if (q.includes('agent') || q.includes('workforce') || q.includes('ai')) {
-      var agentCount = data.agenticWorkforce ? data.agenticWorkforce.length : 0;
-      return 'The Agentic Workforce section outlines ' + agentCount + ' planned AI agents designed to augment ' + company + '\\u2019s teams. Want to discuss implementation priorities or team interfaces?';
-    }
-
-    // Section-specific fallbacks
-    if (isCFO) {
-      var scenarioList = data.cfoScenarios ? data.cfoScenarios.map(function(s) { return s.title; }).join(', ') : 'multiple scenarios';
-      return 'You\\u2019re viewing the CFO What-If Scenarios: ' + scenarioList + '. Try adjusting the sliders to model revenue impact. Which scenario would you like to dig into?';
-    }
-    if (isAgentic) {
-      var agentFirst = data.agenticWorkforce && data.agenticWorkforce.length > 0 ? data.agenticWorkforce[0].name : 'the first agent';
-      return 'The Agentic Workforce roadmap shows planned AI agents for ' + company + '. ' + agentFirst + ' is one example. Want to explore how these agents would interface with specific teams?';
-    }
-
-    // Generic dashboard-focused fallbacks
-    var fallbacks = [
-      'I\\u2019m analyzing the ' + section + ' section \\u2014 ' + metricCount + ' metrics, ' + chartCount + ' charts, ' + tableCount + ' table(s). What catches your eye?',
-      'The ' + section + ' view for ' + company + ' shows some interesting patterns.' + (firstMetric ? ' ' + firstMetric + ' stands out.' : '') + ' Want me to break anything down?',
-      'I can help interpret the data in ' + section + ' \\u2014 trends in the KPIs, chart patterns, or notable records. What would you like to explore?',
-      'Looking at ' + section + ' for ' + company + '.' + (firstChart ? ' The \\u201C' + firstChart + '\\u201D visualization has some notable data points.' : '') + ' What would you like to dig into?'
-    ];
-    return fallbacks[Math.floor(Math.random() * fallbacks.length)];
-  }
-
 })();
 `;
 }

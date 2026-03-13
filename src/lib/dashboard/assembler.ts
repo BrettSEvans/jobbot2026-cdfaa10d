@@ -67,8 +67,7 @@ export function parseLlmJsonOutput(raw: string): DashboardData | null {
   // new Date("...") → string
   clean = clean.replace(/new\s+Date\s*\(\s*["']([^"']*)["']\s*\)/g, '"$1"');
   clean = clean.replace(/new\s+Date\s*\(\s*\)/g, '"2025-01-01"');
-  // Remove trailing commas before } or ] and collapse double commas
-  clean = clean.replace(/,\s*,/g, ',');
+  // Remove trailing commas before } or ]
   clean = clean.replace(/,\s*([}\]])/g, '$1');
   
   try {

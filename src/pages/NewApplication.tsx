@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,8 +14,6 @@ import {
 import { researchCompany } from "@/lib/api/researchCompany";
 import { scrapeJob, streamTailoredLetter } from "@/lib/api/coverLetter";
 import { parseLlmJsonOutput, assembleDashboardHtml } from "@/lib/dashboard/assembler";
-import { extractStyleSignalsFromMessage } from "@/lib/api/stylePreferences";
-import { getActiveResumeStyles } from "@/lib/api/resume";
 import {
   Loader2,
   Globe,
@@ -29,18 +27,14 @@ import {
   Copy,
   Layers,
   Download,
-  FileUser,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
 import BatchJobInput from "@/components/BatchJobInput";
 import TemplateSelector from "@/components/TemplateSelector";
 import SaveAsTemplate from "@/components/SaveAsTemplate";
 import GenerationProgressBar, { type PipelineStage } from "@/components/GenerationProgressBar";
 import type { DashboardTemplate } from "@/lib/api/templates";
-import { backgroundGenerator } from "@/lib/backgroundGenerator";
 
 type Step = "input" | "analyzing" | "generating" | "preview";
 type AnalyzeStage = "scraping" | "branding" | "analyzing" | "cover-letter" | "complete";
@@ -59,7 +53,6 @@ const NewApplication = () => {
   const [step, setStep] = useState<Step>("input");
   const [loadingMsg, setLoadingMsg] = useState("");
   const [pipelineStage, setPipelineStage] = useState<PipelineStage>("scraping");
-  const [generationStartedAt, setGenerationStartedAt] = useState<number | undefined>();
 
   // Data - using refs to avoid stale closures in the async pipeline
   const [jobMarkdown, setJobMarkdown] = useState("");
@@ -77,21 +70,9 @@ const NewApplication = () => {
   // Template
   const [selectedTemplate, setSelectedTemplate] = useState<DashboardTemplate | null>(null);
 
-  // Resume style
-  const [resumeStyles, setResumeStyles] = useState<Array<{ id: string; label: string; description: string | null }>>([]);
-  const [selectedResumeStyleId, setSelectedResumeStyleId] = useState<string>("");
-
   // Editable fields
   const [editingField, setEditingField] = useState<string | null>(null);
   const [tempEdit, setTempEdit] = useState("");
-
-  // Load resume styles on mount
-  useEffect(() => {
-    getActiveResumeStyles().then((styles) => {
-      setResumeStyles(styles);
-      if (styles.length > 0) setSelectedResumeStyleId(styles[0].id);
-    }).catch(console.warn);
-  }, []);
 
   const isValidUrl = (str: string) => {
     try {
@@ -109,7 +90,6 @@ const NewApplication = () => {
     }
     setStep("analyzing");
     setPipelineStage("scraping");
-    setGenerationStartedAt(Date.now());
 
     try {
       let markdown = "";
@@ -264,8 +244,7 @@ const NewApplication = () => {
         products: productsLocal,
         status: "complete",
         research_reasoning: researchReasoning || undefined,
-        ...(selectedResumeStyleId ? { resume_style_id: selectedResumeStyleId } : {}),
-      } as any);
+      });
       setApplicationId(saved.id);
 
       setStep("preview");
@@ -410,38 +389,6 @@ const NewApplication = () => {
                 </CardContent>
               </Card>
 
-              {resumeStyles.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <FileUser className="h-5 w-5" /> Resume Style
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <Select value={selectedResumeStyleId} onValueChange={setSelectedResumeStyleId}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a resume style" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {resumeStyles.map((style) => (
-                          <SelectItem key={style.id} value={style.id}>
-                            <div>
-                              <span>{style.label}</span>
-                              {style.description && (
-                                <span className="text-xs text-muted-foreground ml-2">— {style.description}</span>
-                              )}
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <p className="text-xs text-muted-foreground mt-2">
-                      Controls the AI-generated resume style and format
-                    </p>
-                  </CardContent>
-                </Card>
-              )}
-
               <Button
                 onClick={handleAnalyze}
                 disabled={useManualInput ? !manualJobDescription.trim() : !jobUrl.trim()}
@@ -462,15 +409,7 @@ const NewApplication = () => {
         {step === "analyzing" && (
           <Card>
             <CardContent className="py-10 space-y-6">
-              <GenerationProgressBar
-                currentStage={pipelineStage}
-                startedAt={generationStartedAt}
-                onCancel={applicationId ? () => {
-                  backgroundGenerator.cancelJob(applicationId);
-                  setStep("input");
-                  toast({ title: "Cancelled", description: "Generation has been cancelled." });
-                } : undefined}
-              />
+              <GenerationProgressBar currentStage={pipelineStage} />
               <p className="text-sm text-muted-foreground text-center">{loadingMsg}</p>
             </CardContent>
           </Card>
@@ -483,15 +422,7 @@ const NewApplication = () => {
         {step === "generating" && (
           <Card>
             <CardContent className="py-10 space-y-6">
-              <GenerationProgressBar
-                currentStage={pipelineStage}
-                startedAt={generationStartedAt}
-                onCancel={applicationId ? () => {
-                  backgroundGenerator.cancelJob(applicationId);
-                  setStep("input");
-                  toast({ title: "Cancelled", description: "Generation has been cancelled." });
-                } : undefined}
-              />
+              <GenerationProgressBar currentStage={pipelineStage} />
               <p className="text-sm text-muted-foreground text-center">{loadingMsg}</p>
               <div className="flex items-center justify-center gap-3 mt-2">
                 <Loader2 className="h-5 w-5 animate-spin text-primary" />
@@ -593,8 +524,6 @@ function DashboardPreview({
           }
         },
       });
-      // Extract style signals from the user's message (fire-and-forget)
-      extractStyleSignalsFromMessage(msg);
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
       setChatHistory((prev) => [...prev, { role: "assistant", content: `❌ Error: ${err.message}` }]);
@@ -605,20 +534,6 @@ function DashboardPreview({
 
   return (
     <div className="space-y-4">
-      {/* Primary CTA */}
-      {applicationId && (
-        <div className="flex items-center gap-3 p-4 rounded-lg bg-accent/50 border border-accent">
-          <Sparkles className="h-5 w-5 text-primary flex-shrink-0" />
-          <div className="flex-1">
-            <p className="text-sm font-medium">Your application is ready!</p>
-            <p className="text-sm text-muted-foreground">Dashboard, cover letter, and 4 additional reports have been generated.</p>
-          </div>
-          <Button onClick={() => navigate(`/applications/${applicationId}`)}>
-            View Full Application <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
-        </div>
-      )}
-
       <div className="flex flex-wrap gap-2">
         <Button onClick={onCopy} variant="outline">
           <Copy className="mr-2 h-4 w-4" /> Copy HTML

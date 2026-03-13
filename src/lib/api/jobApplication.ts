@@ -1,24 +1,4 @@
 import { supabase } from '@/integrations/supabase/client';
-import { streamFromEdgeFunction, processSSEStream } from './streamUtils';
-import { getStyleContextForPrompt } from './stylePreferences';
-
-// --- Search for company icon (three-tier fallback) ---
-export async function searchCompanyIcon(companyName?: string, companyUrl?: string): Promise<{ iconUrl: string | null; source: string | null }> {
-  if (!companyName && !companyUrl) return { iconUrl: null, source: null };
-  try {
-    const { data, error } = await supabase.functions.invoke('search-company-icon', {
-      body: { companyName, companyUrl },
-    });
-    if (error) {
-      console.warn('search-company-icon error:', error.message);
-      return { iconUrl: null, source: null };
-    }
-    return { iconUrl: data?.iconUrl || null, source: data?.source || null };
-  } catch (e) {
-    console.warn('search-company-icon failed:', e);
-    return { iconUrl: null, source: null };
-  }
-}
 
 // --- Scrape company branding ---
 export async function scrapeCompanyBranding(url: string, retries = 3) {
@@ -95,12 +75,24 @@ export async function streamDashboardGeneration({
   onDelta: (text: string) => void;
   onDone: () => void;
 }) {
-  await streamFromEdgeFunction({
-    functionName: 'generate-dashboard',
-    body: { jobDescription, branding, companyName, jobTitle, competitors, customers, products, department, templateHtml, researchedSections },
-    onDelta,
-    onDone,
-  });
+  const resp = await fetch(
+    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-dashboard`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+      },
+      body: JSON.stringify({ jobDescription, branding, companyName, jobTitle, competitors, customers, products, department, templateHtml, researchedSections }),
+    }
+  );
+
+  if (!resp.ok || !resp.body) {
+    const errData = await resp.json().catch(() => ({}));
+    throw new Error(errData.error || `Request failed (${resp.status})`);
+  }
+
+  await processSSEStream(resp.body, onDelta, onDone);
 }
 
 // --- Stream dashboard refinement ---
@@ -119,15 +111,24 @@ export async function streamDashboardRefinement({
   onDelta: (text: string) => void;
   onDone: () => void;
 }) {
-  let styleContext = "";
-  try { styleContext = await getStyleContextForPrompt(); } catch { /* non-critical */ }
+  const resp = await fetch(
+    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/refine-dashboard`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+      },
+      body: JSON.stringify({ currentHtml, currentDashboardData, userMessage, chatHistory }),
+    }
+  );
 
-  await streamFromEdgeFunction({
-    functionName: 'refine-dashboard',
-    body: { currentHtml, currentDashboardData, userMessage, chatHistory, styleContext },
-    onDelta,
-    onDone,
-  });
+  if (!resp.ok || !resp.body) {
+    const errData = await resp.json().catch(() => ({}));
+    throw new Error(errData.error || `Request failed (${resp.status})`);
+  }
+
+  await processSSEStream(resp.body, onDelta, onDone);
 }
 
 // --- CRUD for job applications ---
@@ -150,12 +151,6 @@ export async function saveJobApplication(app: {
   generation_status?: string;
   generation_error?: string;
   research_reasoning?: string;
-  executive_report_html?: string;
-  raid_log_html?: string;
-  architecture_diagram_html?: string;
-  roadmap_html?: string;
-  resume_html?: string;
-  resume_style_id?: string;
 }) {
   if (app.id) {
     const { data, error } = await supabase
@@ -167,12 +162,9 @@ export async function saveJobApplication(app: {
     if (error) throw new Error(error.message);
     return data;
   } else {
-    // Get current user for user_id
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("Not authenticated");
     const { data, error } = await supabase
       .from('job_applications')
-      .insert({ ...app, user_id: user.id })
+      .insert(app)
       .select()
       .single();
     if (error) throw new Error(error.message);
@@ -200,38 +192,66 @@ export async function getJobApplication(id: string) {
 }
 
 export async function deleteJobApplication(id: string) {
-  // Soft-delete: set deleted_at timestamp
-  const { data: { user } } = await supabase.auth.getUser();
-  const { error } = await supabase
-    .from('job_applications')
-    .update({ deleted_at: new Date().toISOString(), deleted_by: user?.id || null } as any)
-    .eq('id', id);
-  if (error) throw new Error(error.message);
-}
-
-export async function getDeletedJobApplications() {
-  // RLS policy "Users can view own deleted applications" handles filtering
-  const { data, error } = await (supabase as any)
-    .from('job_applications')
-    .select('*')
-    .not('deleted_at', 'is', null)
-    .order('deleted_at', { ascending: false });
-  if (error) throw new Error(error.message);
-  return data;
-}
-
-export async function restoreJobApplication(id: string) {
-  const { error } = await supabase
-    .from('job_applications')
-    .update({ deleted_at: null, deleted_by: null } as any)
-    .eq('id', id);
-  if (error) throw new Error(error.message);
-}
-
-export async function permanentlyDeleteJobApplication(id: string) {
   const { error } = await supabase
     .from('job_applications')
     .delete()
     .eq('id', id);
   if (error) throw new Error(error.message);
+}
+
+// --- SSE Stream processor (shared) ---
+async function processSSEStream(
+  body: ReadableStream<Uint8Array>,
+  onDelta: (text: string) => void,
+  onDone: () => void
+) {
+  const reader = body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let streamDone = false;
+
+  while (!streamDone) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+
+    let idx: number;
+    while ((idx = buffer.indexOf('\n')) !== -1) {
+      let line = buffer.slice(0, idx);
+      buffer = buffer.slice(idx + 1);
+      if (line.endsWith('\r')) line = line.slice(0, -1);
+      if (line.startsWith(':') || line.trim() === '') continue;
+      if (!line.startsWith('data: ')) continue;
+
+      const json = line.slice(6).trim();
+      if (json === '[DONE]') { streamDone = true; break; }
+
+      try {
+        const parsed = JSON.parse(json);
+        const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+        if (content) onDelta(content);
+      } catch {
+        buffer = line + '\n' + buffer;
+        break;
+      }
+    }
+  }
+
+  // flush remaining
+  if (buffer.trim()) {
+    for (let raw of buffer.split('\n')) {
+      if (!raw) continue;
+      if (raw.endsWith('\r')) raw = raw.slice(0, -1);
+      if (!raw.startsWith('data: ')) continue;
+      const json = raw.slice(6).trim();
+      if (json === '[DONE]') continue;
+      try {
+        const parsed = JSON.parse(json);
+        const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+        if (content) onDelta(content);
+      } catch { /* ignore */ }
+    }
+  }
+
+  onDone();
 }

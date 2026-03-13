@@ -14,41 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      architecture_diagram_revisions: {
-        Row: {
-          application_id: string
-          created_at: string
-          html: string
-          id: string
-          label: string | null
-          revision_number: number
-        }
-        Insert: {
-          application_id: string
-          created_at?: string
-          html: string
-          id?: string
-          label?: string | null
-          revision_number?: number
-        }
-        Update: {
-          application_id?: string
-          created_at?: string
-          html?: string
-          id?: string
-          label?: string | null
-          revision_number?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "architecture_diagram_revisions_application_id_fkey"
-            columns: ["application_id"]
-            isOneToOne: false
-            referencedRelation: "job_applications"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       cover_letter_revisions: {
         Row: {
           application_id: string
@@ -121,7 +86,6 @@ export type Database = {
       }
       dashboard_templates: {
         Row: {
-          asset_type: string
           created_at: string
           dashboard_html: string
           department: string
@@ -131,7 +95,6 @@ export type Database = {
           source_application_id: string | null
         }
         Insert: {
-          asset_type?: string
           created_at?: string
           dashboard_html: string
           department?: string
@@ -141,7 +104,6 @@ export type Database = {
           source_application_id?: string | null
         }
         Update: {
-          asset_type?: string
           created_at?: string
           dashboard_html?: string
           department?: string
@@ -160,44 +122,8 @@ export type Database = {
           },
         ]
       }
-      executive_report_revisions: {
-        Row: {
-          application_id: string
-          created_at: string
-          html: string
-          id: string
-          label: string | null
-          revision_number: number
-        }
-        Insert: {
-          application_id: string
-          created_at?: string
-          html: string
-          id?: string
-          label?: string | null
-          revision_number?: number
-        }
-        Update: {
-          application_id?: string
-          created_at?: string
-          html?: string
-          id?: string
-          label?: string | null
-          revision_number?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "executive_report_revisions_application_id_fkey"
-            columns: ["application_id"]
-            isOneToOne: false
-            referencedRelation: "job_applications"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       job_applications: {
         Row: {
-          architecture_diagram_html: string | null
           branding: Json | null
           chat_history: Json | null
           company_name: string | null
@@ -208,9 +134,6 @@ export type Database = {
           customers: Json | null
           dashboard_data: Json | null
           dashboard_html: string | null
-          deleted_at: string | null
-          deleted_by: string | null
-          executive_report_html: string | null
           generation_error: string | null
           generation_status: string
           id: string
@@ -218,17 +141,11 @@ export type Database = {
           job_title: string | null
           job_url: string
           products: Json | null
-          raid_log_html: string | null
           research_reasoning: string | null
-          resume_html: string | null
-          resume_style_id: string | null
-          roadmap_html: string | null
           status: string
           updated_at: string
-          user_id: string | null
         }
         Insert: {
-          architecture_diagram_html?: string | null
           branding?: Json | null
           chat_history?: Json | null
           company_name?: string | null
@@ -239,9 +156,6 @@ export type Database = {
           customers?: Json | null
           dashboard_data?: Json | null
           dashboard_html?: string | null
-          deleted_at?: string | null
-          deleted_by?: string | null
-          executive_report_html?: string | null
           generation_error?: string | null
           generation_status?: string
           id?: string
@@ -249,17 +163,11 @@ export type Database = {
           job_title?: string | null
           job_url: string
           products?: Json | null
-          raid_log_html?: string | null
           research_reasoning?: string | null
-          resume_html?: string | null
-          resume_style_id?: string | null
-          roadmap_html?: string | null
           status?: string
           updated_at?: string
-          user_id?: string | null
         }
         Update: {
-          architecture_diagram_html?: string | null
           branding?: Json | null
           chat_history?: Json | null
           company_name?: string | null
@@ -270,9 +178,6 @@ export type Database = {
           customers?: Json | null
           dashboard_data?: Json | null
           dashboard_html?: string | null
-          deleted_at?: string | null
-          deleted_by?: string | null
-          executive_report_html?: string | null
           generation_error?: string | null
           generation_status?: string
           id?: string
@@ -280,260 +185,9 @@ export type Database = {
           job_title?: string | null
           job_url?: string
           products?: Json | null
-          raid_log_html?: string | null
           research_reasoning?: string | null
-          resume_html?: string | null
-          resume_style_id?: string | null
-          roadmap_html?: string | null
           status?: string
           updated_at?: string
-          user_id?: string | null
-        }
-        Relationships: []
-      }
-      profiles: {
-        Row: {
-          avatar_url: string | null
-          created_at: string
-          display_name: string | null
-          first_name: string | null
-          id: string
-          key_skills: string[] | null
-          last_name: string | null
-          middle_name: string | null
-          preferred_tone: string | null
-          resume_text: string | null
-          target_industries: string[] | null
-          updated_at: string
-          years_experience: string | null
-        }
-        Insert: {
-          avatar_url?: string | null
-          created_at?: string
-          display_name?: string | null
-          first_name?: string | null
-          id: string
-          key_skills?: string[] | null
-          last_name?: string | null
-          middle_name?: string | null
-          preferred_tone?: string | null
-          resume_text?: string | null
-          target_industries?: string[] | null
-          updated_at?: string
-          years_experience?: string | null
-        }
-        Update: {
-          avatar_url?: string | null
-          created_at?: string
-          display_name?: string | null
-          first_name?: string | null
-          id?: string
-          key_skills?: string[] | null
-          last_name?: string | null
-          middle_name?: string | null
-          preferred_tone?: string | null
-          resume_text?: string | null
-          target_industries?: string[] | null
-          updated_at?: string
-          years_experience?: string | null
-        }
-        Relationships: []
-      }
-      raid_log_revisions: {
-        Row: {
-          application_id: string
-          created_at: string
-          html: string
-          id: string
-          label: string | null
-          revision_number: number
-        }
-        Insert: {
-          application_id: string
-          created_at?: string
-          html: string
-          id?: string
-          label?: string | null
-          revision_number?: number
-        }
-        Update: {
-          application_id?: string
-          created_at?: string
-          html?: string
-          id?: string
-          label?: string | null
-          revision_number?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "raid_log_revisions_application_id_fkey"
-            columns: ["application_id"]
-            isOneToOne: false
-            referencedRelation: "job_applications"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      resume_prompt_styles: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          description: string | null
-          id: string
-          is_active: boolean
-          label: string
-          slug: string
-          sort_order: number
-          system_prompt: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          description?: string | null
-          id?: string
-          is_active?: boolean
-          label: string
-          slug: string
-          sort_order?: number
-          system_prompt: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          description?: string | null
-          id?: string
-          is_active?: boolean
-          label?: string
-          slug?: string
-          sort_order?: number
-          system_prompt?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      resume_revisions: {
-        Row: {
-          application_id: string
-          created_at: string
-          html: string
-          id: string
-          label: string | null
-          revision_number: number
-        }
-        Insert: {
-          application_id: string
-          created_at?: string
-          html: string
-          id?: string
-          label?: string | null
-          revision_number?: number
-        }
-        Update: {
-          application_id?: string
-          created_at?: string
-          html?: string
-          id?: string
-          label?: string | null
-          revision_number?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "resume_revisions_application_id_fkey"
-            columns: ["application_id"]
-            isOneToOne: false
-            referencedRelation: "job_applications"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      roadmap_revisions: {
-        Row: {
-          application_id: string
-          created_at: string
-          html: string
-          id: string
-          label: string | null
-          revision_number: number
-        }
-        Insert: {
-          application_id: string
-          created_at?: string
-          html: string
-          id?: string
-          label?: string | null
-          revision_number?: number
-        }
-        Update: {
-          application_id?: string
-          created_at?: string
-          html?: string
-          id?: string
-          label?: string | null
-          revision_number?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "roadmap_revisions_application_id_fkey"
-            columns: ["application_id"]
-            isOneToOne: false
-            referencedRelation: "job_applications"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      user_roles: {
-        Row: {
-          id: string
-          role: Database["public"]["Enums"]["app_role"]
-          user_id: string
-        }
-        Insert: {
-          id?: string
-          role: Database["public"]["Enums"]["app_role"]
-          user_id: string
-        }
-        Update: {
-          id?: string
-          role?: Database["public"]["Enums"]["app_role"]
-          user_id?: string
-        }
-        Relationships: []
-      }
-      user_style_preferences: {
-        Row: {
-          category: string
-          confidence: number
-          created_at: string
-          id: string
-          preference: string
-          source_quote: string | null
-          times_reinforced: number
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          category: string
-          confidence?: number
-          created_at?: string
-          id?: string
-          preference: string
-          source_quote?: string | null
-          times_reinforced?: number
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          category?: string
-          confidence?: number
-          created_at?: string
-          id?: string
-          preference?: string
-          source_quote?: string | null
-          times_reinforced?: number
-          updated_at?: string
-          user_id?: string
         }
         Relationships: []
       }
@@ -542,16 +196,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      has_role: {
-        Args: {
-          _role: Database["public"]["Enums"]["app_role"]
-          _user_id: string
-        }
-        Returns: boolean
-      }
+      [_ in never]: never
     }
     Enums: {
-      app_role: "admin" | "user"
+      [_ in never]: never
     }
     CompositeTypes: {
       [_ in never]: never
@@ -678,8 +326,6 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {
-      app_role: ["admin", "user"],
-    },
+    Enums: {},
   },
 } as const

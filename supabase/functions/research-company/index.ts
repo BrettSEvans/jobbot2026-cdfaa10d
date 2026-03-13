@@ -131,54 +131,25 @@ ${jobDescription || 'No description provided.'}`;
     clean = clean.slice(firstBrace, lastBrace + 1);
     // Remove trailing commas
     clean = clean.replace(/,\s*([}\]])/g, '$1');
-    // Remove single-line comments (// ...)
-    clean = clean.replace(/\/\/[^\n]*/g, '');
-    // Remove multi-line comments
-    clean = clean.replace(/\/\*[\s\S]*?\*\//g, '');
-    // Fix unquoted keys: word followed by colon
-    clean = clean.replace(/(\{|,)\s*([a-zA-Z_]\w*)\s*:/g, '$1 "$2":');
-    // Remove control characters except whitespace
-    clean = clean.replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g, '');
-    // Replace literal newlines inside JSON strings with \n escape
-    // Walk through and fix unescaped newlines within quoted strings
-    clean = clean.replace(/"([^"\\]|\\.)*"/g, (match) => {
-      return match.replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t');
-    });
-    // Log for debugging
-    console.log('Sanitized JSON (first 500 chars):', clean.slice(0, 500));
 
-    let parsed: any;
     try {
-      parsed = JSON.parse(clean);
-    } catch (e) {
-      // Second attempt: more aggressive cleanup — remove all newlines then try
-      console.warn('First JSON.parse failed, attempting aggressive cleanup:', (e as Error).message);
-      try {
-        // Replace all newlines with spaces, then collapse multiple spaces
-        const aggressive = clean.replace(/\n/g, ' ').replace(/\r/g, ' ').replace(/\s{2,}/g, ' ');
-        parsed = JSON.parse(aggressive);
-      } catch (e2) {
-        console.error('Failed to parse research JSON after retry:', (e2 as Error).message);
-        console.error('Raw content (first 1000):', content.slice(0, 1000));
-        return new Response(JSON.stringify({ error: 'Failed to parse research output' }), {
-          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+      const parsed = JSON.parse(clean);
+      if (!parsed.sections || !Array.isArray(parsed.sections)) {
+        throw new Error('Missing sections array');
       }
-    }
-
-    if (!parsed.sections || !Array.isArray(parsed.sections)) {
-      console.error('Missing sections array, keys:', Object.keys(parsed));
+      return new Response(JSON.stringify({
+        success: true,
+        sections: parsed.sections,
+        reasoning: parsed.reasoning || '',
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    } catch (e) {
+      console.error('Failed to parse research JSON:', (e as Error).message);
       return new Response(JSON.stringify({ error: 'Failed to parse research output' }), {
         status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-    return new Response(JSON.stringify({
-      success: true,
-      sections: parsed.sections,
-      reasoning: parsed.reasoning || '',
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
   } catch (e) {
     console.error('Research error:', e);
     return new Response(

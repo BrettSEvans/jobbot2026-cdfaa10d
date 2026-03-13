@@ -20,39 +20,3 @@ verify_jwt = false
 
 [functions.research-company]
 verify_jwt = false
-
-[functions.search-company-icon]
-verify_jwt = false
-
-[functions.generate-executive-report]
-verify_jwt = false
-
-[functions.generate-raid-log]
-verify_jwt = false
-
-[functions.generate-architecture-diagram]
-verify_jwt = false
-
-[functions.generate-roadmap]
-verify_jwt = false
-
-[functions.refine-executive-report]
-verify_jwt = false
-
-[functions.refine-raid-log]
-verify_jwt = false
-
-[functions.refine-architecture-diagram]
-verify_jwt = false
-
-[functions.refine-roadmap]
-verify_jwt = false
-
-[functions.extract-style-signals]
-verify_jwt = false
-
-[functions.generate-resume]
-verify_jwt = false
-
-[functions.refine-resume]
-verify_jwt = false

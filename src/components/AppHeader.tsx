@@ -10,6 +10,15 @@ interface AppHeaderProps {
   aiChatOpen: boolean;
 }
 
+function ThemeToggle() {
+  const { theme, toggle } = useTheme();
+  return (
+    <Button variant="ghost" size="icon" onClick={toggle} aria-label="Toggle theme" className="h-9 w-9">
+      {theme === "light" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+    </Button>
+  );
+}
+
 export default function AppHeader({ onAiChatToggle, aiChatOpen }: AppHeaderProps) {
   const navigate = useNavigate();
   const { pathname } = useLocation();

@@ -8,6 +8,7 @@ import Applications from "./pages/Applications";
 import NewApplication from "./pages/NewApplication";
 import ApplicationDetail from "./pages/ApplicationDetail";
 import Templates from "./pages/Templates";
+import StoryBoard from "./pages/StoryBoard";
 import NotFound from "./pages/NotFound";
 import BackgroundJobsBanner from "./components/BackgroundJobsBanner";
 import AppHeader from "./components/AppHeader";
@@ -36,6 +37,7 @@ const App = () => {
             <Route path="/applications/new" element={<NewApplication />} />
             <Route path="/applications/:id" element={<ApplicationDetail />} />
             <Route path="/templates" element={<Templates />} />
+            <Route path="/stories" element={<StoryBoard />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

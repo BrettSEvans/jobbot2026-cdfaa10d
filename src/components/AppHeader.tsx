@@ -26,6 +26,7 @@ export default function AppHeader({ onAiChatToggle, aiChatOpen }: AppHeaderProps
   const links = [
     { to: "/", label: "Applications", match: (p: string) => p === "/" || p === "/applications" },
     { to: "/templates", label: "Templates", match: (p: string) => p === "/templates" },
+    { to: "/stories", label: "Stories", match: (p: string) => p === "/stories" },
   ];
 
   return (

@@ -45,16 +45,19 @@ export default function AppHeader({ onAiChatToggle, aiChatOpen }: AppHeaderProps
           </nav>
         </div>
 
-        {/* Right: AI Chat trigger */}
-        <Button
-          variant={aiChatOpen ? "default" : "outline"}
-          size="sm"
-          onClick={onAiChatToggle}
-          className="gap-2"
-        >
-          <Sparkles className="h-4 w-4" />
-          <span className="hidden sm:inline">AI Chat</span>
-        </Button>
+        {/* Right: theme toggle + AI Chat */}
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <Button
+            variant={aiChatOpen ? "default" : "outline"}
+            size="sm"
+            onClick={onAiChatToggle}
+            className="gap-2"
+          >
+            <Sparkles className="h-4 w-4" />
+            <span className="hidden sm:inline">AI Chat</span>
+          </Button>
+        </div>
       </div>
     </header>
   );

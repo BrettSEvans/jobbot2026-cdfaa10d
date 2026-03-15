@@ -1,12 +1,22 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Sun, Moon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import BrandLogo from "@/components/BrandLogo";
+import { useTheme } from "@/hooks/useTheme";
 
 interface AppHeaderProps {
   onAiChatToggle: () => void;
   aiChatOpen: boolean;
+}
+
+function ThemeToggle() {
+  const { theme, toggle } = useTheme();
+  return (
+    <Button variant="ghost" size="icon" onClick={toggle} aria-label="Toggle theme" className="h-9 w-9">
+      {theme === "light" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+    </Button>
+  );
 }
 
 export default function AppHeader({ onAiChatToggle, aiChatOpen }: AppHeaderProps) {
@@ -44,16 +54,19 @@ export default function AppHeader({ onAiChatToggle, aiChatOpen }: AppHeaderProps
           </nav>
         </div>
 
-        {/* Right: AI Chat trigger */}
-        <Button
-          variant={aiChatOpen ? "default" : "outline"}
-          size="sm"
-          onClick={onAiChatToggle}
-          className="gap-2"
-        >
-          <Sparkles className="h-4 w-4" />
-          <span className="hidden sm:inline">AI Chat</span>
-        </Button>
+        {/* Right: theme toggle + AI Chat */}
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <Button
+            variant={aiChatOpen ? "default" : "outline"}
+            size="sm"
+            onClick={onAiChatToggle}
+            className="gap-2"
+          >
+            <Sparkles className="h-4 w-4" />
+            <span className="hidden sm:inline">AI Chat</span>
+          </Button>
+        </div>
       </div>
     </header>
   );

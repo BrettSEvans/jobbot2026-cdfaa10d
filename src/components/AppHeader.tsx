@@ -1,8 +1,9 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Sun, Moon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import BrandLogo from "@/components/BrandLogo";
+import { useTheme } from "@/hooks/useTheme";
 
 interface AppHeaderProps {
   onAiChatToggle: () => void;

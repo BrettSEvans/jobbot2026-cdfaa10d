@@ -256,6 +256,47 @@ export type Database = {
           },
         ]
       }
+      epics: {
+        Row: {
+          color: string | null
+          created_at: string
+          description: string | null
+          epic_order: number
+          id: string
+          name: string
+          sprint_id: string
+          updated_at: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          epic_order?: number
+          id?: string
+          name: string
+          sprint_id: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          epic_order?: number
+          id?: string
+          name?: string
+          sprint_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epics_sprint_id_fkey"
+            columns: ["sprint_id"]
+            isOneToOne: false
+            referencedRelation: "sprints"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       executive_report_revisions: {
         Row: {
           application_id: string
@@ -1010,6 +1051,230 @@ export type Database = {
           },
         ]
       }
+      sprints: {
+        Row: {
+          created_at: string
+          description: string | null
+          end_date: string | null
+          id: string
+          name: string
+          sprint_order: number
+          start_date: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          name: string
+          sprint_order?: number
+          start_date?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          name?: string
+          sprint_order?: number
+          start_date?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      stories: {
+        Row: {
+          acceptance_criteria: string | null
+          assigned_to: string | null
+          created_at: string
+          description: string | null
+          due_date: string | null
+          epic_id: string
+          id: string
+          labels: string[] | null
+          lexical_order: string | null
+          lovable_prompt: string | null
+          parent_story_id: string | null
+          persona: string | null
+          priority: string
+          source: string
+          status: string
+          story_order: number
+          story_points: number | null
+          story_tokens: number | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          acceptance_criteria?: string | null
+          assigned_to?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          epic_id: string
+          id?: string
+          labels?: string[] | null
+          lexical_order?: string | null
+          lovable_prompt?: string | null
+          parent_story_id?: string | null
+          persona?: string | null
+          priority?: string
+          source?: string
+          status?: string
+          story_order?: number
+          story_points?: number | null
+          story_tokens?: number | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          acceptance_criteria?: string | null
+          assigned_to?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          epic_id?: string
+          id?: string
+          labels?: string[] | null
+          lexical_order?: string | null
+          lovable_prompt?: string | null
+          parent_story_id?: string | null
+          persona?: string | null
+          priority?: string
+          source?: string
+          status?: string
+          story_order?: number
+          story_points?: number | null
+          story_tokens?: number | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stories_epic_id_fkey"
+            columns: ["epic_id"]
+            isOneToOne: false
+            referencedRelation: "epics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stories_parent_story_id_fkey"
+            columns: ["parent_story_id"]
+            isOneToOne: false
+            referencedRelation: "stories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      story_comments: {
+        Row: {
+          author_name: string
+          content: string
+          created_at: string
+          id: string
+          story_id: string
+        }
+        Insert: {
+          author_name?: string
+          content: string
+          created_at?: string
+          id?: string
+          story_id: string
+        }
+        Update: {
+          author_name?: string
+          content?: string
+          created_at?: string
+          id?: string
+          story_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "story_comments_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "stories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      story_links: {
+        Row: {
+          created_at: string
+          id: string
+          link_type: string
+          source_story_id: string
+          target_story_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          link_type?: string
+          source_story_id: string
+          target_story_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          link_type?: string
+          source_story_id?: string
+          target_story_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "story_links_source_story_id_fkey"
+            columns: ["source_story_id"]
+            isOneToOne: false
+            referencedRelation: "stories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "story_links_target_story_id_fkey"
+            columns: ["target_story_id"]
+            isOneToOne: false
+            referencedRelation: "stories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      story_templates: {
+        Row: {
+          acceptance_criteria: string | null
+          created_at: string
+          description: string | null
+          id: string
+          labels: string[] | null
+          name: string
+          priority: string
+        }
+        Insert: {
+          acceptance_criteria?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          labels?: string[] | null
+          name: string
+          priority?: string
+        }
+        Update: {
+          acceptance_criteria?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          labels?: string[] | null
+          name?: string
+          priority?: string
+        }
+        Relationships: []
+      }
       system_documents: {
         Row: {
           content: string
@@ -1228,6 +1493,14 @@ export type Database = {
       delete_and_reassign_resume: {
         Args: { p_resume_id: string }
         Returns: undefined
+      }
+      get_sprint_story_counts: {
+        Args: never
+        Returns: {
+          done: number
+          sprint_id: string
+          total: number
+        }[]
       }
       has_any_role: {
         Args: {

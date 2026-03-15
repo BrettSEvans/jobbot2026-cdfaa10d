@@ -1,0 +1,5 @@
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <rect width="64" height="64" rx="14" fill="hsl(234,35%,18%)"/>
+  <text x="14" y="46" font-family="serif" font-size="36" fill="white">R</text>
+  <text x="34" y="46" font-family="serif" font-size="36" fill="hsl(36,90%,50%)">V</text>
+</svg>

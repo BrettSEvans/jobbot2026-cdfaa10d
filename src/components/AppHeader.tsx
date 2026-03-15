@@ -2,6 +2,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import BrandLogo from "@/components/BrandLogo";
 
 interface AppHeaderProps {
   onAiChatToggle: () => void;
@@ -19,24 +20,29 @@ export default function AppHeader({ onAiChatToggle, aiChatOpen }: AppHeaderProps
 
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="max-w-6xl mx-auto flex h-12 items-center justify-between px-4 md:px-8">
-        {/* Left: nav links */}
-        <nav className="flex items-center gap-1">
-          {links.map((l) => (
-            <button
-              key={l.to}
-              onClick={() => navigate(l.to)}
-              className={cn(
-                "px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
-                l.match(pathname)
-                  ? "bg-accent text-accent-foreground"
-                  : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
-              )}
-            >
-              {l.label}
-            </button>
-          ))}
-        </nav>
+      <div className="max-w-6xl mx-auto flex h-14 items-center justify-between px-4 md:px-8">
+        {/* Left: logo + nav */}
+        <div className="flex items-center gap-6">
+          <button onClick={() => navigate("/")} className="focus:outline-none">
+            <BrandLogo iconSize="2.2em" />
+          </button>
+          <nav className="flex items-center gap-1">
+            {links.map((l) => (
+              <button
+                key={l.to}
+                onClick={() => navigate(l.to)}
+                className={cn(
+                  "px-3 py-1.5 rounded-md text-sm font-medium transition-colors font-body",
+                  l.match(pathname)
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:text-foreground hover:bg-accent/10"
+                )}
+              >
+                {l.label}
+              </button>
+            ))}
+          </nav>
+        </div>
 
         {/* Right: AI Chat trigger */}
         <Button

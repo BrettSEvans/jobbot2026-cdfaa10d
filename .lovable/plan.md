@@ -1,59 +1,48 @@
 
 
-# Plan: Apply ResuVibe Branding to Current Site
+# AI Chat Interface Implementation
 
-## What We Know
+## Overview
+Add a persistent AI chat popup accessible from every page. The chat will be a floating button in the bottom-right corner (more natural for chat UX than a header link), with a popup panel that lets users ask questions and receive mock contextual responses.
 
-From the fetched site and project memory, ResuVibe uses:
+## Components to Create
 
-- **Colors**: Warm amber/gold primary (`hsl(36 90% 50%)`), deep indigo/navy accent (`hsl(234 45% 52%)`)
-- **Fonts**: DM Serif Display (headings), DM Sans (body)
-- **Logo**: "RV" monogram — white R + golden V on dark navy rounded square, plus wordmark. Logo image at `https://www.resuvibe.ai/assets/resuvibe-logo-CjSX5jrs.png`
-- **Favicon**: RV monogram on dark navy background (SVG-based)
-- **Visual effects**: Noise-texture grain overlay, warm gradient backgrounds, elevated card shadows
+### 1. `src/components/AiChat.tsx` - Main Chat Component
+- Floating action button (bottom-right corner) with a chat/sparkles icon, always visible
+- Click toggles a chat popup panel (not a full modal -- stays anchored to the corner)
+- Chat panel contains:
+  - Header with title and close button
+  - Scrollable message area showing conversation history
+  - Input field + send button at bottom
+- State: `isOpen`, `messages[]`, `isThinking`
+- On send:
+  1. Add user message to history
+  2. Show "thinking" animation (animated dots) for 1.5s
+  3. Generate a mock response that references the current page context
+- Context awareness: Uses `useLocation()` from react-router to detect current route and tailors mock responses accordingly (e.g., "I see you're viewing the Applications list..." or "Looking at the dashboard for [company]...")
+- Keyboard: Enter to send, Escape to close
 
-## Changes
-
-### 1. Update `index.html`
-- Set title to "ResuVibe"
-- Add Google Fonts link for DM Serif Display and DM Sans
-- Update favicon to reference the RV monogram (we'll create an SVG favicon)
-- Update OG meta tags
-
-### 2. Update `src/index.css`
-- Replace CSS variables with ResuVibe color palette:
-  - `--primary`: `36 90% 50%` (amber/gold)
-  - `--primary-foreground`: `0 0% 100%` (white)
-  - `--accent`: `234 45% 52%` (indigo)
-  - Appropriate surface, muted, border colors
-- Add `--font-heading` and `--font-body` custom properties
-- Add `font-heading` and `font-body` utility classes
-- Add `noise-texture` utility class for grain effect
-- Add `--shadow-warm` and `--shadow-elevated` custom properties
-- Set up dark mode variants with the same brand palette
-
-### 3. Update `tailwind.config.ts`
-- Add `fontFamily` entries for `heading` (DM Serif Display) and `body` (DM Sans)
-- Add custom shadow utilities for warm/elevated shadows
-
-### 4. Create `src/lib/branding.ts`
-- Centralized brand constants: name, tagline, storage prefix, logo URL
-- Export for use across components
-
-### 5. Create `src/components/BrandLogo.tsx`
-- RV monogram SVG component (white R + gold V on navy background)
-- Wordmark variant with "Resu" in foreground + "Vibe" in primary/gold
-
-### 6. Update `src/components/AppHeader.tsx`
-- Replace plain text nav with BrandLogo component
-- Apply font-body class
-
-### 7. Create `public/favicon.svg`
-- SVG favicon with RV monogram matching the brand
+### 2. Add to `src/App.tsx`
+- Import and render `<AiChat />` inside the `BrowserRouter` (so it has access to router context) but outside `<Routes>`, making it persistent across all pages
 
 ## Technical Details
 
-The color system maps to shadcn's CSS variable pattern. All existing components (Button, Card, etc.) will automatically pick up the new colors since they reference the CSS variables. No component library changes needed.
+- **No backend needed** -- this is a mock/prototype. Responses are generated client-side with simple template strings
+- **Styling**: Uses existing shadcn/ui components (Button, Input, ScrollArea, Card) and Tailwind classes
+- **Non-blocking**: The chat is a fixed-position overlay that doesn't interfere with page content
+- **Context detection**: Parses `location.pathname` to determine which view the user is on and includes that in mock responses
+- **Message format**: `{ role: 'user' | 'assistant', content: string }`
 
-Font loading via Google Fonts CDN in `index.html`. Tailwind `fontFamily` config ensures `font-heading` and `font-body` classes work throughout.
+## Mock Response Logic
+- Maintains a small set of contextual response templates per route pattern:
+  - `/` or `/applications` -- references the job applications table
+  - `/applications/new` -- references the application creation flow
+  - `/applications/:id` -- references the specific dashboard being viewed
+  - `/templates` -- references template management
+- Responses feel conversational and reference the current view naturally
 
+## Files Changed
+| File | Action |
+|------|--------|
+| `src/components/AiChat.tsx` | Create |
+| `src/App.tsx` | Edit -- add `<AiChat />` inside `<BrowserRouter>` |

@@ -101,12 +101,17 @@ export default function StoryBoard() {
             <SidebarTrigger />
             <h1 className="text-sm font-semibold text-foreground truncate flex-1">{selectedSprint?.name ?? "Story Board"}</h1>
             <ExportButton stories={filteredStories} epics={epics ?? []} sprintName={selectedSprint?.name} />
-            {epics && <QuickAddStory epics={epics} />}
+            {activeSprint && <CreateEpicButton sprintId={activeSprint} existingEpicCount={epics?.length ?? 0} />}
+            {epics && epics.length > 0 && <QuickAddStory epics={epics} />}
           </header>
           <main className="flex-1 p-4 overflow-auto pb-20 sm:pb-4">
             {!activeSprint ? (
               <div className="flex flex-col items-center justify-center py-16 space-y-4">
-                <p className="text-muted-foreground text-sm text-center max-w-xs">Select a sprint from the sidebar to begin, or create your first sprint in the database.</p>
+                <p className="text-muted-foreground text-sm text-center max-w-xs">Create your first sprint using the + button in the sidebar to get started.</p>
+              </div>
+            ) : epics && epics.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 space-y-4">
+                <p className="text-muted-foreground text-sm text-center max-w-xs">No epics in this sprint yet. Click "Add Epic" above to create one, then add stories to it.</p>
               </div>
             ) : (
               <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">

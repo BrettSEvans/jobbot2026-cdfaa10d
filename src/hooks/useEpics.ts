@@ -23,3 +23,21 @@ export function useEpics(sprintId?: string | null) {
     },
   });
 }
+
+export function useCreateEpic() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (epic: { sprint_id: string; name: string; description?: string; epic_order?: number; color?: string }) => {
+      const { data, error } = await supabase
+        .from("epics")
+        .insert(epic)
+        .select()
+        .single();
+      if (error) throw error;
+      return data as Epic;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["epics"] });
+    },
+  });
+}

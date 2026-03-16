@@ -41,3 +41,23 @@ export function useUpdateSprintStatus() {
     },
   });
 }
+
+export function useCreateSprint() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (sprint: { name: string; description?: string; sprint_order?: number; status?: string; start_date?: string; end_date?: string }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+      const { data, error } = await supabase
+        .from("sprints")
+        .insert({ ...sprint, user_id: user.id })
+        .select()
+        .single();
+      if (error) throw error;
+      return data as Sprint;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["sprints"] });
+    },
+  });
+}

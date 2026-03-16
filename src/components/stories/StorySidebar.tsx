@@ -2,13 +2,15 @@ import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
   SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { LayoutDashboard, BookOpen, Play, Pause } from "lucide-react";
-import { Sprint, useUpdateSprintStatus } from "@/hooks/useSprints";
+import { LayoutDashboard, BookOpen, Play, Pause, Plus } from "lucide-react";
+import { Sprint, useUpdateSprintStatus, useCreateSprint } from "@/hooks/useSprints";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
+import { useState } from "react";
 
 interface StorySidebarProps {
   sprints: Sprint[];
@@ -20,6 +22,10 @@ interface StorySidebarProps {
 
 export function StorySidebar({ sprints, storyCounts, doneCounts, selectedSprintId, onSelectSprint }: StorySidebarProps) {
   const updateStatus = useUpdateSprintStatus();
+  const createSprint = useCreateSprint();
+  const [showNewSprint, setShowNewSprint] = useState(false);
+  const [newSprintName, setNewSprintName] = useState("");
+
   const activeSprints = sprints.filter((s) => s.status !== "reference");
   const refSprints = sprints.filter((s) => s.status === "reference");
 
@@ -32,13 +38,59 @@ export function StorySidebar({ sprints, storyCounts, doneCounts, selectedSprintI
     });
   };
 
+  const handleCreateSprint = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newSprintName.trim()) return;
+    const nextOrder = sprints.length > 0 ? Math.max(...sprints.map((s) => s.sprint_order)) + 1 : 1;
+    createSprint.mutate(
+      { name: newSprintName.trim(), sprint_order: nextOrder, status: "planned" },
+      {
+        onSuccess: (data) => {
+          toast.success("Sprint created");
+          setNewSprintName("");
+          setShowNewSprint(false);
+          onSelectSprint(data.id);
+        },
+        onError: () => toast.error("Failed to create sprint"),
+      }
+    );
+  };
+
   return (
     <Sidebar collapsible="icon">
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Sprints</SidebarGroupLabel>
+          <div className="flex items-center justify-between px-2">
+            <SidebarGroupLabel>Sprints</SidebarGroupLabel>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setShowNewSprint(!showNewSprint)}>
+                  <Plus className="h-3.5 w-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>New Sprint</TooltipContent>
+            </Tooltip>
+          </div>
+          {showNewSprint && (
+            <form onSubmit={handleCreateSprint} className="px-2 pb-2 space-y-2">
+              <Input
+                placeholder="Sprint name..."
+                value={newSprintName}
+                onChange={(e) => setNewSprintName(e.target.value)}
+                autoFocus
+                className="h-8 text-xs"
+              />
+              <div className="flex gap-1">
+                <Button type="submit" size="sm" className="h-7 text-xs flex-1" disabled={createSprint.isPending}>Create</Button>
+                <Button type="button" variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setShowNewSprint(false)}>Cancel</Button>
+              </div>
+            </form>
+          )}
           <SidebarGroupContent>
             <SidebarMenu>
+              {activeSprints.length === 0 && !showNewSprint && (
+                <p className="text-xs text-muted-foreground px-3 py-2">No sprints yet. Click + to create one.</p>
+              )}
               {activeSprints.map((sprint) => {
                 const total = storyCounts[sprint.id] ?? 0;
                 const done = doneCounts[sprint.id] ?? 0;

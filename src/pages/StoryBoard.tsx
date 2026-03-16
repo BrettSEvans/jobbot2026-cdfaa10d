@@ -1,6 +1,7 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { StorySidebar } from "@/components/stories/StorySidebar";
 import { SprintView } from "@/components/stories/SprintView";
+import { CreateEpicButton } from "@/components/stories/CreateEpicButton";
 import { KanbanBoard } from "@/components/stories/KanbanBoard";
 import { SprintCharts } from "@/components/stories/SprintCharts";
 import { StoryDialog } from "@/components/stories/StoryDialog";

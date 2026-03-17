@@ -13,6 +13,7 @@ import NewApplication from "./pages/NewApplication";
 import ApplicationDetail from "./pages/ApplicationDetail";
 import Templates from "./pages/Templates";
 import StoryBoard from "./pages/StoryBoard";
+import Profile from "./pages/Profile";
 import Login from "./pages/Login";
 import ResetPassword from "./pages/ResetPassword";
 import Admin from "./pages/Admin";
@@ -21,6 +22,8 @@ import NotFound from "./pages/NotFound";
 import BackgroundJobsBanner from "./components/BackgroundJobsBanner";
 import AppHeader from "./components/AppHeader";
 import AiChat from "./components/AiChat";
+import { HelpDrawer } from "./components/HelpDrawer";
+import { TutorialTour, useTourState } from "./components/TutorialTour";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const queryClient = new QueryClient();
@@ -45,8 +48,8 @@ function AuthenticatedApp() {
   const { user, loading, signOut } = useAuth();
   const [aiChatOpen, setAiChatOpen] = useState(false);
   const { data: profile, isLoading: profileLoading } = useProfileCheck(user?.id);
+  const tour = useTourState();
 
-  // Inactivity logout - always called, only effective when user exists
   useInactivityLogout();
 
   if (loading || (user && profileLoading)) {
@@ -91,6 +94,8 @@ function AuthenticatedApp() {
       <BackgroundJobsBanner />
       <AppHeader aiChatOpen={aiChatOpen} onAiChatToggle={() => setAiChatOpen((o) => !o)} />
       <AiChat isOpen={aiChatOpen} onClose={() => setAiChatOpen(false)} />
+      <HelpDrawer />
+      <TutorialTour active={tour.active} onComplete={tour.complete} />
       <Routes>
         <Route path="/" element={<Applications />} />
         <Route path="/applications" element={<Navigate to="/" replace />} />
@@ -98,6 +103,7 @@ function AuthenticatedApp() {
         <Route path="/applications/:id" element={<ApplicationDetail />} />
         <Route path="/templates" element={<Templates />} />
         <Route path="/stories" element={<StoryBoard />} />
+        <Route path="/profile" element={<Profile />} />
         <Route path="/admin" element={<Admin />} />
         <Route path="/onboarding" element={<Navigate to="/" replace />} />
         <Route path="/login" element={<Navigate to="/" replace />} />

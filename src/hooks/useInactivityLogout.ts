@@ -1,0 +1,47 @@
+import { useEffect, useRef, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+
+const TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
+const WARNING_MS = 25 * 60 * 1000; // 25 minutes
+
+export function useInactivityLogout() {
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const warningRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const warningShown = useRef(false);
+
+  const clearTimers = useCallback(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    if (warningRef.current) clearTimeout(warningRef.current);
+  }, []);
+
+  const resetTimers = useCallback(() => {
+    clearTimers();
+    warningShown.current = false;
+
+    warningRef.current = setTimeout(() => {
+      warningShown.current = true;
+      toast.warning("Session expiring soon — interact to stay signed in", {
+        duration: 10000,
+      });
+    }, WARNING_MS);
+
+    timerRef.current = setTimeout(async () => {
+      toast.info("Signed out due to inactivity");
+      await supabase.auth.signOut();
+    }, TIMEOUT_MS);
+  }, [clearTimers]);
+
+  useEffect(() => {
+    const events = ["mousedown", "mousemove", "keydown", "touchstart", "scroll"];
+    const handler = () => resetTimers();
+
+    events.forEach((e) => window.addEventListener(e, handler, { passive: true }));
+    resetTimers();
+
+    return () => {
+      events.forEach((e) => window.removeEventListener(e, handler));
+      clearTimers();
+    };
+  }, [resetTimers, clearTimers]);
+}

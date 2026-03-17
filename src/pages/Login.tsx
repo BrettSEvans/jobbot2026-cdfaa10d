@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
@@ -9,23 +9,41 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Mail, Lock, LogIn } from "lucide-react";
+import BrandLogo from "@/components/BrandLogo";
 
 export default function Login() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [forgotMode, setForgotMode] = useState(false);
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
     if (error) {
       toast.error(error.message);
-    } else {
-      navigate("/");
+      return;
     }
+    // Check approval status
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("approval_status")
+      .eq("id", data.user.id)
+      .single();
+    if (profile?.approval_status === "pending") {
+      await supabase.auth.signOut();
+      toast.error("Your account is pending admin approval. You'll be notified when approved.");
+      return;
+    }
+    if (profile?.approval_status === "deleted") {
+      await supabase.auth.signOut();
+      toast.error("This account has been deactivated. Contact support for assistance.");
+      return;
+    }
+    navigate("/");
   };
 
   const handleEmailSignup = async (e: React.FormEvent) => {
@@ -40,7 +58,7 @@ export default function Login() {
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success("Check your email for a verification link!");
+      toast.success("Check your email for a verification link! Your account will need admin approval before you can sign in.");
     }
   };
 
@@ -55,10 +73,65 @@ export default function Login() {
     }
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) {
+      toast.error("Please enter your email address");
+      return;
+    }
+    setLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setLoading(false);
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success("Password reset link sent! Check your email.");
+      setForgotMode(false);
+    }
+  };
+
+  if (forgotMode) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background px-4">
+        <Card className="w-full max-w-md border-border">
+          <CardHeader className="text-center space-y-2">
+            <div className="flex justify-center mb-2">
+              <BrandLogo iconSize="2.4em" />
+            </div>
+            <CardTitle className="text-xl font-bold text-foreground">Reset Password</CardTitle>
+            <CardDescription>Enter your email and we'll send you a reset link</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleForgotPassword} className="space-y-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="reset-email">Email</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input id="reset-email" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} className="pl-9" required />
+                </div>
+              </div>
+              <Button type="submit" className="w-full" disabled={loading}>
+                Send Reset Link
+              </Button>
+              <Button type="button" variant="ghost" className="w-full text-sm" onClick={() => setForgotMode(false)}>
+                ← Back to Sign In
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <Card className="w-full max-w-md border-border">
         <CardHeader className="text-center space-y-2">
+          <div className="flex justify-center mb-2">
+            <BrandLogo iconSize="2.4em" />
+          </div>
           <CardTitle className="text-2xl font-bold text-foreground">Welcome to ResuVibe</CardTitle>
           <CardDescription>Sign in to access your dashboard</CardDescription>
         </CardHeader>
@@ -99,7 +172,12 @@ export default function Login() {
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="login-password">Password</Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="login-password">Password</Label>
+                    <button type="button" onClick={() => setForgotMode(true)} className="text-xs text-primary hover:underline">
+                      Forgot password?
+                    </button>
+                  </div>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input id="login-password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} className="pl-9" required />

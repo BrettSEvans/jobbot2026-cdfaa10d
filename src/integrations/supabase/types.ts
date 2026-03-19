@@ -471,6 +471,7 @@ export type Database = {
           generation_error: string | null
           generation_status: string
           id: string
+          jd_intelligence: Json | null
           job_description_markdown: string | null
           job_title: string | null
           job_url: string
@@ -511,6 +512,7 @@ export type Database = {
           generation_error?: string | null
           generation_status?: string
           id?: string
+          jd_intelligence?: Json | null
           job_description_markdown?: string | null
           job_title?: string | null
           job_url: string
@@ -551,6 +553,7 @@ export type Database = {
           generation_error?: string | null
           generation_status?: string
           id?: string
+          jd_intelligence?: Json | null
           job_description_markdown?: string | null
           job_title?: string | null
           job_url?: string

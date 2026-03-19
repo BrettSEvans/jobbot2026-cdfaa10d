@@ -26,7 +26,7 @@ serve(async (req) => {
   }
 
   try {
-    const { jobDescription, customInstructions } = await req.json();
+    const { jobDescription, customInstructions, cultureSignals, seniority } = await req.json();
 
     if (!jobDescription) {
       return new Response(
@@ -43,6 +43,28 @@ serve(async (req) => {
       );
     }
 
+    // Build culture signal injection
+    let cultureInjection = '';
+    if (cultureSignals && Array.isArray(cultureSignals) && cultureSignals.length > 0) {
+      const clSignals = cultureSignals.filter((s: any) => s.route_to === 'cover_letter' || s.route_to === 'interview_prep');
+      const values = clSignals.filter((s: any) => s.signal_type === 'value').map((s: any) => s.text);
+      const workStyle = clSignals.filter((s: any) => s.signal_type === 'work_style').map((s: any) => s.text);
+      if (values.length > 0 || workStyle.length > 0) {
+        cultureInjection = `\n\nCULTURE SIGNALS TO MIRROR (weave these naturally):`;
+        if (values.length > 0) cultureInjection += `\n- Company values: ${values.join(', ')}`;
+        if (workStyle.length > 0) cultureInjection += `\n- Work style: ${workStyle.join(', ')}`;
+      }
+    }
+
+    // Build tone adjustment
+    let toneInjection = '';
+    if (seniority?.level) {
+      const level = seniority.level;
+      if (['intern', 'junior'].includes(level)) toneInjection = '\nTONE: Enthusiastic, "eager to contribute and learn"';
+      else if (['mid', 'senior'].includes(level)) toneInjection = '\nTONE: Confident, "excited to drive impact"';
+      else toneInjection = '\nTONE: Vision-oriented, "aligned with your mission to..."';
+    }
+
     const systemPrompt = `You are an expert cover letter writer. You will be given Brett Evans' base cover letter and a job description. Your task is to lightly tailor the cover letter to match the job.
 
 CRITICAL Rules:
@@ -54,7 +76,7 @@ CRITICAL Rules:
 - Maintain the same general structure and length
 - Keep the letter professional but enthusiastic
 - Do NOT invent new experiences — only reframe existing ones
-- Output ONLY the tailored cover letter text, no explanations or metadata
+- Output ONLY the tailored cover letter text, no explanations or metadata${cultureInjection}${toneInjection}
 ${customInstructions ? `\nAdditional instructions from Brett: ${customInstructions}` : ''}`;
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {

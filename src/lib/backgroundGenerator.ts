@@ -12,6 +12,8 @@ import {
 } from "@/lib/api/jobApplication";
 import { scrapeJob, streamTailoredLetter } from "@/lib/api/coverLetter";
 import { parseLlmJsonOutput, assembleDashboardHtml } from "@/lib/dashboard/assembler";
+import { parseJobDescription } from "@/lib/api/jdIntelligence";
+import type { JDIntelligence } from "@/lib/api/jdIntelligence";
 
 export type GenerationJob = {
   applicationId: string;
@@ -159,6 +161,17 @@ class BackgroundGenerationManager {
         console.warn("Analysis failed:", e);
       }
 
+      // 3b. Parse JD intelligence (parallel-safe, non-blocking)
+      let jdIntelligence: JDIntelligence | null = null;
+      if (markdown && markdown.length >= 50) {
+        this.updateJob(appId, { progress: "Parsing JD intelligence..." });
+        try {
+          jdIntelligence = await parseJobDescription({ jobDescriptionMarkdown: markdown, companyName });
+        } catch (e) {
+          console.warn("JD intelligence parse failed:", e);
+        }
+      }
+
       // Save intermediate results
       await saveJobApplication({
         id: appId,
@@ -171,6 +184,7 @@ class BackgroundGenerationManager {
         competitors,
         customers,
         products,
+        jd_intelligence: jdIntelligence,
         generation_status: "cover-letter",
       } as any);
 

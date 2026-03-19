@@ -30,6 +30,9 @@ import {
 } from "lucide-react";
 import SaveAsTemplate from "@/components/SaveAsTemplate";
 import KeywordGapAnalysis from "@/components/KeywordGapAnalysis";
+import BulletCoach from "@/components/BulletCoach";
+import AtsFormatCompliance from "@/components/AtsFormatCompliance";
+import SummaryPreview from "@/components/SummaryPreview";
 import DashboardRevisions from "@/components/DashboardRevisions";
 import CoverLetterRevisions from "@/components/CoverLetterRevisions";
 import { backgroundGenerator } from "@/lib/backgroundGenerator";

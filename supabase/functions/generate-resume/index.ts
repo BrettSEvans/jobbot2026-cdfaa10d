@@ -68,6 +68,43 @@ ABSOLUTE RULES:
 - Keep to one page equivalent (~600-800 words)
 ${userPrompt ? `\nUSER CONTEXT (use this to inform keyword placement):\n${userPrompt}` : ''}`;
 
+    // Enhance prompt with JD intelligence if available
+    let jdInjection = '';
+    if (jdIntelligence) {
+      const mustHaveReqs = (jdIntelligence.requirements || []).filter((r: any) => r.category === 'must_have').map((r: any) => r.text);
+      const tier1Kws = (jdIntelligence.ats_keywords || []).filter((k: any) => k.tier === 1).map((k: any) => k.keyword);
+      const tier2Kws = (jdIntelligence.ats_keywords || []).filter((k: any) => k.tier === 2).map((k: any) => k.keyword);
+      const seniority = jdIntelligence.seniority;
+      const jobFunc = jdIntelligence.job_function || '';
+
+      jdInjection = `\n\nJD INTELLIGENCE (structured analysis):`;
+      if (tier1Kws.length > 0) jdInjection += `\nMUST-MIRROR KEYWORDS (Tier 1): ${tier1Kws.join(', ')}`;
+      if (tier2Kws.length > 0) jdInjection += `\nPREFERRED KEYWORDS (Tier 2): ${tier2Kws.join(', ')}`;
+      if (mustHaveReqs.length > 0) jdInjection += `\nMUST-HAVE REQUIREMENTS: ${mustHaveReqs.slice(0, 10).join('; ')}`;
+      if (seniority) {
+        jdInjection += `\nSENIORITY: ${seniority.level} (${seniority.management_scope})`;
+        if (['senior', 'staff', 'principal', 'director', 'vp', 'c_suite'].includes(seniority.level)) {
+          jdInjection += ' → emphasize leadership, architecture, and strategic impact';
+        } else if (seniority.level === 'mid') {
+          jdInjection += ' → emphasize technical depth and growing scope';
+        } else {
+          jdInjection += ' → emphasize learning velocity and eagerness';
+        }
+      }
+      if (jobFunc) {
+        const sectionOrders: Record<string, string> = {
+          engineering: 'Summary → Skills → Experience → Projects → Education',
+          sales: 'Summary → Achievements → Experience → Skills → Education',
+          product: 'Summary → Experience → Skills → Certs → Education',
+          marketing: 'Summary → Campaigns → Experience → Skills → Education',
+        };
+        const order = sectionOrders[jobFunc] || sectionOrders.engineering;
+        jdInjection += `\nSECTION ORDER (${jobFunc}): ${order}`;
+      }
+    }
+
+    const fullSystemPrompt = systemPrompt + jdInjection;
+
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {

@@ -12,6 +12,8 @@ import {
 } from "@/lib/api/jobApplication";
 import { scrapeJob, streamTailoredLetter } from "@/lib/api/coverLetter";
 import { parseLlmJsonOutput, assembleDashboardHtml } from "@/lib/dashboard/assembler";
+import { parseJobDescription } from "@/lib/api/jdIntelligence";
+import type { JDIntelligence } from "@/lib/api/jdIntelligence";
 
 export type GenerationJob = {
   applicationId: string;

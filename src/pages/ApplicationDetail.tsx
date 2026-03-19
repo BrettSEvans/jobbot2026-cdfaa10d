@@ -602,6 +602,22 @@ const ApplicationDetail = () => {
 
           {/* Job Description Tab */}
           <TabsContent value="job-description" className="space-y-4">
+            {/* Keyword Gap Analysis */}
+            {jobDescription && (
+              <KeywordGapAnalysis
+                jobDescription={jobDescription}
+                resumeText={resumeText}
+                onOptimize={(missingKeywords, userPrompt) => {
+                  const kwList = missingKeywords.map(k => k.keyword).join(", ");
+                  toast({
+                    title: "Keyword optimization",
+                    description: userPrompt
+                      ? `Will inject keywords with your context: ${kwList}`
+                      : `Will inject missing keywords: ${kwList}`,
+                  });
+                }}
+              />
+            )}
             <div className="flex flex-wrap gap-2">
               {jobDescription && (
                 <Button variant="outline" size="sm" onClick={() => handleCopy(jobDescription, "Job description")}>

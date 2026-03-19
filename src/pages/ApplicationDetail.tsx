@@ -608,6 +608,23 @@ const ApplicationDetail = () => {
 
           {/* Job Description Tab */}
           <TabsContent value="job-description" className="space-y-4">
+            {/* JD Intelligence Panel */}
+            {jobDescription && (
+              <JDIntelligencePanel
+                jobDescription={jobDescription}
+                companyName={companyName}
+                jdIntelligence={app?.jd_intelligence}
+                onParsed={async (intelligence) => {
+                  try {
+                    await saveJobApplication({ id: id!, job_url: app.job_url, jd_intelligence: intelligence } as any);
+                    setApp((prev: any) => ({ ...prev, jd_intelligence: intelligence }));
+                  } catch (e) {
+                    console.warn("Failed to save JD intelligence:", e);
+                  }
+                }}
+              />
+            )}
+
             {/* Keyword Gap Analysis */}
             {jobDescription && (
               <KeywordGapAnalysis

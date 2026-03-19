@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.research-company]
 verify_jwt = false
+
+[functions.extract-jd-keywords]
+verify_jwt = false

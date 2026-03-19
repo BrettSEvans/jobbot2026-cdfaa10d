@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +29,7 @@ import {
   FolderArchive,
 } from "lucide-react";
 import SaveAsTemplate from "@/components/SaveAsTemplate";
+import KeywordGapAnalysis from "@/components/KeywordGapAnalysis";
 import DashboardRevisions from "@/components/DashboardRevisions";
 import CoverLetterRevisions from "@/components/CoverLetterRevisions";
 import { backgroundGenerator } from "@/lib/backgroundGenerator";
@@ -38,6 +39,7 @@ import { useBackgroundJob } from "@/hooks/useBackgroundJob";
 import { parseLlmJsonOutput, assembleDashboardHtml, getDashboardZipFiles } from "@/lib/dashboard/assembler";
 import type { DashboardData } from "@/lib/dashboard/schema";
 import JSZip from "jszip";
+import { supabase } from "@/integrations/supabase/client";
 
 const ApplicationDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -74,6 +76,17 @@ const ApplicationDetail = () => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const bgJob = useBackgroundJob(id);
   const isBgGenerating = bgJob && !["complete", "error"].includes(bgJob.status);
+
+  // Fetch user's resume text for keyword matching
+  const [resumeText, setResumeText] = useState<string | null>(null);
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        supabase.from("profiles").select("resume_text").eq("id", user.id).single()
+          .then(({ data }) => setResumeText(data?.resume_text ?? null));
+      }
+    });
+  }, []);
 
   // Re-fetch when background job completes
   useEffect(() => {
@@ -589,6 +602,22 @@ const ApplicationDetail = () => {
 
           {/* Job Description Tab */}
           <TabsContent value="job-description" className="space-y-4">
+            {/* Keyword Gap Analysis */}
+            {jobDescription && (
+              <KeywordGapAnalysis
+                jobDescription={jobDescription}
+                resumeText={resumeText}
+                onOptimize={(missingKeywords, userPrompt) => {
+                  const kwList = missingKeywords.map(k => k.keyword).join(", ");
+                  toast({
+                    title: "Keyword optimization",
+                    description: userPrompt
+                      ? `Will inject keywords with your context: ${kwList}`
+                      : `Will inject missing keywords: ${kwList}`,
+                  });
+                }}
+              />
+            )}
             <div className="flex flex-wrap gap-2">
               {jobDescription && (
                 <Button variant="outline" size="sm" onClick={() => handleCopy(jobDescription, "Job description")}>

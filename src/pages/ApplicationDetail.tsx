@@ -33,6 +33,7 @@ import KeywordGapAnalysis from "@/components/KeywordGapAnalysis";
 import BulletCoach from "@/components/BulletCoach";
 import AtsFormatCompliance from "@/components/AtsFormatCompliance";
 import SummaryPreview from "@/components/SummaryPreview";
+import JDIntelligencePanel from "@/components/JDIntelligencePanel";
 import DashboardRevisions from "@/components/DashboardRevisions";
 import CoverLetterRevisions from "@/components/CoverLetterRevisions";
 import { backgroundGenerator } from "@/lib/backgroundGenerator";

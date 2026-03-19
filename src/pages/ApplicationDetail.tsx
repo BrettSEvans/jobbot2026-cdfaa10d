@@ -621,6 +621,35 @@ const ApplicationDetail = () => {
                 }}
               />
             )}
+
+            {/* Summary Preview */}
+            {jobDescription && (
+              <SummaryPreview
+                jobDescription={jobDescription}
+                resumeText={resumeText}
+                companyName={companyName}
+                jobTitle={jobTitle}
+                onApprove={(summary) => {
+                  toast({ title: "Summary approved", description: "Ready for full resume generation with your summary." });
+                }}
+              />
+            )}
+
+            {/* ATS Format Compliance - shows when resume_html exists */}
+            {app?.resume_html && (
+              <AtsFormatCompliance resumeHtml={app.resume_html} />
+            )}
+
+            {/* Bullet Coaching - shows when resume_html exists */}
+            {app?.resume_html && jobDescription && (
+              <BulletCoach
+                resumeHtml={app.resume_html}
+                jobDescription={jobDescription}
+                onApplyFix={(original, replacement) => {
+                  toast({ title: "Bullet updated", description: `Replaced: "${original.slice(0, 40)}…"` });
+                }}
+              />
+            )}
             <div className="flex flex-wrap gap-2">
               {jobDescription && (
                 <Button variant="outline" size="sm" onClick={() => handleCopy(jobDescription, "Job description")}>

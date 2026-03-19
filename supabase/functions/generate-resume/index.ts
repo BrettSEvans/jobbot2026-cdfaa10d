@@ -9,7 +9,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { jobDescription, resumeText, missingKeywords, userPrompt, companyName, jobTitle } = await req.json();
+    const { jobDescription, resumeText, missingKeywords, userPrompt, companyName, jobTitle, jdIntelligence } = await req.json();
 
     if (!jobDescription || jobDescription.trim().length < 50) {
       return new Response(

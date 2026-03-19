@@ -46,6 +46,7 @@ import JSZip from "jszip";
 import { supabase } from "@/integrations/supabase/client";
 import { generateOptimizedResume } from "@/lib/api/resumeGeneration";
 import type { ExtractedKeyword } from "@/lib/keywordMatcher";
+import ResumeDiffViewer from "@/components/ResumeDiffViewer";
 
 const ApplicationDetail = () => {
   const { id } = useParams<{ id: string }>();

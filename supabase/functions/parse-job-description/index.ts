@@ -181,7 +181,7 @@ Always return top 3 most severe flags with human-readable explanations.`;
                     type: "object",
                     properties: {
                       keyword: { type: "string" },
-                      tier: { type: "number", enum: [1, 2, 3] },
+                      tier: { type: "integer", description: "ATS importance tier: 1 (highest, in title/first paragraph), 2 (requirements section), 3 (nice-to-have)" },
                       frequency: { type: "number" },
                       is_in_title: { type: "boolean" }
                     },

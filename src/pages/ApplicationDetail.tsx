@@ -46,6 +46,7 @@ import JSZip from "jszip";
 import { supabase } from "@/integrations/supabase/client";
 import { generateOptimizedResume } from "@/lib/api/resumeGeneration";
 import type { ExtractedKeyword } from "@/lib/keywordMatcher";
+import ResumeDiffViewer from "@/components/ResumeDiffViewer";
 
 const ApplicationDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -669,6 +670,21 @@ const ApplicationDetail = () => {
                 jobTitle={jobTitle}
                 onApprove={(summary) => {
                   toast({ title: "Summary approved", description: "Ready for full resume generation with your summary." });
+                }}
+              />
+            )}
+
+            {/* Resume Version Diffing */}
+            {app?.resume_html && (
+              <ResumeDiffViewer
+                baselineText={resumeText}
+                tailoredHtml={app.resume_html}
+                jobDescription={jobDescription}
+                onAcceptFabrication={(change) => {
+                  toast({ title: "Accepted", description: `Kept: "${change.tailored_text.slice(0, 50)}…"` });
+                }}
+                onRevertFabrication={(change) => {
+                  toast({ title: "Reverted", description: `Restored baseline for: "${change.baseline_text.slice(0, 50)}…"` });
                 }}
               />
             )}

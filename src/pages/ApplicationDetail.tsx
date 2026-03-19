@@ -77,6 +77,17 @@ const ApplicationDetail = () => {
   const bgJob = useBackgroundJob(id);
   const isBgGenerating = bgJob && !["complete", "error"].includes(bgJob.status);
 
+  // Fetch user's resume text for keyword matching
+  const [resumeText, setResumeText] = useState<string | null>(null);
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        supabase.from("profiles").select("resume_text").eq("id", user.id).single()
+          .then(({ data }) => setResumeText(data?.resume_text ?? null));
+      }
+    });
+  }, []);
+
   // Re-fetch when background job completes
   useEffect(() => {
     if (bgJob?.status === "complete" && id) {

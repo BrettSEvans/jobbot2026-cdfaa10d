@@ -612,14 +612,32 @@ const ApplicationDetail = () => {
               <KeywordGapAnalysis
                 jobDescription={jobDescription}
                 resumeText={resumeText}
-                onOptimize={(missingKeywords, userPrompt) => {
+                onOptimize={async (missingKeywords: ExtractedKeyword[], userPrompt?: string) => {
+                  if (!resumeText) {
+                    toast({ title: "No resume found", description: "Upload a resume in your Profile first.", variant: "destructive" });
+                    return;
+                  }
                   const kwList = missingKeywords.map(k => k.keyword).join(", ");
-                  toast({
-                    title: "Keyword optimization",
-                    description: userPrompt
-                      ? `Will inject keywords with your context: ${kwList}`
-                      : `Will inject missing keywords: ${kwList}`,
-                  });
+                  toast({ title: "Optimizing resume…", description: `Injecting keywords: ${kwList}` });
+                  try {
+                    const { resume_html } = await generateOptimizedResume({
+                      jobDescription,
+                      resumeText,
+                      missingKeywords,
+                      userPrompt,
+                      companyName,
+                      jobTitle,
+                    });
+                    await saveJobApplication({
+                      id: id!,
+                      job_url: app.job_url,
+                      resume_html,
+                    } as any);
+                    setApp((prev: any) => ({ ...prev, resume_html }));
+                    toast({ title: "Resume optimized!", description: `${missingKeywords.length} keywords injected. Check the Resume tab.` });
+                  } catch (e: any) {
+                    toast({ title: "Optimization failed", description: e.message, variant: "destructive" });
+                  }
                 }}
               />
             )}

@@ -114,7 +114,7 @@ ${userPrompt ? `\nUSER CONTEXT (use this to inform keyword placement):\n${userPr
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash',
         messages: [
-          { role: 'system', content: systemPrompt },
+          { role: 'system', content: fullSystemPrompt },
           {
             role: 'user',
             content: `Target Job: ${jobTitle || 'Not specified'} at ${companyName || 'Not specified'}

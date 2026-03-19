@@ -29,6 +29,7 @@ import {
   FolderArchive,
 } from "lucide-react";
 import SaveAsTemplate from "@/components/SaveAsTemplate";
+import KeywordGapAnalysis from "@/components/KeywordGapAnalysis";
 import DashboardRevisions from "@/components/DashboardRevisions";
 import CoverLetterRevisions from "@/components/CoverLetterRevisions";
 import { backgroundGenerator } from "@/lib/backgroundGenerator";

@@ -30,6 +30,9 @@ import {
 } from "lucide-react";
 import SaveAsTemplate from "@/components/SaveAsTemplate";
 import KeywordGapAnalysis from "@/components/KeywordGapAnalysis";
+import BulletCoach from "@/components/BulletCoach";
+import AtsFormatCompliance from "@/components/AtsFormatCompliance";
+import SummaryPreview from "@/components/SummaryPreview";
 import DashboardRevisions from "@/components/DashboardRevisions";
 import CoverLetterRevisions from "@/components/CoverLetterRevisions";
 import { backgroundGenerator } from "@/lib/backgroundGenerator";
@@ -615,6 +618,35 @@ const ApplicationDetail = () => {
                       ? `Will inject keywords with your context: ${kwList}`
                       : `Will inject missing keywords: ${kwList}`,
                   });
+                }}
+              />
+            )}
+
+            {/* Summary Preview */}
+            {jobDescription && (
+              <SummaryPreview
+                jobDescription={jobDescription}
+                resumeText={resumeText}
+                companyName={companyName}
+                jobTitle={jobTitle}
+                onApprove={(summary) => {
+                  toast({ title: "Summary approved", description: "Ready for full resume generation with your summary." });
+                }}
+              />
+            )}
+
+            {/* ATS Format Compliance - shows when resume_html exists */}
+            {app?.resume_html && (
+              <AtsFormatCompliance resumeHtml={app.resume_html} />
+            )}
+
+            {/* Bullet Coaching - shows when resume_html exists */}
+            {app?.resume_html && jobDescription && (
+              <BulletCoach
+                resumeHtml={app.resume_html}
+                jobDescription={jobDescription}
+                onApplyFix={(original, replacement) => {
+                  toast({ title: "Bullet updated", description: `Replaced: "${original.slice(0, 40)}…"` });
                 }}
               />
             )}

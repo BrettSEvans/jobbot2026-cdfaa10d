@@ -39,6 +39,7 @@ import { useBackgroundJob } from "@/hooks/useBackgroundJob";
 import { parseLlmJsonOutput, assembleDashboardHtml, getDashboardZipFiles } from "@/lib/dashboard/assembler";
 import type { DashboardData } from "@/lib/dashboard/schema";
 import JSZip from "jszip";
+import { supabase } from "@/integrations/supabase/client";
 
 const ApplicationDetail = () => {
   const { id } = useParams<{ id: string }>();

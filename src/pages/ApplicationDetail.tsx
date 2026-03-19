@@ -43,6 +43,8 @@ import { parseLlmJsonOutput, assembleDashboardHtml, getDashboardZipFiles } from 
 import type { DashboardData } from "@/lib/dashboard/schema";
 import JSZip from "jszip";
 import { supabase } from "@/integrations/supabase/client";
+import { generateOptimizedResume } from "@/lib/api/resumeGeneration";
+import type { ExtractedKeyword } from "@/lib/keywordMatcher";
 
 const ApplicationDetail = () => {
   const { id } = useParams<{ id: string }>();

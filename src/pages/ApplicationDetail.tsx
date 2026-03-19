@@ -674,6 +674,21 @@ const ApplicationDetail = () => {
               />
             )}
 
+            {/* Resume Version Diffing */}
+            {app?.resume_html && (
+              <ResumeDiffViewer
+                baselineText={resumeText}
+                tailoredHtml={app.resume_html}
+                jobDescription={jobDescription}
+                onAcceptFabrication={(change) => {
+                  toast({ title: "Accepted", description: `Kept: "${change.tailored_text.slice(0, 50)}…"` });
+                }}
+                onRevertFabrication={(change) => {
+                  toast({ title: "Reverted", description: `Restored baseline for: "${change.baseline_text.slice(0, 50)}…"` });
+                }}
+              />
+            )}
+
             {/* ATS Format Compliance - shows when resume_html exists */}
             {app?.resume_html && (
               <AtsFormatCompliance resumeHtml={app.resume_html} />

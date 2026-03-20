@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -6,38 +6,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import {
-  scrapeCompanyBranding,
-  analyzeCompany,
-  streamDashboardGeneration,
-  saveJobApplication,
-} from "@/lib/api/jobApplication";
-import { researchCompany } from "@/lib/api/researchCompany";
-import { scrapeJob, streamTailoredLetter } from "@/lib/api/coverLetter";
-import { parseLlmJsonOutput, assembleDashboardHtml } from "@/lib/dashboard/assembler";
-import {
   Loader2,
   Globe,
   Link,
   FileText,
   Sparkles,
-  ArrowRight,
   ArrowLeft,
-  Check,
-  Edit3,
-  Copy,
   Layers,
-  Download,
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import BatchJobInput from "@/components/BatchJobInput";
-import TemplateSelector from "@/components/TemplateSelector";
-import SaveAsTemplate from "@/components/SaveAsTemplate";
 import GenerationProgressBar, { type PipelineStage } from "@/components/GenerationProgressBar";
-import type { DashboardTemplate } from "@/lib/api/templates";
+import { backgroundGenerator } from "@/lib/backgroundGenerator";
 
-type Step = "input" | "analyzing" | "generating" | "preview";
-type AnalyzeStage = "scraping" | "branding" | "analyzing" | "cover-letter" | "complete";
+type Step = "input" | "analyzing";
 
 const NewApplication = () => {
   const { toast } = useToast();
@@ -51,28 +33,9 @@ const NewApplication = () => {
 
   // State
   const [step, setStep] = useState<Step>("input");
-  const [loadingMsg, setLoadingMsg] = useState("");
-  const [pipelineStage, setPipelineStage] = useState<PipelineStage>("scraping");
-
-  // Data - using refs to avoid stale closures in the async pipeline
-  const [jobMarkdown, setJobMarkdown] = useState("");
-  const [companyName, setCompanyName] = useState("");
-  const [jobTitle, setJobTitle] = useState("");
-  const [department, setDepartment] = useState("");
-  const [competitors, setCompetitors] = useState<string[]>([]);
-  const [customers, setCustomers] = useState<string[]>([]);
-  const [products, setProducts] = useState<string[]>([]);
-  const [branding, setBranding] = useState<any>(null);
-  const [coverLetter, setCoverLetter] = useState("");
-  const [dashboardHtml, setDashboardHtml] = useState("");
+  const [pipelineStage, setPipelineStage] = useState<PipelineStage>("reviewing-job");
   const [applicationId, setApplicationId] = useState<string | null>(null);
-
-  // Template
-  const [selectedTemplate, setSelectedTemplate] = useState<DashboardTemplate | null>(null);
-
-  // Editable fields
-  const [editingField, setEditingField] = useState<string | null>(null);
-  const [tempEdit, setTempEdit] = useState("");
+  const [pipelineError, setPipelineError] = useState<string | undefined>();
 
   const isValidUrl = (str: string) => {
     try {
@@ -80,6 +43,40 @@ const NewApplication = () => {
       return !!u.hostname.includes('.');
     } catch { return false; }
   };
+
+  // Subscribe to background job updates for navigation
+  useEffect(() => {
+    if (!applicationId) return;
+    const unsub = backgroundGenerator.subscribe(() => {
+      const job = backgroundGenerator.getJob(applicationId);
+      if (!job) return;
+
+      // Map background job status to pipeline stages
+      const statusToStage: Record<string, PipelineStage> = {
+        "pending": "reviewing-job",
+        "reviewing-job": "reviewing-job",
+        "branding": "branding",
+        "analyzing": "analyzing",
+        "research": "research",
+        "resume": "resume",
+      };
+      
+      if (statusToStage[job.status]) {
+        setPipelineStage(statusToStage[job.status]);
+      }
+
+      if (job.status === "error") {
+        setPipelineError(job.error || "Generation failed");
+      }
+
+      // Navigate when resume is complete (or later stages)
+      if (job.status === "resume-complete" || job.status === "cover-letter" || job.status === "dashboard" || job.status === "complete") {
+        setPipelineStage("complete");
+        navigate(`/applications/${applicationId}`);
+      }
+    });
+    return unsub;
+  }, [applicationId, navigate]);
 
   const handleAnalyze = async () => {
     if (!useManualInput && !jobUrl.trim()) return;
@@ -89,171 +86,22 @@ const NewApplication = () => {
       return;
     }
     setStep("analyzing");
-    setPipelineStage("scraping");
+    setPipelineStage("reviewing-job");
+    setPipelineError(undefined);
 
     try {
-      let markdown = "";
-
-      if (useManualInput) {
-        markdown = manualJobDescription.trim();
-        setJobMarkdown(markdown);
-      } else {
-        setLoadingMsg("Scraping job posting...");
-        const result = await scrapeJob(jobUrl);
-        markdown = result.markdown;
-        setJobMarkdown(markdown);
-      }
-
-      // Scrape company branding
-      let brandingData = null;
-      let companyMarkdown = "";
-      if (companyUrl.trim()) {
-        setPipelineStage("branding");
-        setLoadingMsg("Scraping company branding & design...");
-        try {
-          const result = await scrapeCompanyBranding(companyUrl);
-          brandingData = result.branding;
-          companyMarkdown = result.markdown;
-          setBranding(brandingData);
-        } catch (e) {
-          console.warn("Branding scrape failed, continuing:", e);
-        }
-      }
-
-      // AI analysis
-      setPipelineStage("analyzing");
-      setLoadingMsg("Analyzing company, competitors & products...");
-      let companyNameLocal = "", jobTitleLocal = "", departmentLocal = "";
-      let competitorsLocal: string[] = [], customersLocal: string[] = [], productsLocal: string[] = [];
-      try {
-        const analysis = await analyzeCompany({
-          companyMarkdown,
-          jobDescription: markdown,
-          companyName: companyName || undefined,
-        });
-        companyNameLocal = analysis.companyName || "";
-        jobTitleLocal = analysis.jobTitle || "";
-        departmentLocal = analysis.department || "";
-        competitorsLocal = analysis.competitors || [];
-        customersLocal = analysis.customers || [];
-        productsLocal = analysis.products || [];
-        setCompanyName(companyNameLocal);
-        setJobTitle(jobTitleLocal);
-        setDepartment(departmentLocal);
-        setCompetitors(competitorsLocal);
-        setCustomers(customersLocal);
-        setProducts(productsLocal);
-      } catch (e) {
-        console.warn("Analysis failed, continuing:", e);
-      }
-
-      // Research company — determine optimal dashboard sections
-      setPipelineStage("research");
-      setLoadingMsg(`Researching ${companyNameLocal || 'company'}...`);
-      let researchedSections: any[] | undefined;
-      let researchReasoning = "";
-      try {
-        const research = await researchCompany({
-          jobUrl: jobUrl || undefined,
-          companyUrl: companyUrl || undefined,
-          jobTitle: jobTitleLocal,
-          companyName: companyNameLocal,
-          department: departmentLocal,
-          jobDescription: markdown,
-        });
-        researchedSections = research.sections;
-        researchReasoning = research.reasoning || "";
-      } catch (e) {
-        console.warn("Research failed, continuing with default sections:", e);
-      }
-
-      // Generate cover letter
-      setPipelineStage("cover-letter");
-      setLoadingMsg("Generating tailored cover letter...");
-      setCoverLetter("");
-      let finalCoverLetter = "";
-      await streamTailoredLetter({
-        jobDescription: markdown,
-        onDelta: (text) => {
-          finalCoverLetter += text;
-          setCoverLetter(finalCoverLetter);
-        },
-        onDone: () => {},
+      const appId = await backgroundGenerator.startFullGeneration({
+        jobUrl: jobUrl || "manual-input",
+        companyUrl: companyUrl || undefined,
+        jobDescription: useManualInput ? manualJobDescription.trim() : undefined,
+        useManualInput,
       });
-
-      // Auto-generate dashboard immediately after cover letter
-      setPipelineStage("dashboard");
-      setStep("generating");
-      setLoadingMsg("Generating branded dashboard...");
-      setDashboardHtml("");
-
-      let accumulated = "";
-      let parsedData: any = null;
-      await streamDashboardGeneration({
-        jobDescription: markdown,
-        branding: brandingData,
-        companyName: companyNameLocal,
-        jobTitle: jobTitleLocal,
-        competitors: competitorsLocal,
-        customers: customersLocal,
-        products: productsLocal,
-        department: departmentLocal,
-        templateHtml: selectedTemplate?.dashboard_html,
-        researchedSections,
-        onDelta: (text) => {
-          accumulated += text;
-          // Don't show raw JSON — just update byte counter via loadingMsg
-          setLoadingMsg(`Generating branded dashboard... (${Math.round(accumulated.length / 1024)}KB)`);
-        },
-        onDone: () => {
-          // Try parsing as JSON (new format) and assembling with templates
-          const parsed = parseLlmJsonOutput(accumulated);
-          if (parsed) {
-            const html = assembleDashboardHtml(parsed);
-            setDashboardHtml(html);
-            parsedData = parsed;
-            accumulated = html;
-          } else {
-            // Fallback: treat as raw HTML (backward compat)
-            let clean = accumulated;
-            const htmlStart = clean.indexOf("<!DOCTYPE html>");
-            const htmlStartAlt = clean.indexOf("<!doctype html>");
-            const start = htmlStart !== -1 ? htmlStart : htmlStartAlt;
-            if (start > 0) clean = clean.slice(start);
-            const htmlEnd = clean.lastIndexOf("</html>");
-            if (htmlEnd !== -1) clean = clean.slice(0, htmlEnd + 7);
-            setDashboardHtml(clean);
-            accumulated = clean;
-          }
-        },
-      });
-
-      const saved = await saveJobApplication({
-        id: applicationId || undefined,
-        job_url: jobUrl || "manual-input",
-        company_url: companyUrl || undefined,
-        company_name: companyNameLocal || undefined,
-        job_title: jobTitleLocal || undefined,
-        job_description_markdown: markdown,
-        cover_letter: finalCoverLetter,
-        branding: brandingData,
-        dashboard_html: accumulated,
-        dashboard_data: parsedData || undefined,
-        competitors: competitorsLocal,
-        customers: customersLocal,
-        products: productsLocal,
-        status: "complete",
-        research_reasoning: researchReasoning || undefined,
-      });
-      setApplicationId(saved.id);
-
-      setStep("preview");
+      setApplicationId(appId);
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
       setStep("input");
     }
   };
-
   const handleCopyHtml = async () => {
     await navigator.clipboard.writeText(dashboardHtml);
     toast({ title: "Copied!", description: "Dashboard HTML copied to clipboard." });

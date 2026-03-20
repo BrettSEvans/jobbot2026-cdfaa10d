@@ -425,9 +425,19 @@ const ApplicationDetail = () => {
         <Tabs defaultValue="resume" className="space-y-4">
           <TabsList className="w-full justify-start flex-wrap">
             <TabsTrigger value="resume">Resume</TabsTrigger>
-            <TabsTrigger value="cover-letter">Cover Letter</TabsTrigger>
+            <TabsTrigger value="cover-letter" className="flex items-center gap-1.5">
+              Cover Letter
+              {app?.generation_status && !["idle", "complete", "error"].includes(app.generation_status) && !app?.cover_letter && (
+                <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+              )}
+            </TabsTrigger>
             <TabsTrigger value="jd-analysis">JD Analysis</TabsTrigger>
-            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+            <TabsTrigger value="dashboard" className="flex items-center gap-1.5">
+              Dashboard
+              {app?.generation_status && !["idle", "complete", "error"].includes(app.generation_status) && !app?.dashboard_html && (
+                <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+              )}
+            </TabsTrigger>
             <TabsTrigger value="details">Details</TabsTrigger>
           </TabsList>
 

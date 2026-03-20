@@ -32,9 +32,7 @@ import {
   ChevronRight as ChevronRightIcon,
 } from "lucide-react";
 import SaveAsTemplate from "@/components/SaveAsTemplate";
-import KeywordGapAnalysis from "@/components/KeywordGapAnalysis";
-import BulletCoach from "@/components/BulletCoach";
-import AtsFormatCompliance from "@/components/AtsFormatCompliance";
+import ResumeHealthPanel from "@/components/ResumeHealthPanel";
 import SummaryPreview from "@/components/SummaryPreview";
 import JDIntelligencePanel from "@/components/JDIntelligencePanel";
 import DashboardRevisions from "@/components/DashboardRevisions";

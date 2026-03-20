@@ -54,6 +54,7 @@ import SummaryPreview from "@/components/SummaryPreview";
 import JDIntelligencePanel from "@/components/JDIntelligencePanel";
 import DashboardRevisions from "@/components/DashboardRevisions";
 import CoverLetterRevisions from "@/components/CoverLetterRevisions";
+import ResumeRevisions from "@/components/ResumeRevisions";
 import DynamicMaterialsSection from "@/components/DynamicMaterialsSection";
 import { backgroundGenerator } from "@/lib/backgroundGenerator";
 import { saveDashboardRevision } from "@/lib/api/dashboardRevisions";
@@ -99,6 +100,8 @@ const ApplicationDetail = () => {
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const [previewCoverLetter, setPreviewCoverLetter] = useState<string | null>(null);
   const [coverLetterRevisionTrigger, setCoverLetterRevisionTrigger] = useState(0);
+  const [previewResumeHtml, setPreviewResumeHtml] = useState<string | null>(null);
+  const [resumeRevisionTrigger, setResumeRevisionTrigger] = useState(0);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const bgJob = useBackgroundJob(id);
   const isBgGenerating = bgJob && !["complete", "error"].includes(bgJob.status);
@@ -190,6 +193,7 @@ const ApplicationDetail = () => {
       await saveJobApplication({ id, job_url: app.job_url, resume_html, source_resume_id: selectedResumeId } as any);
       setApp((prev: any) => ({ ...prev, resume_html, source_resume_id: selectedResumeId }));
       toast({ title: "Resume regenerated!", description: `Using "${selected.file_name}" as baseline.` });
+      setResumeRevisionTrigger((t) => t + 1);
     } catch (e: any) {
       toast({ title: "Regeneration failed", description: e.message, variant: "destructive" });
     } finally {
@@ -670,13 +674,23 @@ const ApplicationDetail = () => {
                 <Card className="overflow-hidden">
                   <div className="w-full bg-white" style={{ height: "60vh" }}>
                     <iframe
-                      srcDoc={app.resume_html}
+                      srcDoc={previewResumeHtml || app.resume_html}
                       className="w-full h-full border-0"
                       sandbox="allow-scripts"
                       title="Resume Preview"
                     />
                   </div>
                 </Card>
+
+                {/* Resume Revision History */}
+                {id && (
+                  <ResumeRevisions
+                    applicationId={id}
+                    currentHtml={app.resume_html}
+                    onPreviewRevision={setPreviewResumeHtml}
+                    refreshTrigger={resumeRevisionTrigger}
+                  />
+                )}
 
                 {/* Unified Resume Health Panel */}
                 {jobDescription && (

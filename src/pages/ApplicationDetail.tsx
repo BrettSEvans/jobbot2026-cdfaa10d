@@ -27,6 +27,7 @@ import {
   ExternalLink,
   RefreshCw,
   Download,
+  FileDown,
   FolderArchive,
   ChevronLeft,
   ChevronRight as ChevronRightIcon,

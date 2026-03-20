@@ -65,6 +65,7 @@ import { parseLlmJsonOutput, assembleDashboardHtml, getDashboardZipFiles } from 
 import type { DashboardData } from "@/lib/dashboard/schema";
 import JSZip from "jszip";
 import { supabase } from "@/integrations/supabase/client";
+import { downloadHtmlAsDocx, downloadTextAsDocx } from "@/lib/docxExport";
 import { generateOptimizedResume } from "@/lib/api/resumeGeneration";
 import type { ExtractedKeyword } from "@/lib/keywordMatcher";
 import { useQuery } from "@tanstack/react-query";

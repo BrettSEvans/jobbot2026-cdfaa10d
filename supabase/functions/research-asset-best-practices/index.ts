@@ -85,19 +85,15 @@ Deno.serve(async (req) => {
 
       if (assets && assets.length >= 3) {
         const samples = assets.map((a: any) => a.html.slice(0, 2000)).join('\n---SAMPLE---\n');
-        const patternResp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${LOVABLE_API_KEY}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            model: 'google/gemini-2.5-flash',
-            messages: [
-              { role: 'system', content: 'Analyze HTML document samples and extract common patterns. Return JSON only.' },
-              { role: 'user', content: `These "${asset_type}" documents were downloaded (approval signal). Extract patterns:\n${samples}\n\nReturn JSON: { "common_sections": [], "visual_patterns": [], "content_patterns": [], "layout_approach": "" }` },
-            ],
-            response_format: { type: 'json_object' },
-            temperature: 0.2,
-            max_tokens: 2000,
-          }),
+        const patternResp = await aiFetchWithRetry(LOVABLE_API_KEY, {
+          model: 'google/gemini-2.5-flash',
+          messages: [
+            { role: 'system', content: 'Analyze HTML document samples and extract common patterns. Return JSON only.' },
+            { role: 'user', content: `These "${asset_type}" documents were downloaded (approval signal). Extract patterns:\n${samples}\n\nReturn JSON: { "common_sections": [], "visual_patterns": [], "content_patterns": [], "layout_approach": "" }` },
+          ],
+          response_format: { type: 'json_object' },
+          temperature: 0.2,
+          max_tokens: 2000,
         });
         if (patternResp.ok) {
           const pd = await patternResp.json();

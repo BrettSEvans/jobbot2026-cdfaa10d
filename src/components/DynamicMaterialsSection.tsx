@@ -167,7 +167,10 @@ export default function DynamicMaterialsSection({
   const [swapAssetName, setSwapAssetName] = useState("");
   const [proposedAlternatives, setProposedAlternatives] = useState<ProposedAsset[]>([]);
   const [selectedSwapId, setSelectedSwapId] = useState<string | null>(null);
+  const [selectedAiSuggestion, setSelectedAiSuggestion] = useState<AiSuggestion | null>(null);
   const [isSwapping, setIsSwapping] = useState(false);
+  const [aiSuggestions, setAiSuggestions] = useState<AiSuggestion[]>([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
 
   // Fetch generated assets
   useEffect(() => {

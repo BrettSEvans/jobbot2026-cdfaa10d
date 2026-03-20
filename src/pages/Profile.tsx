@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { Save, User, FileText, Zap, X } from "lucide-react";
+import ResumeManager from "@/components/ResumeManager";
 
 const EXPERIENCE_OPTIONS = ["0-1", "2-4", "5-9", "10-14", "15+"];
 const COMMON_SKILLS = [

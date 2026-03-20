@@ -151,22 +151,21 @@ ${jobDescription || 'No description provided.'}`;
         });
       }
     }
-      if (!parsed.sections || !Array.isArray(parsed.sections)) {
-        throw new Error('Missing sections array');
-      }
-      return new Response(JSON.stringify({
-        success: true,
-        sections: parsed.sections,
-        reasoning: parsed.reasoning || '',
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    } catch (e) {
-      console.error('Failed to parse research JSON:', (e as Error).message);
+
+    if (!parsed.sections || !Array.isArray(parsed.sections)) {
+      console.error('Missing sections array in parsed output');
       return new Response(JSON.stringify({ error: 'Failed to parse research output' }), {
         status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    return new Response(JSON.stringify({
+      success: true,
+      sections: parsed.sections,
+      reasoning: parsed.reasoning || '',
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   } catch (e) {
     console.error('Research error:', e);
     return new Response(

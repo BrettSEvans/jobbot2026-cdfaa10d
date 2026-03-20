@@ -134,6 +134,7 @@ Deno.serve(async (req) => {
       products,
       customers,
       applicationId,
+      variabilityRecommendations,
     } = await req.json();
 
     if (!assetName || !jobDescription) {

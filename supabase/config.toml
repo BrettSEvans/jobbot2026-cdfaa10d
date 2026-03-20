@@ -44,3 +44,6 @@ verify_jwt = false
 
 [functions.research-asset-best-practices]
 verify_jwt = false
+
+[functions.score-design-variability]
+verify_jwt = false

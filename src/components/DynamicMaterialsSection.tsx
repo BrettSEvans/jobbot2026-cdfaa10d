@@ -49,6 +49,11 @@ interface ProposedAsset {
   selected: boolean;
 }
 
+interface AiSuggestion {
+  asset_name: string;
+  brief_description: string;
+}
+
 /** Fire-and-forget download signal insert */
 async function recordDownloadSignal(applicationId: string, assetType: string, jobTitle: string) {
   try {
@@ -162,7 +167,10 @@ export default function DynamicMaterialsSection({
   const [swapAssetName, setSwapAssetName] = useState("");
   const [proposedAlternatives, setProposedAlternatives] = useState<ProposedAsset[]>([]);
   const [selectedSwapId, setSelectedSwapId] = useState<string | null>(null);
+  const [selectedAiSuggestion, setSelectedAiSuggestion] = useState<AiSuggestion | null>(null);
   const [isSwapping, setIsSwapping] = useState(false);
+  const [aiSuggestions, setAiSuggestions] = useState<AiSuggestion[]>([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
 
   // Fetch generated assets
   useEffect(() => {
@@ -208,8 +216,12 @@ export default function DynamicMaterialsSection({
     setSwapAssetId(asset.id);
     setSwapAssetName(asset.asset_name);
     setSelectedSwapId(null);
+    setSelectedAiSuggestion(null);
+    setAiSuggestions([]);
+    setLoadingSuggestions(true);
+    setSwapDialogOpen(true);
 
-    // Fetch unselected proposed assets for this application
+    // Fetch existing unselected proposed assets
     const { data } = await supabase
       .from("proposed_assets")
       .select("id, asset_name, brief_description, selected")
@@ -218,35 +230,93 @@ export default function DynamicMaterialsSection({
       .order("created_at", { ascending: true });
 
     setProposedAlternatives((data as ProposedAsset[]) || []);
-    setSwapDialogOpen(true);
+
+    // Fetch AI-suggested alternatives for this job type
+    try {
+      const allExisting = [
+        ...generatedAssets.map(a => a.asset_name),
+        ...(data || []).map((p: any) => p.asset_name),
+        'Resume', 'Cover Letter', 'Dashboard',
+      ];
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/suggest-assets`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+          'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify({
+          jobTitle,
+          jobDescription,
+          companyName,
+          existingAssets: allExisting,
+        }),
+      });
+      if (resp.ok) {
+        const result = await resp.json();
+        if (result.suggestions) {
+          // Filter out any that overlap with proposed alternatives
+          const proposedNames = new Set((data || []).map((p: any) => p.asset_name.toLowerCase()));
+          const filtered = result.suggestions.filter((s: AiSuggestion) =>
+            !proposedNames.has(s.asset_name.toLowerCase())
+          );
+          setAiSuggestions(filtered);
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to fetch AI suggestions:', e);
+    } finally {
+      setLoadingSuggestions(false);
+    }
   };
 
   const handleSwapAsset = async () => {
-    if (!swapAssetId || !selectedSwapId) return;
+    if (!swapAssetId) return;
     const currentAsset = generatedAssets.find((a) => a.id === swapAssetId);
-    const newProposed = proposedAlternatives.find((p) => p.id === selectedSwapId);
-    if (!currentAsset || !newProposed) return;
+    if (!currentAsset) return;
+
+    // Determine swap target — either a proposed asset or an AI suggestion
+    const newProposed = selectedSwapId ? proposedAlternatives.find((p) => p.id === selectedSwapId) : null;
+    const swapTarget = newProposed
+      ? { name: newProposed.asset_name, description: newProposed.brief_description }
+      : selectedAiSuggestion
+        ? { name: selectedAiSuggestion.asset_name, description: selectedAiSuggestion.brief_description }
+        : null;
+
+    if (!swapTarget) return;
 
     setIsSwapping(true);
     try {
       // 1. Save current asset as revision
       if (currentAsset.html) {
         try {
-          await saveGeneratedAssetRevision(applicationId, swapAssetId, currentAsset.html, `Before swap to ${newProposed.asset_name}`);
+          await saveGeneratedAssetRevision(applicationId, swapAssetId, currentAsset.html, `Before swap to ${swapTarget.name}`);
         } catch { /* non-critical */ }
       }
 
-      // 2. Mark old proposed_asset as not selected, new one as selected
+      // 2. Mark old proposed_asset as not selected
       await supabase.from("proposed_assets").update({ selected: false })
         .eq("application_id", applicationId)
         .eq("asset_name", currentAsset.asset_name);
-      await supabase.from("proposed_assets").update({ selected: true })
-        .eq("id", selectedSwapId);
+
+      // If swapping to an existing proposed asset, mark it selected
+      if (newProposed) {
+        await supabase.from("proposed_assets").update({ selected: true })
+          .eq("id", selectedSwapId!);
+      } else {
+        // Create a new proposed_asset record for the AI suggestion
+        await supabase.from("proposed_assets").insert({
+          application_id: applicationId,
+          asset_name: swapTarget.name,
+          brief_description: swapTarget.description,
+          selected: true,
+        });
+      }
 
       // 3. Update generated_assets row with new name/description, set to generating
       await supabase.from("generated_assets").update({
-        asset_name: newProposed.asset_name,
-        brief_description: newProposed.brief_description,
+        asset_name: swapTarget.name,
+        brief_description: swapTarget.description,
         html: '',
         generation_status: 'generating',
         generation_error: null,
@@ -261,8 +331,8 @@ export default function DynamicMaterialsSection({
           'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
         },
         body: JSON.stringify({
-          assetName: newProposed.asset_name,
-          assetDescription: newProposed.brief_description,
+          assetName: swapTarget.name,
+          assetDescription: swapTarget.description,
           jobDescription,
           companyName,
           jobTitle,
@@ -288,13 +358,13 @@ export default function DynamicMaterialsSection({
       setGeneratedAssets((prev) =>
         prev.map((a) =>
           a.id === swapAssetId
-            ? { ...a, asset_name: newProposed.asset_name, brief_description: newProposed.brief_description, generation_status: 'generating' }
+            ? { ...a, asset_name: swapTarget.name, brief_description: swapTarget.description, generation_status: 'generating' }
             : a
         )
       );
 
       setSwapDialogOpen(false);
-      toast({ title: "Asset swapped!", description: `Now generating "${newProposed.asset_name}".` });
+      toast({ title: "Asset swapped!", description: `Now generating "${swapTarget.name}".` });
       setAssetRevisionTriggers((prev) => ({ ...prev, [swapAssetId]: (prev[swapAssetId] || 0) + 1 }));
     } catch (e: any) {
       toast({ title: "Swap failed", description: e.message, variant: "destructive" });
@@ -548,40 +618,80 @@ export default function DynamicMaterialsSection({
 
       {/* Change Asset Dialog */}
       <Dialog open={swapDialogOpen} onOpenChange={setSwapDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[85vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>Change Asset</DialogTitle>
             <DialogDescription>
               Replace "{swapAssetName}" with a different material. The total number of materials stays the same.
             </DialogDescription>
           </DialogHeader>
-          {proposedAlternatives.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-4">
-              No alternative materials available for this application.
-            </p>
-          ) : (
-            <div className="space-y-2 max-h-[300px] overflow-y-auto py-2">
-              {proposedAlternatives.map((alt) => (
-                <div
-                  key={alt.id}
-                  onClick={() => setSelectedSwapId(alt.id)}
-                  className={`p-3 rounded-md border cursor-pointer transition-colors ${
-                    selectedSwapId === alt.id
-                      ? "border-primary bg-primary/5"
-                      : "border-border hover:border-muted-foreground/30"
-                  }`}
-                >
-                  <p className="font-medium text-sm">{alt.asset_name}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{alt.brief_description}</p>
+          <div className="space-y-4 overflow-y-auto flex-1 py-2">
+            {/* Previously proposed alternatives */}
+            {proposedAlternatives.length > 0 && (
+              <div>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Previously Proposed</p>
+                <div className="space-y-2">
+                  {proposedAlternatives.map((alt) => (
+                    <div
+                      key={alt.id}
+                      onClick={() => { setSelectedSwapId(alt.id); setSelectedAiSuggestion(null); }}
+                      className={`p-3 rounded-md border cursor-pointer transition-colors ${
+                        selectedSwapId === alt.id
+                          ? "border-primary bg-primary/5"
+                          : "border-border hover:border-muted-foreground/30"
+                      }`}
+                    >
+                      <p className="font-medium text-sm">{alt.asset_name}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{alt.brief_description}</p>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          )}
+              </div>
+            )}
+
+            {/* AI-suggested alternatives */}
+            {loadingSuggestions && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Finding materials relevant to this role…
+              </div>
+            )}
+            {!loadingSuggestions && aiSuggestions.length > 0 && (
+              <div>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
+                  <Sparkles className="inline h-3 w-3 mr-1" />
+                  Suggested for this Role
+                </p>
+                <div className="space-y-2">
+                  {aiSuggestions.map((sug, idx) => (
+                    <div
+                      key={`ai-${idx}`}
+                      onClick={() => { setSelectedAiSuggestion(sug); setSelectedSwapId(null); }}
+                      className={`p-3 rounded-md border cursor-pointer transition-colors ${
+                        selectedAiSuggestion?.asset_name === sug.asset_name
+                          ? "border-primary bg-primary/5"
+                          : "border-border hover:border-muted-foreground/30"
+                      }`}
+                    >
+                      <p className="font-medium text-sm">{sug.asset_name}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{sug.brief_description}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {!loadingSuggestions && proposedAlternatives.length === 0 && aiSuggestions.length === 0 && (
+              <p className="text-sm text-muted-foreground py-4">
+                No alternative materials available for this application.
+              </p>
+            )}
+          </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setSwapDialogOpen(false)}>Cancel</Button>
             <Button
               onClick={handleSwapAsset}
-              disabled={!selectedSwapId || isSwapping}
+              disabled={(!selectedSwapId && !selectedAiSuggestion) || isSwapping}
             >
               {isSwapping ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Repeat2 className="mr-2 h-4 w-4" />}
               {isSwapping ? "Swapping…" : "Swap Asset"}

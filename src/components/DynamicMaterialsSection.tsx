@@ -271,31 +271,52 @@ export default function DynamicMaterialsSection({
   };
 
   const handleSwapAsset = async () => {
-    if (!swapAssetId || !selectedSwapId) return;
+    if (!swapAssetId) return;
     const currentAsset = generatedAssets.find((a) => a.id === swapAssetId);
-    const newProposed = proposedAlternatives.find((p) => p.id === selectedSwapId);
-    if (!currentAsset || !newProposed) return;
+    if (!currentAsset) return;
+
+    // Determine swap target — either a proposed asset or an AI suggestion
+    const newProposed = selectedSwapId ? proposedAlternatives.find((p) => p.id === selectedSwapId) : null;
+    const swapTarget = newProposed
+      ? { name: newProposed.asset_name, description: newProposed.brief_description }
+      : selectedAiSuggestion
+        ? { name: selectedAiSuggestion.asset_name, description: selectedAiSuggestion.brief_description }
+        : null;
+
+    if (!swapTarget) return;
 
     setIsSwapping(true);
     try {
       // 1. Save current asset as revision
       if (currentAsset.html) {
         try {
-          await saveGeneratedAssetRevision(applicationId, swapAssetId, currentAsset.html, `Before swap to ${newProposed.asset_name}`);
+          await saveGeneratedAssetRevision(applicationId, swapAssetId, currentAsset.html, `Before swap to ${swapTarget.name}`);
         } catch { /* non-critical */ }
       }
 
-      // 2. Mark old proposed_asset as not selected, new one as selected
+      // 2. Mark old proposed_asset as not selected
       await supabase.from("proposed_assets").update({ selected: false })
         .eq("application_id", applicationId)
         .eq("asset_name", currentAsset.asset_name);
-      await supabase.from("proposed_assets").update({ selected: true })
-        .eq("id", selectedSwapId);
+
+      // If swapping to an existing proposed asset, mark it selected
+      if (newProposed) {
+        await supabase.from("proposed_assets").update({ selected: true })
+          .eq("id", selectedSwapId!);
+      } else {
+        // Create a new proposed_asset record for the AI suggestion
+        await supabase.from("proposed_assets").insert({
+          application_id: applicationId,
+          asset_name: swapTarget.name,
+          brief_description: swapTarget.description,
+          selected: true,
+        });
+      }
 
       // 3. Update generated_assets row with new name/description, set to generating
       await supabase.from("generated_assets").update({
-        asset_name: newProposed.asset_name,
-        brief_description: newProposed.brief_description,
+        asset_name: swapTarget.name,
+        brief_description: swapTarget.description,
         html: '',
         generation_status: 'generating',
         generation_error: null,
@@ -310,8 +331,8 @@ export default function DynamicMaterialsSection({
           'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
         },
         body: JSON.stringify({
-          assetName: newProposed.asset_name,
-          assetDescription: newProposed.brief_description,
+          assetName: swapTarget.name,
+          assetDescription: swapTarget.description,
           jobDescription,
           companyName,
           jobTitle,
@@ -337,13 +358,13 @@ export default function DynamicMaterialsSection({
       setGeneratedAssets((prev) =>
         prev.map((a) =>
           a.id === swapAssetId
-            ? { ...a, asset_name: newProposed.asset_name, brief_description: newProposed.brief_description, generation_status: 'generating' }
+            ? { ...a, asset_name: swapTarget.name, brief_description: swapTarget.description, generation_status: 'generating' }
             : a
         )
       );
 
       setSwapDialogOpen(false);
-      toast({ title: "Asset swapped!", description: `Now generating "${newProposed.asset_name}".` });
+      toast({ title: "Asset swapped!", description: `Now generating "${swapTarget.name}".` });
       setAssetRevisionTriggers((prev) => ({ ...prev, [swapAssetId]: (prev[swapAssetId] || 0) + 1 }));
     } catch (e: any) {
       toast({ title: "Swap failed", description: e.message, variant: "destructive" });

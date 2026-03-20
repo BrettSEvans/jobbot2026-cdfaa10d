@@ -138,6 +138,7 @@ Deno.serve(async (req) => {
       competitors,
       products,
       customers,
+      applicationId,
     } = await req.json();
 
     if (!assetName || !jobDescription) {

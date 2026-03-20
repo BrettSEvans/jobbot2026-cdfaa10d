@@ -75,7 +75,7 @@ const NewApplication = () => {
         navigate(`/applications/${applicationId}`);
       }
     });
-    return unsub;
+    return () => { unsub(); };
   }, [applicationId, navigate]);
 
   const handleAnalyze = async () => {

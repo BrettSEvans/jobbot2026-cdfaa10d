@@ -131,7 +131,7 @@ const Applications = () => {
         .update({ generation_status: "idle", generation_error: null, status: "draft" })
         .eq("id", appId);
 
-      backgroundGenerator.startGeneration({
+      backgroundGenerator.startFullGeneration({
         applicationId: appId,
         jobUrl: appData.job_url,
         jobDescription: appData.job_description_markdown || "",

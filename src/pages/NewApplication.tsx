@@ -102,58 +102,6 @@ const NewApplication = () => {
       setStep("input");
     }
   };
-  const handleCopyHtml = async () => {
-    await navigator.clipboard.writeText(dashboardHtml);
-    toast({ title: "Copied!", description: "Dashboard HTML copied to clipboard." });
-  };
-
-  const handleCopyCoverLetter = async () => {
-    await navigator.clipboard.writeText(coverLetter);
-    toast({ title: "Copied!", description: "Cover letter copied to clipboard." });
-  };
-
-  const startEditField = (field: string, value: string) => {
-    setEditingField(field);
-    setTempEdit(value);
-  };
-
-  const saveEditField = (field: string) => {
-    switch (field) {
-      case "companyName": setCompanyName(tempEdit); break;
-      case "jobTitle": setJobTitle(tempEdit); break;
-      case "department": setDepartment(tempEdit); break;
-      case "competitors": setCompetitors(tempEdit.split(",").map(s => s.trim()).filter(Boolean)); break;
-      case "customers": setCustomers(tempEdit.split(",").map(s => s.trim()).filter(Boolean)); break;
-      case "products": setProducts(tempEdit.split(",").map(s => s.trim()).filter(Boolean)); break;
-    }
-    setEditingField(null);
-  };
-
-  const EditableField = ({ label, field, value, displayValue }: { label: string; field: string; value: string; displayValue?: string }) => (
-    <div className="flex items-center justify-between gap-2 py-1">
-      <span className="text-sm font-medium text-muted-foreground">{label}:</span>
-      {editingField === field ? (
-        <div className="flex items-center gap-1 flex-1 ml-2">
-          <Input
-            value={tempEdit}
-            onChange={(e) => setTempEdit(e.target.value)}
-            className="h-7 text-sm"
-            onKeyDown={(e) => e.key === "Enter" && saveEditField(field)}
-          />
-          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => saveEditField(field)}>
-            <Check className="h-3 w-3" />
-          </Button>
-        </div>
-      ) : (
-        <div className="flex items-center gap-1 flex-1 ml-2 justify-end">
-          <span className="text-sm text-right">{displayValue || value || "—"}</span>
-          <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => startEditField(field, value)}>
-            <Edit3 className="h-3 w-3" />
-          </Button>
-        </div>
-      )}
-    </div>
-  );
 
   return (
     <div className="min-h-screen bg-background">
@@ -253,219 +201,30 @@ const NewApplication = () => {
           </Tabs>
         )}
 
-        {/* Step: Analyzing */}
+        {/* Step: Analyzing — shows progress bar while pipeline runs */}
         {step === "analyzing" && (
           <Card>
             <CardContent className="py-10 space-y-6">
-              <GenerationProgressBar currentStage={pipelineStage} />
-              <p className="text-sm text-muted-foreground text-center">{loadingMsg}</p>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Step: Review */}
-        {/* Review step removed — dashboard auto-generates after analysis */}
-
-        {/* Step: Generating */}
-        {step === "generating" && (
-          <Card>
-            <CardContent className="py-10 space-y-6">
-              <GenerationProgressBar currentStage={pipelineStage} />
-              <p className="text-sm text-muted-foreground text-center">{loadingMsg}</p>
+              <GenerationProgressBar currentStage={pipelineStage} error={pipelineError} />
               <div className="flex items-center justify-center gap-3 mt-2">
                 <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                <p className="text-xs text-muted-foreground">
-                  Assembling dashboard... This may take 30–60 seconds.
+                <p className="text-sm text-muted-foreground">
+                  Building your application... You'll be redirected when your resume is ready.
                 </p>
               </div>
+              {pipelineError && (
+                <div className="flex justify-center">
+                  <Button variant="outline" onClick={() => { setStep("input"); setPipelineError(undefined); }}>
+                    <ArrowLeft className="h-4 w-4 mr-1" /> Try Again
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
-        )}
-
-        {/* Step: Preview */}
-        {step === "preview" && (
-          <DashboardPreview
-            html={dashboardHtml}
-            applicationId={applicationId}
-            companyName={companyName}
-            jobTitle={jobTitle}
-            department={department}
-            onCopy={handleCopyHtml}
-            onSave={async (html) => {
-              setDashboardHtml(html);
-              if (applicationId) {
-                await saveJobApplication({ id: applicationId, dashboard_html: html, job_url: jobUrl || "manual-input" });
-              }
-            }}
-            navigate={navigate}
-          />
         )}
       </div>
     </div>
   );
 };
-
-// Dashboard Preview with AI Chat + Save as Template
-function DashboardPreview({
-  html,
-  applicationId,
-  companyName,
-  jobTitle,
-  department,
-  onCopy,
-  onSave,
-  navigate,
-}: {
-  html: string;
-  applicationId: string | null;
-  companyName?: string;
-  jobTitle?: string;
-  department?: string;
-  onCopy: () => void;
-  onSave: (html: string) => Promise<void>;
-  navigate: (path: string) => void;
-}) {
-  const { toast } = useToast();
-  const [chatOpen, setChatOpen] = useState(false);
-  const [chatInput, setChatInput] = useState("");
-  const [chatHistory, setChatHistory] = useState<Array<{ role: string; content: string }>>([]);
-  const [isRefining, setIsRefining] = useState(false);
-  const [currentHtml, setCurrentHtml] = useState(html);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-
-  const handleSendChat = async () => {
-    if (!chatInput.trim() || isRefining) return;
-    const msg = chatInput.trim();
-    setChatInput("");
-    const newHistory = [...chatHistory, { role: "user", content: msg }];
-    setChatHistory(newHistory);
-    setIsRefining(true);
-
-    try {
-      const { streamDashboardRefinement } = await import("@/lib/api/jobApplication");
-      const { parseLlmJsonOutput: parseJson, assembleDashboardHtml: assembleHtml } = await import("@/lib/dashboard/assembler");
-      let accumulated = "";
-      await streamDashboardRefinement({
-        currentHtml: currentHtml,
-        userMessage: msg,
-        chatHistory: newHistory,
-        onDelta: (text) => { accumulated += text; },
-        onDone: () => {
-          // Try JSON-based refinement first
-          const parsed = parseJson(accumulated);
-          if (parsed) {
-            const assembledHtml = assembleHtml(parsed);
-            setCurrentHtml(assembledHtml);
-            setChatHistory((prev) => [...prev, { role: "assistant", content: "✅ Dashboard updated! Check the preview." }]);
-            onSave(assembledHtml);
-          } else {
-            let clean = accumulated;
-            const htmlStart = clean.indexOf("<!DOCTYPE html>");
-            const htmlStartAlt = clean.indexOf("<!doctype html>");
-            const start = htmlStart !== -1 ? htmlStart : htmlStartAlt;
-            if (start > 0) clean = clean.slice(start);
-            const htmlEnd = clean.lastIndexOf("</html>");
-            if (htmlEnd !== -1) clean = clean.slice(0, htmlEnd + 7);
-            setCurrentHtml(clean);
-            setChatHistory((prev) => [...prev, { role: "assistant", content: "✅ Dashboard updated! Check the preview." }]);
-            onSave(clean);
-          }
-        },
-      });
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
-      setChatHistory((prev) => [...prev, { role: "assistant", content: `❌ Error: ${err.message}` }]);
-    } finally {
-      setIsRefining(false);
-    }
-  };
-
-  return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap gap-2">
-        <Button onClick={onCopy} variant="outline">
-          <Copy className="mr-2 h-4 w-4" /> Copy HTML
-        </Button>
-        <Button onClick={() => setChatOpen(!chatOpen)} variant="outline">
-          <Edit3 className="mr-2 h-4 w-4" /> {chatOpen ? "Hide Chat" : "Refine with AI"}
-        </Button>
-        <SaveAsTemplate
-          dashboardHtml={currentHtml}
-          applicationId={applicationId || undefined}
-          defaultLabel={`${companyName || ""} ${jobTitle || ""} Dashboard`.trim()}
-          defaultJobFunction={jobTitle}
-          defaultDepartment={department}
-        />
-        <Button
-          variant="outline"
-          onClick={() => {
-            const blob = new Blob([currentHtml], { type: "text/html" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = `${(companyName || "dashboard").replace(/\s+/g, "-").toLowerCase()}-dashboard.html`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-          }}
-        >
-          <Download className="mr-2 h-4 w-4" /> Download HTML
-        </Button>
-        <Button variant="ghost" onClick={() => navigate("/applications")}>
-          <ArrowLeft className="mr-2 h-4 w-4" /> All Applications
-        </Button>
-      </div>
-
-      {chatOpen && (
-        <Card>
-          <CardContent className="pt-4 space-y-3">
-            <div className="max-h-[200px] overflow-y-auto space-y-2">
-              {chatHistory.map((msg, i) => (
-                <div key={i} className={`text-sm p-2 rounded ${msg.role === "user" ? "bg-primary/10 text-right" : "bg-muted"}`}>
-                  {msg.content}
-                </div>
-              ))}
-              {isRefining && (
-                <div className="text-sm p-2 rounded bg-muted flex items-center gap-2">
-                  <Loader2 className="h-3 w-3 animate-spin" /> Refining dashboard...
-                </div>
-              )}
-            </div>
-            <div className="flex gap-2">
-              <Textarea
-                placeholder='e.g. "Change the primary color to blue" or "Add a market share chart"'
-                value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
-                rows={2}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSendChat();
-                  }
-                }}
-              />
-              <Button onClick={handleSendChat} disabled={!chatInput.trim() || isRefining} className="self-end">
-                Send
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      <Card className="overflow-hidden">
-        <div className="w-full" style={{ height: "70vh" }}>
-          <iframe
-            ref={iframeRef}
-            srcDoc={currentHtml}
-            className="w-full h-full border-0"
-            sandbox="allow-scripts"
-            title="Dashboard Preview"
-          />
-        </div>
-      </Card>
-    </div>
-  );
-}
 
 export default NewApplication;

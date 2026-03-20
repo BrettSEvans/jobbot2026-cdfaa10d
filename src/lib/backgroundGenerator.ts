@@ -29,9 +29,7 @@ export type GenerationJobStatus =
   | "resume"
   | "resume-complete"
   | "cover-letter"
-  | "raid-log"
-  | "architecture-diagram"
-  | "roadmap"
+  | "generating-materials"
   | "dashboard"
   | "complete"
   | "error";

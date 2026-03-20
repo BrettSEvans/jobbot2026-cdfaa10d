@@ -270,6 +270,7 @@ export default function DynamicMaterialsSection({
           products: app?.products,
           customers: app?.customers,
           applicationId,
+          variabilityRecommendations: app?.design_variability?.recommendations || [],
         }),
       });
 

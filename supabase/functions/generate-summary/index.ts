@@ -93,11 +93,16 @@ RULES:
       throw new Error('Summary generation failed');
     }
 
-    const data = await response.json();
+    const rawText = await response.text();
+    if (!rawText || rawText.trim().length === 0) {
+      throw new Error('AI returned an empty response — please retry');
+    }
+    let data;
+    try { data = JSON.parse(rawText); } catch { throw new Error('AI returned invalid JSON — please retry'); }
     const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
     let result;
     if (toolCall) {
-      result = JSON.parse(toolCall.function.arguments);
+      try { result = JSON.parse(toolCall.function.arguments); } catch { result = { summary: toolCall.function.arguments || '', keywords_used: [], confidence: 'low' }; }
     } else {
       const content = data.choices?.[0]?.message?.content || '';
       result = { summary: content, keywords_used: [], confidence: 'low' };

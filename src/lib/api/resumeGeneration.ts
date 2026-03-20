@@ -8,6 +8,7 @@ export async function generateOptimizedResume({
   userPrompt,
   companyName,
   jobTitle,
+  sourceResumeId,
 }: {
   jobDescription: string;
   resumeText: string;
@@ -15,6 +16,7 @@ export async function generateOptimizedResume({
   userPrompt?: string;
   companyName?: string;
   jobTitle?: string;
+  sourceResumeId?: string;
 }): Promise<{ resume_html: string; keywords_injected: string[] }> {
   const { data, error } = await supabase.functions.invoke('generate-resume', {
     body: { jobDescription, resumeText, missingKeywords, userPrompt, companyName, jobTitle },

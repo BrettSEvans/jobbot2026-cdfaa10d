@@ -193,6 +193,7 @@ const ApplicationDetail = () => {
       await saveJobApplication({ id, job_url: app.job_url, resume_html, source_resume_id: selectedResumeId } as any);
       setApp((prev: any) => ({ ...prev, resume_html, source_resume_id: selectedResumeId }));
       toast({ title: "Resume regenerated!", description: `Using "${selected.file_name}" as baseline.` });
+      setResumeRevisionTrigger((t) => t + 1);
     } catch (e: any) {
       toast({ title: "Regeneration failed", description: e.message, variant: "destructive" });
     } finally {

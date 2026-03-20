@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { ArrowRight, ArrowLeft, User, FileText, Zap, Rocket, X } from "lucide-react";
+import { ArrowRight, ArrowLeft, User, FileText, Zap, Rocket, X, PenLine } from "lucide-react";
 import BrandLogo from "@/components/BrandLogo";
 
 const EXPERIENCE_OPTIONS = ["0-1", "2-4", "5-9", "10-14", "15+"];
@@ -39,12 +39,15 @@ export default function Onboarding() {
   // Step 2 fields
   const [resumeText, setResumeText] = useState("");
 
-  // Step 3 fields
+  // Step 3 fields (Story 1.3: merged skills + master cover letter)
   const [skills, setSkills] = useState<string[]>([]);
   const [skillInput, setSkillInput] = useState("");
   const [industries, setIndustries] = useState<string[]>([]);
 
-  const totalSteps = 4;
+  // Step 4 fields (Story 1.3: master cover letter)
+  const [masterCoverLetter, setMasterCoverLetter] = useState("");
+
+  const totalSteps = 5;
   const progress = (step / totalSteps) * 100;
 
   const toggleSkill = (skill: string) => {
@@ -75,6 +78,7 @@ export default function Onboarding() {
         resume_text: resumeText || null,
         key_skills: skills.length > 0 ? skills : null,
         target_industries: industries.length > 0 ? industries : null,
+        master_cover_letter: masterCoverLetter || null,
         onboarding_completed_at: new Date().toISOString(),
       })
       .eq("id", user.id);
@@ -85,7 +89,7 @@ export default function Onboarding() {
       toast.success("Welcome aboard! Your profile is set up.");
       navigate("/");
     }
-  }, [user, firstName, lastName, experience, resumeText, skills, industries, navigate]);
+  }, [user, firstName, lastName, experience, resumeText, skills, industries, masterCoverLetter, navigate]);
 
   const handleSkip = async () => {
     if (!user) return;
@@ -100,6 +104,7 @@ export default function Onboarding() {
     <User className="h-4 w-4" />,
     <FileText className="h-4 w-4" />,
     <Zap className="h-4 w-4" />,
+    <PenLine className="h-4 w-4" />,
     <Rocket className="h-4 w-4" />,
   ];
 
@@ -112,9 +117,8 @@ export default function Onboarding() {
           </div>
           <CardTitle className="text-xl font-bold text-foreground">Set Up Your Profile</CardTitle>
           <CardDescription>Step {step} of {totalSteps}</CardDescription>
-          {/* Progress steps */}
           <div className="flex items-center justify-center gap-2 pt-1">
-            {[1, 2, 3, 4].map((s) => (
+            {[1, 2, 3, 4, 5].map((s) => (
               <div
                 key={s}
                 className={`flex items-center justify-center w-8 h-8 rounded-full text-xs font-medium transition-colors ${
@@ -232,8 +236,25 @@ export default function Onboarding() {
             </div>
           )}
 
-          {/* Step 4: Ready */}
+          {/* Story 1.3: Step 4: Master Cover Letter */}
           {step === 4 && (
+            <div className="space-y-3">
+              <Label>Master Cover Letter <span className="text-muted-foreground font-normal">(optional)</span></Label>
+              <Textarea
+                placeholder="Paste your best cover letter here. We'll use this as a style reference when generating tailored cover letters for each application."
+                value={masterCoverLetter}
+                onChange={(e) => setMasterCoverLetter(e.target.value)}
+                rows={10}
+                className="text-sm"
+              />
+              <p className="text-xs text-muted-foreground">
+                This is your "gold standard" cover letter. We'll match its tone, structure, and voice when creating new ones.
+              </p>
+            </div>
+          )}
+
+          {/* Step 5: Ready */}
+          {step === 5 && (
             <div className="text-center space-y-4 py-4">
               <Rocket className="h-12 w-12 mx-auto text-primary" />
               <h3 className="text-lg font-semibold text-foreground">You're all set!</h3>
@@ -259,7 +280,7 @@ export default function Onboarding() {
             <div>
               {step < totalSteps ? (
                 <Button size="sm" onClick={() => setStep(step + 1)} className="gap-1">
-                  Next <ArrowRight className="h-3.5 w-3.5" />
+                  {step === 4 && !masterCoverLetter ? "Skip" : "Next"} <ArrowRight className="h-3.5 w-3.5" />
                 </Button>
               ) : (
                 <Button size="sm" onClick={handleComplete} disabled={loading} className="gap-1">

@@ -15,6 +15,10 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
+  RefreshCw,
+  AlertTriangle,
+  User,
+  X,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -25,8 +29,25 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { backgroundGenerator } from "@/lib/backgroundGenerator";
 import { useActiveJobCount } from "@/hooks/useBackgroundJob";
+import { supabase } from "@/integrations/supabase/client";
 
 type SortKey = "company_name" | "job_title" | "status" | "created_at" | "updated_at";
 type SortDir = "asc" | "desc";
@@ -39,6 +60,21 @@ const Applications = () => {
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [sortKey, setSortKey] = useState<SortKey>("created_at");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+
+  // Story 1.2: Profile completeness check
+  const [profileIncomplete, setProfileIncomplete] = useState(false);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        supabase.from("profiles").select("resume_text").eq("id", user.id).single()
+          .then(({ data }) => {
+            if (!data?.resume_text) setProfileIncomplete(true);
+          });
+      }
+    });
+  }, []);
 
   const activeJobCount = useActiveJobCount();
 
@@ -46,7 +82,6 @@ const Applications = () => {
     loadApplications();
   }, []);
 
-  // Re-fetch applications when background jobs complete
   useEffect(() => {
     const unsub = backgroundGenerator.subscribe(() => {
       loadApplications();
@@ -65,12 +100,44 @@ const Applications = () => {
     }
   };
 
-  const handleDelete = async (id: string, e: React.MouseEvent) => {
+  // Story 3.2: Delete with confirmation
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return;
+    try {
+      await deleteJobApplication(deleteTarget.id);
+      setApplications((prev) => prev.filter((a) => a.id !== deleteTarget.id));
+      toast({ title: "Deleted", description: "Application removed." });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setDeleteTarget(null);
+    }
+  };
+
+  // Story 3.1: Retry failed generation
+  const handleRetry = async (appId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     try {
-      await deleteJobApplication(id);
-      setApplications((prev) => prev.filter((a) => a.id !== id));
-      toast({ title: "Deleted", description: "Application removed." });
+      // Reset generation status and re-trigger
+      const { data: appData } = await supabase
+        .from("job_applications")
+        .select("*")
+        .eq("id", appId)
+        .single();
+      if (!appData) return;
+      
+      await supabase
+        .from("job_applications")
+        .update({ generation_status: "idle", generation_error: null, status: "draft" })
+        .eq("id", appId);
+
+      backgroundGenerator.startFullGeneration({
+        applicationId: appId,
+        jobUrl: appData.job_url,
+        jobDescription: appData.job_description_markdown || "",
+      });
+      toast({ title: "Retrying", description: "Generation restarted in background." });
+      loadApplications();
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     }
@@ -116,6 +183,22 @@ const Applications = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-6xl mx-auto p-4 md:p-8 space-y-6">
+        {/* Story 1.2: Profile completeness nudge */}
+        {profileIncomplete && !bannerDismissed && (
+          <div className="flex items-center gap-3 p-3 rounded-lg border border-primary/20 bg-primary/5">
+            <User className="h-5 w-5 text-primary flex-shrink-0" />
+            <div className="flex-1 text-sm">
+              <span className="font-medium">Complete your profile</span> — add your resume text to unlock keyword matching and resume optimization.
+            </div>
+            <Button variant="outline" size="sm" onClick={() => navigate("/profile")}>
+              Go to Profile
+            </Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setBannerDismissed(true)}>
+              <X className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        )}
+
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Job Applications</h1>
@@ -161,10 +244,11 @@ const Applications = () => {
                     <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("status")}>
                       <div className="flex items-center">Status <SortIcon col="status" /></div>
                     </TableHead>
-                    <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("created_at")}>
+                    {/* Story 5.2: Hide date columns on mobile */}
+                    <TableHead className="cursor-pointer select-none hidden md:table-cell" onClick={() => toggleSort("created_at")}>
                       <div className="flex items-center">Created <SortIcon col="created_at" /></div>
                     </TableHead>
-                    <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("updated_at")}>
+                    <TableHead className="cursor-pointer select-none hidden md:table-cell" onClick={() => toggleSort("updated_at")}>
                       <div className="flex items-center">Updated <SortIcon col="updated_at" /></div>
                     </TableHead>
                     <TableHead className="text-right">Actions</TableHead>
@@ -182,16 +266,32 @@ const Applications = () => {
                       </TableCell>
                       <TableCell>{app.job_title || "Unknown"}</TableCell>
                       <TableCell>
-                        <ApplicationStatusCell appId={app.id} dbStatus={app.status} generationStatus={app.generation_status} />
+                        <ApplicationStatusCell appId={app.id} dbStatus={app.status} generationStatus={app.generation_status} generationError={app.generation_error} />
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
+                      {/* Story 5.2 */}
+                      <TableCell className="text-sm text-muted-foreground hidden md:table-cell">
                         {new Date(app.created_at).toLocaleDateString()}
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
+                      <TableCell className="text-sm text-muted-foreground hidden md:table-cell">
                         {new Date(app.updated_at).toLocaleDateString()}
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-1 justify-end" onClick={(e) => e.stopPropagation()}>
+                          {/* Story 3.1: Retry button for errored applications */}
+                          {(app.status === "error" || app.generation_status === "error") && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button size="sm" variant="ghost" onClick={(e) => handleRetry(app.id, e)} title="Retry generation">
+                                    <RefreshCw className="h-4 w-4 text-primary" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p className="text-xs max-w-xs">{app.generation_error || "Retry generation"}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
                           {app.cover_letter && (
                             <Button size="sm" variant="ghost" onClick={(e) => handleCopyCoverLetter(app.cover_letter, e)} title="Copy cover letter">
                               <FileText className="h-4 w-4" />
@@ -215,7 +315,16 @@ const Applications = () => {
                               </Button>
                             </>
                           )}
-                          <Button size="sm" variant="ghost" onClick={(e) => handleDelete(app.id, e)} title="Delete">
+                          {/* Story 3.2: Delete with confirmation */}
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeleteTarget({ id: app.id, name: app.company_name || "this application" });
+                            }}
+                            title="Delete"
+                          >
                             <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
                         </div>
@@ -248,12 +357,30 @@ const Applications = () => {
           </>
         )}
       </div>
+
+      {/* Story 3.2: Delete confirmation dialog */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete application?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the application for <strong>{deleteTarget?.name}</strong> and all its generated content (cover letter, dashboard, resume). This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
 
-/** Per-row status cell that reacts to background generation state */
-function ApplicationStatusCell({ appId, dbStatus, generationStatus }: { appId: string; dbStatus: string; generationStatus: string }) {
+/** Story 3.3: Per-row status cell with DB-based generation status */
+function ApplicationStatusCell({ appId, dbStatus, generationStatus, generationError }: { appId: string; dbStatus: string; generationStatus: string; generationError?: string | null }) {
   const bgJob = backgroundGenerator.getJob(appId);
   const isActive = bgJob && !["complete", "error"].includes(bgJob.status);
 
@@ -261,12 +388,11 @@ function ApplicationStatusCell({ appId, dbStatus, generationStatus }: { appId: s
     return (
       <Badge variant="secondary" className="flex items-center gap-1.5 w-fit">
         <Loader2 className="h-3 w-3 animate-spin" />
-        Generating...
+        {bgJob?.progress ? bgJob.progress.slice(0, 30) : "Generating..."}
       </Badge>
     );
   }
 
-  // Determine display status: trust dbStatus first, fall back to generation_status
   const isComplete = dbStatus === "complete" || generationStatus === "complete";
   const isError = dbStatus === "error" || generationStatus === "error";
   const isGenerating = !isComplete && !isError && generationStatus && !["idle", "pending"].includes(generationStatus);
@@ -275,18 +401,33 @@ function ApplicationStatusCell({ appId, dbStatus, generationStatus }: { appId: s
     return (
       <Badge variant="secondary" className="flex items-center gap-1.5 w-fit">
         <Loader2 className="h-3 w-3 animate-spin" />
-        Generating...
+        {generationStatus === "scraping" ? "Scraping..." : generationStatus === "analyzing" ? "Analyzing..." : "Generating..."}
       </Badge>
     );
   }
 
-  const label = isComplete ? "Complete" : isError ? "Error" : dbStatus === "draft" ? "Draft" : dbStatus;
+  if (isError) {
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Badge variant="destructive" className="flex items-center gap-1.5 w-fit cursor-help">
+              <AlertTriangle className="h-3 w-3" />
+              Error
+            </Badge>
+          </TooltipTrigger>
+          {generationError && (
+            <TooltipContent side="top" className="max-w-xs text-xs">
+              {generationError}
+            </TooltipContent>
+          )}
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
 
-  return (
-    <Badge variant={isComplete ? "default" : isError ? "destructive" : "secondary"}>
-      {label}
-    </Badge>
-  );
+  const label = isComplete ? "Complete" : dbStatus === "draft" ? "Draft" : dbStatus;
+  return <Badge variant={isComplete ? "default" : "secondary"}>{label}</Badge>;
 }
 
 export default Applications;

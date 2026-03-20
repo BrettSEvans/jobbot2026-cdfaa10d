@@ -15,6 +15,7 @@ import {
 import { streamTailoredLetter } from "@/lib/api/coverLetter";
 import {
   ArrowLeft,
+  ArrowRight,
   Copy,
   Edit3,
   Check,
@@ -27,6 +28,8 @@ import {
   RefreshCw,
   Download,
   FolderArchive,
+  ChevronLeft,
+  ChevronRight as ChevronRightIcon,
 } from "lucide-react";
 import SaveAsTemplate from "@/components/SaveAsTemplate";
 import KeywordGapAnalysis from "@/components/KeywordGapAnalysis";
@@ -84,13 +87,28 @@ const ApplicationDetail = () => {
   const bgJob = useBackgroundJob(id);
   const isBgGenerating = bgJob && !["complete", "error"].includes(bgJob.status);
 
-  // Fetch user's resume text for keyword matching
+  // Prev/next navigation (Story 2.2)
+  const [siblingIds, setSiblingIds] = useState<string[]>([]);
+  useEffect(() => {
+    supabase.from("job_applications").select("id").order("created_at", { ascending: false }).then(({ data }) => {
+      if (data) setSiblingIds(data.map((d: any) => d.id));
+    });
+  }, []);
+  const currentIndex = id ? siblingIds.indexOf(id) : -1;
+  const prevId = currentIndex > 0 ? siblingIds[currentIndex - 1] : null;
+  const nextId = currentIndex >= 0 && currentIndex < siblingIds.length - 1 ? siblingIds[currentIndex + 1] : null;
+
+  // Fetch user's resume text and profile for keyword matching
   const [resumeText, setResumeText] = useState<string | null>(null);
+  const [userProfile, setUserProfile] = useState<any>(null);
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user) {
-        supabase.from("profiles").select("resume_text").eq("id", user.id).single()
-          .then(({ data }) => setResumeText(data?.resume_text ?? null));
+        supabase.from("profiles").select("resume_text, master_cover_letter, preferred_tone, key_skills, years_experience").eq("id", user.id).single()
+          .then(({ data }) => {
+            setResumeText(data?.resume_text ?? null);
+            setUserProfile(data);
+          });
       }
     });
   }, []);
@@ -102,20 +120,25 @@ const ApplicationDetail = () => {
     }
   }, [bgJob?.status]);
 
+  // Story 6.1: Conditional polling — only poll while generation is active
   useEffect(() => {
     if (id) loadApplication(id);
-    // Poll for background generation updates
+  }, [id]);
+
+  useEffect(() => {
+    if (!id) return;
+    const isActive = app?.generation_status && !["idle", "complete", "error"].includes(app.generation_status);
+    if (!isActive && !isBgGenerating) return;
     const interval = setInterval(() => {
       if (id) loadApplication(id);
     }, 10000);
     return () => clearInterval(interval);
-  }, [id]);
+  }, [id, app?.generation_status, isBgGenerating]);
 
   const loadApplication = async (appId: string) => {
     try {
       const data = await getJobApplication(appId);
       setApp(data);
-      // Don't overwrite cover letter while user is editing
       if (!editingCoverLetter) {
         setCoverLetter(data.cover_letter || "");
       }
@@ -124,17 +147,14 @@ const ApplicationDetail = () => {
       setCompanyName(data.company_name || "");
       setJobTitle(data.job_title || "");
       
-      // Handle dashboard HTML — if it's raw JSON, assemble it
       let html = data.dashboard_html || "";
       let parsedDashData = data.dashboard_data as unknown as DashboardData | null;
       
       if (html && !html.trimStart().startsWith("<!") && !html.trimStart().startsWith("<html")) {
-        // Looks like raw JSON, try to parse and assemble
         const parsed = parseLlmJsonOutput(html);
         if (parsed) {
           parsedDashData = parsed;
           html = assembleDashboardHtml(parsed);
-          // Persist the fix so it doesn't happen again
           try {
             await saveJobApplication({ id: appId, job_url: data.job_url, dashboard_html: html, dashboard_data: parsed });
           } catch { /* non-critical */ }
@@ -170,13 +190,12 @@ const ApplicationDetail = () => {
     toast({ title: "Copied!", description: `${label} copied to clipboard.` });
   };
 
-  // Regenerate cover letter
+  // Regenerate cover letter — Story 4.3: pass profile data
   const handleRegenerateCoverLetter = async () => {
     if (!jobDescription.trim()) {
       toast({ title: "No job description", description: "A job description is needed to generate a cover letter.", variant: "destructive" });
       return;
     }
-    // Save current version as revision before regenerating
     if (coverLetter.trim() && id) {
       try {
         await saveCoverLetterRevision(id, coverLetter, "Before regeneration");
@@ -189,6 +208,9 @@ const ApplicationDetail = () => {
       let accumulated = "";
       await streamTailoredLetter({
         jobDescription,
+        customInstructions: userProfile?.master_cover_letter
+          ? `Use this as my master cover letter style reference:\n${userProfile.master_cover_letter}`
+          : undefined,
         onDelta: (text) => {
           accumulated += text;
           setCoverLetter(accumulated);
@@ -196,7 +218,6 @@ const ApplicationDetail = () => {
         onDone: () => {},
       });
       await saveField({ cover_letter: accumulated });
-      // Save new version as revision
       try {
         await saveCoverLetterRevision(id!, accumulated, "Regenerated");
         setCoverLetterRevisionTrigger((t) => t + 1);
@@ -224,12 +245,8 @@ const ApplicationDetail = () => {
         competitors: app?.competitors || [],
         customers: app?.customers || [],
         products: app?.products || [],
-        onDelta: (text) => {
-          accumulated += text;
-          // Show a "generating..." placeholder instead of streaming partial JSON
-        },
+        onDelta: (text) => { accumulated += text; },
         onDone: () => {
-          // Try parsing as JSON (new format)
           const parsed = parseLlmJsonOutput(accumulated);
           if (parsed) {
             const html = assembleDashboardHtml(parsed);
@@ -237,7 +254,6 @@ const ApplicationDetail = () => {
             setDashboardData(parsed);
             accumulated = html;
           } else {
-            // Fallback: treat as raw HTML (backward compat)
             let clean = accumulated;
             const htmlStart = clean.indexOf("<!DOCTYPE html>");
             const htmlStartAlt = clean.indexOf("<!doctype html>");
@@ -251,7 +267,6 @@ const ApplicationDetail = () => {
         },
       });
       const savePayload: Record<string, any> = { dashboard_html: accumulated };
-      // Use the freshly parsed data, not the stale state
       const parsedForSave = parseLlmJsonOutput(accumulated) || null;
       if (parsedForSave) {
         const html = assembleDashboardHtml(parsedForSave);
@@ -264,7 +279,6 @@ const ApplicationDetail = () => {
         savePayload.dashboard_data = dashboardData;
       }
       await saveField(savePayload);
-      // Save as revision
       try {
         await saveDashboardRevision(id!, accumulated, "Regenerated");
         setRevisionTrigger((t) => t + 1);
@@ -276,7 +290,6 @@ const ApplicationDetail = () => {
     }
   };
 
-  // ZIP download for JSON-based dashboards
   const handleDownloadZip = async () => {
     if (!dashboardData) return;
     const files = getDashboardZipFiles(dashboardData);
@@ -296,7 +309,6 @@ const ApplicationDetail = () => {
     toast({ title: "Downloaded", description: "Dashboard ZIP with separate files saved." });
   };
 
-  // AI refine chat — runs in background so it persists across navigation
   const handleSendChat = async () => {
     if (!chatInput.trim() || isRefining) return;
     const msg = chatInput.trim();
@@ -314,7 +326,6 @@ const ApplicationDetail = () => {
         chatHistory: newHistory,
         jobUrl: app.job_url,
       });
-      // Save pre-refinement as revision
       try {
         await saveDashboardRevision(id!, dashboardHtml, `Before: ${msg.slice(0, 50)}`);
         setRevisionTrigger((t) => t + 1);
@@ -327,6 +338,25 @@ const ApplicationDetail = () => {
       setIsRefining(false);
     }
   };
+
+  // Story 4.2: Fabrication review persistence
+  const handleAcceptFabrication = useCallback((change: any) => {
+    toast({ title: "Accepted", description: `Kept: "${change.tailored_text.slice(0, 50)}…"` });
+    // Change is already in the tailored HTML — no action needed
+  }, [toast]);
+
+  const handleRevertFabrication = useCallback(async (change: any) => {
+    if (!app?.resume_html || !id) return;
+    // Replace the tailored text with the baseline in the stored HTML
+    const updatedHtml = app.resume_html.replace(change.tailored_text, change.baseline_text);
+    try {
+      await saveJobApplication({ id, job_url: app.job_url, resume_html: updatedHtml } as any);
+      setApp((prev: any) => ({ ...prev, resume_html: updatedHtml }));
+      toast({ title: "Reverted", description: `Restored baseline for: "${change.baseline_text.slice(0, 50)}…"` });
+    } catch (err: any) {
+      toast({ title: "Revert failed", description: err.message, variant: "destructive" });
+    }
+  }, [app, id, toast]);
 
   if (loading) {
     return (
@@ -350,7 +380,7 @@ const ApplicationDetail = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-5xl mx-auto p-4 md:p-8 space-y-6">
-        {/* Header */}
+        {/* Header with prev/next nav (Story 2.2) */}
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="sm" onClick={() => navigate("/applications")}>
@@ -363,158 +393,185 @@ const ApplicationDetail = () => {
               <p className="text-xs text-muted-foreground">{app.job_url}</p>
             </div>
           </div>
-          <Badge variant={app.status === "complete" ? "default" : "secondary"}>{app.status}</Badge>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8"
+              disabled={!prevId}
+              onClick={() => prevId && navigate(`/applications/${prevId}`)}
+              title="Previous application"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8"
+              disabled={!nextId}
+              onClick={() => nextId && navigate(`/applications/${nextId}`)}
+              title="Next application"
+            >
+              <ChevronRightIcon className="h-4 w-4" />
+            </Button>
+            <Badge variant={app.status === "complete" ? "default" : "secondary"}>{app.status}</Badge>
+          </div>
         </div>
 
-        {/* Tabs */}
-        <Tabs defaultValue="dashboard" className="space-y-4">
-          <TabsList className="w-full justify-start">
-            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+        {/* Story 2.1: Restructured tabs — Resume first, split JD tab */}
+        <Tabs defaultValue="resume" className="space-y-4">
+          <TabsList className="w-full justify-start flex-wrap">
+            <TabsTrigger value="resume">Resume</TabsTrigger>
             <TabsTrigger value="cover-letter">Cover Letter</TabsTrigger>
-            <TabsTrigger value="job-description">Job Description</TabsTrigger>
+            <TabsTrigger value="jd-analysis">JD Analysis</TabsTrigger>
+            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="details">Details</TabsTrigger>
           </TabsList>
 
-          {/* Dashboard Tab */}
-          <TabsContent value="dashboard" className="space-y-4">
-            <div className="flex flex-wrap gap-2">
-              <Button variant="outline" size="sm" onClick={() => setChatOpen(!chatOpen)}>
-                <Edit3 className="mr-2 h-4 w-4" /> {chatOpen ? "Hide Chat" : "Refine with AI"}
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleRegenerateDashboard} disabled={isRegenerating}>
-                {isRegenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-                Regenerate
-              </Button>
-              {dashboardHtml && (
-                <>
+          {/* Story 4.1: Resume Tab */}
+          <TabsContent value="resume" className="space-y-4">
+            {app?.resume_html ? (
+              <>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleCopy(app.resume_html, "Resume HTML")}
+                  >
+                    <Copy className="mr-2 h-4 w-4" /> Copy HTML
+                  </Button>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      navigator.clipboard.writeText(dashboardHtml);
-                      toast({ title: "Copied!", description: "Dashboard HTML copied to clipboard." });
+                      const blob = new Blob([app.resume_html], { type: "text/html" });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = `${(companyName || "resume").replace(/\s+/g, "-").toLowerCase()}-resume.html`;
+                      document.body.appendChild(a);
+                      a.click();
+                      document.body.removeChild(a);
+                      URL.revokeObjectURL(url);
+                      toast({ title: "Downloaded", description: "Resume HTML file saved." });
                     }}
                   >
-                    <Copy className="mr-2 h-4 w-4" /> Copy HTML
+                    <Download className="mr-2 h-4 w-4" /> Download HTML
                   </Button>
-                  <SaveAsTemplate
-                    dashboardHtml={dashboardHtml}
-                    applicationId={id}
-                    defaultLabel={`${companyName} ${jobTitle} Dashboard`.trim()}
-                    defaultJobFunction={jobTitle}
-                    defaultDepartment=""
-                  />
-                  {dashboardData ? (
-                    <Button variant="outline" size="sm" onClick={handleDownloadZip}>
-                      <FolderArchive className="mr-2 h-4 w-4" /> Download ZIP
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        const blob = new Blob([dashboardHtml], { type: "text/html" });
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement("a");
-                        a.href = url;
-                        a.download = `${(companyName || "dashboard").replace(/\s+/g, "-").toLowerCase()}-dashboard.html`;
-                        document.body.appendChild(a);
-                        a.click();
-                        document.body.removeChild(a);
-                        URL.revokeObjectURL(url);
-                        toast({ title: "Downloaded", description: "Dashboard HTML file saved." });
-                      }}
-                    >
-                      <Download className="mr-2 h-4 w-4" /> Download HTML
-                    </Button>
-                  )}
-                </>
-              )}
-            </div>
-
-            {/* AI Chat */}
-            {chatOpen && (
-              <Card>
-                <CardContent className="pt-4 space-y-3">
-                  <div className="max-h-[200px] overflow-y-auto space-y-2">
-                    {chatHistory.map((msg, i) => (
-                      <div key={i} className={`text-sm p-2 rounded ${msg.role === "user" ? "bg-primary/10 text-right" : "bg-muted"}`}>
-                        {msg.content}
-                      </div>
-                    ))}
-                    {isRefining && (
-                      <div className="text-sm p-2 rounded bg-muted flex items-center gap-2">
-                        <Loader2 className="h-3 w-3 animate-spin" /> Refining...
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex gap-2">
-                    <Textarea
-                      placeholder='e.g. "Change colors to blue" or "Add a market share chart"'
-                      value={chatInput}
-                      onChange={(e) => setChatInput(e.target.value)}
-                      rows={2}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && !e.shiftKey) {
-                          e.preventDefault();
-                          handleSendChat();
-                        }
-                      }}
-                    />
-                    <Button onClick={handleSendChat} disabled={!chatInput.trim() || isRefining} className="self-end">
-                      Send
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Revision History */}
-            {id && dashboardHtml && (
-              <DashboardRevisions
-                applicationId={id}
-                currentHtml={dashboardHtml}
-                onPreviewRevision={(html) => setPreviewHtml(html === dashboardHtml ? null : html)}
-                refreshTrigger={revisionTrigger}
-              />
-            )}
-
-            {previewHtml && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Badge variant="secondary">Previewing older version</Badge>
-                <Button variant="ghost" size="sm" onClick={() => setPreviewHtml(null)}>
-                  Back to current
-                </Button>
-              </div>
-            )}
-
-            {dashboardHtml ? (
-              <Card className="overflow-hidden">
-                <div className="w-full" style={{ height: "70vh" }}>
-                  <iframe
-                    ref={iframeRef}
-                    srcDoc={previewHtml || dashboardHtml}
-                    className="w-full h-full border-0"
-                    sandbox="allow-scripts"
-                    title="Dashboard Preview"
-                  />
                 </div>
-              </Card>
+
+                {/* Resume preview */}
+                <Card className="overflow-hidden">
+                  <div className="w-full" style={{ height: "60vh" }}>
+                    <iframe
+                      srcDoc={app.resume_html}
+                      className="w-full h-full border-0"
+                      sandbox="allow-scripts"
+                      title="Resume Preview"
+                    />
+                  </div>
+                </Card>
+
+                {/* Resume tools */}
+                {jobDescription && (
+                  <KeywordGapAnalysis
+                    jobDescription={jobDescription}
+                    resumeText={resumeText}
+                    onOptimize={async (missingKeywords: ExtractedKeyword[], userPrompt?: string) => {
+                      if (!resumeText) {
+                        toast({ title: "No resume found", description: "Upload a resume in your Profile first.", variant: "destructive" });
+                        return;
+                      }
+                      const kwList = missingKeywords.map(k => k.keyword).join(", ");
+                      toast({ title: "Optimizing resume…", description: `Injecting keywords: ${kwList}` });
+                      try {
+                        const { resume_html } = await generateOptimizedResume({
+                          jobDescription,
+                          resumeText,
+                          missingKeywords,
+                          userPrompt,
+                          companyName,
+                          jobTitle,
+                        });
+                        await saveJobApplication({ id: id!, job_url: app.job_url, resume_html } as any);
+                        setApp((prev: any) => ({ ...prev, resume_html }));
+                        toast({ title: "Resume optimized!", description: `${missingKeywords.length} keywords injected.` });
+                      } catch (e: any) {
+                        toast({ title: "Optimization failed", description: e.message, variant: "destructive" });
+                      }
+                    }}
+                  />
+                )}
+
+                <ResumeDiffViewer
+                  baselineText={resumeText}
+                  tailoredHtml={app.resume_html}
+                  jobDescription={jobDescription}
+                  onAcceptFabrication={handleAcceptFabrication}
+                  onRevertFabrication={handleRevertFabrication}
+                />
+
+                <AtsFormatCompliance resumeHtml={app.resume_html} />
+
+                {jobDescription && (
+                  <BulletCoach
+                    resumeHtml={app.resume_html}
+                    jobDescription={jobDescription}
+                    onApplyFix={(original, replacement) => {
+                      const updatedHtml = app.resume_html.replace(original, replacement);
+                      saveJobApplication({ id: id!, job_url: app.job_url, resume_html: updatedHtml } as any)
+                        .then(() => setApp((prev: any) => ({ ...prev, resume_html: updatedHtml })));
+                      toast({ title: "Bullet updated", description: `Replaced: "${original.slice(0, 40)}…"` });
+                    }}
+                  />
+                )}
+              </>
             ) : isBgGenerating ? (
               <Card>
                 <CardContent className="py-12 text-center space-y-3">
                   <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
-                  <p className="text-muted-foreground font-medium">{bgJob?.progress || "Generating dashboard..."}</p>
+                  <p className="text-muted-foreground font-medium">{bgJob?.progress || "Generating resume..."}</p>
                   <p className="text-xs text-muted-foreground">You can navigate away — generation continues in the background.</p>
                 </CardContent>
               </Card>
             ) : (
+              /* Story 1.1: Empty state */
               <Card>
-                <CardContent className="py-12 text-center">
-                  <p className="text-muted-foreground mb-4">No dashboard generated yet.</p>
-                  <Button onClick={handleRegenerateDashboard} disabled={isRegenerating}>
-                    <Sparkles className="mr-2 h-4 w-4" /> Generate Dashboard
-                  </Button>
+                <CardContent className="py-12 text-center space-y-3">
+                  <FileText className="h-10 w-10 text-muted-foreground mx-auto" />
+                  <h3 className="font-medium">No resume generated yet</h3>
+                  <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                    {!resumeText
+                      ? "Add your resume text in your Profile first, then use Keyword Analysis to generate an optimized resume."
+                      : !jobDescription
+                      ? "Add a job description in the JD Analysis tab, then use Keyword Analysis to generate an optimized resume."
+                      : "Use Keyword Analysis in this tab to generate an optimized, keyword-injected resume."}
+                  </p>
+                  {!resumeText && (
+                    <Button variant="outline" size="sm" onClick={() => navigate("/profile")}>
+                      Go to Profile
+                    </Button>
+                  )}
+                  {resumeText && jobDescription && (
+                    <KeywordGapAnalysis
+                      jobDescription={jobDescription}
+                      resumeText={resumeText}
+                      onOptimize={async (missingKeywords: ExtractedKeyword[], userPrompt?: string) => {
+                        const kwList = missingKeywords.map(k => k.keyword).join(", ");
+                        toast({ title: "Optimizing resume…", description: `Injecting keywords: ${kwList}` });
+                        try {
+                          const { resume_html } = await generateOptimizedResume({
+                            jobDescription, resumeText, missingKeywords, userPrompt, companyName, jobTitle,
+                          });
+                          await saveJobApplication({ id: id!, job_url: app.job_url, resume_html } as any);
+                          setApp((prev: any) => ({ ...prev, resume_html }));
+                          toast({ title: "Resume optimized!", description: `${missingKeywords.length} keywords injected.` });
+                        } catch (e: any) {
+                          toast({ title: "Optimization failed", description: e.message, variant: "destructive" });
+                        }
+                      }}
+                    />
+                  )}
                 </CardContent>
               </Card>
             )}
@@ -528,11 +585,7 @@ const ApplicationDetail = () => {
                   <Copy className="mr-2 h-4 w-4" /> Copy
                 </Button>
               )}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setEditingCoverLetter(!editingCoverLetter)}
-              >
+              <Button variant="outline" size="sm" onClick={() => setEditingCoverLetter(!editingCoverLetter)}>
                 <Edit3 className="mr-2 h-4 w-4" /> {editingCoverLetter ? "Cancel Edit" : "Edit"}
               </Button>
               <Button variant="outline" size="sm" onClick={handleRegenerateCoverLetter} disabled={isRegenerating}>
@@ -541,7 +594,6 @@ const ApplicationDetail = () => {
               </Button>
             </div>
 
-            {/* Cover Letter Revision History */}
             {id && coverLetter && (
               <CoverLetterRevisions
                 applicationId={id}
@@ -607,114 +659,58 @@ const ApplicationDetail = () => {
             </Card>
           </TabsContent>
 
-          {/* Job Description Tab */}
-          <TabsContent value="job-description" className="space-y-4">
-            {/* JD Intelligence Panel */}
-            {jobDescription && (
-              <JDIntelligencePanel
-                jobDescription={jobDescription}
-                companyName={companyName}
-                jdIntelligence={app?.jd_intelligence}
-                onParsed={async (intelligence) => {
-                  try {
-                    await saveJobApplication({ id: id!, job_url: app.job_url, jd_intelligence: intelligence } as any);
-                    setApp((prev: any) => ({ ...prev, jd_intelligence: intelligence }));
-                  } catch (e) {
-                    console.warn("Failed to save JD intelligence:", e);
-                  }
-                }}
-              />
+          {/* Story 2.1: JD Analysis Tab (split from old Job Description tab) */}
+          <TabsContent value="jd-analysis" className="space-y-4">
+            {/* Story 1.1: Empty state for JD tools */}
+            {!jobDescription ? (
+              <Card>
+                <CardContent className="py-12 text-center space-y-3">
+                  <FileText className="h-10 w-10 text-muted-foreground mx-auto" />
+                  <h3 className="font-medium">No job description available</h3>
+                  <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                    Add a job description below to unlock JD Intelligence, keyword analysis, and summary preview tools.
+                  </p>
+                  <Button variant="outline" size="sm" onClick={() => setEditingJobDescription(true)}>
+                    <Edit3 className="mr-2 h-4 w-4" /> Add Job Description
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <>
+                <JDIntelligencePanel
+                  jobDescription={jobDescription}
+                  companyName={companyName}
+                  jdIntelligence={app?.jd_intelligence}
+                  onParsed={async (intelligence) => {
+                    try {
+                      await saveJobApplication({ id: id!, job_url: app.job_url, jd_intelligence: intelligence } as any);
+                      setApp((prev: any) => ({ ...prev, jd_intelligence: intelligence }));
+                    } catch (e) {
+                      console.warn("Failed to save JD intelligence:", e);
+                    }
+                  }}
+                />
+
+                <SummaryPreview
+                  jobDescription={jobDescription}
+                  resumeText={resumeText}
+                  companyName={companyName}
+                  jobTitle={jobTitle}
+                  onApprove={(summary) => {
+                    toast({ title: "Summary approved", description: "Ready for full resume generation with your summary." });
+                  }}
+                />
+              </>
             )}
 
-            {/* Keyword Gap Analysis */}
-            {jobDescription && (
-              <KeywordGapAnalysis
-                jobDescription={jobDescription}
-                resumeText={resumeText}
-                onOptimize={async (missingKeywords: ExtractedKeyword[], userPrompt?: string) => {
-                  if (!resumeText) {
-                    toast({ title: "No resume found", description: "Upload a resume in your Profile first.", variant: "destructive" });
-                    return;
-                  }
-                  const kwList = missingKeywords.map(k => k.keyword).join(", ");
-                  toast({ title: "Optimizing resume…", description: `Injecting keywords: ${kwList}` });
-                  try {
-                    const { resume_html } = await generateOptimizedResume({
-                      jobDescription,
-                      resumeText,
-                      missingKeywords,
-                      userPrompt,
-                      companyName,
-                      jobTitle,
-                    });
-                    await saveJobApplication({
-                      id: id!,
-                      job_url: app.job_url,
-                      resume_html,
-                    } as any);
-                    setApp((prev: any) => ({ ...prev, resume_html }));
-                    toast({ title: "Resume optimized!", description: `${missingKeywords.length} keywords injected. Check the Resume tab.` });
-                  } catch (e: any) {
-                    toast({ title: "Optimization failed", description: e.message, variant: "destructive" });
-                  }
-                }}
-              />
-            )}
-
-            {/* Summary Preview */}
-            {jobDescription && (
-              <SummaryPreview
-                jobDescription={jobDescription}
-                resumeText={resumeText}
-                companyName={companyName}
-                jobTitle={jobTitle}
-                onApprove={(summary) => {
-                  toast({ title: "Summary approved", description: "Ready for full resume generation with your summary." });
-                }}
-              />
-            )}
-
-            {/* Resume Version Diffing */}
-            {app?.resume_html && (
-              <ResumeDiffViewer
-                baselineText={resumeText}
-                tailoredHtml={app.resume_html}
-                jobDescription={jobDescription}
-                onAcceptFabrication={(change) => {
-                  toast({ title: "Accepted", description: `Kept: "${change.tailored_text.slice(0, 50)}…"` });
-                }}
-                onRevertFabrication={(change) => {
-                  toast({ title: "Reverted", description: `Restored baseline for: "${change.baseline_text.slice(0, 50)}…"` });
-                }}
-              />
-            )}
-
-            {/* ATS Format Compliance - shows when resume_html exists */}
-            {app?.resume_html && (
-              <AtsFormatCompliance resumeHtml={app.resume_html} />
-            )}
-
-            {/* Bullet Coaching - shows when resume_html exists */}
-            {app?.resume_html && jobDescription && (
-              <BulletCoach
-                resumeHtml={app.resume_html}
-                jobDescription={jobDescription}
-                onApplyFix={(original, replacement) => {
-                  toast({ title: "Bullet updated", description: `Replaced: "${original.slice(0, 40)}…"` });
-                }}
-              />
-            )}
+            {/* JD text editor */}
             <div className="flex flex-wrap gap-2">
               {jobDescription && (
                 <Button variant="outline" size="sm" onClick={() => handleCopy(jobDescription, "Job description")}>
                   <Copy className="mr-2 h-4 w-4" /> Copy
                 </Button>
               )}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setEditingJobDescription(!editingJobDescription)}
-              >
+              <Button variant="outline" size="sm" onClick={() => setEditingJobDescription(!editingJobDescription)}>
                 <Edit3 className="mr-2 h-4 w-4" /> {editingJobDescription ? "Cancel Edit" : "Edit"}
               </Button>
             </div>
@@ -763,6 +759,149 @@ const ApplicationDetail = () => {
             </Card>
           </TabsContent>
 
+          {/* Dashboard Tab */}
+          <TabsContent value="dashboard" className="space-y-4">
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" size="sm" onClick={() => setChatOpen(!chatOpen)}>
+                <Edit3 className="mr-2 h-4 w-4" /> {chatOpen ? "Hide Chat" : "Refine with AI"}
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleRegenerateDashboard} disabled={isRegenerating}>
+                {isRegenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+                Regenerate
+              </Button>
+              {dashboardHtml && (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      navigator.clipboard.writeText(dashboardHtml);
+                      toast({ title: "Copied!", description: "Dashboard HTML copied to clipboard." });
+                    }}
+                  >
+                    <Copy className="mr-2 h-4 w-4" /> Copy HTML
+                  </Button>
+                  <SaveAsTemplate
+                    dashboardHtml={dashboardHtml}
+                    applicationId={id}
+                    defaultLabel={`${companyName} ${jobTitle} Dashboard`.trim()}
+                    defaultJobFunction={jobTitle}
+                    defaultDepartment=""
+                  />
+                  {dashboardData ? (
+                    <Button variant="outline" size="sm" onClick={handleDownloadZip}>
+                      <FolderArchive className="mr-2 h-4 w-4" /> Download ZIP
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const blob = new Blob([dashboardHtml], { type: "text/html" });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement("a");
+                        a.href = url;
+                        a.download = `${(companyName || "dashboard").replace(/\s+/g, "-").toLowerCase()}-dashboard.html`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                        toast({ title: "Downloaded", description: "Dashboard HTML file saved." });
+                      }}
+                    >
+                      <Download className="mr-2 h-4 w-4" /> Download HTML
+                    </Button>
+                  )}
+                </>
+              )}
+            </div>
+
+            {chatOpen && (
+              <Card>
+                <CardContent className="pt-4 space-y-3">
+                  <div className="max-h-[200px] overflow-y-auto space-y-2">
+                    {chatHistory.map((msg, i) => (
+                      <div key={i} className={`text-sm p-2 rounded ${msg.role === "user" ? "bg-primary/10 text-right" : "bg-muted"}`}>
+                        {msg.content}
+                      </div>
+                    ))}
+                    {isRefining && (
+                      <div className="text-sm p-2 rounded bg-muted flex items-center gap-2">
+                        <Loader2 className="h-3 w-3 animate-spin" /> Refining...
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <Textarea
+                      placeholder='e.g. "Change colors to blue" or "Add a market share chart"'
+                      value={chatInput}
+                      onChange={(e) => setChatInput(e.target.value)}
+                      rows={2}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSendChat();
+                        }
+                      }}
+                    />
+                    <Button onClick={handleSendChat} disabled={!chatInput.trim() || isRefining} className="self-end">
+                      Send
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {id && dashboardHtml && (
+              <DashboardRevisions
+                applicationId={id}
+                currentHtml={dashboardHtml}
+                onPreviewRevision={(html) => setPreviewHtml(html === dashboardHtml ? null : html)}
+                refreshTrigger={revisionTrigger}
+              />
+            )}
+
+            {previewHtml && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Badge variant="secondary">Previewing older version</Badge>
+                <Button variant="ghost" size="sm" onClick={() => setPreviewHtml(null)}>
+                  Back to current
+                </Button>
+              </div>
+            )}
+
+            {dashboardHtml ? (
+              <Card className="overflow-hidden">
+                <div className="w-full" style={{ height: "70vh" }}>
+                  <iframe
+                    ref={iframeRef}
+                    srcDoc={previewHtml || dashboardHtml}
+                    className="w-full h-full border-0"
+                    sandbox="allow-scripts"
+                    title="Dashboard Preview"
+                  />
+                </div>
+              </Card>
+            ) : isBgGenerating ? (
+              <Card>
+                <CardContent className="py-12 text-center space-y-3">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+                  <p className="text-muted-foreground font-medium">{bgJob?.progress || "Generating dashboard..."}</p>
+                  <p className="text-xs text-muted-foreground">You can navigate away — generation continues in the background.</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <p className="text-muted-foreground mb-4">No dashboard generated yet.</p>
+                  <Button onClick={handleRegenerateDashboard} disabled={isRegenerating}>
+                    <Sparkles className="mr-2 h-4 w-4" /> Generate Dashboard
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
           {/* Details Tab */}
           <TabsContent value="details" className="space-y-4">
             <Card>
@@ -793,11 +932,7 @@ const ApplicationDetail = () => {
                       <Button
                         size="sm"
                         onClick={() => {
-                          saveField({
-                            company_name: companyName,
-                            job_title: jobTitle,
-                            company_url: companyUrl,
-                          });
+                          saveField({ company_name: companyName, job_title: jobTitle, company_url: companyUrl });
                           setEditingMeta(false);
                         }}
                         disabled={saving}
@@ -828,7 +963,6 @@ const ApplicationDetail = () => {
               </CardContent>
             </Card>
 
-            {/* Analysis data */}
             <Card>
               <CardHeader>
                 <CardTitle>Market Intelligence</CardTitle>

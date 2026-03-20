@@ -49,12 +49,15 @@ export default function AppHeader({ onAiChatToggle, aiChatOpen }: AppHeaderProps
   const { data: isAdmin } = useIsAdmin();
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  // Story 2.3: Only show Stories link to admins
   const links = [
     { to: "/", label: "Applications", icon: null, match: (p: string) => p === "/" || p === "/applications" },
     { to: "/templates", label: "Templates", icon: null, match: (p: string) => p === "/templates" },
     { to: "/profile", label: "Profile", icon: <User className="h-3.5 w-3.5" />, match: (p: string) => p === "/profile" },
-    { to: "/stories", label: "Stories", icon: null, match: (p: string) => p === "/stories" },
-    ...(isAdmin ? [{ to: "/admin", label: "Admin", icon: <Shield className="h-3.5 w-3.5" />, match: (p: string) => p === "/admin" }] : []),
+    ...(isAdmin ? [
+      { to: "/stories", label: "Stories", icon: null, match: (p: string) => p === "/stories" },
+      { to: "/admin", label: "Admin", icon: <Shield className="h-3.5 w-3.5" />, match: (p: string) => p === "/admin" },
+    ] : []),
   ];
 
   const handleNav = (to: string) => {
@@ -65,13 +68,11 @@ export default function AppHeader({ onAiChatToggle, aiChatOpen }: AppHeaderProps
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="max-w-6xl mx-auto flex h-14 items-center justify-between px-4 md:px-8">
-        {/* Left: logo + nav */}
         <div className="flex items-center gap-6">
           <button onClick={() => navigate("/")} className="focus:outline-none">
             <BrandLogo iconSize="2.2em" />
           </button>
 
-          {/* Desktop nav */}
           <nav className="hidden md:flex items-center gap-1">
             {links.map((l) => (
               <button
@@ -91,7 +92,6 @@ export default function AppHeader({ onAiChatToggle, aiChatOpen }: AppHeaderProps
           </nav>
         </div>
 
-        {/* Right: theme toggle + AI Chat + Sign Out + Mobile menu */}
         <div className="flex items-center gap-2">
           <ThemeToggle />
           <Button
@@ -122,7 +122,6 @@ export default function AppHeader({ onAiChatToggle, aiChatOpen }: AppHeaderProps
             <LogOut className="h-4 w-4" />
           </Button>
 
-          {/* Mobile hamburger */}
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="h-9 w-9 md:hidden" aria-label="Menu">

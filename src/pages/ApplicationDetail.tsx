@@ -120,10 +120,13 @@ const ApplicationDetail = () => {
     }
   }, [bgJob?.status]);
 
+  // Validate UUID format to avoid DB errors from bots/crawlers
+  const isValidUuid = id ? /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id) : false;
+
   // Story 6.1: Conditional polling — only poll while generation is active
   useEffect(() => {
-    if (id) loadApplication(id);
-  }, [id]);
+    if (id && isValidUuid) loadApplication(id);
+  }, [id, isValidUuid]);
 
   useEffect(() => {
     if (!id) return;

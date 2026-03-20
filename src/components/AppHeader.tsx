@@ -100,6 +100,7 @@ export default function AppHeader({ onAiChatToggle, aiChatOpen }: AppHeaderProps
             size="sm"
             onClick={onAiChatToggle}
             className="gap-2 hidden sm:flex"
+            data-tour="ai-chat"
           >
             <Sparkles className="h-4 w-4" />
             <span>AI Chat</span>

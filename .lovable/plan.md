@@ -1,67 +1,68 @@
 
 
-## Plan: Reorder Pipeline — Resume First, Background Cover Letter & Dashboard
+## Resume Health: Unified Quality Panel
 
-### What Changes
+### Problem
 
-**1. Pipeline reorder + rename**
+The Resume tab currently presents **4 separate, manually-triggered tools** stacked vertically:
+1. **Keyword Gap Analysis** — click "Analyze Keywords", wait for AI, then optionally "Optimize Resume"
+2. **Resume Diff Viewer** — click "View Changes", wait for AI diff
+3. **ATS Format Compliance** — click "Check Format", instant client-side scan
+4. **Bullet Coach** — click "Coach My Bullets", wait for AI, then per-bullet Q&A workflow
 
-The generation pipeline currently runs: Scrape → Branding → Analyze → Research → Cover Letter → Dashboard → Done.
+Each requires its own button click, loading state, and mental model. A user must click through all 4 to understand their resume's readiness. Most will stop after 1-2.
 
-New order:
-1. **Reviewing Job** (renamed from "Scraping Job")
-2. **Branding**
-3. **Analyzing**
-4. **Researching**
-5. **Resume** — generate a tailored resume using `generate-resume` edge function
-6. **Complete** (from the user's perspective)
+### Proposed Design
 
-After resume completes, the user is navigated to the application detail page with the Resume tab open. Cover Letter and Dashboard continue generating in the background.
+Replace the 4 stacked cards with a single **"Resume Health"** panel that:
 
-**2. Two-phase completion model**
+1. **Auto-runs on load** — ATS Format (instant, client-side) and Keyword Analysis (AI call) fire automatically when the resume tab is active. No manual "Analyze" buttons.
 
-- **Phase 1 (foreground)**: Steps 1–5. When resume is saved, mark `generation_status = "resume-complete"` and navigate the user to `/applications/:id`.
-- **Phase 2 (background)**: Cover Letter → Dashboard. Save each as they complete. Update `generation_status` to `"complete"` when both finish. The existing `BackgroundJobsBanner` and realtime polling already handle showing progress.
+2. **Summary bar with traffic-light indicators** — A single collapsed row shows 3 health dimensions as colored dots:
 
-**3. UI indication on ApplicationDetail**
+```text
+┌──────────────────────────────────────────────────────────┐
+│  📊 Resume Health                                        │
+│  🟢 Keywords 87%    🟡 Format 72%    🟢 Bullets 91%     │
+│                                          [View Changes ▾]│
+└──────────────────────────────────────────────────────────┘
+```
 
-When the user lands on the detail page with a completed resume but cover letter/dashboard still generating, show a small banner or badge on those tabs indicating "Generating..." so they know more content is coming.
+   - **Green** (≥80%): Good to go — no action needed
+   - **Yellow** (60-79%): Could improve — optional drill-in
+   - **Red** (<60%): Needs attention — expanded by default
 
----
+3. **Click-to-expand sections** — Each dimension expands inline to show details. Only red/yellow sections auto-expand. Green sections stay collapsed (users skip what's fine).
 
-### Files to Edit
+4. **Bullet Coach becomes contextual** — Instead of a separate panel, weak bullets surface inside the Keywords or a dedicated "Bullet Quality" section with the same red/yellow/green indicator. The interactive Q&A rewrite flow stays but lives inside the expanded section.
 
-**`src/components/GenerationProgressBar.tsx`**
-- Update `PipelineStage` type: rename `"scraping"` → keep but relabel, add `"resume"` stage
-- New stage order: `reviewing-job`, `branding`, `analyzing`, `research`, `resume`, `complete`
-- Remove `cover-letter` and `dashboard` from the visible progress bar (they happen silently after)
+5. **View Changes stays as a secondary action** — The diff viewer is a different mental model (before/after comparison, fabrication review). It becomes a button in the health panel header rather than its own card — keeping it accessible but not cluttering the quality checks.
 
-**`src/lib/backgroundGenerator.ts`**
-- Add `"resume"` to `GenerationJob.status` union
-- Reorder `runPipeline`:
-  - After Research, call `generateOptimizedResume` (needs user's `resumeText` from profiles table)
-  - Save `resume_html` and mark `generation_status = "resume-complete"`
-  - Update job status to `"complete"` (from foreground perspective)
-  - Then continue with cover letter + dashboard in the same async flow, updating DB as each finishes
-- Fetch `resumeText` from profiles table at pipeline start (via supabase client)
+### Technical Plan
 
-**`src/pages/NewApplication.tsx`**
-- After `startFullGeneration` returns the appId, navigate to `/applications/:id` once the background job reaches `"resume"` stage completion (subscribe to job updates)
-- Remove the inline pipeline execution (currently `handleAnalyze` runs everything synchronously) — delegate entirely to `backgroundGenerator`
-- Update `PipelineStage` references for the new stage names
+**New component: `ResumeHealthPanel.tsx`**
+- Orchestrates all 3 checks from a single component
+- Auto-triggers keyword extraction + ATS format check on mount (when resume + JD exist)
+- Computes bullet score from BulletCoach analysis
+- Renders summary bar with 3 traffic-light badges
+- Each section is a collapsible that auto-expands if score < 80%
 
-**`src/pages/ApplicationDetail.tsx`**
-- Add "Generating..." badges on Cover Letter and Dashboard tabs when `generation_status` is between `"resume-complete"` and `"complete"`
-- The existing polling + realtime subscription will auto-refresh content as it arrives
+**Refactor existing components into sub-panels:**
+- `KeywordGapAnalysis` → becomes an internal section (no outer Card wrapper, no manual trigger button)
+- `AtsFormatCompliance` → runs automatically, renders as section
+- `BulletCoach` → renders as section with score badge
+- All keep their existing detailed UI when expanded
 
-**`src/lib/api/jobApplication.ts`**
-- Add `resume_html` to the `saveJobApplication` type signature (already works via `as any`, but clean it up)
+**Changes to `ApplicationDetail.tsx`:**
+- Replace the 4 separate component renders with a single `<ResumeHealthPanel>` 
+- `ResumeDiffViewer` moves to a "View Changes" button in the health panel header (opens as a dialog or inline section)
+- Pass all callbacks (onOptimize, onApplyFix, onAcceptFabrication, onRevertFabrication) through
 
----
+**No backend changes needed** — all existing edge functions and APIs remain the same.
 
-### Technical Details
-
-- The `generate-resume` edge function requires `resumeText` + `jobDescription`. The pipeline will fetch `resumeText` from the `profiles` table using the authenticated user's ID at pipeline start. If no resume text exists, it skips resume generation and goes straight to cover letter.
-- The `GenerationJob.status` will use `"complete"` to signal foreground completion (resume done). A new internal flag or DB `generation_status` value (`"background-generating"`) tracks that cover letter/dashboard are still in progress.
-- The `NewApplication` page will listen to the background job and navigate as soon as status hits resume-complete, giving the user near-instant perceived completion.
+### Key UX Improvements
+- **Zero-click insight**: Users see their resume health immediately, no manual scanning required
+- **Decision-driven**: Red/yellow/green lets users decide what's worth fixing vs. shipping as-is
+- **Reduced cognitive load**: One panel instead of four; green sections collapse away
+- **Progressive disclosure**: Summary → drill into problem areas → take action
 

@@ -680,17 +680,43 @@ const ApplicationDetail = () => {
                   </Dialog>
                 </div>
 
-                {/* Resume preview */}
-                <Card className="overflow-hidden">
-                  <div className="w-full bg-white" style={{ height: "60vh" }}>
-                    <iframe
-                      srcDoc={previewResumeHtml || app.resume_html}
-                      className="w-full h-full border-0"
-                      sandbox="allow-scripts"
-                      title="Resume Preview"
-                    />
-                  </div>
-                </Card>
+                {/* Resume preview / editor */}
+                {editingResume ? (
+                  <InlineHtmlEditor
+                    html={app.resume_html}
+                    height="60vh"
+                    onSave={async (newHtml) => {
+                      // Save current as revision
+                      if (app.resume_html) {
+                        try {
+                          await supabase.from("resume_revisions").insert({
+                            application_id: id!,
+                            html: app.resume_html,
+                            label: "Before manual edit",
+                            revision_number: Date.now(),
+                          });
+                        } catch (_) {}
+                      }
+                      await saveJobApplication({ id: id!, job_url: app.job_url, resume_html: newHtml } as any);
+                      setApp((prev: any) => ({ ...prev, resume_html: newHtml }));
+                      setEditingResume(false);
+                      setResumeRevisionTrigger((t) => t + 1);
+                      toast({ title: "Resume saved" });
+                    }}
+                    onCancel={() => setEditingResume(false)}
+                  />
+                ) : (
+                  <Card className="overflow-hidden">
+                    <div className="w-full bg-white" style={{ height: "60vh" }}>
+                      <iframe
+                        srcDoc={previewResumeHtml || app.resume_html}
+                        className="w-full h-full border-0"
+                        sandbox="allow-scripts"
+                        title="Resume Preview"
+                      />
+                    </div>
+                  </Card>
+                )}
 
                 {/* Resume Revision History */}
                 {id && (

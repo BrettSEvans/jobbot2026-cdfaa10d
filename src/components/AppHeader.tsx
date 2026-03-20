@@ -51,12 +51,12 @@ export default function AppHeader({ onAiChatToggle, aiChatOpen }: AppHeaderProps
 
   // Story 2.3: Only show Stories link to admins
   const links = [
-    { to: "/", label: "Applications", icon: null, match: (p: string) => p === "/" || p === "/applications" },
-    { to: "/templates", label: "Templates", icon: null, match: (p: string) => p === "/templates" },
-    { to: "/profile", label: "Profile", icon: <User className="h-3.5 w-3.5" />, match: (p: string) => p === "/profile" },
+    { to: "/", label: "Applications", icon: null, match: (p: string) => p === "/" || p === "/applications", tourId: "applications" },
+    { to: "/templates", label: "Templates", icon: null, match: (p: string) => p === "/templates", tourId: "templates" },
+    { to: "/profile", label: "Profile", icon: <User className="h-3.5 w-3.5" />, match: (p: string) => p === "/profile", tourId: "profile" },
     ...(isAdmin ? [
-      { to: "/stories", label: "Stories", icon: null, match: (p: string) => p === "/stories" },
-      { to: "/admin", label: "Admin", icon: <Shield className="h-3.5 w-3.5" />, match: (p: string) => p === "/admin" },
+      { to: "/stories", label: "Stories", icon: null, match: (p: string) => p === "/stories", tourId: undefined },
+      { to: "/admin", label: "Admin", icon: <Shield className="h-3.5 w-3.5" />, match: (p: string) => p === "/admin", tourId: undefined },
     ] : []),
   ];
 

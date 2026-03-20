@@ -115,7 +115,7 @@ const ApplicationDetail = () => {
 
   // Re-fetch when background job completes
   useEffect(() => {
-    if (bgJob?.status === "complete" && id) {
+    if (bgJob?.status === "complete" && id && isValidUuid) {
       loadApplication(id);
     }
   }, [bgJob?.status]);

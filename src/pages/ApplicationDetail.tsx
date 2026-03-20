@@ -65,6 +65,7 @@ import { parseLlmJsonOutput, assembleDashboardHtml, getDashboardZipFiles } from 
 import type { DashboardData } from "@/lib/dashboard/schema";
 import JSZip from "jszip";
 import { supabase } from "@/integrations/supabase/client";
+import { downloadHtmlAsDocx, downloadTextAsDocx } from "@/lib/docxExport";
 import { generateOptimizedResume } from "@/lib/api/resumeGeneration";
 import type { ExtractedKeyword } from "@/lib/keywordMatcher";
 import { useQuery } from "@tanstack/react-query";
@@ -567,31 +568,6 @@ const ApplicationDetail = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleCopy(app.resume_html, "Resume HTML")}
-                  >
-                    <Copy className="mr-2 h-4 w-4" /> Copy HTML
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      const blob = new Blob([app.resume_html], { type: "text/html" });
-                      const url = URL.createObjectURL(blob);
-                      const a = document.createElement("a");
-                      a.href = url;
-                      a.download = `${(companyName || "resume").replace(/\s+/g, "-").toLowerCase()}-resume.html`;
-                      document.body.appendChild(a);
-                      a.click();
-                      document.body.removeChild(a);
-                      URL.revokeObjectURL(url);
-                      toast({ title: "Downloaded", description: "Resume HTML file saved." });
-                    }}
-                  >
-                    <Download className="mr-2 h-4 w-4" /> Download HTML
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
                     onClick={() => {
                       const iframe = document.createElement("iframe");
                       iframe.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:none;";
@@ -615,6 +591,17 @@ const ApplicationDetail = () => {
                     }}
                   >
                     <FileDown className="mr-2 h-4 w-4" /> Download PDF
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const name = `resume-${(companyName || "document").replace(/\s+/g, "-").toLowerCase()}-${(jobTitle || "").replace(/\s+/g, "-").toLowerCase()}`;
+                      downloadHtmlAsDocx(app.resume_html, `${name}.docx`);
+                      toast({ title: "Downloading", description: "Resume DOCX file is being prepared." });
+                    }}
+                  >
+                    <Download className="mr-2 h-4 w-4" /> Download DOCX
                   </Button>
 
                   {/* Regenerate Resume */}
@@ -852,6 +839,17 @@ const ApplicationDetail = () => {
                     }}
                   >
                     <Download className="mr-2 h-4 w-4" /> Download PDF
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const name = `cover-letter-${(companyName || "document").replace(/\s+/g, "-").toLowerCase()}-${(jobTitle || "").replace(/\s+/g, "-").toLowerCase()}`;
+                      downloadTextAsDocx(previewCoverLetter || coverLetter, `${name}.docx`);
+                      toast({ title: "Downloading", description: "Cover letter DOCX file is being prepared." });
+                    }}
+                  >
+                    <Download className="mr-2 h-4 w-4" /> Download DOCX
                   </Button>
                 </>
               )}

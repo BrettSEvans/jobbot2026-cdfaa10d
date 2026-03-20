@@ -628,12 +628,12 @@ export default function DynamicMaterialsSection({
                 <Button variant="outline" size="sm" onClick={async () => {
                   const slug = (companyName || asset.asset_name).replace(/\s+/g, "-").toLowerCase();
                   const assetSlug = asset.asset_name.replace(/\s+/g, "-").toLowerCase();
-                  downloadHtmlFile(asset.html, `${slug}-${assetSlug}.html`);
+                  downloadMaterialPdf(asset.html, `${slug}-${assetSlug}.pdf`);
                   recordDownloadSignal(applicationId, asset.asset_name, jobTitle);
                   await supabase.from("generated_assets").update({ downloaded_at: new Date().toISOString() }).eq("id", asset.id);
                   setGeneratedAssets(prev => prev.map(a => a.id === asset.id ? { ...a, downloaded_at: new Date().toISOString() } : a));
-                  toast({ title: "Downloaded" });
-                }}><Download className="mr-2 h-4 w-4" /> Download HTML</Button>
+                  toast({ title: "Printing PDF" });
+                }}><Download className="mr-2 h-4 w-4" /> Download PDF</Button>
               )}
             </div>
 

@@ -208,7 +208,7 @@ const Applications = () => {
             <Button variant="outline" onClick={() => navigate("/templates")}>
               <LayoutTemplate className="mr-2 h-4 w-4" /> Templates
             </Button>
-            <Button onClick={() => navigate("/applications/new")}>
+            <Button onClick={() => navigate("/applications/new")} data-tour="new-app">
               <Plus className="mr-2 h-4 w-4" /> New Application
             </Button>
           </div>

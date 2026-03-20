@@ -1,3 +1,5 @@
+import { aiFetchWithRetry } from "../_shared/aiRetry.ts";
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
@@ -68,7 +70,6 @@ ABSOLUTE RULES:
 - Keep to one page equivalent (~600-800 words)
 ${userPrompt ? `\nUSER CONTEXT (use this to inform keyword placement):\n${userPrompt}` : ''}`;
 
-    // Enhance prompt with JD intelligence if available
     let jdInjection = '';
     if (jdIntelligence) {
       const mustHaveReqs = (jdIntelligence.requirements || []).filter((r: any) => r.category === 'must_have').map((r: any) => r.text);
@@ -105,19 +106,13 @@ ${userPrompt ? `\nUSER CONTEXT (use this to inform keyword placement):\n${userPr
 
     const fullSystemPrompt = systemPrompt + jdInjection;
 
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          { role: 'system', content: fullSystemPrompt },
-          {
-            role: 'user',
-            content: `Target Job: ${jobTitle || 'Not specified'} at ${companyName || 'Not specified'}
+    const response = await aiFetchWithRetry(LOVABLE_API_KEY, {
+      model: 'google/gemini-2.5-flash',
+      messages: [
+        { role: 'system', content: fullSystemPrompt },
+        {
+          role: 'user',
+          content: `Target Job: ${jobTitle || 'Not specified'} at ${companyName || 'Not specified'}
 
 JOB DESCRIPTION:
 ${jobDescription.slice(0, 8000)}
@@ -126,11 +121,10 @@ CANDIDATE'S CURRENT RESUME:
 ${resumeText.slice(0, 8000)}
 
 Generate the optimized resume HTML now. Return ONLY the HTML content, no markdown fences or explanations.`
-          }
-        ],
-        temperature: 0.3,
-        max_tokens: 4000,
-      }),
+        }
+      ],
+      temperature: 0.3,
+      max_tokens: 4000,
     });
 
     if (!response.ok) {
@@ -143,7 +137,6 @@ Generate the optimized resume HTML now. Return ONLY the HTML content, no markdow
     const data = await response.json();
     let resumeHtml = data.choices?.[0]?.message?.content || '';
 
-    // Clean markdown fences if present
     resumeHtml = resumeHtml.replace(/^```html?\n?/i, '').replace(/\n?```$/i, '').trim();
 
     if (!resumeHtml || resumeHtml.length < 100) {

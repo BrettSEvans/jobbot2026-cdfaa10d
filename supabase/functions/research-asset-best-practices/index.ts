@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { aiFetchWithRetry } from "../_shared/aiRetry.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -48,18 +49,14 @@ Deno.serve(async (req) => {
     }
 
     // Research via AI
-    const researchResp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${LOVABLE_API_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          { role: 'system', content: 'You are an expert consultant researching best practices for professional documents.' },
-          { role: 'user', content: `Research best practices for creating an excellent "${asset_type}" document in a professional job context. Cover structure, content, visual design, and common mistakes. Be specific.` },
-        ],
-        temperature: 0.3,
-        max_tokens: 3000,
-      }),
+    const researchResp = await aiFetchWithRetry(LOVABLE_API_KEY, {
+      model: 'google/gemini-2.5-flash',
+      messages: [
+        { role: 'system', content: 'You are an expert consultant researching best practices for professional documents.' },
+        { role: 'user', content: `Research best practices for creating an excellent "${asset_type}" document in a professional job context. Cover structure, content, visual design, and common mistakes. Be specific.` },
+      ],
+      temperature: 0.3,
+      max_tokens: 3000,
     });
 
     let bestPracticesText = '';
@@ -88,19 +85,15 @@ Deno.serve(async (req) => {
 
       if (assets && assets.length >= 3) {
         const samples = assets.map((a: any) => a.html.slice(0, 2000)).join('\n---SAMPLE---\n');
-        const patternResp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${LOVABLE_API_KEY}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            model: 'google/gemini-2.5-flash',
-            messages: [
-              { role: 'system', content: 'Analyze HTML document samples and extract common patterns. Return JSON only.' },
-              { role: 'user', content: `These "${asset_type}" documents were downloaded (approval signal). Extract patterns:\n${samples}\n\nReturn JSON: { "common_sections": [], "visual_patterns": [], "content_patterns": [], "layout_approach": "" }` },
-            ],
-            response_format: { type: 'json_object' },
-            temperature: 0.2,
-            max_tokens: 2000,
-          }),
+        const patternResp = await aiFetchWithRetry(LOVABLE_API_KEY, {
+          model: 'google/gemini-2.5-flash',
+          messages: [
+            { role: 'system', content: 'Analyze HTML document samples and extract common patterns. Return JSON only.' },
+            { role: 'user', content: `These "${asset_type}" documents were downloaded (approval signal). Extract patterns:\n${samples}\n\nReturn JSON: { "common_sections": [], "visual_patterns": [], "content_patterns": [], "layout_approach": "" }` },
+          ],
+          response_format: { type: 'json_object' },
+          temperature: 0.2,
+          max_tokens: 2000,
         });
         if (patternResp.ok) {
           const pd = await patternResp.json();

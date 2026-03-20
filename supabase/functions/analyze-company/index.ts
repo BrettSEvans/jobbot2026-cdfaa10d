@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { aiFetchWithRetry } from "../_shared/aiRetry.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -21,18 +22,12 @@ serve(async (req) => {
       );
     }
 
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-3-flash-preview',
-        messages: [
-          {
-            role: 'system',
-            content: `You are a business analyst. Analyze the company website content and job description to identify:
+    const response = await aiFetchWithRetry(LOVABLE_API_KEY, {
+      model: 'google/gemini-3-flash-preview',
+      messages: [
+        {
+          role: 'system',
+          content: `You are a business analyst. Analyze the company website content and job description to identify:
 1. The company's main products/services
 2. Key competitors in their space
 3. Target customer segments
@@ -48,34 +43,33 @@ Return ONLY valid JSON with this structure:
   "customers": ["string"],
   "jobTitle": "string"
 }`
-          },
-          {
-            role: 'user',
-            content: `Company: ${companyName || 'Unknown'}\n\nCompany Website Content:\n${companyMarkdown?.slice(0, 8000) || 'N/A'}\n\nJob Description:\n${jobDescription?.slice(0, 6000) || 'N/A'}`
+        },
+        {
+          role: 'user',
+          content: `Company: ${companyName || 'Unknown'}\n\nCompany Website Content:\n${companyMarkdown?.slice(0, 8000) || 'N/A'}\n\nJob Description:\n${jobDescription?.slice(0, 6000) || 'N/A'}`
+        }
+      ],
+      tools: [{
+        type: "function",
+        function: {
+          name: "analyze_company",
+          description: "Return structured company analysis",
+          parameters: {
+            type: "object",
+            properties: {
+              companyName: { type: "string" },
+              department: { type: "string" },
+              products: { type: "array", items: { type: "string" } },
+              competitors: { type: "array", items: { type: "string" } },
+              customers: { type: "array", items: { type: "string" } },
+              jobTitle: { type: "string" }
+            },
+            required: ["companyName", "department", "products", "competitors", "customers", "jobTitle"],
+            additionalProperties: false
           }
-        ],
-        tools: [{
-          type: "function",
-          function: {
-            name: "analyze_company",
-            description: "Return structured company analysis",
-            parameters: {
-              type: "object",
-              properties: {
-                companyName: { type: "string" },
-                department: { type: "string" },
-                products: { type: "array", items: { type: "string" } },
-                competitors: { type: "array", items: { type: "string" } },
-                customers: { type: "array", items: { type: "string" } },
-                jobTitle: { type: "string" }
-              },
-              required: ["companyName", "department", "products", "competitors", "customers", "jobTitle"],
-              additionalProperties: false
-            }
-          }
-        }],
-        tool_choice: { type: "function", function: { name: "analyze_company" } }
-      }),
+        }
+      }],
+      tool_choice: { type: "function", function: { name: "analyze_company" } }
     });
 
     if (!response.ok) {
@@ -98,13 +92,11 @@ Return ONLY valid JSON with this structure:
 
     const data = await response.json();
     
-    // Extract from tool call response
     const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
     let analysis;
     if (toolCall) {
       analysis = JSON.parse(toolCall.function.arguments);
     } else {
-      // Fallback: try parsing content directly
       const content = data.choices?.[0]?.message?.content || '{}';
       analysis = JSON.parse(content);
     }

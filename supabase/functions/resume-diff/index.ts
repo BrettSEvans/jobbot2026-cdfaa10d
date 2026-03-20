@@ -1,3 +1,5 @@
+import { aiFetchWithRetry } from "../_shared/aiRetry.ts";
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
@@ -89,29 +91,21 @@ CHANGE TYPE CLASSIFICATION:
 
 ${jobDescriptionMarkdown ? `\nJOB DESCRIPTION (for context on keyword injection detection):\n${jobDescriptionMarkdown.slice(0, 4000)}` : ''}`;
 
-    // Truncate inputs to keep output manageable
     const baselineTrunc = baselineText.slice(0, 6000);
     const tailoredTrunc = tailoredHtml.slice(0, 6000);
 
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        response_format: { type: 'json_object' },
-        messages: [
-          { role: 'system', content: systemPrompt },
-          {
-            role: 'user',
-            content: `BASELINE RESUME (plain text):\n${baselineTrunc}\n\n---\n\nTAILORED RESUME (HTML):\n${tailoredTrunc}\n\nAnalyze and return the structured diff JSON now. Keep explanations concise (under 20 words each).`
-          }
-        ],
-        temperature: 0.1,
-        max_tokens: 12000,
-      }),
+    const response = await aiFetchWithRetry(LOVABLE_API_KEY, {
+      model: 'google/gemini-2.5-flash',
+      response_format: { type: 'json_object' },
+      messages: [
+        { role: 'system', content: systemPrompt },
+        {
+          role: 'user',
+          content: `BASELINE RESUME (plain text):\n${baselineTrunc}\n\n---\n\nTAILORED RESUME (HTML):\n${tailoredTrunc}\n\nAnalyze and return the structured diff JSON now. Keep explanations concise (under 20 words each).`
+        }
+      ],
+      temperature: 0.1,
+      max_tokens: 12000,
     });
 
     if (!response.ok) {
@@ -124,10 +118,8 @@ ${jobDescriptionMarkdown ? `\nJOB DESCRIPTION (for context on keyword injection 
     const data = await response.json();
     let content = data.choices?.[0]?.message?.content || '';
 
-    // Clean markdown fences
     content = content.replace(/^```json?\n?/i, '').replace(/\n?```$/i, '').trim();
 
-    // Extract JSON object
     const firstBrace = content.indexOf('{');
     const lastBrace = content.lastIndexOf('}');
     if (firstBrace === -1 || lastBrace === -1) {
@@ -135,14 +127,12 @@ ${jobDescriptionMarkdown ? `\nJOB DESCRIPTION (for context on keyword injection 
       throw new Error('Failed to parse diff result as JSON');
     }
     let clean = content.slice(firstBrace, lastBrace + 1);
-    // Remove trailing commas
     clean = clean.replace(/,\s*([}\]])/g, '$1');
 
     let diffResult;
     try {
       diffResult = JSON.parse(clean);
     } catch {
-      // Second attempt: strip control chars
       const sanitized = clean.replace(/[\x00-\x1F\x7F]/g, (ch) => ch === '\n' || ch === '\t' ? ch : '');
       try {
         diffResult = JSON.parse(sanitized);
@@ -152,7 +142,6 @@ ${jobDescriptionMarkdown ? `\nJOB DESCRIPTION (for context on keyword injection 
       }
     }
 
-    // Compute trust score
     const stats = diffResult.stats || {};
     const totalBullets = Math.max(stats.total_bullets_tailored || 1, 1);
     const trustScore = Math.round((1 - (stats.fabrication_flags || 0) / totalBullets) * 100);

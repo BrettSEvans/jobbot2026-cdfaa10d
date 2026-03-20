@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
+import { aiFetchWithRetry } from "../_shared/aiRetry.ts";
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
@@ -34,14 +34,11 @@ async function getBestPractices(
   // Research best practices via AI
   let bestPracticesText = '';
   try {
-    const researchResp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${LOVABLE_API_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          { role: 'system', content: 'You are an expert consultant who researches best practices for professional documents and deliverables.' },
-          { role: 'user', content: `Research and provide comprehensive best practices for creating an excellent "${assetType}" document for a professional job context. Cover:
+    const researchResp = await aiFetchWithRetry(LOVABLE_API_KEY, {
+      model: 'google/gemini-2.5-flash',
+      messages: [
+        { role: 'system', content: 'You are an expert consultant who researches best practices for professional documents and deliverables.' },
+        { role: 'user', content: `Research and provide comprehensive best practices for creating an excellent "${assetType}" document for a professional job context. Cover:
 1. Optimal structure and sections
 2. Content depth and specificity guidelines
 3. Visual design and formatting principles
@@ -49,10 +46,9 @@ async function getBestPractices(
 5. What makes a great version vs a mediocre one
 
 Be specific and actionable. Output as markdown.` },
-        ],
-        temperature: 0.3,
-        max_tokens: 3000,
-      }),
+      ],
+      temperature: 0.3,
+      max_tokens: 3000,
     });
     if (researchResp.ok) {
       const researchData = await researchResp.json();
@@ -85,19 +81,15 @@ Be specific and actionable. Output as markdown.` },
 
       if (assets && assets.length >= 3) {
         const samples = assets.map((a: any) => a.html.slice(0, 2000)).join('\n---SAMPLE---\n');
-        const patternResp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${LOVABLE_API_KEY}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            model: 'google/gemini-2.5-flash',
-            messages: [
-              { role: 'system', content: 'Analyze HTML document samples and extract common structural/visual patterns. Return JSON only.' },
-              { role: 'user', content: `These ${assets.length} "${assetType}" documents were downloaded by users (approval signal). Extract winning patterns:\n\n${samples}\n\nReturn JSON with: { "common_sections": [], "visual_patterns": [], "content_patterns": [], "layout_approach": "" }` },
-            ],
-            response_format: { type: 'json_object' },
-            temperature: 0.2,
-            max_tokens: 2000,
-          }),
+        const patternResp = await aiFetchWithRetry(LOVABLE_API_KEY, {
+          model: 'google/gemini-2.5-flash',
+          messages: [
+            { role: 'system', content: 'Analyze HTML document samples and extract common structural/visual patterns. Return JSON only.' },
+            { role: 'user', content: `These ${assets.length} "${assetType}" documents were downloaded by users (approval signal). Extract winning patterns:\n\n${samples}\n\nReturn JSON with: { "common_sections": [], "visual_patterns": [], "content_patterns": [], "layout_approach": "" }` },
+          ],
+          response_format: { type: 'json_object' },
+          temperature: 0.2,
+          max_tokens: 2000,
         });
         if (patternResp.ok) {
           const patternData = await patternResp.json();
@@ -237,18 +229,14 @@ Products: ${(products || []).join(', ') || 'N/A'}
 Customers: ${(customers || []).join(', ') || 'N/A'}
 ${bpSection}${existingPatternsSection}`;
 
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${LOVABLE_API_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: `Job Description:\n${(jobDescription || '').slice(0, 6000)}\n\nGenerate the "${assetName}" HTML document now.` },
-        ],
-        temperature: 0.3,
-        max_tokens: 8000,
-      }),
+    const response = await aiFetchWithRetry(LOVABLE_API_KEY, {
+      model: 'google/gemini-2.5-flash',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: `Job Description:\n${(jobDescription || '').slice(0, 6000)}\n\nGenerate the "${assetName}" HTML document now.` },
+      ],
+      temperature: 0.3,
+      max_tokens: 8000,
     });
 
     if (!response.ok) {

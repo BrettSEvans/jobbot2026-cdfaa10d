@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { aiFetchWithRetry } from "../_shared/aiRetry.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -81,20 +82,13 @@ Job URL: ${jobUrl || 'N/A'}
 Job Description:
 ${jobDescription || 'No description provided.'}`;
 
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
-          { role: 'user', content: userPrompt },
-        ],
-        response_format: { type: 'json_object' },
-      }),
+    const response = await aiFetchWithRetry(LOVABLE_API_KEY, {
+      model: 'google/gemini-2.5-flash',
+      messages: [
+        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'user', content: userPrompt },
+      ],
+      response_format: { type: 'json_object' },
     });
 
     if (!response.ok) {
@@ -118,12 +112,10 @@ ${jobDescription || 'No description provided.'}`;
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content || '';
 
-    // Parse the JSON from the response
     let parsed: any;
     try {
       parsed = JSON.parse(content);
     } catch (_firstErr) {
-      // Fallback: extract JSON object from response
       let clean = content.trim();
       clean = clean.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
       const firstBrace = clean.indexOf('{');

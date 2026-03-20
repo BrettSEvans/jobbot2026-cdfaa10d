@@ -122,11 +122,29 @@ ${jobDescriptionMarkdown ? `\nJOB DESCRIPTION (for context on keyword injection 
     // Clean markdown fences
     content = content.replace(/^```json?\n?/i, '').replace(/\n?```$/i, '').trim();
 
+    // Extract JSON object
+    const firstBrace = content.indexOf('{');
+    const lastBrace = content.lastIndexOf('}');
+    if (firstBrace === -1 || lastBrace === -1) {
+      console.error('No JSON found in diff response:', content.slice(0, 300));
+      throw new Error('Failed to parse diff result as JSON');
+    }
+    let clean = content.slice(firstBrace, lastBrace + 1);
+    // Remove trailing commas
+    clean = clean.replace(/,\s*([}\]])/g, '$1');
+
     let diffResult;
     try {
-      diffResult = JSON.parse(content);
+      diffResult = JSON.parse(clean);
     } catch {
-      throw new Error('Failed to parse diff result as JSON');
+      // Second attempt: strip control chars
+      const sanitized = clean.replace(/[\x00-\x1F\x7F]/g, (ch) => ch === '\n' || ch === '\t' ? ch : '');
+      try {
+        diffResult = JSON.parse(sanitized);
+      } catch (e) {
+        console.error('Failed to parse diff JSON:', (e as Error).message, 'snippet:', clean.slice(0, 300));
+        throw new Error('Failed to parse diff result as JSON');
+      }
     }
 
     // Compute trust score

@@ -1,5 +1,15 @@
 import { supabase } from '@/integrations/supabase/client';
 
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+  return {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${token}`,
+    apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+  };
+}
+
 // --- Scrape company branding ---
 export async function scrapeCompanyBranding(url: string, retries = 3) {
   for (let attempt = 1; attempt <= retries; attempt++) {

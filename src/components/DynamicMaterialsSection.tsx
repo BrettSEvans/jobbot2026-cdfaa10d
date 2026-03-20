@@ -216,8 +216,12 @@ export default function DynamicMaterialsSection({
     setSwapAssetId(asset.id);
     setSwapAssetName(asset.asset_name);
     setSelectedSwapId(null);
+    setSelectedAiSuggestion(null);
+    setAiSuggestions([]);
+    setLoadingSuggestions(true);
+    setSwapDialogOpen(true);
 
-    // Fetch unselected proposed assets for this application
+    // Fetch existing unselected proposed assets
     const { data } = await supabase
       .from("proposed_assets")
       .select("id, asset_name, brief_description, selected")
@@ -226,7 +230,44 @@ export default function DynamicMaterialsSection({
       .order("created_at", { ascending: true });
 
     setProposedAlternatives((data as ProposedAsset[]) || []);
-    setSwapDialogOpen(true);
+
+    // Fetch AI-suggested alternatives for this job type
+    try {
+      const allExisting = [
+        ...generatedAssets.map(a => a.asset_name),
+        ...(data || []).map((p: any) => p.asset_name),
+        'Resume', 'Cover Letter', 'Dashboard',
+      ];
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/suggest-assets`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+          'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify({
+          jobTitle,
+          jobDescription,
+          companyName,
+          existingAssets: allExisting,
+        }),
+      });
+      if (resp.ok) {
+        const result = await resp.json();
+        if (result.suggestions) {
+          // Filter out any that overlap with proposed alternatives
+          const proposedNames = new Set((data || []).map((p: any) => p.asset_name.toLowerCase()));
+          const filtered = result.suggestions.filter((s: AiSuggestion) =>
+            !proposedNames.has(s.asset_name.toLowerCase())
+          );
+          setAiSuggestions(filtered);
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to fetch AI suggestions:', e);
+    } finally {
+      setLoadingSuggestions(false);
+    }
   };
 
   const handleSwapAsset = async () => {

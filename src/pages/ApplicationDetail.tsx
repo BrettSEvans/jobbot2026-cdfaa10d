@@ -27,6 +27,7 @@ import {
   getJobApplication,
   saveJobApplication,
   streamDashboardGeneration,
+  streamRefineMaterial,
 } from "@/lib/api/jobApplication";
 import { streamTailoredLetter } from "@/lib/api/coverLetter";
 import {

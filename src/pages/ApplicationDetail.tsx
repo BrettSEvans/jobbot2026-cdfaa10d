@@ -129,7 +129,7 @@ const ApplicationDetail = () => {
   }, [id, isValidUuid]);
 
   useEffect(() => {
-    if (!id) return;
+    if (!id || !isValidUuid) return;
     const isActive = app?.generation_status && !["idle", "complete", "error"].includes(app.generation_status);
     if (!isActive && !isBgGenerating) return;
     const interval = setInterval(() => {

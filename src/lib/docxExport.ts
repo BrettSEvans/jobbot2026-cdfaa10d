@@ -36,8 +36,8 @@ function parseInlineRuns(el: Element | ChildNode, inherited: RunStyle = {}): Tex
   return runs;
 }
 
-function headingLevel(tag: string): HeadingLevel | undefined {
-  const map: Record<string, HeadingLevel> = {
+function headingLevel(tag: string): (typeof HeadingLevel)[keyof typeof HeadingLevel] | undefined {
+  const map: Record<string, (typeof HeadingLevel)[keyof typeof HeadingLevel]> = {
     h1: HeadingLevel.HEADING_1,
     h2: HeadingLevel.HEADING_2,
     h3: HeadingLevel.HEADING_3,

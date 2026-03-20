@@ -344,18 +344,23 @@ const ApplicationDetail = () => {
 
   // Story 4.2: Fabrication review persistence
   const handleAcceptFabrication = useCallback((change: any) => {
-    toast({ title: "Accepted", description: `Kept: "${change.tailored_text.slice(0, 50)}…"` });
-    // Change is already in the tailored HTML — no action needed
+    const text = change?.tailored_text || change?.baseline_text || "change";
+    toast({ title: "Accepted", description: `Kept: "${text.slice(0, 50)}…"` });
   }, [toast]);
 
   const handleRevertFabrication = useCallback(async (change: any) => {
     if (!app?.resume_html || !id) return;
-    // Replace the tailored text with the baseline in the stored HTML
-    const updatedHtml = app.resume_html.replace(change.tailored_text, change.baseline_text);
+    const tailored = change?.tailored_text;
+    const baseline = change?.baseline_text;
+    if (!tailored || !baseline) {
+      toast({ title: "Revert failed", description: "Missing baseline or tailored text for this change.", variant: "destructive" });
+      return;
+    }
+    const updatedHtml = app.resume_html.replace(tailored, baseline);
     try {
       await saveJobApplication({ id, job_url: app.job_url, resume_html: updatedHtml } as any);
       setApp((prev: any) => ({ ...prev, resume_html: updatedHtml }));
-      toast({ title: "Reverted", description: `Restored baseline for: "${change.baseline_text.slice(0, 50)}…"` });
+      toast({ title: "Reverted", description: `Restored baseline for: "${baseline.slice(0, 50)}…"` });
     } catch (err: any) {
       toast({ title: "Revert failed", description: err.message, variant: "destructive" });
     }

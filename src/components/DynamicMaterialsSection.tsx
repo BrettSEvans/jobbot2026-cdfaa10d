@@ -195,6 +195,18 @@ export default function DynamicMaterialsSection({
         )}
       </TabsList>
 
+      {/* Admin-only: Design Variability Card */}
+      {isAdmin && generatedAssets.filter(a => a.generation_status === 'complete' && a.html).length >= 2 && (
+        <DesignVariabilityCard
+          appId={applicationId}
+          assets={generatedAssets
+            .filter(a => a.generation_status === 'complete' && a.html)
+            .map(a => ({ assetName: a.asset_name, html: a.html }))}
+          branding={app?.branding}
+          cachedVariability={app?.design_variability}
+        />
+      )}
+
       {/* Dashboard sub-tab */}
       <TabsContent value="dashboard" className="space-y-4">
         <div className="flex flex-wrap gap-2">

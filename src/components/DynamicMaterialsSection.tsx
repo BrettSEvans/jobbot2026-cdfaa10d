@@ -618,40 +618,80 @@ export default function DynamicMaterialsSection({
 
       {/* Change Asset Dialog */}
       <Dialog open={swapDialogOpen} onOpenChange={setSwapDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[85vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>Change Asset</DialogTitle>
             <DialogDescription>
               Replace "{swapAssetName}" with a different material. The total number of materials stays the same.
             </DialogDescription>
           </DialogHeader>
-          {proposedAlternatives.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-4">
-              No alternative materials available for this application.
-            </p>
-          ) : (
-            <div className="space-y-2 max-h-[300px] overflow-y-auto py-2">
-              {proposedAlternatives.map((alt) => (
-                <div
-                  key={alt.id}
-                  onClick={() => setSelectedSwapId(alt.id)}
-                  className={`p-3 rounded-md border cursor-pointer transition-colors ${
-                    selectedSwapId === alt.id
-                      ? "border-primary bg-primary/5"
-                      : "border-border hover:border-muted-foreground/30"
-                  }`}
-                >
-                  <p className="font-medium text-sm">{alt.asset_name}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{alt.brief_description}</p>
+          <div className="space-y-4 overflow-y-auto flex-1 py-2">
+            {/* Previously proposed alternatives */}
+            {proposedAlternatives.length > 0 && (
+              <div>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Previously Proposed</p>
+                <div className="space-y-2">
+                  {proposedAlternatives.map((alt) => (
+                    <div
+                      key={alt.id}
+                      onClick={() => { setSelectedSwapId(alt.id); setSelectedAiSuggestion(null); }}
+                      className={`p-3 rounded-md border cursor-pointer transition-colors ${
+                        selectedSwapId === alt.id
+                          ? "border-primary bg-primary/5"
+                          : "border-border hover:border-muted-foreground/30"
+                      }`}
+                    >
+                      <p className="font-medium text-sm">{alt.asset_name}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{alt.brief_description}</p>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          )}
+              </div>
+            )}
+
+            {/* AI-suggested alternatives */}
+            {loadingSuggestions && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Finding materials relevant to this role…
+              </div>
+            )}
+            {!loadingSuggestions && aiSuggestions.length > 0 && (
+              <div>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
+                  <Sparkles className="inline h-3 w-3 mr-1" />
+                  Suggested for this Role
+                </p>
+                <div className="space-y-2">
+                  {aiSuggestions.map((sug, idx) => (
+                    <div
+                      key={`ai-${idx}`}
+                      onClick={() => { setSelectedAiSuggestion(sug); setSelectedSwapId(null); }}
+                      className={`p-3 rounded-md border cursor-pointer transition-colors ${
+                        selectedAiSuggestion?.asset_name === sug.asset_name
+                          ? "border-primary bg-primary/5"
+                          : "border-border hover:border-muted-foreground/30"
+                      }`}
+                    >
+                      <p className="font-medium text-sm">{sug.asset_name}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{sug.brief_description}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {!loadingSuggestions && proposedAlternatives.length === 0 && aiSuggestions.length === 0 && (
+              <p className="text-sm text-muted-foreground py-4">
+                No alternative materials available for this application.
+              </p>
+            )}
+          </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setSwapDialogOpen(false)}>Cancel</Button>
             <Button
               onClick={handleSwapAsset}
-              disabled={!selectedSwapId || isSwapping}
+              disabled={(!selectedSwapId && !selectedAiSuggestion) || isSwapping}
             >
               {isSwapping ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Repeat2 className="mr-2 h-4 w-4" />}
               {isSwapping ? "Swapping…" : "Swap Asset"}

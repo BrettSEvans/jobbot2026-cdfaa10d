@@ -137,6 +137,42 @@ export async function streamDashboardRefinement({
   await processSSEStream(resp.body, onDelta, onDone);
 }
 
+// --- Stream generic material / cover letter refinement ---
+export async function streamRefineMaterial({
+  currentContent,
+  contentType,
+  assetName,
+  userMessage,
+  chatHistory,
+  onDelta,
+  onDone,
+}: {
+  currentContent: string;
+  contentType: 'html' | 'text';
+  assetName?: string;
+  userMessage: string;
+  chatHistory?: Array<{ role: string; content: string }>;
+  onDelta: (text: string) => void;
+  onDone: () => void;
+}) {
+  const headers = await getAuthHeaders();
+  const resp = await fetch(
+    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/refine-material`,
+    {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ currentContent, contentType, assetName, userMessage, chatHistory }),
+    }
+  );
+
+  if (!resp.ok || !resp.body) {
+    const errData = await resp.json().catch(() => ({}));
+    throw new Error(errData.error || `Request failed (${resp.status})`);
+  }
+
+  await processSSEStream(resp.body, onDelta, onDone);
+}
+
 // --- CRUD for job applications ---
 export async function saveJobApplication(app: {
   id?: string;

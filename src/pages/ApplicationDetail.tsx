@@ -571,9 +571,12 @@ const ApplicationDetail = () => {
                     </Button>
                   )}
                   {resumeText && jobDescription && (
-                    <KeywordGapAnalysis
+                    <ResumeHealthPanel
+                      resumeHtml=""
                       jobDescription={jobDescription}
                       resumeText={resumeText}
+                      companyName={companyName}
+                      jobTitle={jobTitle}
                       onOptimize={async (missingKeywords: ExtractedKeyword[], userPrompt?: string) => {
                         const kwList = missingKeywords.map(k => k.keyword).join(", ");
                         toast({ title: "Optimizing resume…", description: `Injecting keywords: ${kwList}` });

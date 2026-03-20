@@ -39,6 +39,26 @@ export default function ResumeManager({ userId }: ResumeManagerProps) {
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["user_resumes", userId] });
 
+  // Backfill: extract text for any resumes missing resume_text
+  const [backfillRan, setBackfillRan] = useState(false);
+  if (resumes.length > 0 && !backfillRan) {
+    const missing = resumes.filter((r) => !r.resume_text);
+    if (missing.length > 0) {
+      setBackfillRan(true);
+      missing.forEach((r) => {
+        supabase.functions.invoke("extract-resume-text", {
+          body: { resumeId: r.id, storagePath: r.storage_path },
+        }).then(({ error }) => {
+          if (error) console.warn(`Backfill extraction failed for ${r.file_name}:`, error);
+          else invalidate();
+        });
+      });
+      toast.info(`Extracting text from ${missing.length} resume(s)...`);
+    } else {
+      setBackfillRan(true);
+    }
+  }
+
   // Upload handler
   const uploadResume = useCallback(async (file: File) => {
     if (!file) return;

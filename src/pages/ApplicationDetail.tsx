@@ -673,13 +673,23 @@ const ApplicationDetail = () => {
                 <Card className="overflow-hidden">
                   <div className="w-full bg-white" style={{ height: "60vh" }}>
                     <iframe
-                      srcDoc={app.resume_html}
+                      srcDoc={previewResumeHtml || app.resume_html}
                       className="w-full h-full border-0"
                       sandbox="allow-scripts"
                       title="Resume Preview"
                     />
                   </div>
                 </Card>
+
+                {/* Resume Revision History */}
+                {id && (
+                  <ResumeRevisions
+                    applicationId={id}
+                    currentHtml={app.resume_html}
+                    onPreviewRevision={setPreviewResumeHtml}
+                    refreshTrigger={resumeRevisionTrigger}
+                  />
+                )}
 
                 {/* Unified Resume Health Panel */}
                 {jobDescription && (

@@ -31,14 +31,12 @@ export async function streamTailoredLetter({
   onDelta: (text: string) => void;
   onDone: () => void;
 }) {
+  const headers = await getAuthHeaders();
   const resp = await fetch(
     `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/tailor-cover-letter`,
     {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-      },
+      headers,
       body: JSON.stringify({ jobDescription, customInstructions }),
     }
   );

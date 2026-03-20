@@ -1,95 +1,67 @@
 
 
-# UX Red Team Review: ResuVibe User Flow Audit
+## Plan: Reorder Pipeline — Resume First, Background Cover Letter & Dashboard
 
-## Critical Findings & Prioritized Stories
+### What Changes
 
-After reviewing every page (Login, Onboarding, Applications list, NewApplication, ApplicationDetail, Profile, AppHeader), here are the issues grouped into epics by theme.
+**1. Pipeline reorder + rename**
 
----
+The generation pipeline currently runs: Scrape → Branding → Analyze → Research → Cover Letter → Dashboard → Done.
 
-### Epic 1: First-Time User Experience (P0 — High Drop-off Risk)
+New order:
+1. **Reviewing Job** (renamed from "Scraping Job")
+2. **Branding**
+3. **Analyzing**
+4. **Researching**
+5. **Resume** — generate a tailored resume using `generate-resume` edge function
+6. **Complete** (from the user's perspective)
 
-**Story 1.1: Add empty-state guidance to ApplicationDetail tabs** (~3 pts)
-When a user clicks into an application that errored or is still generating, the Job Description tab shows a wall of AI tools (JD Intelligence, Keyword Analysis, Summary Preview) even when there's no JD content. Each component should show a meaningful empty state ("No job description available — edit above to add one") rather than silently rendering nothing or erroring.
+After resume completes, the user is navigated to the application detail page with the Resume tab open. Cover Letter and Dashboard continue generating in the background.
 
-**Story 1.2: Profile completeness nudge on Applications page** (~2 pts)
-If the user has no `resume_text` in their profile, the keyword analysis and resume optimization features silently fail or show unhelpful errors. Add a dismissible banner on the Applications list: "Complete your profile with a resume to unlock keyword matching and resume optimization."
+**2. Two-phase completion model**
 
-**Story 1.3: Onboarding doesn't collect master cover letter** (~2 pts)
-The onboarding wizard collects name, resume, skills — but skips the master cover letter, which the Profile page marks as important ("Add a master cover letter to improve quality"). Add an optional step 3.5 or fold it into the resume step.
+- **Phase 1 (foreground)**: Steps 1–5. When resume is saved, mark `generation_status = "resume-complete"` and navigate the user to `/applications/:id`.
+- **Phase 2 (background)**: Cover Letter → Dashboard. Save each as they complete. Update `generation_status` to `"complete"` when both finish. The existing `BackgroundJobsBanner` and realtime polling already handle showing progress.
 
----
+**3. UI indication on ApplicationDetail**
 
-### Epic 2: Navigation & Information Architecture (P1 — Usability)
-
-**Story 2.1: ApplicationDetail tab order and naming confusion** (~3 pts)
-The default tab is "Dashboard" but most users will want to review their Resume and Cover Letter first. The "Job Description" tab is overloaded — it contains JD Intelligence, Keyword Analysis, Summary Preview, Resume Diff, ATS Compliance, AND Bullet Coach. Restructure: split into "Resume" tab (diff, ATS, bullet coach, keyword gap) and "JD Analysis" tab (intelligence panel, raw JD text). Default to Cover Letter or Resume.
-
-**Story 2.2: No way to navigate between applications without going back** (~2 pts)
-Users must click "Back" to the list and then click another row. Add prev/next application navigation arrows in the ApplicationDetail header for sequential review workflows.
-
-**Story 2.3: "Stories" nav link visible to all users** (~1 pt)
-The internal story-tracking board is in the main nav for all users. It should be hidden behind an admin role check or a feature flag — regular users will be confused by it.
+When the user lands on the detail page with a completed resume but cover letter/dashboard still generating, show a small banner or badge on those tabs indicating "Generating..." so they know more content is coming.
 
 ---
 
-### Epic 3: Error Handling & Feedback (P0 — Trust)
+### Files to Edit
 
-**Story 3.1: No error recovery for failed generations** (~3 pts)
-Applications with "Error" status show no retry button on the list page. Users must navigate into the detail view and find the Regenerate button. Add a "Retry" action directly in the Applications table row, and show the error message on hover.
+**`src/components/GenerationProgressBar.tsx`**
+- Update `PipelineStage` type: rename `"scraping"` → keep but relabel, add `"resume"` stage
+- New stage order: `reviewing-job`, `branding`, `analyzing`, `research`, `resume`, `complete`
+- Remove `cover-letter` and `dashboard` from the visible progress bar (they happen silently after)
 
-**Story 3.2: Delete confirmation missing** (~2 pts)
-The trash icon in the Applications list deletes immediately with no confirmation dialog. A single misclick destroys an application and all its generated content. Add an AlertDialog confirmation.
+**`src/lib/backgroundGenerator.ts`**
+- Add `"resume"` to `GenerationJob.status` union
+- Reorder `runPipeline`:
+  - After Research, call `generateOptimizedResume` (needs user's `resumeText` from profiles table)
+  - Save `resume_html` and mark `generation_status = "resume-complete"`
+  - Update job status to `"complete"` (from foreground perspective)
+  - Then continue with cover letter + dashboard in the same async flow, updating DB as each finishes
+- Fetch `resumeText` from profiles table at pipeline start (via supabase client)
 
-**Story 3.3: Generation progress not visible after page refresh** (~2 pts)
-The `BackgroundGenerationManager` is an in-memory singleton. If the user refreshes the page, all in-progress job state is lost — rows show "Generating..." from the DB but the progress detail ("Scraping company branding...") is gone. Poll `generation_status` and show the DB-based stage in the status cell.
+**`src/pages/NewApplication.tsx`**
+- After `startFullGeneration` returns the appId, navigate to `/applications/:id` once the background job reaches `"resume"` stage completion (subscribe to job updates)
+- Remove the inline pipeline execution (currently `handleAnalyze` runs everything synchronously) — delegate entirely to `backgroundGenerator`
+- Update `PipelineStage` references for the new stage names
 
----
+**`src/pages/ApplicationDetail.tsx`**
+- Add "Generating..." badges on Cover Letter and Dashboard tabs when `generation_status` is between `"resume-complete"` and `"complete"`
+- The existing polling + realtime subscription will auto-refresh content as it arrives
 
-### Epic 4: Content Quality & Trust (P1 — Core Value)
-
-**Story 4.1: Resume optimization says "Check the Resume tab" but there is no Resume tab** (~2 pts)
-After keyword optimization, the toast says "Check the Resume tab" but ApplicationDetail only has Dashboard, Cover Letter, Job Description, and Details. The optimized `resume_html` is saved but there's no dedicated place to view it. Create a Resume tab with iframe preview, download PDF, and copy actions.
-
-**Story 4.2: Fabrication review actions are toasts only — no persistence** (~3 pts)
-The ResumeDiffViewer's Accept/Revert buttons fire toast notifications but don't actually modify the `resume_html`. The callbacks receive the change object but the parent only shows a toast. Wire Accept to keep the change and Revert to replace `tailored_text` with `baseline_text` in the stored HTML.
-
-**Story 4.3: Cover letter doesn't use master cover letter or profile data** (~3 pts)
-`streamTailoredLetter` receives only `jobDescription` — it doesn't pass the user's `master_cover_letter`, `preferred_tone`, skills, or experience from their profile. The cover letter is generic rather than personalized. Fetch profile data and pass it to the edge function.
-
----
-
-### Epic 5: Mobile & Responsive Polish (P2 — Reach)
-
-**Story 5.1: ApplicationDetail action bars overflow on mobile** (~2 pts)
-The Dashboard tab has 5-6 action buttons (Refine, Regenerate, Copy HTML, Save Template, Download ZIP) in a `flex-wrap` layout that becomes hard to use on small screens. Consolidate into a primary action + overflow menu pattern.
-
-**Story 5.2: Applications table not usable on narrow screens** (~2 pts)
-The 6-column table (Company, Role, Status, Created, Updated, Actions) doesn't collapse for mobile. Hide Created/Updated columns below `md` breakpoint and make the Actions column a dropdown menu.
+**`src/lib/api/jobApplication.ts`**
+- Add `resume_html` to the `saveJobApplication` type signature (already works via `as any`, but clean it up)
 
 ---
 
-### Epic 6: Performance & Polish (P2)
+### Technical Details
 
-**Story 6.1: ApplicationDetail polls every 10 seconds forever** (~2 pts)
-`setInterval(() => loadApplication(id), 10000)` runs indefinitely, even after generation is complete. This is unnecessary network traffic. Only poll while `generation_status` is active, then stop.
-
-**Story 6.2: Unsaved changes warning missing** (~2 pts)
-Editing a cover letter or job description and then clicking "Back" or switching tabs discards changes with no warning. Add a `beforeunload` handler and an in-app prompt when navigating away with dirty state.
-
----
-
-## Recommended Sprint Structure
-
-**Sprint: "UX Red Team Fixes"** — 34 total points
-
-| Priority | Epic | Stories | Points |
-|----------|------|---------|--------|
-| P0 | First-Time UX | 1.1, 1.2, 1.3 | 7 |
-| P0 | Error Handling | 3.1, 3.2, 3.3 | 7 |
-| P1 | Navigation/IA | 2.1, 2.2, 2.3 | 6 |
-| P1 | Content Trust | 4.1, 4.2, 4.3 | 8 |
-| P2 | Mobile Polish | 5.1, 5.2 | 4 |
-| P2 | Performance | 6.1, 6.2 | 4 |
+- The `generate-resume` edge function requires `resumeText` + `jobDescription`. The pipeline will fetch `resumeText` from the `profiles` table using the authenticated user's ID at pipeline start. If no resume text exists, it skips resume generation and goes straight to cover letter.
+- The `GenerationJob.status` will use `"complete"` to signal foreground completion (resume done). A new internal flag or DB `generation_status` value (`"background-generating"`) tracks that cover letter/dashboard are still in progress.
+- The `NewApplication` page will listen to the background job and navigate as soon as status hits resume-complete, giving the user near-instant perceived completion.
 

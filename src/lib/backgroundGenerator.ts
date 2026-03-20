@@ -385,9 +385,28 @@ class BackgroundGenerationManager {
             await new Promise(r => setTimeout(r, 3000));
           }
         }
-      }
 
-      // 10. Generate dashboard
+        // Score design variability after all materials are generated
+        try {
+          const { data: completedAssets } = await supabase
+            .from("generated_assets")
+            .select("asset_name, html")
+            .eq("application_id", appId)
+            .eq("generation_status", "complete")
+            .not("html", "eq", "");
+
+          if (completedAssets && completedAssets.length >= 2) {
+            const { scoreDesignVariability } = await import("@/lib/api/designVariability");
+            await scoreDesignVariability(
+              appId,
+              completedAssets.map((a: any) => ({ assetName: a.asset_name, html: a.html })),
+              brandingData,
+            );
+          }
+        } catch (e) {
+          console.warn("Design variability scoring failed:", e);
+        }
+      }
       let dashboardRaw = "";
       try {
         await streamDashboardGeneration({

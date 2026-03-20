@@ -15,8 +15,10 @@ import {
 } from "lucide-react";
 import SaveAsTemplate from "@/components/SaveAsTemplate";
 import DashboardRevisions from "@/components/DashboardRevisions";
+import DesignVariabilityCard from "@/components/admin/DesignVariabilityCard";
 import { supabase } from "@/integrations/supabase/client";
 import type { DashboardData } from "@/lib/dashboard/schema";
+import { useProfiles } from "@/hooks/useProfiles";
 
 interface GeneratedAsset {
   id: string;

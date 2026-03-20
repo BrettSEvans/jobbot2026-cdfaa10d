@@ -13,12 +13,32 @@ const TOUR_STEPS: TourStep[] = [
   {
     target: '[href="/"], [data-tour="applications"]',
     title: "Applications",
-    content: "This is your main hub. All your job applications live here. Click any card to see its details.",
+    content: "This is your main hub. All your job applications live here. Click any row to see its details.",
   },
   {
     target: '[data-tour="new-app"], a[href="/applications/new"]',
     title: "Create an Application",
     content: "Click here to create a new application. Just paste a job listing URL and we'll handle the rest.",
+  },
+  {
+    target: '[role="tablist"]',
+    title: "Application Tabs",
+    content: "Each application has five tabs: Resume (with keyword analysis, diff viewer, ATS check, bullet coach), Cover Letter, JD Analysis, Dashboard, and Details.",
+  },
+  {
+    target: '[value="resume"]',
+    title: "Resume Tab",
+    content: "Your AI-optimized resume lives here. Use Keyword Gap Analysis to inject missing keywords, view diffs, check ATS compliance, and improve bullets.",
+  },
+  {
+    target: '[value="jd-analysis"]',
+    title: "JD Analysis",
+    content: "Deep analysis of the job description — structured intelligence, requirement categories, and a tailored summary preview.",
+  },
+  {
+    target: '[data-tour="prev-next"], [title="Next application"]',
+    title: "Quick Navigation",
+    content: "Use the prev/next arrows to navigate between applications without going back to the list.",
   },
   {
     target: '[data-tour="templates"]',
@@ -28,7 +48,7 @@ const TOUR_STEPS: TourStep[] = [
   {
     target: '[data-tour="profile"]',
     title: "Your Profile",
-    content: "Set up your resume text, skills, and preferences here. This data personalizes all your generated materials.",
+    content: "Set up your resume text, master cover letter, skills, and preferences here. This data personalizes all your generated materials.",
   },
   {
     target: '[data-tour="ai-chat"]',

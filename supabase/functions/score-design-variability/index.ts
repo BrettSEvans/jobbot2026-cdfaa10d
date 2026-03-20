@@ -1,4 +1,4 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { aiFetchWithRetry } from "../_shared/aiRetry.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -24,9 +24,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Strip text content, keep structural HTML (tags, classes, layout containers)
     const structuralSummaries = assets.map((a: { assetName: string; html: string }) => {
-      // Remove text nodes but keep tag structure
       const stripped = (a.html || '')
         .replace(/<script[\s\S]*?<\/script>/gi, '')
         .replace(/<style[\s\S]*?<\/style>/gi, '[STYLE_BLOCK]')
@@ -39,15 +37,12 @@ Deno.serve(async (req) => {
       ? `Company branding: colors=${JSON.stringify(branding.colors || {})}, fonts=${JSON.stringify(branding.fonts || {})}`
       : 'No branding data available';
 
-    const resp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${LOVABLE_API_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          {
-            role: 'system',
-            content: `You are a design analyst evaluating structural and visual diversity across a set of HTML documents generated for the same job application. 
+    const resp = await aiFetchWithRetry(LOVABLE_API_KEY, {
+      model: 'google/gemini-2.5-flash',
+      messages: [
+        {
+          role: 'system',
+          content: `You are a design analyst evaluating structural and visual diversity across a set of HTML documents generated for the same job application. 
 
 Evaluate:
 1. Layout diversity — do documents use different layout patterns (tables, timelines, grids, cards, charts, lists)?
@@ -65,16 +60,15 @@ Return ONLY valid JSON matching this schema:
   "structuralPatterns": [{"assetName": "<name>", "dominantPattern": "<description>"}],
   "recommendations": ["<string>"]
 }`
-          },
-          {
-            role: 'user',
-            content: `Analyze these ${structuralSummaries.length} document structures:\n\n${structuralSummaries.map((s: any) => `### ${s.assetName}\n${s.structure}`).join('\n\n---\n\n')}`
-          },
-        ],
-        response_format: { type: 'json_object' },
-        temperature: 0.2,
-        max_tokens: 3000,
-      }),
+        },
+        {
+          role: 'user',
+          content: `Analyze these ${structuralSummaries.length} document structures:\n\n${structuralSummaries.map((s: any) => `### ${s.assetName}\n${s.structure}`).join('\n\n---\n\n')}`
+        },
+      ],
+      response_format: { type: 'json_object' },
+      temperature: 0.2,
+      max_tokens: 3000,
     });
 
     if (!resp.ok) {
@@ -89,7 +83,6 @@ Return ONLY valid JSON matching this schema:
     try {
       result = JSON.parse(content);
     } catch {
-      // Fallback: extract JSON
       const jsonMatch = content.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
         throw new Error('Failed to parse variability score from AI response');

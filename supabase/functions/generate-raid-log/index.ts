@@ -1,3 +1,5 @@
+import { aiFetchWithRetry } from "../_shared/aiRetry.ts";
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
@@ -28,21 +30,14 @@ OUTPUT: Return a single self-contained HTML document with embedded CSS. The RAID
 Competitors context: ${(competitors || []).join(', ') || 'N/A'}
 Products context: ${(products || []).join(', ') || 'N/A'}`;
 
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: `Company: ${companyName || 'Unknown'}\nJob Title: ${jobTitle || 'Unknown'}\n\nJob Description:\n${(jobDescription || '').slice(0, 6000)}\n\nGenerate the RAID Log HTML now.` },
-        ],
-        temperature: 0.3,
-        max_tokens: 8000,
-      }),
+    const response = await aiFetchWithRetry(LOVABLE_API_KEY, {
+      model: 'google/gemini-2.5-flash',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: `Company: ${companyName || 'Unknown'}\nJob Title: ${jobTitle || 'Unknown'}\n\nJob Description:\n${(jobDescription || '').slice(0, 6000)}\n\nGenerate the RAID Log HTML now.` },
+      ],
+      temperature: 0.3,
+      max_tokens: 8000,
     });
 
     if (!response.ok) {
@@ -55,7 +50,6 @@ Products context: ${(products || []).join(', ') || 'N/A'}`;
     const data = await response.json();
     let content = data.choices?.[0]?.message?.content || '';
 
-    // Extract HTML
     content = content.replace(/^```html?\n?/i, '').replace(/\n?```$/i, '').trim();
     const htmlStart = content.indexOf('<!');
     if (htmlStart > 0) content = content.slice(htmlStart);

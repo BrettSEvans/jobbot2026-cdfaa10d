@@ -1,3 +1,5 @@
+import { aiFetchWithRetry } from "../_shared/aiRetry.ts";
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
@@ -26,18 +28,12 @@ Deno.serve(async (req) => {
       );
     }
 
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash-lite',
-        messages: [
-          {
-            role: 'system',
-            content: `You are a professional resume summary writer. Generate a compelling 3-line professional summary following this structure:
+    const response = await aiFetchWithRetry(LOVABLE_API_KEY, {
+      model: 'google/gemini-2.5-flash-lite',
+      messages: [
+        {
+          role: 'system',
+          content: `You are a professional resume summary writer. Generate a compelling 3-line professional summary following this structure:
 
 Line 1: "[Years] years of experience in [domain directly from JD] with proven expertise in [top 2 JD requirements]."
 Line 2: "Track record of [specific achievement pattern from resume matching JD needs], driving [measurable outcome type from JD]."
@@ -52,39 +48,38 @@ RULES:
 6. If the candidate's experience doesn't match well, be honest about adjacent skills
 7. Keep it 200-350 characters total
 8. If no resume text provided, generate based on JD requirements alone with placeholder brackets for personalization`
-          },
-          {
-            role: 'user',
-            content: `Job Title: ${jobTitle || 'Not specified'}\nCompany: ${companyName || 'Not specified'}\n\nJob Description:\n${jobDescription.slice(0, 6000)}\n\nCandidate Resume:\n${(resumeText || 'No resume text provided — use JD requirements with [placeholder] brackets').slice(0, 6000)}`
-          }
-        ],
-        tools: [{
-          type: "function",
-          function: {
-            name: "generate_summary",
-            description: "Generate a professional summary for a resume",
-            parameters: {
-              type: "object",
-              properties: {
-                summary: { type: "string", description: "The 3-line professional summary" },
-                keywords_used: {
-                  type: "array",
-                  items: { type: "string" },
-                  description: "JD keywords incorporated into the summary"
-                },
-                confidence: {
-                  type: "string",
-                  enum: ["high", "medium", "low"],
-                  description: "How well the summary matches both JD and resume"
-                }
+        },
+        {
+          role: 'user',
+          content: `Job Title: ${jobTitle || 'Not specified'}\nCompany: ${companyName || 'Not specified'}\n\nJob Description:\n${jobDescription.slice(0, 6000)}\n\nCandidate Resume:\n${(resumeText || 'No resume text provided — use JD requirements with [placeholder] brackets').slice(0, 6000)}`
+        }
+      ],
+      tools: [{
+        type: "function",
+        function: {
+          name: "generate_summary",
+          description: "Generate a professional summary for a resume",
+          parameters: {
+            type: "object",
+            properties: {
+              summary: { type: "string", description: "The 3-line professional summary" },
+              keywords_used: {
+                type: "array",
+                items: { type: "string" },
+                description: "JD keywords incorporated into the summary"
               },
-              required: ["summary", "keywords_used", "confidence"],
-              additionalProperties: false
-            }
+              confidence: {
+                type: "string",
+                enum: ["high", "medium", "low"],
+                description: "How well the summary matches both JD and resume"
+              }
+            },
+            required: ["summary", "keywords_used", "confidence"],
+            additionalProperties: false
           }
-        }],
-        tool_choice: { type: "function", function: { name: "generate_summary" } }
-      }),
+        }
+      }],
+      tool_choice: { type: "function", function: { name: "generate_summary" } }
     });
 
     if (!response.ok) {

@@ -1,3 +1,5 @@
+import { aiFetchWithRetry } from "../_shared/aiRetry.ts";
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
@@ -26,18 +28,12 @@ Deno.serve(async (req) => {
       );
     }
 
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          {
-            role: 'system',
-            content: `Role: You are an expert ATS keyword analyst and technical recruiter with 15 years of experience parsing job descriptions for applicant tracking system optimization.
+    const response = await aiFetchWithRetry(LOVABLE_API_KEY, {
+      model: 'google/gemini-2.5-flash',
+      messages: [
+        {
+          role: 'system',
+          content: `Role: You are an expert ATS keyword analyst and technical recruiter with 15 years of experience parsing job descriptions for applicant tracking system optimization.
 
 Task: Extract the top 15-20 most ATS-critical keywords from the provided job description.
 
@@ -55,47 +51,46 @@ Rules:
    - TIER 3 (bonus): In general description or company overview
 9. Count frequency — keywords mentioned multiple times rank higher
 10. Cap at 20 keywords — quality over quantity`
-          },
-          {
-            role: 'user',
-            content: `Extract ATS keywords from this job description:\n\n${jobDescription.slice(0, 10000)}`
-          }
-        ],
-        tools: [{
-          type: "function",
-          function: {
-            name: "extract_keywords",
-            description: "Return structured keyword analysis from a job description",
-            parameters: {
-              type: "object",
-              properties: {
-                keywords: {
-                  type: "array",
-                  items: {
-                    type: "object",
-                    properties: {
-                      keyword: { type: "string", description: "Exact phrase from the JD" },
-                      category: { type: "string", enum: ["hard_skill", "tool", "certification", "methodology", "domain", "soft_skill"] },
-                      frequency: { type: "number", description: "Times mentioned or strongly implied" },
-                      importance: { type: "string", enum: ["critical", "preferred", "nice_to_have"] },
-                      context: { type: "string", description: "Brief quote showing where this keyword appeared" }
-                    },
-                    required: ["keyword", "category", "frequency", "importance", "context"],
-                    additionalProperties: false
-                  }
-                },
-                job_function: {
-                  type: "string",
-                  enum: ["engineering", "sales", "marketing", "operations", "design", "data", "finance", "hr", "product", "other"]
+        },
+        {
+          role: 'user',
+          content: `Extract ATS keywords from this job description:\n\n${jobDescription.slice(0, 10000)}`
+        }
+      ],
+      tools: [{
+        type: "function",
+        function: {
+          name: "extract_keywords",
+          description: "Return structured keyword analysis from a job description",
+          parameters: {
+            type: "object",
+            properties: {
+              keywords: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    keyword: { type: "string", description: "Exact phrase from the JD" },
+                    category: { type: "string", enum: ["hard_skill", "tool", "certification", "methodology", "domain", "soft_skill"] },
+                    frequency: { type: "number", description: "Times mentioned or strongly implied" },
+                    importance: { type: "string", enum: ["critical", "preferred", "nice_to_have"] },
+                    context: { type: "string", description: "Brief quote showing where this keyword appeared" }
+                  },
+                  required: ["keyword", "category", "frequency", "importance", "context"],
+                  additionalProperties: false
                 }
               },
-              required: ["keywords", "job_function"],
-              additionalProperties: false
-            }
+              job_function: {
+                type: "string",
+                enum: ["engineering", "sales", "marketing", "operations", "design", "data", "finance", "hr", "product", "other"]
+              }
+            },
+            required: ["keywords", "job_function"],
+            additionalProperties: false
           }
-        }],
-        tool_choice: { type: "function", function: { name: "extract_keywords" } }
-      }),
+        }
+      }],
+      tool_choice: { type: "function", function: { name: "extract_keywords" } }
     });
 
     if (!response.ok) {
@@ -126,7 +121,6 @@ Rules:
       result = JSON.parse(content);
     }
 
-    // Sort keywords: critical first, then by frequency desc
     const importanceOrder: Record<string, number> = { critical: 0, preferred: 1, nice_to_have: 2 };
     result.keywords.sort((a: any, b: any) => {
       const impDiff = (importanceOrder[a.importance] ?? 2) - (importanceOrder[b.importance] ?? 2);

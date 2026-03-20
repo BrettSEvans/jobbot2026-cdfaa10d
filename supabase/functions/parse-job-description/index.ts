@@ -1,3 +1,5 @@
+import { aiFetchWithRetry } from "../_shared/aiRetry.ts";
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
@@ -110,128 +112,121 @@ Severity weights: Low=1, Medium=2, High=3, Critical=5
 Formula: job_health_score = max(0, 100 - sum(severity_weights))
 Always return top 3 most severe flags with human-readable explanations.`;
 
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-3-flash-preview',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          {
-            role: 'user',
-            content: `Parse this job description into structured intelligence.\n\n${companyName ? `Company: ${companyName}\n\n` : ''}JOB DESCRIPTION:\n${jobDescriptionMarkdown.slice(0, 10000)}`
-          }
-        ],
-        tools: [{
-          type: "function",
-          function: {
-            name: "parse_jd",
-            description: "Parse a job description into structured intelligence for downstream asset generation",
-            parameters: {
-              type: "object",
-              properties: {
-                summary: { type: "string", description: "1-2 sentence plain-English summary of the role" },
-                job_function: { type: "string", description: "Primary function: engineering, sales, marketing, product, operations, design, data, finance, hr, legal, other" },
-                department: { type: "string", description: "Department or team if identifiable" },
-                requirements: {
-                  type: "array",
-                  items: {
-                    type: "object",
-                    properties: {
-                      text: { type: "string" },
-                      category: { type: "string", enum: ["must_have", "preferred", "bonus"] },
-                      skill_type: { type: "string", enum: ["hard_skill", "soft_skill", "certification", "education", "experience"] }
-                    },
-                    required: ["text", "category", "skill_type"],
-                    additionalProperties: false
-                  }
-                },
-                seniority: {
+    const response = await aiFetchWithRetry(LOVABLE_API_KEY, {
+      model: 'google/gemini-3-flash-preview',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        {
+          role: 'user',
+          content: `Parse this job description into structured intelligence.\n\n${companyName ? `Company: ${companyName}\n\n` : ''}JOB DESCRIPTION:\n${jobDescriptionMarkdown.slice(0, 10000)}`
+        }
+      ],
+      tools: [{
+        type: "function",
+        function: {
+          name: "parse_jd",
+          description: "Parse a job description into structured intelligence for downstream asset generation",
+          parameters: {
+            type: "object",
+            properties: {
+              summary: { type: "string", description: "1-2 sentence plain-English summary of the role" },
+              job_function: { type: "string", description: "Primary function: engineering, sales, marketing, product, operations, design, data, finance, hr, legal, other" },
+              department: { type: "string", description: "Department or team if identifiable" },
+              requirements: {
+                type: "array",
+                items: {
                   type: "object",
                   properties: {
-                    level: { type: "string", enum: ["intern", "junior", "mid", "senior", "staff", "principal", "director", "vp", "c_suite"] },
-                    years_min: { type: "number" },
-                    years_max: { type: "number" },
-                    management_scope: { type: "string", enum: ["ic", "team_lead", "manager", "director", "executive"] },
-                    confidence: { type: "number", description: "0-1 confidence in seniority assessment" },
-                    reasoning: { type: "string" }
+                    text: { type: "string" },
+                    category: { type: "string", enum: ["must_have", "preferred", "bonus"] },
+                    skill_type: { type: "string", enum: ["hard_skill", "soft_skill", "certification", "education", "experience"] }
                   },
-                  required: ["level", "management_scope", "confidence", "reasoning"],
+                  required: ["text", "category", "skill_type"],
                   additionalProperties: false
-                },
-                culture_signals: {
-                  type: "array",
-                  items: {
-                    type: "object",
-                    properties: {
-                      text: { type: "string" },
-                      signal_type: { type: "string", enum: ["value", "work_style", "team_dynamic", "growth", "red_flag"] },
-                      route_to: { type: "string", enum: ["cover_letter", "interview_prep", "red_flag", "none"] }
-                    },
-                    required: ["text", "signal_type", "route_to"],
-                    additionalProperties: false
-                  }
-                },
-                ats_keywords: {
-                  type: "array",
-                  items: {
-                    type: "object",
-                    properties: {
-                      keyword: { type: "string" },
-                      tier: { type: "integer", description: "ATS importance tier: 1 (highest, in title/first paragraph), 2 (requirements section), 3 (nice-to-have)" },
-                      frequency: { type: "number" },
-                      is_in_title: { type: "boolean" }
-                    },
-                    required: ["keyword", "tier", "frequency", "is_in_title"],
-                    additionalProperties: false
-                  }
-                },
-                red_flag_score: {
-                  type: "object",
-                  properties: {
-                    score: { type: "number", description: "0-100 job health score" },
-                    total_flags: { type: "number" },
-                    top_alerts: {
-                      type: "array",
-                      items: {
-                        type: "object",
-                        properties: {
-                          text: { type: "string" },
-                          severity: { type: "string", enum: ["low", "medium", "high", "critical"] },
-                          explanation: { type: "string" }
-                        },
-                        required: ["text", "severity", "explanation"],
-                        additionalProperties: false
-                      }
-                    }
-                  },
-                  required: ["score", "total_flags", "top_alerts"],
-                  additionalProperties: false
-                },
-                recommended_assets: {
-                  type: "array",
-                  description: "3-6 recommended strategic materials based on job function, seniority, and industry. Examples: RAID Log, Architecture Diagram, 90-Day Roadmap, Stakeholder Map, Competitive Battlecard, Territory Plan, Board Deck, Technical Debt Assessment, On-Call Runbook, Organizational Design.",
-                  items: {
-                    type: "object",
-                    properties: {
-                      name: { type: "string", description: "Asset name, e.g. 'RAID Log', 'Stakeholder Map'" },
-                      brief_description: { type: "string", description: "1-2 sentence description of what this asset contains and why it's valuable for this role" }
-                    },
-                    required: ["name", "brief_description"],
-                    additionalProperties: false
-                  }
                 }
               },
-              required: ["summary", "job_function", "department", "requirements", "seniority", "culture_signals", "ats_keywords", "red_flag_score", "recommended_assets"],
-              additionalProperties: false
-            }
+              seniority: {
+                type: "object",
+                properties: {
+                  level: { type: "string", enum: ["intern", "junior", "mid", "senior", "staff", "principal", "director", "vp", "c_suite"] },
+                  years_min: { type: "number" },
+                  years_max: { type: "number" },
+                  management_scope: { type: "string", enum: ["ic", "team_lead", "manager", "director", "executive"] },
+                  confidence: { type: "number", description: "0-1 confidence in seniority assessment" },
+                  reasoning: { type: "string" }
+                },
+                required: ["level", "management_scope", "confidence", "reasoning"],
+                additionalProperties: false
+              },
+              culture_signals: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    text: { type: "string" },
+                    signal_type: { type: "string", enum: ["value", "work_style", "team_dynamic", "growth", "red_flag"] },
+                    route_to: { type: "string", enum: ["cover_letter", "interview_prep", "red_flag", "none"] }
+                  },
+                  required: ["text", "signal_type", "route_to"],
+                  additionalProperties: false
+                }
+              },
+              ats_keywords: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    keyword: { type: "string" },
+                    tier: { type: "integer", description: "ATS importance tier: 1 (highest, in title/first paragraph), 2 (requirements section), 3 (nice-to-have)" },
+                    frequency: { type: "number" },
+                    is_in_title: { type: "boolean" }
+                  },
+                  required: ["keyword", "tier", "frequency", "is_in_title"],
+                  additionalProperties: false
+                }
+              },
+              red_flag_score: {
+                type: "object",
+                properties: {
+                  score: { type: "number", description: "0-100 job health score" },
+                  total_flags: { type: "number" },
+                  top_alerts: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        text: { type: "string" },
+                        severity: { type: "string", enum: ["low", "medium", "high", "critical"] },
+                        explanation: { type: "string" }
+                      },
+                      required: ["text", "severity", "explanation"],
+                      additionalProperties: false
+                    }
+                  }
+                },
+                required: ["score", "total_flags", "top_alerts"],
+                additionalProperties: false
+              },
+              recommended_assets: {
+                type: "array",
+                description: "3-6 recommended strategic materials based on job function, seniority, and industry. Examples: RAID Log, Architecture Diagram, 90-Day Roadmap, Stakeholder Map, Competitive Battlecard, Territory Plan, Board Deck, Technical Debt Assessment, On-Call Runbook, Organizational Design.",
+                items: {
+                  type: "object",
+                  properties: {
+                    name: { type: "string", description: "Asset name, e.g. 'RAID Log', 'Stakeholder Map'" },
+                    brief_description: { type: "string", description: "1-2 sentence description of what this asset contains and why it's valuable for this role" }
+                  },
+                  required: ["name", "brief_description"],
+                  additionalProperties: false
+                }
+              }
+            },
+            required: ["summary", "job_function", "department", "requirements", "seniority", "culture_signals", "ats_keywords", "red_flag_score", "recommended_assets"],
+            additionalProperties: false
           }
-        }],
-        tool_choice: { type: "function", function: { name: "parse_jd" } }
-      }),
+        }
+      }],
+      tool_choice: { type: "function", function: { name: "parse_jd" } }
     });
 
     if (!response.ok) {
@@ -248,7 +243,6 @@ Always return top 3 most severe flags with human-readable explanations.`;
     if (toolCall) {
       result = JSON.parse(toolCall.function.arguments);
     } else {
-      // Fallback: try parsing content as JSON
       const content = data.choices?.[0]?.message?.content || '';
       try {
         result = JSON.parse(content);

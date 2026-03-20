@@ -50,6 +50,11 @@ export interface RedFlagScore {
   top_alerts: RedFlagAlert[];
 }
 
+export interface RecommendedAsset {
+  name: string;
+  brief_description: string;
+}
+
 export interface JDIntelligence {
   summary: string;
   job_function: string;
@@ -59,6 +64,7 @@ export interface JDIntelligence {
   culture_signals: CultureSignal[];
   ats_keywords: ATSKeyword[];
   red_flag_score: RedFlagScore;
+  recommended_assets?: RecommendedAsset[];
 }
 
 export async function parseJobDescription(params: {

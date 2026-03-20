@@ -210,9 +210,22 @@ Always return top 3 most severe flags with human-readable explanations.`;
                   },
                   required: ["score", "total_flags", "top_alerts"],
                   additionalProperties: false
+                },
+                recommended_assets: {
+                  type: "array",
+                  description: "3-6 recommended strategic materials based on job function, seniority, and industry. Examples: RAID Log, Architecture Diagram, 90-Day Roadmap, Stakeholder Map, Competitive Battlecard, Territory Plan, Board Deck, Technical Debt Assessment, On-Call Runbook, Organizational Design.",
+                  items: {
+                    type: "object",
+                    properties: {
+                      name: { type: "string", description: "Asset name, e.g. 'RAID Log', 'Stakeholder Map'" },
+                      brief_description: { type: "string", description: "1-2 sentence description of what this asset contains and why it's valuable for this role" }
+                    },
+                    required: ["name", "brief_description"],
+                    additionalProperties: false
+                  }
                 }
               },
-              required: ["summary", "job_function", "department", "requirements", "seniority", "culture_signals", "ats_keywords", "red_flag_score"],
+              required: ["summary", "job_function", "department", "requirements", "seniority", "culture_signals", "ats_keywords", "red_flag_score", "recommended_assets"],
               additionalProperties: false
             }
           }

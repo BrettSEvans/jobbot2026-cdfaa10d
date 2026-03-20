@@ -307,8 +307,64 @@ class BackgroundGenerationManager {
         console.warn("Cover letter generation failed:", e);
       }
 
-      // 7. Generate dashboard
-      this.updateJob(appId, { status: "dashboard", progress: "Generating dashboard..." });
+      // 7. Generate RAID Log
+      this.updateJob(appId, { status: "raid-log", progress: "Generating RAID log..." });
+      try {
+        const raidResp = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-raid-log`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`, 'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY },
+            body: JSON.stringify({ jobDescription: markdown, companyName, jobTitle, competitors, products }),
+          }
+        );
+        if (raidResp.ok) {
+          const raidData = await raidResp.json();
+          if (raidData.html) {
+            await saveJobApplication({ id: appId, job_url: jobUrl, raid_log_html: raidData.html } as any);
+          }
+        }
+      } catch (e) { console.warn("RAID log generation failed:", e); }
+
+      // 8. Generate Architecture Diagram
+      this.updateJob(appId, { status: "architecture-diagram", progress: "Generating architecture diagram..." });
+      try {
+        const archResp = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-architecture-diagram`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`, 'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY },
+            body: JSON.stringify({ jobDescription: markdown, companyName, jobTitle, competitors, products }),
+          }
+        );
+        if (archResp.ok) {
+          const archData = await archResp.json();
+          if (archData.html) {
+            await saveJobApplication({ id: appId, job_url: jobUrl, architecture_diagram_html: archData.html } as any);
+          }
+        }
+      } catch (e) { console.warn("Architecture diagram generation failed:", e); }
+
+      // 9. Generate 90-Day Roadmap
+      this.updateJob(appId, { status: "roadmap", progress: "Generating 90-day roadmap..." });
+      try {
+        const roadmapResp = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-roadmap`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`, 'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY },
+            body: JSON.stringify({ jobDescription: markdown, companyName, jobTitle, competitors, products, customers }),
+          }
+        );
+        if (roadmapResp.ok) {
+          const roadmapData = await roadmapResp.json();
+          if (roadmapData.html) {
+            await saveJobApplication({ id: appId, job_url: jobUrl, roadmap_html: roadmapData.html } as any);
+          }
+        }
+      } catch (e) { console.warn("Roadmap generation failed:", e); }
+
+      // 10. Generate dashboard
       let dashboardRaw = "";
       try {
         await streamDashboardGeneration({

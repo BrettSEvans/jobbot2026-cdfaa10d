@@ -55,6 +55,7 @@ import JDIntelligencePanel from "@/components/JDIntelligencePanel";
 import DashboardRevisions from "@/components/DashboardRevisions";
 import CoverLetterRevisions from "@/components/CoverLetterRevisions";
 import ResumeRevisions from "@/components/ResumeRevisions";
+import InlineHtmlEditor from "@/components/InlineHtmlEditor";
 import DynamicMaterialsSection from "@/components/DynamicMaterialsSection";
 import { backgroundGenerator } from "@/lib/backgroundGenerator";
 import { saveDashboardRevision } from "@/lib/api/dashboardRevisions";
@@ -102,6 +103,7 @@ const ApplicationDetail = () => {
   const [coverLetterRevisionTrigger, setCoverLetterRevisionTrigger] = useState(0);
   const [previewResumeHtml, setPreviewResumeHtml] = useState<string | null>(null);
   const [resumeRevisionTrigger, setResumeRevisionTrigger] = useState(0);
+  const [editingResume, setEditingResume] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const bgJob = useBackgroundJob(id);
   const isBgGenerating = bgJob && !["complete", "error"].includes(bgJob.status);
@@ -555,6 +557,14 @@ const ApplicationDetail = () => {
               <>
                 <div className="flex flex-wrap gap-2">
                   <Button
+                    variant={editingResume ? "secondary" : "outline"}
+                    size="sm"
+                    onClick={() => { setEditingResume(true); setPreviewResumeHtml(null); }}
+                    disabled={editingResume}
+                  >
+                    <Edit3 className="mr-2 h-4 w-4" /> Edit
+                  </Button>
+                  <Button
                     variant="outline"
                     size="sm"
                     onClick={() => handleCopy(app.resume_html, "Resume HTML")}
@@ -670,17 +680,43 @@ const ApplicationDetail = () => {
                   </Dialog>
                 </div>
 
-                {/* Resume preview */}
-                <Card className="overflow-hidden">
-                  <div className="w-full bg-white" style={{ height: "60vh" }}>
-                    <iframe
-                      srcDoc={previewResumeHtml || app.resume_html}
-                      className="w-full h-full border-0"
-                      sandbox="allow-scripts"
-                      title="Resume Preview"
-                    />
-                  </div>
-                </Card>
+                {/* Resume preview / editor */}
+                {editingResume ? (
+                  <InlineHtmlEditor
+                    html={app.resume_html}
+                    height="60vh"
+                    onSave={async (newHtml) => {
+                      // Save current as revision
+                      if (app.resume_html) {
+                        try {
+                          await supabase.from("resume_revisions").insert({
+                            application_id: id!,
+                            html: app.resume_html,
+                            label: "Before manual edit",
+                            revision_number: Date.now(),
+                          });
+                        } catch (_) {}
+                      }
+                      await saveJobApplication({ id: id!, job_url: app.job_url, resume_html: newHtml } as any);
+                      setApp((prev: any) => ({ ...prev, resume_html: newHtml }));
+                      setEditingResume(false);
+                      setResumeRevisionTrigger((t) => t + 1);
+                      toast({ title: "Resume saved" });
+                    }}
+                    onCancel={() => setEditingResume(false)}
+                  />
+                ) : (
+                  <Card className="overflow-hidden">
+                    <div className="w-full bg-white" style={{ height: "60vh" }}>
+                      <iframe
+                        srcDoc={previewResumeHtml || app.resume_html}
+                        className="w-full h-full border-0"
+                        sandbox="allow-scripts"
+                        title="Resume Preview"
+                      />
+                    </div>
+                  </Card>
+                )}
 
                 {/* Resume Revision History */}
                 {id && (

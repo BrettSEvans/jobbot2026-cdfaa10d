@@ -1,5 +1,15 @@
 import { supabase } from '@/integrations/supabase/client';
 
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+  return {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${token}`,
+    apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+  };
+}
+
 export async function scrapeJob(url: string): Promise<{ markdown: string; title: string }> {
   const { data, error } = await supabase.functions.invoke('scrape-job', {
     body: { url },
@@ -21,14 +31,12 @@ export async function streamTailoredLetter({
   onDelta: (text: string) => void;
   onDone: () => void;
 }) {
+  const headers = await getAuthHeaders();
   const resp = await fetch(
     `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/tailor-cover-letter`,
     {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-      },
+      headers,
       body: JSON.stringify({ jobDescription, customInstructions }),
     }
   );

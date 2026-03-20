@@ -475,7 +475,7 @@ const ApplicationDetail = () => {
 
                 {/* Resume preview */}
                 <Card className="overflow-hidden">
-                  <div className="w-full" style={{ height: "60vh" }}>
+                  <div className="w-full bg-white" style={{ height: "60vh" }}>
                     <iframe
                       srcDoc={app.resume_html}
                       className="w-full h-full border-0"

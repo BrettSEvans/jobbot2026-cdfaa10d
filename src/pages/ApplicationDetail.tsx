@@ -821,147 +821,254 @@ const ApplicationDetail = () => {
             </Card>
           </TabsContent>
 
-          {/* Dashboard Tab */}
-          <TabsContent value="dashboard" className="space-y-4">
-            <div className="flex flex-wrap gap-2">
-              <Button variant="outline" size="sm" onClick={() => setChatOpen(!chatOpen)}>
-                <Edit3 className="mr-2 h-4 w-4" /> {chatOpen ? "Hide Chat" : "Refine with AI"}
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleRegenerateDashboard} disabled={isRegenerating}>
-                {isRegenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-                Regenerate
-              </Button>
-              {dashboardHtml && (
-                <>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      navigator.clipboard.writeText(dashboardHtml);
-                      toast({ title: "Copied!", description: "Dashboard HTML copied to clipboard." });
-                    }}
-                  >
-                    <Copy className="mr-2 h-4 w-4" /> Copy HTML
+          {/* Materials Tab — sub-tabs for Dashboard, RAID Log, Architecture, Roadmap */}
+          <TabsContent value="materials" className="space-y-4">
+            <Tabs defaultValue="dashboard" className="space-y-4">
+              <TabsList className="w-full justify-start">
+                <TabsTrigger value="dashboard" className="flex items-center gap-1.5">
+                  Dashboard
+                  {isBgGenerating && !dashboardHtml && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
+                </TabsTrigger>
+                <TabsTrigger value="raid-log" className="flex items-center gap-1.5">
+                  RAID Log
+                  {isBgGenerating && !app?.raid_log_html && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
+                </TabsTrigger>
+                <TabsTrigger value="architecture" className="flex items-center gap-1.5">
+                  Architecture
+                  {isBgGenerating && !app?.architecture_diagram_html && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
+                </TabsTrigger>
+                <TabsTrigger value="roadmap" className="flex items-center gap-1.5">
+                  Roadmap
+                  {isBgGenerating && !app?.roadmap_html && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
+                </TabsTrigger>
+              </TabsList>
+
+              {/* Dashboard sub-tab */}
+              <TabsContent value="dashboard" className="space-y-4">
+                <div className="flex flex-wrap gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setChatOpen(!chatOpen)}>
+                    <Edit3 className="mr-2 h-4 w-4" /> {chatOpen ? "Hide Chat" : "Refine with AI"}
                   </Button>
-                  <SaveAsTemplate
-                    dashboardHtml={dashboardHtml}
-                    applicationId={id}
-                    defaultLabel={`${companyName} ${jobTitle} Dashboard`.trim()}
-                    defaultJobFunction={jobTitle}
-                    defaultDepartment=""
-                  />
-                  {dashboardData ? (
-                    <Button variant="outline" size="sm" onClick={handleDownloadZip}>
-                      <FolderArchive className="mr-2 h-4 w-4" /> Download ZIP
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        const blob = new Blob([dashboardHtml], { type: "text/html" });
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement("a");
-                        a.href = url;
-                        a.download = `${(companyName || "dashboard").replace(/\s+/g, "-").toLowerCase()}-dashboard.html`;
-                        document.body.appendChild(a);
-                        a.click();
-                        document.body.removeChild(a);
-                        URL.revokeObjectURL(url);
-                        toast({ title: "Downloaded", description: "Dashboard HTML file saved." });
-                      }}
-                    >
-                      <Download className="mr-2 h-4 w-4" /> Download HTML
-                    </Button>
+                  <Button variant="outline" size="sm" onClick={handleRegenerateDashboard} disabled={isRegenerating}>
+                    {isRegenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+                    Regenerate
+                  </Button>
+                  {dashboardHtml && (
+                    <>
+                      <Button variant="outline" size="sm" onClick={() => { navigator.clipboard.writeText(dashboardHtml); toast({ title: "Copied!", description: "Dashboard HTML copied." }); }}>
+                        <Copy className="mr-2 h-4 w-4" /> Copy HTML
+                      </Button>
+                      <SaveAsTemplate dashboardHtml={dashboardHtml} applicationId={id} defaultLabel={`${companyName} ${jobTitle} Dashboard`.trim()} defaultJobFunction={jobTitle} defaultDepartment="" />
+                      {dashboardData ? (
+                        <Button variant="outline" size="sm" onClick={handleDownloadZip}><FolderArchive className="mr-2 h-4 w-4" /> Download ZIP</Button>
+                      ) : (
+                        <Button variant="outline" size="sm" onClick={() => {
+                          const blob = new Blob([dashboardHtml], { type: "text/html" });
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement("a"); a.href = url;
+                          a.download = `${(companyName || "dashboard").replace(/\s+/g, "-").toLowerCase()}-dashboard.html`;
+                          document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+                          toast({ title: "Downloaded", description: "Dashboard HTML file saved." });
+                        }}><Download className="mr-2 h-4 w-4" /> Download HTML</Button>
+                      )}
+                    </>
                   )}
-                </>
-              )}
-            </div>
-
-            {chatOpen && (
-              <Card>
-                <CardContent className="pt-4 space-y-3">
-                  <div className="max-h-[200px] overflow-y-auto space-y-2">
-                    {chatHistory.map((msg, i) => (
-                      <div key={i} className={`text-sm p-2 rounded ${msg.role === "user" ? "bg-primary/10 text-right" : "bg-muted"}`}>
-                        {msg.content}
-                      </div>
-                    ))}
-                    {isRefining && (
-                      <div className="text-sm p-2 rounded bg-muted flex items-center gap-2">
-                        <Loader2 className="h-3 w-3 animate-spin" /> Refining...
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex gap-2">
-                    <Textarea
-                      placeholder='e.g. "Change colors to blue" or "Add a market share chart"'
-                      value={chatInput}
-                      onChange={(e) => setChatInput(e.target.value)}
-                      rows={2}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && !e.shiftKey) {
-                          e.preventDefault();
-                          handleSendChat();
-                        }
-                      }}
-                    />
-                    <Button onClick={handleSendChat} disabled={!chatInput.trim() || isRefining} className="self-end">
-                      Send
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {id && dashboardHtml && (
-              <DashboardRevisions
-                applicationId={id}
-                currentHtml={dashboardHtml}
-                onPreviewRevision={(html) => setPreviewHtml(html === dashboardHtml ? null : html)}
-                refreshTrigger={revisionTrigger}
-              />
-            )}
-
-            {previewHtml && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Badge variant="secondary">Previewing older version</Badge>
-                <Button variant="ghost" size="sm" onClick={() => setPreviewHtml(null)}>
-                  Back to current
-                </Button>
-              </div>
-            )}
-
-            {dashboardHtml ? (
-              <Card className="overflow-hidden">
-                <div className="w-full" style={{ height: "70vh" }}>
-                  <iframe
-                    ref={iframeRef}
-                    srcDoc={previewHtml || dashboardHtml}
-                    className="w-full h-full border-0"
-                    sandbox="allow-scripts"
-                    title="Dashboard Preview"
-                  />
                 </div>
-              </Card>
-            ) : isBgGenerating ? (
-              <Card>
-                <CardContent className="py-12 text-center space-y-3">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
-                  <p className="text-muted-foreground font-medium">{bgJob?.progress || "Generating dashboard..."}</p>
-                  <p className="text-xs text-muted-foreground">You can navigate away — generation continues in the background.</p>
-                </CardContent>
-              </Card>
-            ) : (
-              <Card>
-                <CardContent className="py-12 text-center">
-                  <p className="text-muted-foreground mb-4">No dashboard generated yet.</p>
-                  <Button onClick={handleRegenerateDashboard} disabled={isRegenerating}>
-                    <Sparkles className="mr-2 h-4 w-4" /> Generate Dashboard
+
+                {chatOpen && (
+                  <Card>
+                    <CardContent className="pt-4 space-y-3">
+                      <div className="max-h-[200px] overflow-y-auto space-y-2">
+                        {chatHistory.map((msg, i) => (
+                          <div key={i} className={`text-sm p-2 rounded ${msg.role === "user" ? "bg-primary/10 text-right" : "bg-muted"}`}>{msg.content}</div>
+                        ))}
+                        {isRefining && <div className="text-sm p-2 rounded bg-muted flex items-center gap-2"><Loader2 className="h-3 w-3 animate-spin" /> Refining...</div>}
+                      </div>
+                      <div className="flex gap-2">
+                        <Textarea placeholder='e.g. "Change colors to blue"' value={chatInput} onChange={(e) => setChatInput(e.target.value)} rows={2}
+                          onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSendChat(); } }} />
+                        <Button onClick={handleSendChat} disabled={!chatInput.trim() || isRefining} className="self-end">Send</Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {id && dashboardHtml && (
+                  <DashboardRevisions applicationId={id} currentHtml={dashboardHtml} onPreviewRevision={(html) => setPreviewHtml(html === dashboardHtml ? null : html)} refreshTrigger={revisionTrigger} />
+                )}
+                {previewHtml && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Badge variant="secondary">Previewing older version</Badge>
+                    <Button variant="ghost" size="sm" onClick={() => setPreviewHtml(null)}>Back to current</Button>
+                  </div>
+                )}
+
+                {dashboardHtml ? (
+                  <Card className="overflow-hidden">
+                    <div className="w-full" style={{ height: "70vh" }}>
+                      <iframe ref={iframeRef} srcDoc={previewHtml || dashboardHtml} className="w-full h-full border-0" sandbox="allow-scripts" title="Dashboard Preview" />
+                    </div>
+                  </Card>
+                ) : isBgGenerating ? (
+                  <Card><CardContent className="py-12 text-center space-y-3">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+                    <p className="text-muted-foreground font-medium">{bgJob?.progress || "Generating dashboard..."}</p>
+                  </CardContent></Card>
+                ) : (
+                  <Card><CardContent className="py-12 text-center">
+                    <p className="text-muted-foreground mb-4">No dashboard generated yet.</p>
+                    <Button onClick={handleRegenerateDashboard} disabled={isRegenerating}><Sparkles className="mr-2 h-4 w-4" /> Generate Dashboard</Button>
+                  </CardContent></Card>
+                )}
+              </TabsContent>
+
+              {/* RAID Log sub-tab */}
+              <TabsContent value="raid-log" className="space-y-4">
+                <div className="flex flex-wrap gap-2">
+                  <Button variant="outline" size="sm" onClick={async () => {
+                    if (!jobDescription.trim()) return;
+                    toast({ title: "Regenerating RAID Log..." });
+                    try {
+                      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-raid-log`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`, 'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY },
+                        body: JSON.stringify({ jobDescription, companyName, jobTitle, competitors: app?.competitors, products: app?.products }),
+                      });
+                      if (resp.ok) {
+                        const data = await resp.json();
+                        if (data.html) { await saveField({ raid_log_html: data.html }); toast({ title: "RAID Log regenerated!" }); }
+                      }
+                    } catch (e: any) { toast({ title: "Error", description: e.message, variant: "destructive" }); }
+                  }} disabled={isRegenerating}>
+                    <RefreshCw className="mr-2 h-4 w-4" /> Regenerate
                   </Button>
-                </CardContent>
-              </Card>
-            )}
+                  {app?.raid_log_html && (
+                    <Button variant="outline" size="sm" onClick={() => {
+                      const blob = new Blob([app.raid_log_html], { type: "text/html" });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement("a"); a.href = url;
+                      a.download = `${(companyName || "raid-log").replace(/\s+/g, "-").toLowerCase()}-raid-log.html`;
+                      document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+                      toast({ title: "Downloaded" });
+                    }}><Download className="mr-2 h-4 w-4" /> Download HTML</Button>
+                  )}
+                </div>
+                {app?.raid_log_html ? (
+                  <Card className="overflow-hidden">
+                    <div className="w-full bg-white" style={{ height: "60vh" }}>
+                      <iframe srcDoc={app.raid_log_html} className="w-full h-full border-0" sandbox="allow-scripts" title="RAID Log" />
+                    </div>
+                  </Card>
+                ) : isBgGenerating ? (
+                  <Card><CardContent className="py-12 text-center space-y-3">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+                    <p className="text-muted-foreground font-medium">Generating RAID log...</p>
+                  </CardContent></Card>
+                ) : (
+                  <Card><CardContent className="py-12 text-center">
+                    <p className="text-muted-foreground">No RAID log generated yet.</p>
+                  </CardContent></Card>
+                )}
+              </TabsContent>
+
+              {/* Architecture Diagram sub-tab */}
+              <TabsContent value="architecture" className="space-y-4">
+                <div className="flex flex-wrap gap-2">
+                  <Button variant="outline" size="sm" onClick={async () => {
+                    if (!jobDescription.trim()) return;
+                    toast({ title: "Regenerating Architecture Diagram..." });
+                    try {
+                      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-architecture-diagram`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`, 'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY },
+                        body: JSON.stringify({ jobDescription, companyName, jobTitle, competitors: app?.competitors, products: app?.products }),
+                      });
+                      if (resp.ok) {
+                        const data = await resp.json();
+                        if (data.html) { await saveField({ architecture_diagram_html: data.html }); toast({ title: "Architecture Diagram regenerated!" }); }
+                      }
+                    } catch (e: any) { toast({ title: "Error", description: e.message, variant: "destructive" }); }
+                  }} disabled={isRegenerating}>
+                    <RefreshCw className="mr-2 h-4 w-4" /> Regenerate
+                  </Button>
+                  {app?.architecture_diagram_html && (
+                    <Button variant="outline" size="sm" onClick={() => {
+                      const blob = new Blob([app.architecture_diagram_html], { type: "text/html" });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement("a"); a.href = url;
+                      a.download = `${(companyName || "architecture").replace(/\s+/g, "-").toLowerCase()}-architecture.html`;
+                      document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+                      toast({ title: "Downloaded" });
+                    }}><Download className="mr-2 h-4 w-4" /> Download HTML</Button>
+                  )}
+                </div>
+                {app?.architecture_diagram_html ? (
+                  <Card className="overflow-hidden">
+                    <div className="w-full bg-white" style={{ height: "60vh" }}>
+                      <iframe srcDoc={app.architecture_diagram_html} className="w-full h-full border-0" sandbox="allow-scripts" title="Architecture Diagram" />
+                    </div>
+                  </Card>
+                ) : isBgGenerating ? (
+                  <Card><CardContent className="py-12 text-center space-y-3">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+                    <p className="text-muted-foreground font-medium">Generating architecture diagram...</p>
+                  </CardContent></Card>
+                ) : (
+                  <Card><CardContent className="py-12 text-center">
+                    <p className="text-muted-foreground">No architecture diagram generated yet.</p>
+                  </CardContent></Card>
+                )}
+              </TabsContent>
+
+              {/* Roadmap sub-tab */}
+              <TabsContent value="roadmap" className="space-y-4">
+                <div className="flex flex-wrap gap-2">
+                  <Button variant="outline" size="sm" onClick={async () => {
+                    if (!jobDescription.trim()) return;
+                    toast({ title: "Regenerating Roadmap..." });
+                    try {
+                      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-roadmap`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`, 'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY },
+                        body: JSON.stringify({ jobDescription, companyName, jobTitle, competitors: app?.competitors, products: app?.products, customers: app?.customers }),
+                      });
+                      if (resp.ok) {
+                        const data = await resp.json();
+                        if (data.html) { await saveField({ roadmap_html: data.html }); toast({ title: "Roadmap regenerated!" }); }
+                      }
+                    } catch (e: any) { toast({ title: "Error", description: e.message, variant: "destructive" }); }
+                  }} disabled={isRegenerating}>
+                    <RefreshCw className="mr-2 h-4 w-4" /> Regenerate
+                  </Button>
+                  {app?.roadmap_html && (
+                    <Button variant="outline" size="sm" onClick={() => {
+                      const blob = new Blob([app.roadmap_html], { type: "text/html" });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement("a"); a.href = url;
+                      a.download = `${(companyName || "roadmap").replace(/\s+/g, "-").toLowerCase()}-90day-roadmap.html`;
+                      document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+                      toast({ title: "Downloaded" });
+                    }}><Download className="mr-2 h-4 w-4" /> Download HTML</Button>
+                  )}
+                </div>
+                {app?.roadmap_html ? (
+                  <Card className="overflow-hidden">
+                    <div className="w-full bg-white" style={{ height: "60vh" }}>
+                      <iframe srcDoc={app.roadmap_html} className="w-full h-full border-0" sandbox="allow-scripts" title="90-Day Roadmap" />
+                    </div>
+                  </Card>
+                ) : isBgGenerating ? (
+                  <Card><CardContent className="py-12 text-center space-y-3">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+                    <p className="text-muted-foreground font-medium">Generating 90-day roadmap...</p>
+                  </CardContent></Card>
+                ) : (
+                  <Card><CardContent className="py-12 text-center">
+                    <p className="text-muted-foreground">No roadmap generated yet.</p>
+                  </CardContent></Card>
+                )}
+              </TabsContent>
+            </Tabs>
           </TabsContent>
 
           {/* Details Tab */}

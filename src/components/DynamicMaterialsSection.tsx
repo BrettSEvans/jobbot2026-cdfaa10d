@@ -591,6 +591,9 @@ export default function DynamicMaterialsSection({
                   <Button variant="outline" size="sm" onClick={() => openSwapDialog(asset)}>
                     <Repeat2 className="mr-2 h-4 w-4" /> Change Asset
                   </Button>
+                  <Button variant="outline" size="sm" onClick={() => setAssetChatOpen(prev => ({ ...prev, [asset.id]: !prev[asset.id] }))}>
+                    <Edit3 className="mr-2 h-4 w-4" /> {assetChatOpen[asset.id] ? "Hide Chat" : "Vibe Edit"}
+                  </Button>
                 </>
               )}
               {asset.downloaded_at && (
@@ -608,6 +611,37 @@ export default function DynamicMaterialsSection({
                 }}><Download className="mr-2 h-4 w-4" /> Download HTML</Button>
               )}
             </div>
+
+            {/* Vibe Edit Chat */}
+            {assetChatOpen[asset.id] && asset.html && (
+              <Card>
+                <CardContent className="pt-4 space-y-3">
+                  <div className="max-h-[200px] overflow-y-auto space-y-2">
+                    {(assetChatHistory[asset.id] || []).map((msg, i) => (
+                      <div key={i} className={`text-sm p-2 rounded ${msg.role === "user" ? "bg-primary/10 text-right" : "bg-muted"}`}>{msg.content}</div>
+                    ))}
+                    {assetRefining[asset.id] && <div className="text-sm p-2 rounded bg-muted flex items-center gap-2"><Loader2 className="h-3 w-3 animate-spin" /> Refining...</div>}
+                  </div>
+                  <div className="flex gap-2">
+                    <Textarea
+                      placeholder={`e.g. "Make the headers more prominent" or "Add a summary section"`}
+                      value={assetChatInput[asset.id] || ''}
+                      onChange={(e) => setAssetChatInput(prev => ({ ...prev, [asset.id]: e.target.value }))}
+                      rows={2}
+                      onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleAssetVibeEdit(asset.id, asset.asset_name, asset.html); } }}
+                    />
+                    <Button
+                      onClick={() => handleAssetVibeEdit(asset.id, asset.asset_name, asset.html)}
+                      disabled={!(assetChatInput[asset.id] || '').trim() || assetRefining[asset.id]}
+                      className="self-end"
+                    >
+                      Send
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {asset.brief_description && (
               <p className="text-sm text-muted-foreground">{asset.brief_description}</p>
             )}

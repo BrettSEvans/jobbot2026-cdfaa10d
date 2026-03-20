@@ -106,6 +106,11 @@ const ApplicationDetail = () => {
   const [previewResumeHtml, setPreviewResumeHtml] = useState<string | null>(null);
   const [resumeRevisionTrigger, setResumeRevisionTrigger] = useState(0);
   const [editingResume, setEditingResume] = useState(false);
+  // Cover letter vibe edit
+  const [clChatOpen, setClChatOpen] = useState(false);
+  const [clChatInput, setClChatInput] = useState("");
+  const [clChatHistory, setClChatHistory] = useState<Array<{ role: string; content: string }>>([]);
+  const [clRefining, setClRefining] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const bgJob = useBackgroundJob(id);
   const isBgGenerating = bgJob && !["complete", "error"].includes(bgJob.status);

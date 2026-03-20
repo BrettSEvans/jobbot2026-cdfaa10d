@@ -32,9 +32,7 @@ import {
   ChevronRight as ChevronRightIcon,
 } from "lucide-react";
 import SaveAsTemplate from "@/components/SaveAsTemplate";
-import KeywordGapAnalysis from "@/components/KeywordGapAnalysis";
-import BulletCoach from "@/components/BulletCoach";
-import AtsFormatCompliance from "@/components/AtsFormatCompliance";
+import ResumeHealthPanel from "@/components/ResumeHealthPanel";
 import SummaryPreview from "@/components/SummaryPreview";
 import JDIntelligencePanel from "@/components/JDIntelligencePanel";
 import DashboardRevisions from "@/components/DashboardRevisions";
@@ -49,7 +47,6 @@ import JSZip from "jszip";
 import { supabase } from "@/integrations/supabase/client";
 import { generateOptimizedResume } from "@/lib/api/resumeGeneration";
 import type { ExtractedKeyword } from "@/lib/keywordMatcher";
-import ResumeDiffViewer from "@/components/ResumeDiffViewer";
 
 const ApplicationDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -505,11 +502,14 @@ const ApplicationDetail = () => {
                   </div>
                 </Card>
 
-                {/* Resume tools */}
+                {/* Unified Resume Health Panel */}
                 {jobDescription && (
-                  <KeywordGapAnalysis
+                  <ResumeHealthPanel
+                    resumeHtml={app.resume_html}
                     jobDescription={jobDescription}
                     resumeText={resumeText}
+                    companyName={companyName}
+                    jobTitle={jobTitle}
                     onOptimize={async (missingKeywords: ExtractedKeyword[], userPrompt?: string) => {
                       if (!resumeText) {
                         toast({ title: "No resume found", description: "Upload a resume in your Profile first.", variant: "destructive" });
@@ -533,29 +533,14 @@ const ApplicationDetail = () => {
                         toast({ title: "Optimization failed", description: e.message, variant: "destructive" });
                       }
                     }}
-                  />
-                )}
-
-                <ResumeDiffViewer
-                  baselineText={resumeText}
-                  tailoredHtml={app.resume_html}
-                  jobDescription={jobDescription}
-                  onAcceptFabrication={handleAcceptFabrication}
-                  onRevertFabrication={handleRevertFabrication}
-                />
-
-                <AtsFormatCompliance resumeHtml={app.resume_html} />
-
-                {jobDescription && (
-                  <BulletCoach
-                    resumeHtml={app.resume_html}
-                    jobDescription={jobDescription}
-                    onApplyFix={(original, replacement) => {
+                    onApplyBulletFix={(original, replacement) => {
                       const updatedHtml = app.resume_html.replace(original, replacement);
                       saveJobApplication({ id: id!, job_url: app.job_url, resume_html: updatedHtml } as any)
                         .then(() => setApp((prev: any) => ({ ...prev, resume_html: updatedHtml })));
                       toast({ title: "Bullet updated", description: `Replaced: "${original.slice(0, 40)}…"` });
                     }}
+                    onAcceptFabrication={handleAcceptFabrication}
+                    onRevertFabrication={handleRevertFabrication}
                   />
                 )}
               </>
@@ -586,9 +571,12 @@ const ApplicationDetail = () => {
                     </Button>
                   )}
                   {resumeText && jobDescription && (
-                    <KeywordGapAnalysis
+                    <ResumeHealthPanel
+                      resumeHtml=""
                       jobDescription={jobDescription}
                       resumeText={resumeText}
+                      companyName={companyName}
+                      jobTitle={jobTitle}
                       onOptimize={async (missingKeywords: ExtractedKeyword[], userPrompt?: string) => {
                         const kwList = missingKeywords.map(k => k.keyword).join(", ");
                         toast({ title: "Optimizing resume…", description: `Injecting keywords: ${kwList}` });

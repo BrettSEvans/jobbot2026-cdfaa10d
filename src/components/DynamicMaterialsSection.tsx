@@ -49,6 +49,11 @@ interface ProposedAsset {
   selected: boolean;
 }
 
+interface AiSuggestion {
+  asset_name: string;
+  brief_description: string;
+}
+
 /** Fire-and-forget download signal insert */
 async function recordDownloadSignal(applicationId: string, assetType: string, jobTitle: string) {
   try {

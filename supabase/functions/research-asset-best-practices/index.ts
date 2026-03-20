@@ -49,18 +49,14 @@ Deno.serve(async (req) => {
     }
 
     // Research via AI
-    const researchResp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${LOVABLE_API_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          { role: 'system', content: 'You are an expert consultant researching best practices for professional documents.' },
-          { role: 'user', content: `Research best practices for creating an excellent "${asset_type}" document in a professional job context. Cover structure, content, visual design, and common mistakes. Be specific.` },
-        ],
-        temperature: 0.3,
-        max_tokens: 3000,
-      }),
+    const researchResp = await aiFetchWithRetry(LOVABLE_API_KEY, {
+      model: 'google/gemini-2.5-flash',
+      messages: [
+        { role: 'system', content: 'You are an expert consultant researching best practices for professional documents.' },
+        { role: 'user', content: `Research best practices for creating an excellent "${asset_type}" document in a professional job context. Cover structure, content, visual design, and common mistakes. Be specific.` },
+      ],
+      temperature: 0.3,
+      max_tokens: 3000,
     });
 
     let bestPracticesText = '';

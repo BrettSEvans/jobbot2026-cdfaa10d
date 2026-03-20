@@ -840,6 +840,17 @@ const ApplicationDetail = () => {
                   >
                     <Download className="mr-2 h-4 w-4" /> Download PDF
                   </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const name = `cover-letter-${(companyName || "document").replace(/\s+/g, "-").toLowerCase()}-${(jobTitle || "").replace(/\s+/g, "-").toLowerCase()}`;
+                      downloadTextAsDocx(previewCoverLetter || coverLetter, `${name}.docx`);
+                      toast({ title: "Downloading", description: "Cover letter DOCX file is being prepared." });
+                    }}
+                  >
+                    <Download className="mr-2 h-4 w-4" /> Download DOCX
+                  </Button>
                 </>
               )}
               <Button variant="outline" size="sm" onClick={() => setEditingCoverLetter(!editingCoverLetter)}>

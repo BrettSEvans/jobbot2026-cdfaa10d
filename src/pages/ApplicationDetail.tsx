@@ -393,7 +393,7 @@ const ApplicationDetail = () => {
               <p className="text-xs text-muted-foreground">{app.job_url}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2" data-tour="prev-next">
             <Button
               variant="outline"
               size="icon"

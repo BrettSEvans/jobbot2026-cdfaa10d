@@ -475,7 +475,7 @@ const ApplicationDetail = () => {
 
                 {/* Resume preview */}
                 <Card className="overflow-hidden">
-                  <div className="w-full" style={{ height: "60vh" }}>
+                  <div className="w-full bg-white" style={{ height: "60vh" }}>
                     <iframe
                       srcDoc={app.resume_html}
                       className="w-full h-full border-0"
@@ -594,9 +594,32 @@ const ApplicationDetail = () => {
           <TabsContent value="cover-letter" className="space-y-4">
             <div className="flex flex-wrap gap-2">
               {coverLetter && (
-                <Button variant="outline" size="sm" onClick={() => handleCopy(coverLetter, "Cover letter")}>
-                  <Copy className="mr-2 h-4 w-4" /> Copy
-                </Button>
+                <>
+                  <Button variant="outline" size="sm" onClick={() => handleCopy(coverLetter, "Cover letter")}>
+                    <Copy className="mr-2 h-4 w-4" /> Copy
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const printWindow = window.open("", "_blank");
+                      if (!printWindow) return;
+                      const fullName = userProfile
+                        ? [userProfile.first_name, userProfile.last_name].filter(Boolean).join(" ") || "Cover Letter"
+                        : "Cover Letter";
+                      const htmlContent = `<!DOCTYPE html><html><head><title>${fullName} - Cover Letter</title><style>
+                        @page { size: letter; margin: 1in 1in 0.75in 1in; }
+                        body { font-family: Georgia, 'Times New Roman', serif; font-size: 10.5pt; line-height: 1.6; color: #111; margin: 0; padding: 0; }
+                        .content { white-space: pre-wrap; }
+                      </style></head><body><div class="content">${(previewCoverLetter || coverLetter).replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div></body></html>`;
+                      printWindow.document.write(htmlContent);
+                      printWindow.document.close();
+                      printWindow.onload = () => { printWindow.print(); };
+                    }}
+                  >
+                    <Download className="mr-2 h-4 w-4" /> Download PDF
+                  </Button>
+                </>
               )}
               <Button variant="outline" size="sm" onClick={() => setEditingCoverLetter(!editingCoverLetter)}>
                 <Edit3 className="mr-2 h-4 w-4" /> {editingCoverLetter ? "Cancel Edit" : "Edit"}
@@ -629,11 +652,17 @@ const ApplicationDetail = () => {
               <CardContent className="pt-6">
                 {editingCoverLetter ? (
                   <div className="space-y-3">
-                    <Textarea
-                      value={coverLetter}
-                      onChange={(e) => setCoverLetter(e.target.value)}
-                      rows={16}
-                      className="font-mono text-sm"
+                    <div className="flex gap-1 border-b border-border pb-2 mb-2">
+                      <Button variant="ghost" size="sm" className="h-7 px-2 text-xs font-bold" onClick={() => document.execCommand("bold")}>B</Button>
+                      <Button variant="ghost" size="sm" className="h-7 px-2 text-xs italic" onClick={() => document.execCommand("italic")}>I</Button>
+                      <Button variant="ghost" size="sm" className="h-7 px-2 text-xs underline" onClick={() => document.execCommand("underline")}>U</Button>
+                    </div>
+                    <div
+                      contentEditable
+                      suppressContentEditableWarning
+                      className="min-h-[400px] p-4 text-sm leading-relaxed border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring whitespace-pre-wrap"
+                      onBlur={(e) => setCoverLetter(e.currentTarget.innerText)}
+                      dangerouslySetInnerHTML={{ __html: coverLetter.replace(/\n/g, "<br>") }}
                     />
                     <div className="flex gap-2">
                       <Button

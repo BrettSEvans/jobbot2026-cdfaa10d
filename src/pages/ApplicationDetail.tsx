@@ -369,7 +369,7 @@ const ApplicationDetail = () => {
     );
   }
 
-  if (!app) {
+  if (!app || !isValidUuid) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
         <p className="text-muted-foreground">Application not found.</p>

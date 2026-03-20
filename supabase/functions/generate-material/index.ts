@@ -103,9 +103,11 @@ Be specific and actionable. Output as markdown.` },
           const patternData = await patternResp.json();
           const content = patternData.choices?.[0]?.message?.content || '';
           try {
+            winningPatterns = JSON.parse(content);
+          } catch {
             const jsonMatch = content.match(/\{[\s\S]*\}/);
             if (jsonMatch) winningPatterns = JSON.parse(jsonMatch[0]);
-          } catch { /* use empty */ }
+          }
         }
       }
     }

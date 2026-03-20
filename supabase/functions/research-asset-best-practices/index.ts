@@ -94,9 +94,10 @@ Deno.serve(async (req) => {
           body: JSON.stringify({
             model: 'google/gemini-2.5-flash',
             messages: [
-              { role: 'system', content: 'Analyze HTML document samples and extract common patterns.' },
+              { role: 'system', content: 'Analyze HTML document samples and extract common patterns. Return JSON only.' },
               { role: 'user', content: `These "${asset_type}" documents were downloaded (approval signal). Extract patterns:\n${samples}\n\nReturn JSON: { "common_sections": [], "visual_patterns": [], "content_patterns": [], "layout_approach": "" }` },
             ],
+            response_format: { type: 'json_object' },
             temperature: 0.2,
             max_tokens: 2000,
           }),
@@ -105,9 +106,11 @@ Deno.serve(async (req) => {
           const pd = await patternResp.json();
           const content = pd.choices?.[0]?.message?.content || '';
           try {
+            winningPatterns = JSON.parse(content);
+          } catch {
             const m = content.match(/\{[\s\S]*\}/);
             if (m) winningPatterns = JSON.parse(m[0]);
-          } catch { /* use empty */ }
+          }
         }
       }
     }

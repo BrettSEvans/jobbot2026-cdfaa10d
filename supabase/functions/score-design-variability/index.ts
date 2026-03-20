@@ -71,6 +71,7 @@ Return ONLY valid JSON matching this schema:
             content: `Analyze these ${structuralSummaries.length} document structures:\n\n${structuralSummaries.map((s: any) => `### ${s.assetName}\n${s.structure}`).join('\n\n---\n\n')}`
           },
         ],
+        response_format: { type: 'json_object' },
         temperature: 0.2,
         max_tokens: 3000,
       }),
@@ -84,13 +85,17 @@ Return ONLY valid JSON matching this schema:
     const data = await resp.json();
     let content = data.choices?.[0]?.message?.content || '';
 
-    // Extract JSON
-    const jsonMatch = content.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      throw new Error('Failed to parse variability score from AI response');
+    let result;
+    try {
+      result = JSON.parse(content);
+    } catch {
+      // Fallback: extract JSON
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error('Failed to parse variability score from AI response');
+      }
+      result = JSON.parse(jsonMatch[0]);
     }
-
-    const result = JSON.parse(jsonMatch[0]);
 
     return new Response(JSON.stringify({ success: true, ...result }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

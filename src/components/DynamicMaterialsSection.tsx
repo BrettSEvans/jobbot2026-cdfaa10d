@@ -308,6 +308,7 @@ export default function DynamicMaterialsSection({
                       competitors: app?.competitors,
                       products: app?.products,
                       customers: app?.customers,
+                      applicationId,
                     }),
                   });
                   if (resp.ok) {

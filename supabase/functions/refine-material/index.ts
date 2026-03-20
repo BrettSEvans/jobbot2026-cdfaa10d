@@ -1,0 +1,104 @@
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
+};
+
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
+
+  try {
+    const { currentContent, contentType, assetName, userMessage, chatHistory } = await req.json();
+
+    if (!userMessage || !currentContent) {
+      return new Response(
+        JSON.stringify({ error: 'userMessage and currentContent are required' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    if (!LOVABLE_API_KEY) {
+      return new Response(
+        JSON.stringify({ error: 'AI not configured' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const isHtml = contentType === 'html';
+
+    const systemPrompt = isHtml
+      ? `You are an expert consultant refining a professional "${assetName || 'document'}" HTML document.
+
+RULES:
+- Output the COMPLETE modified HTML file, starting with <!DOCTYPE html> (or the opening tag) and ending with </html>
+- Keep all existing content and styling unless explicitly asked to change it
+- Maintain the self-contained nature (all CSS embedded)
+- Apply the requested changes precisely
+- Do NOT add explanations or markdown fences — output ONLY the HTML`
+      : `You are an expert career writer refining a professional ${assetName || 'cover letter'}.
+
+RULES:
+- Output the COMPLETE modified text
+- Keep the professional tone and formatting unless asked to change it
+- Apply the requested changes precisely
+- Do NOT add explanations, markdown fences, or labels — output ONLY the refined text
+- Preserve paragraph structure and line breaks`;
+
+    const messages: Array<{ role: string; content: string }> = [
+      { role: 'system', content: systemPrompt },
+    ];
+
+    // Include recent chat history for context
+    if (chatHistory?.length) {
+      for (const msg of chatHistory.slice(-6)) {
+        messages.push({ role: msg.role, content: msg.content });
+      }
+    }
+
+    messages.push({
+      role: 'user',
+      content: `Here is the current ${isHtml ? 'HTML' : 'text'}:\n\n${currentContent}\n\n---\n\nPlease make this modification: ${userMessage}`,
+    });
+
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-flash',
+        messages,
+        stream: true,
+      }),
+    });
+
+    if (!response.ok) {
+      if (response.status === 429) {
+        return new Response(JSON.stringify({ error: 'Rate limited. Please try again shortly.' }), {
+          status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      if (response.status === 402) {
+        return new Response(JSON.stringify({ error: 'AI credits exhausted.' }), {
+          status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      const t = await response.text();
+      console.error('AI gateway error:', response.status, t);
+      return new Response(JSON.stringify({ error: 'AI refinement failed' }), {
+        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    return new Response(response.body, {
+      headers: { ...corsHeaders, 'Content-Type': 'text/event-stream' },
+    });
+  } catch (e) {
+    console.error('Refine material error:', e);
+    return new Response(
+      JSON.stringify({ error: e instanceof Error ? e.message : 'Unknown error' }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+});

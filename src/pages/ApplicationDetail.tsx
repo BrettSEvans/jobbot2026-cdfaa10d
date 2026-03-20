@@ -27,6 +27,7 @@ import {
   getJobApplication,
   saveJobApplication,
   streamDashboardGeneration,
+  streamRefineMaterial,
 } from "@/lib/api/jobApplication";
 import { streamTailoredLetter } from "@/lib/api/coverLetter";
 import {
@@ -105,6 +106,11 @@ const ApplicationDetail = () => {
   const [previewResumeHtml, setPreviewResumeHtml] = useState<string | null>(null);
   const [resumeRevisionTrigger, setResumeRevisionTrigger] = useState(0);
   const [editingResume, setEditingResume] = useState(false);
+  // Cover letter vibe edit
+  const [clChatOpen, setClChatOpen] = useState(false);
+  const [clChatInput, setClChatInput] = useState("");
+  const [clChatHistory, setClChatHistory] = useState<Array<{ role: string; content: string }>>([]);
+  const [clRefining, setClRefining] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const bgJob = useBackgroundJob(id);
   const isBgGenerating = bgJob && !["complete", "error"].includes(bgJob.status);
@@ -335,6 +341,50 @@ const ApplicationDetail = () => {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
       setIsRegenerating(false);
+    }
+  };
+
+  // Cover letter Vibe Edit handler
+  const handleCoverLetterVibeEdit = async () => {
+    if (!clChatInput.trim() || clRefining || !coverLetter) return;
+    const msg = clChatInput.trim();
+    setClChatInput("");
+    const newHistory = [...clChatHistory, { role: "user", content: msg }];
+    setClChatHistory(newHistory);
+    setClRefining(true);
+
+    try {
+      // Save revision before refinement
+      if (id) {
+        try {
+          await saveCoverLetterRevision(id, coverLetter, `Before: ${msg.slice(0, 50)}`);
+          setCoverLetterRevisionTrigger((t) => t + 1);
+        } catch { /* non-critical */ }
+      }
+
+      let accumulated = "";
+      await streamRefineMaterial({
+        currentContent: coverLetter,
+        contentType: "text",
+        assetName: "Cover Letter",
+        userMessage: msg,
+        chatHistory: newHistory,
+        onDelta: (text) => {
+          accumulated += text;
+          setCoverLetter(accumulated);
+        },
+        onDone: () => {},
+      });
+
+      if (accumulated && id) {
+        await saveField({ cover_letter: accumulated });
+        setClChatHistory((prev) => [...prev, { role: "assistant", content: "✅ Changes applied" }]);
+      }
+    } catch (err: any) {
+      toast({ title: "Refinement failed", description: err.message, variant: "destructive" });
+      setClChatHistory((prev) => [...prev, { role: "assistant", content: `❌ Error: ${err.message}` }]);
+    } finally {
+      setClRefining(false);
     }
   };
 
@@ -860,7 +910,36 @@ const ApplicationDetail = () => {
                 {isRegenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
                 Regenerate
               </Button>
+              {coverLetter && (
+                <Button variant="outline" size="sm" onClick={() => setClChatOpen(!clChatOpen)}>
+                  <Edit3 className="mr-2 h-4 w-4" /> {clChatOpen ? "Hide Chat" : "Vibe Edit"}
+                </Button>
+              )}
             </div>
+
+            {/* Cover Letter Vibe Edit Chat */}
+            {clChatOpen && coverLetter && (
+              <Card>
+                <CardContent className="pt-4 space-y-3">
+                  <div className="max-h-[200px] overflow-y-auto space-y-2">
+                    {clChatHistory.map((msg, i) => (
+                      <div key={i} className={`text-sm p-2 rounded ${msg.role === "user" ? "bg-primary/10 text-right" : "bg-muted"}`}>{msg.content}</div>
+                    ))}
+                    {clRefining && <div className="text-sm p-2 rounded bg-muted flex items-center gap-2"><Loader2 className="h-3 w-3 animate-spin" /> Refining...</div>}
+                  </div>
+                  <div className="flex gap-2">
+                    <Textarea
+                      placeholder='e.g. "Make the opening more compelling" or "Add more technical depth"'
+                      value={clChatInput}
+                      onChange={(e) => setClChatInput(e.target.value)}
+                      rows={2}
+                      onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleCoverLetterVibeEdit(); } }}
+                    />
+                    <Button onClick={handleCoverLetterVibeEdit} disabled={!clChatInput.trim() || clRefining} className="self-end">Send</Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {id && coverLetter && (
               <CoverLetterRevisions

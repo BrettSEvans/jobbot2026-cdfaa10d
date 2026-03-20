@@ -28,6 +28,7 @@ import GeneratedAssetRevisions from "@/components/GeneratedAssetRevisions";
 import DesignVariabilityCard from "@/components/admin/DesignVariabilityCard";
 import { supabase } from "@/integrations/supabase/client";
 import { saveGeneratedAssetRevision } from "@/lib/api/generatedAssetRevisions";
+import { streamRefineMaterial } from "@/lib/api/jobApplication";
 import type { DashboardData } from "@/lib/dashboard/schema";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
@@ -172,6 +173,11 @@ export default function DynamicMaterialsSection({
   const [aiSuggestions, setAiSuggestions] = useState<AiSuggestion[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
 
+  // Vibe Edit state (per asset)
+  const [assetChatOpen, setAssetChatOpen] = useState<Record<string, boolean>>({});
+  const [assetChatInput, setAssetChatInput] = useState<Record<string, string>>({});
+  const [assetChatHistory, setAssetChatHistory] = useState<Record<string, Array<{ role: string; content: string }>>>({});
+  const [assetRefining, setAssetRefining] = useState<Record<string, boolean>>({});
   // Fetch generated assets
   useEffect(() => {
     if (!applicationId) return;
@@ -373,6 +379,60 @@ export default function DynamicMaterialsSection({
     }
   };
 
+  const handleAssetVibeEdit = async (assetId: string, assetName: string, currentHtml: string) => {
+    const input = (assetChatInput[assetId] || '').trim();
+    if (!input || assetRefining[assetId]) return;
+
+    setAssetChatInput(prev => ({ ...prev, [assetId]: '' }));
+    const history = assetChatHistory[assetId] || [];
+    const newHistory = [...history, { role: 'user', content: input }];
+    setAssetChatHistory(prev => ({ ...prev, [assetId]: newHistory }));
+    setAssetRefining(prev => ({ ...prev, [assetId]: true }));
+
+    try {
+      // Save revision before refinement
+      try {
+        await saveGeneratedAssetRevision(applicationId, assetId, currentHtml, `Before: ${input.slice(0, 50)}`);
+        setAssetRevisionTriggers(prev => ({ ...prev, [assetId]: (prev[assetId] || 0) + 1 }));
+      } catch { /* non-critical */ }
+
+      let accumulated = '';
+      await streamRefineMaterial({
+        currentContent: currentHtml,
+        contentType: 'html',
+        assetName,
+        userMessage: input,
+        chatHistory: newHistory,
+        onDelta: (text) => { accumulated += text; },
+        onDone: async () => {
+          // Clean up markdown fences if present
+          let cleaned = accumulated.replace(/^```html?\n?/i, '').replace(/\n?```$/i, '').trim();
+          const htmlStart = cleaned.indexOf('<!');
+          if (htmlStart > 0) cleaned = cleaned.slice(htmlStart);
+          const htmlEnd = cleaned.lastIndexOf('</html>');
+          if (htmlEnd !== -1) cleaned = cleaned.slice(0, htmlEnd + 7);
+
+          if (cleaned) {
+            await supabase.from("generated_assets").update({ html: cleaned }).eq("id", assetId);
+            setGeneratedAssets(prev => prev.map(a => a.id === assetId ? { ...a, html: cleaned } : a));
+            setAssetChatHistory(prev => ({
+              ...prev,
+              [assetId]: [...(prev[assetId] || []), { role: 'assistant', content: '✅ Changes applied' }],
+            }));
+          }
+        },
+      });
+    } catch (e: any) {
+      setAssetChatHistory(prev => ({
+        ...prev,
+        [assetId]: [...(prev[assetId] || []), { role: 'assistant', content: `❌ Error: ${e.message}` }],
+      }));
+      toast({ title: "Refinement failed", description: e.message, variant: "destructive" });
+    } finally {
+      setAssetRefining(prev => ({ ...prev, [assetId]: false }));
+    }
+  };
+
   return (
     <>
       <Tabs defaultValue="dashboard" className="space-y-4">
@@ -531,6 +591,9 @@ export default function DynamicMaterialsSection({
                   <Button variant="outline" size="sm" onClick={() => openSwapDialog(asset)}>
                     <Repeat2 className="mr-2 h-4 w-4" /> Change Asset
                   </Button>
+                  <Button variant="outline" size="sm" onClick={() => setAssetChatOpen(prev => ({ ...prev, [asset.id]: !prev[asset.id] }))}>
+                    <Edit3 className="mr-2 h-4 w-4" /> {assetChatOpen[asset.id] ? "Hide Chat" : "Vibe Edit"}
+                  </Button>
                 </>
               )}
               {asset.downloaded_at && (
@@ -548,6 +611,37 @@ export default function DynamicMaterialsSection({
                 }}><Download className="mr-2 h-4 w-4" /> Download HTML</Button>
               )}
             </div>
+
+            {/* Vibe Edit Chat */}
+            {assetChatOpen[asset.id] && asset.html && (
+              <Card>
+                <CardContent className="pt-4 space-y-3">
+                  <div className="max-h-[200px] overflow-y-auto space-y-2">
+                    {(assetChatHistory[asset.id] || []).map((msg, i) => (
+                      <div key={i} className={`text-sm p-2 rounded ${msg.role === "user" ? "bg-primary/10 text-right" : "bg-muted"}`}>{msg.content}</div>
+                    ))}
+                    {assetRefining[asset.id] && <div className="text-sm p-2 rounded bg-muted flex items-center gap-2"><Loader2 className="h-3 w-3 animate-spin" /> Refining...</div>}
+                  </div>
+                  <div className="flex gap-2">
+                    <Textarea
+                      placeholder={`e.g. "Make the headers more prominent" or "Add a summary section"`}
+                      value={assetChatInput[asset.id] || ''}
+                      onChange={(e) => setAssetChatInput(prev => ({ ...prev, [asset.id]: e.target.value }))}
+                      rows={2}
+                      onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleAssetVibeEdit(asset.id, asset.asset_name, asset.html); } }}
+                    />
+                    <Button
+                      onClick={() => handleAssetVibeEdit(asset.id, asset.asset_name, asset.html)}
+                      disabled={!(assetChatInput[asset.id] || '').trim() || assetRefining[asset.id]}
+                      className="self-end"
+                    >
+                      Send
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {asset.brief_description && (
               <p className="text-sm text-muted-foreground">{asset.brief_description}</p>
             )}

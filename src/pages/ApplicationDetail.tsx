@@ -27,6 +27,7 @@ import {
   ExternalLink,
   RefreshCw,
   Download,
+  FileDown,
   FolderArchive,
   ChevronLeft,
   ChevronRight as ChevronRightIcon,
@@ -488,6 +489,33 @@ const ApplicationDetail = () => {
                     }}
                   >
                     <Download className="mr-2 h-4 w-4" /> Download HTML
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const iframe = document.createElement("iframe");
+                      iframe.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:none;";
+                      document.body.appendChild(iframe);
+                      const doc = iframe.contentDocument || iframe.contentWindow?.document;
+                      if (!doc) {
+                        toast({ title: "Error", description: "Could not open print frame.", variant: "destructive" });
+                        document.body.removeChild(iframe);
+                        return;
+                      }
+                      const printStyles = `<style>@page{size:letter;margin:0.5in}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style>`;
+                      doc.open();
+                      doc.write(app.resume_html.replace("</head>", printStyles + "</head>"));
+                      doc.close();
+                      const triggerPrint = () => {
+                        try { iframe.contentWindow?.print(); } catch (_) {}
+                        setTimeout(() => { if (iframe.parentNode) document.body.removeChild(iframe); }, 1000);
+                      };
+                      iframe.onload = () => setTimeout(triggerPrint, 400);
+                      setTimeout(triggerPrint, 1500);
+                    }}
+                  >
+                    <FileDown className="mr-2 h-4 w-4" /> Download PDF
                   </Button>
                 </div>
 

@@ -226,12 +226,17 @@ Apply these recommendations directly to the layout, structure, and visual approa
 
 ASSET DESCRIPTION: ${assetDescription || assetName}
 
-OUTPUT: Return a single self-contained HTML document with embedded CSS. The document should be:
-- Professional, clean, and printable
+OUTPUT: Return a single self-contained HTML document with embedded CSS. The document MUST:
+- Fit on EXACTLY ONE printed page (US Letter / A4). This is a hard constraint.
+- Use compact but readable font sizes (10-11pt body, 13-14pt headings)
+- Limit content to what fits in ~950px height at normal zoom
+- Use @page { size: letter; margin: 0.5in; } and body { max-height: 9.5in; overflow: hidden; }
+- Be professional, clean, and printable
 - Include a header with the company name, job title, and document title
 - Well-structured with clear sections, tables, or visual elements as appropriate
 - Specific to the role and company context — not generic
 - Visually polished with modern styling
+- Prioritize information density — use multi-column layouts, compact tables, or grids to fit more content
 
 Company: ${companyName || 'Unknown'}
 Job Title: ${jobTitle || 'Unknown'}

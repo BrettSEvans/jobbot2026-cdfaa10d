@@ -80,6 +80,31 @@ function downloadHtmlFile(html: string, filename: string) {
   URL.revokeObjectURL(url);
 }
 
+/** Print-to-PDF via hidden iframe for materials */
+function downloadMaterialPdf(html: string, _filename: string) {
+  const printCss = `
+    <style>
+      @media print {
+        @page { size: letter; margin: 0.5in; }
+        body { margin: 0; padding: 0; }
+      }
+    </style>
+  `;
+  const injected = html.replace('</head>', `${printCss}</head>`);
+  const iframe = document.createElement('iframe');
+  iframe.style.cssText = 'position:fixed;left:-9999px;top:-9999px;width:0;height:0;';
+  document.body.appendChild(iframe);
+  const doc = iframe.contentDocument || iframe.contentWindow?.document;
+  if (!doc) return;
+  doc.open();
+  doc.write(injected);
+  doc.close();
+  setTimeout(() => {
+    iframe.contentWindow?.print();
+    setTimeout(() => document.body.removeChild(iframe), 2000);
+  }, 600);
+}
+
 interface DynamicMaterialsSectionProps {
   applicationId: string;
   app: any;
@@ -603,12 +628,12 @@ export default function DynamicMaterialsSection({
                 <Button variant="outline" size="sm" onClick={async () => {
                   const slug = (companyName || asset.asset_name).replace(/\s+/g, "-").toLowerCase();
                   const assetSlug = asset.asset_name.replace(/\s+/g, "-").toLowerCase();
-                  downloadHtmlFile(asset.html, `${slug}-${assetSlug}.html`);
+                  downloadMaterialPdf(asset.html, `${slug}-${assetSlug}.pdf`);
                   recordDownloadSignal(applicationId, asset.asset_name, jobTitle);
                   await supabase.from("generated_assets").update({ downloaded_at: new Date().toISOString() }).eq("id", asset.id);
                   setGeneratedAssets(prev => prev.map(a => a.id === asset.id ? { ...a, downloaded_at: new Date().toISOString() } : a));
-                  toast({ title: "Downloaded" });
-                }}><Download className="mr-2 h-4 w-4" /> Download HTML</Button>
+                  toast({ title: "Printing PDF" });
+                }}><Download className="mr-2 h-4 w-4" /> Download PDF</Button>
               )}
             </div>
 
@@ -691,15 +716,13 @@ export default function DynamicMaterialsSection({
         {legacyAssets
           .filter((l) => !generatedAssets.some((a) => a.asset_name.toLowerCase() === l.name.toLowerCase()))
           .map((legacy) => (
-            <TabsContent key={`legacy-${legacy.field}`} value={`legacy-${legacy.field}`} className="space-y-4">
+             <TabsContent key={`legacy-${legacy.field}`} value={`legacy-${legacy.field}`} className="space-y-4">
               <div className="flex flex-wrap gap-2">
                 <Button variant="outline" size="sm" onClick={() => {
-                  const slug = (companyName || legacy.name).replace(/\s+/g, "-").toLowerCase();
-                  const assetSlug = legacy.name.replace(/\s+/g, "-").toLowerCase();
-                  downloadHtmlFile(legacy.html, `${slug}-${assetSlug}.html`);
+                  downloadMaterialPdf(legacy.html, `${(companyName || legacy.name).replace(/\s+/g, "-").toLowerCase()}-${legacy.name.replace(/\s+/g, "-").toLowerCase()}.pdf`);
                   recordDownloadSignal(applicationId, legacy.name, jobTitle);
-                  toast({ title: "Downloaded" });
-                }}><Download className="mr-2 h-4 w-4" /> Download HTML</Button>
+                  toast({ title: "Printing PDF" });
+                }}><Download className="mr-2 h-4 w-4" /> Download PDF</Button>
               </div>
               <Card className="overflow-hidden">
                 <div className="w-full bg-white" style={{ height: "60vh" }}>

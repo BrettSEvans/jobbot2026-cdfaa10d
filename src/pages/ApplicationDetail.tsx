@@ -113,10 +113,25 @@ const ApplicationDetail = () => {
     });
   }, []);
 
-  // Re-fetch when background job completes
+  // Re-fetch when background job completes + toast notification
+  const prevBgStatus = useRef(bgJob?.status);
   useEffect(() => {
-    if (bgJob?.status === "complete" && id && isValidUuid) {
+    const prev = prevBgStatus.current;
+    prevBgStatus.current = bgJob?.status;
+
+    if (bgJob?.status === "complete" && prev && prev !== "complete" && id && isValidUuid) {
       loadApplication(id);
+      toast({
+        title: "✨ All assets ready",
+        description: "Cover letter and dashboard have finished generating.",
+      });
+    }
+    if (bgJob?.status === "error" && prev && prev !== "error") {
+      toast({
+        title: "Background generation failed",
+        description: bgJob?.progress || "An error occurred while generating assets.",
+        variant: "destructive",
+      });
     }
   }, [bgJob?.status]);
 

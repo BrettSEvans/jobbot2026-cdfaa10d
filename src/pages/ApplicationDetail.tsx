@@ -8,6 +8,22 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   getJobApplication,
   saveJobApplication,
   streamDashboardGeneration,
@@ -49,6 +65,7 @@ import JSZip from "jszip";
 import { supabase } from "@/integrations/supabase/client";
 import { generateOptimizedResume } from "@/lib/api/resumeGeneration";
 import type { ExtractedKeyword } from "@/lib/keywordMatcher";
+import { useQuery } from "@tanstack/react-query";
 
 const ApplicationDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -111,6 +128,74 @@ const ApplicationDetail = () => {
       }
     });
   }, []);
+
+  // Fetch user resumes for regeneration picker
+  const { data: userResumes = [] } = useQuery({
+    queryKey: ["user_resumes_for_regen"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from("user_resumes")
+        .select("id, file_name, is_active, resume_text")
+        .eq("user_id", user.id)
+        .order("uploaded_at", { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  // Regenerate resume state
+  const [regenDialogOpen, setRegenDialogOpen] = useState(false);
+  const [selectedResumeId, setSelectedResumeId] = useState<string>("");
+  const [isRegeneratingResume, setIsRegeneratingResume] = useState(false);
+
+  // Pre-select active resume when dialog opens
+  useEffect(() => {
+    if (regenDialogOpen && userResumes.length > 0) {
+      const active = userResumes.find((r: any) => r.is_active);
+      setSelectedResumeId(active?.id || userResumes[0]?.id || "");
+    }
+  }, [regenDialogOpen, userResumes]);
+
+  const handleRegenerateResume = async () => {
+    if (!selectedResumeId || !jobDescription.trim() || !id) return;
+    const selected = userResumes.find((r: any) => r.id === selectedResumeId);
+    if (!selected?.resume_text) {
+      toast({ title: "No text available", description: "This resume hasn't been extracted yet. Please re-upload it.", variant: "destructive" });
+      return;
+    }
+    setIsRegeneratingResume(true);
+    setRegenDialogOpen(false);
+    try {
+      // Save current resume as revision before regenerating
+      if (app?.resume_html) {
+        try {
+          await supabase.from("resume_revisions").insert({
+            application_id: id,
+            html: app.resume_html,
+            label: "Before regeneration",
+          });
+        } catch { /* non-critical */ }
+      }
+
+      const { resume_html } = await generateOptimizedResume({
+        jobDescription,
+        resumeText: selected.resume_text,
+        missingKeywords: [],
+        companyName,
+        jobTitle,
+        sourceResumeId: selectedResumeId,
+      });
+      await saveJobApplication({ id, job_url: app.job_url, resume_html, source_resume_id: selectedResumeId } as any);
+      setApp((prev: any) => ({ ...prev, resume_html, source_resume_id: selectedResumeId }));
+      toast({ title: "Resume regenerated!", description: `Using "${selected.file_name}" as baseline.` });
+    } catch (e: any) {
+      toast({ title: "Regeneration failed", description: e.message, variant: "destructive" });
+    } finally {
+      setIsRegeneratingResume(false);
+    }
+  };
 
   // Re-fetch when background job completes + toast notification
   const prevBgStatus = useRef(bgJob?.status);
@@ -517,6 +602,68 @@ const ApplicationDetail = () => {
                   >
                     <FileDown className="mr-2 h-4 w-4" /> Download PDF
                   </Button>
+
+                  {/* Regenerate Resume */}
+                  <Dialog open={regenDialogOpen} onOpenChange={setRegenDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={isRegeneratingResume}
+                      >
+                        {isRegeneratingResume ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <RefreshCw className="mr-2 h-4 w-4" />
+                        )}
+                        {isRegeneratingResume ? "Regenerating…" : "Regenerate"}
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Regenerate Resume</DialogTitle>
+                        <DialogDescription>
+                          Choose which uploaded resume to use as the baseline for regeneration.
+                        </DialogDescription>
+                      </DialogHeader>
+                      {userResumes.length === 0 ? (
+                        <p className="text-sm text-muted-foreground py-4">
+                          No resumes uploaded. Go to your Profile to upload a resume first.
+                        </p>
+                      ) : (
+                        <div className="space-y-3 py-2">
+                          <Select value={selectedResumeId} onValueChange={setSelectedResumeId}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a resume" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {userResumes.map((r: any) => (
+                                <SelectItem key={r.id} value={r.id}>
+                                  {r.file_name}
+                                  {r.is_active ? " (Primary)" : ""}
+                                  {!r.resume_text ? " — not extracted" : ""}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          {selectedResumeId && !userResumes.find((r: any) => r.id === selectedResumeId)?.resume_text && (
+                            <p className="text-xs text-destructive">
+                              This resume's text hasn't been extracted yet. Re-upload it from your Profile.
+                            </p>
+                          )}
+                        </div>
+                      )}
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setRegenDialogOpen(false)}>Cancel</Button>
+                        <Button
+                          onClick={handleRegenerateResume}
+                          disabled={!selectedResumeId || !userResumes.find((r: any) => r.id === selectedResumeId)?.resume_text}
+                        >
+                          <RefreshCw className="mr-2 h-4 w-4" /> Regenerate
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
                 </div>
 
                 {/* Resume preview */}

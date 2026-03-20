@@ -1,0 +1,1 @@
+ALTER TABLE public.user_resumes ADD COLUMN resume_text text;

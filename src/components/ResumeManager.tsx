@@ -73,6 +73,27 @@ export default function ResumeManager({ userId }: ResumeManagerProps) {
 
       toast.success(`Uploaded ${file.name}`);
       invalidate();
+
+      // Trigger text extraction in background
+      if (dbErr === undefined) {
+        const { data: newResume } = await supabase
+          .from("user_resumes")
+          .select("id")
+          .eq("user_id", userId)
+          .eq("storage_path", storagePath)
+          .single();
+        if (newResume) {
+          supabase.functions.invoke("extract-resume-text", {
+            body: { resumeId: newResume.id, storagePath },
+          }).then(({ error: extractErr }) => {
+            if (extractErr) console.warn("Resume text extraction failed:", extractErr);
+            else {
+              toast.success("Resume text extracted");
+              invalidate();
+            }
+          });
+        }
+      }
     } catch (e: any) {
       toast.error("Upload failed: " + (e.message ?? "Unknown error"));
     } finally {

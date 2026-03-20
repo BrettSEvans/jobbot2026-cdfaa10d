@@ -138,6 +138,7 @@ Deno.serve(async (req) => {
       competitors,
       products,
       customers,
+      applicationId,
     } = await req.json();
 
     if (!assetName || !jobDescription) {
@@ -160,6 +161,51 @@ Deno.serve(async (req) => {
 
     // Fetch best practices + winning patterns
     const { best_practices, winning_patterns } = await getBestPractices(supabaseAdmin, assetName, LOVABLE_API_KEY);
+
+    // Fetch existing assets for this application to enforce variability (80%+ uniqueness)
+    let existingPatternsSection = '';
+    if (applicationId) {
+      const { data: existingAssets } = await supabaseAdmin
+        .from('generated_assets')
+        .select('asset_name, html')
+        .eq('application_id', applicationId)
+        .eq('generation_status', 'complete')
+        .not('html', 'eq', '')
+        .limit(20);
+
+      if (existingAssets && existingAssets.length > 0) {
+        const patternSummaries = existingAssets.map((a: any) => {
+          // Extract structural fingerprint: tag hierarchy, CSS classes, layout containers
+          const stripped = (a.html || '')
+            .replace(/<script[\s\S]*?<\/script>/gi, '')
+            .replace(/<style[\s\S]*?<\/style>/gi, '')
+            .replace(/>[^<]+</g, '><')
+            .slice(0, 1500);
+          return `- ${a.asset_name}: ${stripped.slice(0, 500)}`;
+        }).join('\n');
+
+        existingPatternsSection = `\n\n## CRITICAL: Design Variability Requirement (80%+ uniqueness)
+The following assets have ALREADY been generated for this application. Your output MUST be structurally DIFFERENT from all of them.
+DO NOT reuse the same:
+- Header/banner layout pattern
+- Section arrangement (e.g. if others use "header → bold paragraph → grey block", use a different structure)
+- Table/grid/list styling approach
+- Color block patterns
+- Typography hierarchy
+
+Choose a DIFFERENT dominant layout pattern. Examples of distinct patterns:
+- Timeline/chronological flow
+- Scorecard/metric grid with KPI cards
+- Executive brief with sidebar navigation
+- Kanban/swimlane layout
+- Infographic with icons and visual hierarchy
+- Matrix/quadrant analysis
+- Dashboard with charts and data panels
+
+Existing asset structures to AVOID duplicating:
+${patternSummaries}`;
+      }
+    }
 
     // Build best practices prompt section
     let bpSection = '';
@@ -186,7 +232,7 @@ Job Title: ${jobTitle || 'Unknown'}
 Competitors: ${(competitors || []).join(', ') || 'N/A'}
 Products: ${(products || []).join(', ') || 'N/A'}
 Customers: ${(customers || []).join(', ') || 'N/A'}
-${bpSection}`;
+${bpSection}${existingPatternsSection}`;
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',

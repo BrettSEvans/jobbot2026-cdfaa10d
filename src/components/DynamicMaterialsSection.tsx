@@ -15,8 +15,11 @@ import {
 } from "lucide-react";
 import SaveAsTemplate from "@/components/SaveAsTemplate";
 import DashboardRevisions from "@/components/DashboardRevisions";
+import DesignVariabilityCard from "@/components/admin/DesignVariabilityCard";
 import { supabase } from "@/integrations/supabase/client";
 import type { DashboardData } from "@/lib/dashboard/schema";
+import { useAuth } from "@/hooks/useAuth";
+import { useQuery } from "@tanstack/react-query";
 
 interface GeneratedAsset {
   id: string;
@@ -120,6 +123,16 @@ export default function DynamicMaterialsSection({
   saveField,
   toast,
 }: DynamicMaterialsSectionProps) {
+  const { user } = useAuth();
+  const { data: isAdmin } = useQuery({
+    queryKey: ["user-role-admin", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await supabase.from("user_roles").select("role").eq("user_id", user!.id).eq("role", "admin").maybeSingle();
+      return !!data;
+    },
+  });
+
   const [generatedAssets, setGeneratedAssets] = useState<GeneratedAsset[]>([]);
   const [loadingAssets, setLoadingAssets] = useState(true);
 
@@ -181,6 +194,18 @@ export default function DynamicMaterialsSection({
           </TabsTrigger>
         )}
       </TabsList>
+
+      {/* Admin-only: Design Variability Card */}
+      {isAdmin && generatedAssets.filter(a => a.generation_status === 'complete' && a.html).length >= 2 && (
+        <DesignVariabilityCard
+          appId={applicationId}
+          assets={generatedAssets
+            .filter(a => a.generation_status === 'complete' && a.html)
+            .map(a => ({ assetName: a.asset_name, html: a.html }))}
+          branding={app?.branding}
+          cachedVariability={app?.design_variability}
+        />
+      )}
 
       {/* Dashboard sub-tab */}
       <TabsContent value="dashboard" className="space-y-4">
@@ -283,6 +308,7 @@ export default function DynamicMaterialsSection({
                       competitors: app?.competitors,
                       products: app?.products,
                       customers: app?.customers,
+                      applicationId,
                     }),
                   });
                   if (resp.ok) {

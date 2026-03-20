@@ -55,6 +55,7 @@ import JDIntelligencePanel from "@/components/JDIntelligencePanel";
 import DashboardRevisions from "@/components/DashboardRevisions";
 import CoverLetterRevisions from "@/components/CoverLetterRevisions";
 import ResumeRevisions from "@/components/ResumeRevisions";
+import InlineHtmlEditor from "@/components/InlineHtmlEditor";
 import DynamicMaterialsSection from "@/components/DynamicMaterialsSection";
 import { backgroundGenerator } from "@/lib/backgroundGenerator";
 import { saveDashboardRevision } from "@/lib/api/dashboardRevisions";

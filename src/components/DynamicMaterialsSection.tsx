@@ -173,6 +173,11 @@ export default function DynamicMaterialsSection({
   const [aiSuggestions, setAiSuggestions] = useState<AiSuggestion[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
 
+  // Vibe Edit state (per asset)
+  const [assetChatOpen, setAssetChatOpen] = useState<Record<string, boolean>>({});
+  const [assetChatInput, setAssetChatInput] = useState<Record<string, string>>({});
+  const [assetChatHistory, setAssetChatHistory] = useState<Record<string, Array<{ role: string; content: string }>>>({});
+  const [assetRefining, setAssetRefining] = useState<Record<string, boolean>>({});
   // Fetch generated assets
   useEffect(() => {
     if (!applicationId) return;

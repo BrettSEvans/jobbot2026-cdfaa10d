@@ -357,6 +357,7 @@ class BackgroundGenerationManager {
                   competitors,
                   products,
                   customers,
+                  applicationId: appId,
                 }),
               }
             );

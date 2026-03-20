@@ -131,9 +131,26 @@ ${jobDescription || 'No description provided.'}`;
     clean = clean.slice(firstBrace, lastBrace + 1);
     // Remove trailing commas
     clean = clean.replace(/,\s*([}\]])/g, '$1');
+    // Fix unquoted property names (common LLM hallucination)
+    clean = clean.replace(/(?<=[\{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '"$1":');
+    // Fix single-quoted strings
+    clean = clean.replace(/:\s*'([^']*)'/g, ': "$1"');
 
+    let parsed: any;
     try {
-      const parsed = JSON.parse(clean);
+      parsed = JSON.parse(clean);
+    } catch (_firstErr) {
+      // Second attempt: strip control chars and retry
+      const sanitized = clean.replace(/[\x00-\x1F\x7F]/g, (ch) => ch === '\n' || ch === '\t' ? ch : '');
+      try {
+        parsed = JSON.parse(sanitized);
+      } catch (e) {
+        console.error('Failed to parse research JSON:', (e as Error).message, 'snippet:', clean.slice(540, 570));
+        return new Response(JSON.stringify({ error: 'Failed to parse research output' }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
       if (!parsed.sections || !Array.isArray(parsed.sections)) {
         throw new Error('Missing sections array');
       }

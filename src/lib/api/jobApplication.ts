@@ -119,14 +119,12 @@ export async function streamDashboardRefinement({
   onDelta: (text: string) => void;
   onDone: () => void;
 }) {
+  const headers = await getAuthHeaders();
   const resp = await fetch(
     `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/refine-dashboard`,
     {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-      },
+      headers,
       body: JSON.stringify({ currentHtml, currentDashboardData, userMessage, chatHistory }),
     }
   );

@@ -91,9 +91,10 @@ Be specific and actionable. Output as markdown.` },
           body: JSON.stringify({
             model: 'google/gemini-2.5-flash',
             messages: [
-              { role: 'system', content: 'Analyze HTML document samples and extract common structural/visual patterns.' },
+              { role: 'system', content: 'Analyze HTML document samples and extract common structural/visual patterns. Return JSON only.' },
               { role: 'user', content: `These ${assets.length} "${assetType}" documents were downloaded by users (approval signal). Extract winning patterns:\n\n${samples}\n\nReturn JSON with: { "common_sections": [], "visual_patterns": [], "content_patterns": [], "layout_approach": "" }` },
             ],
+            response_format: { type: 'json_object' },
             temperature: 0.2,
             max_tokens: 2000,
           }),

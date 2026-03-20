@@ -51,12 +51,12 @@ export default function AppHeader({ onAiChatToggle, aiChatOpen }: AppHeaderProps
 
   // Story 2.3: Only show Stories link to admins
   const links = [
-    { to: "/", label: "Applications", icon: null, match: (p: string) => p === "/" || p === "/applications" },
-    { to: "/templates", label: "Templates", icon: null, match: (p: string) => p === "/templates" },
-    { to: "/profile", label: "Profile", icon: <User className="h-3.5 w-3.5" />, match: (p: string) => p === "/profile" },
+    { to: "/", label: "Applications", icon: null, match: (p: string) => p === "/" || p === "/applications", tourId: "applications" },
+    { to: "/templates", label: "Templates", icon: null, match: (p: string) => p === "/templates", tourId: "templates" },
+    { to: "/profile", label: "Profile", icon: <User className="h-3.5 w-3.5" />, match: (p: string) => p === "/profile", tourId: "profile" },
     ...(isAdmin ? [
-      { to: "/stories", label: "Stories", icon: null, match: (p: string) => p === "/stories" },
-      { to: "/admin", label: "Admin", icon: <Shield className="h-3.5 w-3.5" />, match: (p: string) => p === "/admin" },
+      { to: "/stories", label: "Stories", icon: null, match: (p: string) => p === "/stories", tourId: undefined },
+      { to: "/admin", label: "Admin", icon: <Shield className="h-3.5 w-3.5" />, match: (p: string) => p === "/admin", tourId: undefined },
     ] : []),
   ];
 
@@ -78,6 +78,7 @@ export default function AppHeader({ onAiChatToggle, aiChatOpen }: AppHeaderProps
               <button
                 key={l.to}
                 onClick={() => navigate(l.to)}
+                data-tour={l.tourId}
                 className={cn(
                   "px-3 py-1.5 rounded-md text-sm font-medium transition-colors font-body flex items-center gap-1.5",
                   l.match(pathname)
@@ -99,6 +100,7 @@ export default function AppHeader({ onAiChatToggle, aiChatOpen }: AppHeaderProps
             size="sm"
             onClick={onAiChatToggle}
             className="gap-2 hidden sm:flex"
+            data-tour="ai-chat"
           >
             <Sparkles className="h-4 w-4" />
             <span>AI Chat</span>

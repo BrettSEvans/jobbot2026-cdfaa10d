@@ -8,6 +8,22 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   getJobApplication,
   saveJobApplication,
   streamDashboardGeneration,
@@ -49,6 +65,7 @@ import JSZip from "jszip";
 import { supabase } from "@/integrations/supabase/client";
 import { generateOptimizedResume } from "@/lib/api/resumeGeneration";
 import type { ExtractedKeyword } from "@/lib/keywordMatcher";
+import { useQuery } from "@tanstack/react-query";
 
 const ApplicationDetail = () => {
   const { id } = useParams<{ id: string }>();

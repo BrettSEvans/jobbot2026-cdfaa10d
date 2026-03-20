@@ -305,62 +305,86 @@ class BackgroundGenerationManager {
         console.warn("Cover letter generation failed:", e);
       }
 
-      // 7. Generate RAID Log
-      this.updateJob(appId, { status: "raid-log", progress: "Generating RAID log..." });
-      try {
-        const raidResp = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-raid-log`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`, 'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY },
-            body: JSON.stringify({ jobDescription: markdown, companyName, jobTitle, competitors, products }),
-          }
-        );
-        if (raidResp.ok) {
-          const raidData = await raidResp.json();
-          if (raidData.html) {
-            await saveJobApplication({ id: appId, job_url: jobUrl, raid_log_html: raidData.html } as any);
-          }
-        }
-      } catch (e) { console.warn("RAID log generation failed:", e); }
+      // 7. Generate dynamic materials from JD-recommended assets
+      const recommendedAssets = jdIntelligence?.recommended_assets || [];
+      if (recommendedAssets.length > 0) {
+        this.updateJob(appId, { status: "generating-materials", progress: `Generating materials (0/${recommendedAssets.length})...` });
 
-      // 8. Generate Architecture Diagram
-      this.updateJob(appId, { status: "architecture-diagram", progress: "Generating architecture diagram..." });
-      try {
-        const archResp = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-architecture-diagram`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`, 'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY },
-            body: JSON.stringify({ jobDescription: markdown, companyName, jobTitle, competitors, products }),
-          }
-        );
-        if (archResp.ok) {
-          const archData = await archResp.json();
-          if (archData.html) {
-            await saveJobApplication({ id: appId, job_url: jobUrl, architecture_diagram_html: archData.html } as any);
-          }
+        // Save proposed assets
+        for (const asset of recommendedAssets) {
+          try {
+            await supabase.from("proposed_assets").upsert({
+              application_id: appId,
+              asset_name: asset.name,
+              brief_description: asset.brief_description,
+              selected: true,
+            }, { onConflict: 'application_id,asset_name' }).select();
+          } catch { /* non-critical */ }
         }
-      } catch (e) { console.warn("Architecture diagram generation failed:", e); }
 
-      // 9. Generate 90-Day Roadmap
-      this.updateJob(appId, { status: "roadmap", progress: "Generating 90-day roadmap..." });
-      try {
-        const roadmapResp = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-roadmap`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`, 'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY },
-            body: JSON.stringify({ jobDescription: markdown, companyName, jobTitle, competitors, products, customers }),
+        // Generate each material with staggered starts
+        for (let i = 0; i < recommendedAssets.length; i++) {
+          const asset = recommendedAssets[i];
+          this.updateJob(appId, {
+            status: "generating-materials",
+            progress: `Generating ${asset.name} (${i + 1}/${recommendedAssets.length})...`,
+          });
+
+          try {
+            // Create placeholder in generated_assets
+            const { data: assetRow } = await supabase.from("generated_assets").insert({
+              application_id: appId,
+              asset_name: asset.name,
+              brief_description: asset.brief_description,
+              generation_status: "generating",
+            }).select().single();
+
+            const resp = await fetch(
+              `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-material`,
+              {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+                  'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+                },
+                body: JSON.stringify({
+                  assetName: asset.name,
+                  assetDescription: asset.brief_description,
+                  jobDescription: markdown,
+                  companyName,
+                  jobTitle,
+                  competitors,
+                  products,
+                  customers,
+                }),
+              }
+            );
+
+            if (resp.ok) {
+              const data = await resp.json();
+              if (data.html && assetRow) {
+                await supabase.from("generated_assets").update({
+                  html: data.html,
+                  generation_status: "complete",
+                }).eq("id", assetRow.id);
+              }
+            } else if (assetRow) {
+              await supabase.from("generated_assets").update({
+                generation_status: "error",
+                generation_error: `HTTP ${resp.status}`,
+              }).eq("id", assetRow.id);
+            }
+          } catch (e) {
+            console.warn(`Material generation failed for ${asset.name}:`, e);
           }
-        );
-        if (roadmapResp.ok) {
-          const roadmapData = await roadmapResp.json();
-          if (roadmapData.html) {
-            await saveJobApplication({ id: appId, job_url: jobUrl, roadmap_html: roadmapData.html } as any);
+
+          // Stagger to avoid rate limits
+          if (i < recommendedAssets.length - 1) {
+            await new Promise(r => setTimeout(r, 3000));
           }
         }
-      } catch (e) { console.warn("Roadmap generation failed:", e); }
+      }
 
       // 10. Generate dashboard
       let dashboardRaw = "";

@@ -98,20 +98,33 @@ export default function ResumeHealthPanel({
 }: ResumeHealthPanelProps) {
   const { toast } = useToast();
 
+  // ── Cache key based on inputs ──
+  const cacheKey = `${resumeHtml?.slice(0, 200) ?? ""}|${jobDescription?.slice(0, 200) ?? ""}`;
+  const cacheRef = useRef<{
+    key: string;
+    kwResult: KeywordMatchResult | null;
+    keywords: ExtractedKeyword[];
+    jobFunction: string;
+    formatResult: FormatComplianceResult | null;
+    bullets: BulletAnalysis[];
+  } | null>(null);
+
+  const cached = cacheRef.current?.key === cacheKey ? cacheRef.current : null;
+
   // ── Keyword state ──
   const [kwLoading, setKwLoading] = useState(false);
-  const [kwResult, setKwResult] = useState<KeywordMatchResult | null>(null);
-  const [keywords, setKeywords] = useState<ExtractedKeyword[]>([]);
-  const [jobFunction, setJobFunction] = useState("");
+  const [kwResult, setKwResult] = useState<KeywordMatchResult | null>(cached?.kwResult ?? null);
+  const [keywords, setKeywords] = useState<ExtractedKeyword[]>(cached?.keywords ?? []);
+  const [jobFunction, setJobFunction] = useState(cached?.jobFunction ?? "");
   const [vibeMode, setVibeMode] = useState(false);
   const [vibePrompt, setVibePrompt] = useState("");
 
   // ── Format state ──
-  const [formatResult, setFormatResult] = useState<FormatComplianceResult | null>(null);
+  const [formatResult, setFormatResult] = useState<FormatComplianceResult | null>(cached?.formatResult ?? null);
 
   // ── Bullet state ──
   const [bulletLoading, setBulletLoading] = useState(false);
-  const [bullets, setBullets] = useState<BulletAnalysis[]>([]);
+  const [bullets, setBullets] = useState<BulletAnalysis[]>(cached?.bullets ?? []);
   const [expandedBullet, setExpandedBullet] = useState<number | null>(null);
   const [userAnswers, setUserAnswers] = useState<Record<number, string>>({});
   const [rewriting, setRewriting] = useState<number | null>(null);
@@ -125,6 +138,20 @@ export default function ResumeHealthPanel({
   const [bulletOpen, setBulletOpen] = useState(false);
   const [diffOpen, setDiffOpen] = useState(false);
 
+  // ── Persist results to cache when they update ──
+  useEffect(() => {
+    if (kwResult || formatResult || bullets.length > 0) {
+      cacheRef.current = {
+        key: cacheKey,
+        kwResult,
+        keywords,
+        jobFunction,
+        formatResult,
+        bullets,
+      };
+    }
+  }, [kwResult, formatResult, bullets, keywords, jobFunction, cacheKey]);
+
   // ── Scores ──
   const kwScore = kwResult?.matchPercent ?? null;
   const fmtScore = formatResult?.score ?? null;
@@ -132,7 +159,7 @@ export default function ResumeHealthPanel({
     ? Math.round((bullets.filter((b) => b.strength === "strong").length / bullets.length) * 100)
     : null;
 
-  // ── Auto-run on mount ──
+  // ── Analysis runners ──
   const runKeywordAnalysis = useCallback(async () => {
     if (!jobDescription || jobDescription.length < 50) return;
     setKwLoading(true);
@@ -178,12 +205,24 @@ export default function ResumeHealthPanel({
     }
   }, [resumeHtml, jobDescription, toast]);
 
-  // Auto-trigger on mount
+  // Auto-trigger on mount — skip if cache hit
   useEffect(() => {
-    runFormatCheck();
-    if (jobDescription && jobDescription.length >= 50) {
-      runKeywordAnalysis();
-      runBulletAnalysis();
+    const hasCachedData = cached !== null;
+
+    if (!hasCachedData) {
+      runFormatCheck();
+      if (jobDescription && jobDescription.length >= 50) {
+        runKeywordAnalysis();
+        runBulletAnalysis();
+      }
+    } else {
+      // Restore collapse state from cached scores
+      if (cached.kwResult && cached.kwResult.matchPercent < 80) setKwOpen(true);
+      if (cached.formatResult && cached.formatResult.score < 80) setFmtOpen(true);
+      if (cached.bullets.length > 0) {
+        const bs = Math.round((cached.bullets.filter(b => b.strength === "strong").length / cached.bullets.length) * 100);
+        if (bs < 80) setBulletOpen(true);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

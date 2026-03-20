@@ -93,6 +93,7 @@ ${jobDescription || 'No description provided.'}`;
           { role: 'system', content: SYSTEM_PROMPT },
           { role: 'user', content: userPrompt },
         ],
+        response_format: { type: 'json_object' },
       }),
     });
 
@@ -118,34 +119,27 @@ ${jobDescription || 'No description provided.'}`;
     const content = data.choices?.[0]?.message?.content || '';
 
     // Parse the JSON from the response
-    let clean = content.trim();
-    clean = clean.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
-    const firstBrace = clean.indexOf('{');
-    const lastBrace = clean.lastIndexOf('}');
-    if (firstBrace === -1 || lastBrace === -1) {
-      console.error('No JSON found in research response:', content.slice(0, 200));
-      return new Response(JSON.stringify({ error: 'Failed to parse research output' }), {
-        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    clean = clean.slice(firstBrace, lastBrace + 1);
-    // Remove trailing commas
-    clean = clean.replace(/,\s*([}\]])/g, '$1');
-    // Fix unquoted property names (common LLM hallucination)
-    clean = clean.replace(/(?<=[\{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '"$1":');
-    // Fix single-quoted strings
-    clean = clean.replace(/:\s*'([^']*)'/g, ': "$1"');
-
     let parsed: any;
     try {
-      parsed = JSON.parse(clean);
+      parsed = JSON.parse(content);
     } catch (_firstErr) {
-      // Second attempt: strip control chars and retry
-      const sanitized = clean.replace(/[\x00-\x1F\x7F]/g, (ch) => ch === '\n' || ch === '\t' ? ch : '');
+      // Fallback: extract JSON object from response
+      let clean = content.trim();
+      clean = clean.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
+      const firstBrace = clean.indexOf('{');
+      const lastBrace = clean.lastIndexOf('}');
+      if (firstBrace === -1 || lastBrace === -1) {
+        console.error('No JSON found in research response:', content.slice(0, 500));
+        return new Response(JSON.stringify({ error: 'Failed to parse research output' }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      clean = clean.slice(firstBrace, lastBrace + 1);
+      clean = clean.replace(/,\s*([}\]])/g, '$1');
       try {
-        parsed = JSON.parse(sanitized);
+        parsed = JSON.parse(clean);
       } catch (e) {
-        console.error('Failed to parse research JSON:', (e as Error).message, 'snippet:', clean.slice(540, 570));
+        console.error('Failed to parse research JSON:', (e as Error).message, 'snippet:', clean.slice(0, 200));
         return new Response(JSON.stringify({ error: 'Failed to parse research output' }), {
           status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });

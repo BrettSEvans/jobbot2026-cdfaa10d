@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { Save, User, FileText, Zap, X } from "lucide-react";
+import ResumeManager from "@/components/ResumeManager";
 
 const EXPERIENCE_OPTIONS = ["0-1", "2-4", "5-9", "10-14", "15+"];
 const COMMON_SKILLS = [
@@ -157,22 +158,8 @@ export default function Profile() {
         </CardContent>
       </Card>
 
-      {/* Resume */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2"><FileText className="h-4 w-4" /> Resume Text</CardTitle>
-          <CardDescription>Paste your current resume text for AI-powered personalization</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Textarea
-            value={resumeText}
-            onChange={(e) => setResumeText(e.target.value)}
-            rows={8}
-            placeholder="Paste your resume text here..."
-            className="font-mono text-xs"
-          />
-        </CardContent>
-      </Card>
+      {/* Resume uploads */}
+      {user && <ResumeManager userId={user.id} />}
 
       {/* Skills */}
       <Card>

@@ -212,6 +212,16 @@ ${patternSummaries}`;
       bpSection += `\n\n## Patterns from High-Quality Examples (user-approved downloads)\n${JSON.stringify(winning_patterns, null, 2)}`;
     }
 
+    // Build variability recommendations section
+    let variabilitySection = '';
+    if (variabilityRecommendations && Array.isArray(variabilityRecommendations) && variabilityRecommendations.length > 0) {
+      variabilitySection = `\n\n## Design Variability Recommendations (from prior analysis)
+Follow these specific recommendations to improve design diversity across this application's materials:
+${variabilityRecommendations.map((r: string, i: number) => `${i + 1}. ${r}`).join('\n')}
+
+Apply these recommendations directly to the layout, structure, and visual approach of this document.`;
+    }
+
     const systemPrompt = `You are an expert consultant creating a professional "${assetName}" document.
 
 ASSET DESCRIPTION: ${assetDescription || assetName}
@@ -228,7 +238,7 @@ Job Title: ${jobTitle || 'Unknown'}
 Competitors: ${(competitors || []).join(', ') || 'N/A'}
 Products: ${(products || []).join(', ') || 'N/A'}
 Customers: ${(customers || []).join(', ') || 'N/A'}
-${bpSection}${existingPatternsSection}`;
+${bpSection}${existingPatternsSection}${variabilitySection}`;
 
     const response = await aiFetchWithRetry(LOVABLE_API_KEY, {
       model: 'google/gemini-2.5-flash',

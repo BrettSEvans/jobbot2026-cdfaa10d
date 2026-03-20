@@ -89,6 +89,10 @@ CHANGE TYPE CLASSIFICATION:
 
 ${jobDescriptionMarkdown ? `\nJOB DESCRIPTION (for context on keyword injection detection):\n${jobDescriptionMarkdown.slice(0, 4000)}` : ''}`;
 
+    // Truncate inputs to keep output manageable
+    const baselineTrunc = baselineText.slice(0, 6000);
+    const tailoredTrunc = tailoredHtml.slice(0, 6000);
+
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -97,15 +101,16 @@ ${jobDescriptionMarkdown ? `\nJOB DESCRIPTION (for context on keyword injection 
       },
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash',
+        response_format: { type: 'json_object' },
         messages: [
           { role: 'system', content: systemPrompt },
           {
             role: 'user',
-            content: `BASELINE RESUME (plain text):\n${baselineText.slice(0, 8000)}\n\n---\n\nTAILORED RESUME (HTML):\n${tailoredHtml.slice(0, 8000)}\n\nAnalyze and return the structured diff JSON now.`
+            content: `BASELINE RESUME (plain text):\n${baselineTrunc}\n\n---\n\nTAILORED RESUME (HTML):\n${tailoredTrunc}\n\nAnalyze and return the structured diff JSON now. Keep explanations concise (under 20 words each).`
           }
         ],
         temperature: 0.1,
-        max_tokens: 6000,
+        max_tokens: 12000,
       }),
     });
 
@@ -142,7 +147,7 @@ ${jobDescriptionMarkdown ? `\nJOB DESCRIPTION (for context on keyword injection 
       try {
         diffResult = JSON.parse(sanitized);
       } catch (e) {
-        console.error('Failed to parse diff JSON:', (e as Error).message, 'snippet:', clean.slice(0, 300));
+        console.error('Failed to parse diff JSON:', (e as Error).message, 'snippet:', clean.slice(0, 500));
         throw new Error('Failed to parse diff result as JSON');
       }
     }

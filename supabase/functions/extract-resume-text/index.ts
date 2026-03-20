@@ -37,9 +37,15 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Convert PDF to base64 for AI extraction
+    // Convert PDF to base64 for AI extraction (chunk to avoid stack overflow)
     const arrayBuffer = await fileData.arrayBuffer();
-    const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+    const bytes = new Uint8Array(arrayBuffer);
+    let binary = "";
+    const chunkSize = 8192;
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+    }
+    const base64 = btoa(binary);
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {

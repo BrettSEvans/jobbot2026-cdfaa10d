@@ -38,3 +38,9 @@ verify_jwt = false
 
 [functions.resume-diff]
 verify_jwt = false
+
+[functions.generate-material]
+verify_jwt = false
+
+[functions.research-asset-best-practices]
+verify_jwt = false

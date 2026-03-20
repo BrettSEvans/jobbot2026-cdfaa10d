@@ -76,6 +76,74 @@ export type Database = {
           },
         ]
       }
+      asset_best_practices: {
+        Row: {
+          asset_type: string
+          best_practices: string
+          created_at: string
+          id: string
+          sample_count: number
+          updated_at: string
+          winning_patterns: Json | null
+        }
+        Insert: {
+          asset_type: string
+          best_practices?: string
+          created_at?: string
+          id?: string
+          sample_count?: number
+          updated_at?: string
+          winning_patterns?: Json | null
+        }
+        Update: {
+          asset_type?: string
+          best_practices?: string
+          created_at?: string
+          id?: string
+          sample_count?: number
+          updated_at?: string
+          winning_patterns?: Json | null
+        }
+        Relationships: []
+      }
+      asset_download_signals: {
+        Row: {
+          application_id: string
+          asset_html_hash: string | null
+          asset_type: string
+          created_at: string
+          id: string
+          industry: string | null
+          job_title: string | null
+        }
+        Insert: {
+          application_id: string
+          asset_html_hash?: string | null
+          asset_type: string
+          created_at?: string
+          id?: string
+          industry?: string | null
+          job_title?: string | null
+        }
+        Update: {
+          application_id?: string
+          asset_html_hash?: string | null
+          asset_type?: string
+          created_at?: string
+          id?: string
+          industry?: string | null
+          job_title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_download_signals_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "job_applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       blocked_scrape_sites: {
         Row: {
           blocked_at: string

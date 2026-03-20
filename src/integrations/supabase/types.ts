@@ -1429,6 +1429,7 @@ export type Database = {
           file_name: string
           id: string
           is_active: boolean
+          resume_text: string | null
           storage_path: string
           uploaded_at: string
           user_id: string
@@ -1437,6 +1438,7 @@ export type Database = {
           file_name: string
           id?: string
           is_active?: boolean
+          resume_text?: string | null
           storage_path: string
           uploaded_at?: string
           user_id: string
@@ -1445,6 +1447,7 @@ export type Database = {
           file_name?: string
           id?: string
           is_active?: boolean
+          resume_text?: string | null
           storage_path?: string
           uploaded_at?: string
           user_id?: string

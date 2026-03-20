@@ -1,15 +1,14 @@
 import { Check, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type PipelineStage = "scraping" | "branding" | "analyzing" | "research" | "cover-letter" | "dashboard" | "complete";
+export type PipelineStage = "reviewing-job" | "branding" | "analyzing" | "research" | "resume" | "complete";
 
 const STAGES: { key: PipelineStage; label: string }[] = [
-  { key: "scraping", label: "Scraping Job" },
+  { key: "reviewing-job", label: "Reviewing Job" },
   { key: "branding", label: "Branding" },
   { key: "analyzing", label: "Analyzing" },
   { key: "research", label: "Researching" },
-  { key: "cover-letter", label: "Cover Letter" },
-  { key: "dashboard", label: "Dashboard" },
+  { key: "resume", label: "Resume" },
   { key: "complete", label: "Done" },
 ];
 

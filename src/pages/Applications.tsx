@@ -401,7 +401,7 @@ function ApplicationStatusCell({ appId, dbStatus, generationStatus, generationEr
     return (
       <Badge variant="secondary" className="flex items-center gap-1.5 w-fit">
         <Loader2 className="h-3 w-3 animate-spin" />
-        {generationStatus === "scraping" ? "Scraping..." : generationStatus === "analyzing" ? "Analyzing..." : "Generating..."}
+        {generationStatus === "scraping" || generationStatus === "reviewing-job" ? "Reviewing..." : generationStatus === "analyzing" ? "Analyzing..." : generationStatus === "resume" ? "Resume..." : "Generating..."}
       </Badge>
     );
   }

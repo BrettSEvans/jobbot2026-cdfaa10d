@@ -2,6 +2,9 @@
  * Background Generation Manager
  * Continues generation even when user navigates away from the page.
  * Uses a module-level singleton so it persists across React renders.
+ * 
+ * Pipeline: Reviewing Job → Branding → Analyzing → Researching → Resume (foreground)
+ *           → Cover Letter → Dashboard (background, after navigation)
  */
 
 import {
@@ -13,11 +16,26 @@ import {
 import { scrapeJob, streamTailoredLetter } from "@/lib/api/coverLetter";
 import { parseLlmJsonOutput, assembleDashboardHtml } from "@/lib/dashboard/assembler";
 import { parseJobDescription } from "@/lib/api/jdIntelligence";
+import { generateOptimizedResume } from "@/lib/api/resumeGeneration";
+import { supabase } from "@/integrations/supabase/client";
 import type { JDIntelligence } from "@/lib/api/jdIntelligence";
+
+export type GenerationJobStatus =
+  | "pending"
+  | "reviewing-job"
+  | "branding"
+  | "analyzing"
+  | "research"
+  | "resume"
+  | "resume-complete"
+  | "cover-letter"
+  | "dashboard"
+  | "complete"
+  | "error";
 
 export type GenerationJob = {
   applicationId: string;
-  status: "pending" | "scraping" | "analyzing" | "cover-letter" | "dashboard" | "complete" | "error";
+  status: GenerationJobStatus;
   progress: string;
   error?: string;
 };
@@ -61,7 +79,8 @@ class BackgroundGenerationManager {
 
   /**
    * Start a full generation pipeline for a single application.
-   * Runs entirely in the background — no UI dependency.
+   * Phase 1 (foreground): Scrape → Brand → Analyze → Research → Resume
+   * Phase 2 (background): Cover Letter → Dashboard
    */
   async startFullGeneration({
     applicationId,
@@ -76,7 +95,6 @@ class BackgroundGenerationManager {
     jobDescription?: string;
     useManualInput?: boolean;
   }): Promise<string> {
-    // Create a DB record first if we don't have one
     let appId = applicationId;
     if (!appId) {
       const saved = await saveJobApplication({
@@ -117,21 +135,21 @@ class BackgroundGenerationManager {
     useManualInput?: boolean
   ) {
     try {
-      // 1. Scrape job
+      // 1. Scrape / review job
       let markdown = manualDescription || "";
       if (!useManualInput && jobUrl) {
-        this.updateJob(appId, { status: "scraping", progress: "Scraping job posting..." });
-        await saveJobApplication({ id: appId, job_url: jobUrl, generation_status: "scraping" } as any);
+        this.updateJob(appId, { status: "reviewing-job", progress: "Reviewing job posting..." });
+        await saveJobApplication({ id: appId, job_url: jobUrl, generation_status: "reviewing-job" } as any);
         const result = await scrapeJob(jobUrl);
         markdown = result.markdown;
       }
-      this.updateJob(appId, { status: "scraping", progress: "Job description ready" });
+      this.updateJob(appId, { status: "reviewing-job", progress: "Job description ready" });
 
       // 2. Scrape company branding
       let brandingData: any = null;
       let companyMarkdown = "";
       if (companyUrl?.trim()) {
-        this.updateJob(appId, { progress: "Scraping company branding..." });
+        this.updateJob(appId, { status: "branding", progress: "Scraping company branding..." });
         try {
           const result = await scrapeCompanyBranding(companyUrl);
           brandingData = result.branding;
@@ -172,6 +190,25 @@ class BackgroundGenerationManager {
         }
       }
 
+      // 4. Research
+      this.updateJob(appId, { status: "research", progress: `Researching ${companyName || 'company'}...` });
+      await saveJobApplication({ id: appId, job_url: jobUrl, generation_status: "research" } as any);
+      let researchedSections: any[] | undefined;
+      try {
+        const { researchCompany } = await import("@/lib/api/researchCompany");
+        const research = await researchCompany({
+          jobUrl: jobUrl || undefined,
+          companyUrl: companyUrl || undefined,
+          jobTitle,
+          companyName,
+          department,
+          jobDescription: markdown,
+        });
+        researchedSections = research.sections;
+      } catch (e) {
+        console.warn("Research failed:", e);
+      }
+
       // Save intermediate results
       await saveJobApplication({
         id: appId,
@@ -185,69 +222,141 @@ class BackgroundGenerationManager {
         customers,
         products,
         jd_intelligence: jdIntelligence,
-        generation_status: "cover-letter",
+        generation_status: "resume",
       } as any);
 
-      // 4. Generate cover letter
-      this.updateJob(appId, { status: "cover-letter", progress: "Generating cover letter..." });
-      let coverLetter = "";
-      await streamTailoredLetter({
-        jobDescription: markdown,
-        onDelta: (text) => { coverLetter += text; },
-        onDone: () => {},
-      });
-
-      await saveJobApplication({
-        id: appId,
-        job_url: jobUrl,
-        cover_letter: coverLetter,
-        generation_status: "dashboard",
-      } as any);
-
-      // 5. Generate dashboard (now outputs JSON, assembled into HTML by templates)
-      this.updateJob(appId, { status: "dashboard", progress: "Generating dashboard..." });
-      let dashboardRaw = "";
-      await streamDashboardGeneration({
-        jobDescription: markdown,
-        branding: brandingData,
-        companyName,
-        jobTitle,
-        competitors,
-        customers,
-        products,
-        department,
-        onDelta: (text) => { dashboardRaw += text; },
-        onDone: () => {},
-      });
-
-      // Parse JSON and assemble HTML from templates
-      let dashboardHtml = "";
-      let dashboardData: any = null;
-      const parsed = parseLlmJsonOutput(dashboardRaw);
-      if (parsed) {
-        dashboardData = parsed;
-        dashboardHtml = assembleDashboardHtml(parsed);
-      } else {
-        // Fallback: treat as raw HTML (backward compat with old prompt)
-        console.warn("Failed to parse dashboard JSON, falling back to raw HTML");
-        dashboardHtml = dashboardRaw;
-        const htmlStart = dashboardHtml.indexOf("<!DOCTYPE html>") !== -1
-          ? dashboardHtml.indexOf("<!DOCTYPE html>")
-          : dashboardHtml.indexOf("<!doctype html>");
-        if (htmlStart > 0) dashboardHtml = dashboardHtml.slice(htmlStart);
-        const htmlEnd = dashboardHtml.lastIndexOf("</html>");
-        if (htmlEnd !== -1) dashboardHtml = dashboardHtml.slice(0, htmlEnd + 7);
+      // 5. Generate resume (foreground phase end)
+      this.updateJob(appId, { status: "resume", progress: "Generating tailored resume..." });
+      
+      // Fetch user's resume text from profiles
+      let resumeText = "";
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("resume_text")
+            .eq("id", user.id)
+            .single();
+          resumeText = profile?.resume_text || "";
+        }
+      } catch (e) {
+        console.warn("Failed to fetch user resume text:", e);
       }
 
-      // 6. Save final result
-      await saveJobApplication({
-        id: appId,
-        job_url: jobUrl,
-        dashboard_html: dashboardHtml,
-        dashboard_data: dashboardData,
-        status: "complete",
-        generation_status: "complete",
-      } as any);
+      if (resumeText && markdown) {
+        try {
+          const result = await generateOptimizedResume({
+            jobDescription: markdown,
+            resumeText,
+            missingKeywords: [],
+            companyName,
+            jobTitle,
+          });
+          await saveJobApplication({
+            id: appId,
+            job_url: jobUrl,
+            resume_html: result.resume_html,
+            generation_status: "resume-complete",
+            status: "resume-complete",
+          } as any);
+        } catch (e) {
+          console.warn("Resume generation failed:", e);
+          // Still mark as resume-complete so user can proceed
+          await saveJobApplication({
+            id: appId,
+            job_url: jobUrl,
+            generation_status: "resume-complete",
+            status: "resume-complete",
+          } as any);
+        }
+      } else {
+        // No resume text available — skip resume generation
+        await saveJobApplication({
+          id: appId,
+          job_url: jobUrl,
+          generation_status: "resume-complete",
+          status: "resume-complete",
+        } as any);
+      }
+
+      // Signal foreground completion — user navigates to detail page now
+      this.updateJob(appId, { status: "resume-complete", progress: "Resume ready! Generating remaining assets..." });
+
+      // ========== Phase 2: Background (cover letter + dashboard) ==========
+
+      // 6. Generate cover letter
+      this.updateJob(appId, { status: "cover-letter", progress: "Generating cover letter..." });
+      let coverLetter = "";
+      try {
+        await streamTailoredLetter({
+          jobDescription: markdown,
+          onDelta: (text) => { coverLetter += text; },
+          onDone: () => {},
+        });
+        await saveJobApplication({
+          id: appId,
+          job_url: jobUrl,
+          cover_letter: coverLetter,
+          generation_status: "cover-letter-complete",
+        } as any);
+      } catch (e) {
+        console.warn("Cover letter generation failed:", e);
+      }
+
+      // 7. Generate dashboard
+      this.updateJob(appId, { status: "dashboard", progress: "Generating dashboard..." });
+      let dashboardRaw = "";
+      try {
+        await streamDashboardGeneration({
+          jobDescription: markdown,
+          branding: brandingData,
+          companyName,
+          jobTitle,
+          competitors,
+          customers,
+          products,
+          department,
+          researchedSections,
+          onDelta: (text) => { dashboardRaw += text; },
+          onDone: () => {},
+        });
+
+        let dashboardHtml = "";
+        let dashboardData: any = null;
+        const parsed = parseLlmJsonOutput(dashboardRaw);
+        if (parsed) {
+          dashboardData = parsed;
+          dashboardHtml = assembleDashboardHtml(parsed);
+        } else {
+          console.warn("Failed to parse dashboard JSON, falling back to raw HTML");
+          dashboardHtml = dashboardRaw;
+          const htmlStart = dashboardHtml.indexOf("<!DOCTYPE html>") !== -1
+            ? dashboardHtml.indexOf("<!DOCTYPE html>")
+            : dashboardHtml.indexOf("<!doctype html>");
+          if (htmlStart > 0) dashboardHtml = dashboardHtml.slice(htmlStart);
+          const htmlEnd = dashboardHtml.lastIndexOf("</html>");
+          if (htmlEnd !== -1) dashboardHtml = dashboardHtml.slice(0, htmlEnd + 7);
+        }
+
+        await saveJobApplication({
+          id: appId,
+          job_url: jobUrl,
+          dashboard_html: dashboardHtml,
+          dashboard_data: dashboardData,
+          status: "complete",
+          generation_status: "complete",
+        } as any);
+      } catch (e) {
+        console.warn("Dashboard generation failed:", e);
+        // Still mark complete even if dashboard fails
+        await saveJobApplication({
+          id: appId,
+          job_url: jobUrl,
+          status: "complete",
+          generation_status: "complete",
+        } as any);
+      }
 
       this.updateJob(appId, { status: "complete", progress: "Done!" });
     } catch (err: any) {
@@ -267,7 +376,6 @@ class BackgroundGenerationManager {
 
   /**
    * Start a dashboard refinement in the background.
-   * Continues even if the user navigates away.
    */
   async startRefinement({
     applicationId,
@@ -314,12 +422,10 @@ class BackgroundGenerationManager {
         chatHistory,
         onDelta: (text) => { accumulated += text; },
         onDone: () => {
-          // Try parsing as JSON first (new format)
           const parsed = parseLlmJsonOutput(accumulated);
           if (parsed) {
             accumulated = assembleDashboardHtml(parsed);
           } else {
-            // Fallback: clean as raw HTML
             let clean = accumulated;
             const htmlStart = clean.indexOf("<!DOCTYPE html>");
             const htmlStartAlt = clean.indexOf("<!doctype html>");

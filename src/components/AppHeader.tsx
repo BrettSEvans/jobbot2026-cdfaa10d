@@ -78,6 +78,7 @@ export default function AppHeader({ onAiChatToggle, aiChatOpen }: AppHeaderProps
               <button
                 key={l.to}
                 onClick={() => navigate(l.to)}
+                data-tour={l.tourId}
                 className={cn(
                   "px-3 py-1.5 rounded-md text-sm font-medium transition-colors font-body flex items-center gap-1.5",
                   l.match(pathname)

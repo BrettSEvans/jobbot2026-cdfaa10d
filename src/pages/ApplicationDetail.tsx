@@ -576,24 +576,6 @@ const ApplicationDetail = () => {
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      const blob = new Blob([app.resume_html], { type: "text/html" });
-                      const url = URL.createObjectURL(blob);
-                      const a = document.createElement("a");
-                      a.href = url;
-                      a.download = `${(companyName || "resume").replace(/\s+/g, "-").toLowerCase()}-resume.html`;
-                      document.body.appendChild(a);
-                      a.click();
-                      document.body.removeChild(a);
-                      URL.revokeObjectURL(url);
-                      toast({ title: "Downloaded", description: "Resume HTML file saved." });
-                    }}
-                  >
-                    <Download className="mr-2 h-4 w-4" /> Download HTML
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
                       const iframe = document.createElement("iframe");
                       iframe.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:none;";
                       document.body.appendChild(iframe);

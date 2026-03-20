@@ -568,13 +568,6 @@ const ApplicationDetail = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleCopy(app.resume_html, "Resume HTML")}
-                  >
-                    <Copy className="mr-2 h-4 w-4" /> Copy HTML
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
                     onClick={() => {
                       const iframe = document.createElement("iframe");
                       iframe.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:none;";
@@ -598,6 +591,17 @@ const ApplicationDetail = () => {
                     }}
                   >
                     <FileDown className="mr-2 h-4 w-4" /> Download PDF
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const name = `resume-${(companyName || "document").replace(/\s+/g, "-").toLowerCase()}-${(jobTitle || "").replace(/\s+/g, "-").toLowerCase()}`;
+                      downloadHtmlAsDocx(app.resume_html, `${name}.docx`);
+                      toast({ title: "Downloading", description: "Resume DOCX file is being prepared." });
+                    }}
+                  >
+                    <Download className="mr-2 h-4 w-4" /> Download DOCX
                   </Button>
 
                   {/* Regenerate Resume */}

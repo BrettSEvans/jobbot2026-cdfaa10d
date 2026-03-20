@@ -123,6 +123,16 @@ export default function DynamicMaterialsSection({
   saveField,
   toast,
 }: DynamicMaterialsSectionProps) {
+  const { user } = useAuth();
+  const { data: isAdmin } = useQuery({
+    queryKey: ["user-role-admin", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await supabase.from("user_roles").select("role").eq("user_id", user!.id).eq("role", "admin").maybeSingle();
+      return !!data;
+    },
+  });
+
   const [generatedAssets, setGeneratedAssets] = useState<GeneratedAsset[]>([]);
   const [loadingAssets, setLoadingAssets] = useState(true);
 

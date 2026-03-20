@@ -115,18 +115,21 @@ const ApplicationDetail = () => {
 
   // Re-fetch when background job completes
   useEffect(() => {
-    if (bgJob?.status === "complete" && id) {
+    if (bgJob?.status === "complete" && id && isValidUuid) {
       loadApplication(id);
     }
   }, [bgJob?.status]);
 
+  // Validate UUID format to avoid DB errors from bots/crawlers
+  const isValidUuid = id ? /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id) : false;
+
   // Story 6.1: Conditional polling — only poll while generation is active
   useEffect(() => {
-    if (id) loadApplication(id);
-  }, [id]);
+    if (id && isValidUuid) loadApplication(id);
+  }, [id, isValidUuid]);
 
   useEffect(() => {
-    if (!id) return;
+    if (!id || !isValidUuid) return;
     const isActive = app?.generation_status && !["idle", "complete", "error"].includes(app.generation_status);
     if (!isActive && !isBgGenerating) return;
     const interval = setInterval(() => {
@@ -366,7 +369,7 @@ const ApplicationDetail = () => {
     );
   }
 
-  if (!app) {
+  if (!app || !isValidUuid) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
         <p className="text-muted-foreground">Application not found.</p>

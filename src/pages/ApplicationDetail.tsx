@@ -103,6 +103,7 @@ const ApplicationDetail = () => {
   const [coverLetterRevisionTrigger, setCoverLetterRevisionTrigger] = useState(0);
   const [previewResumeHtml, setPreviewResumeHtml] = useState<string | null>(null);
   const [resumeRevisionTrigger, setResumeRevisionTrigger] = useState(0);
+  const [editingResume, setEditingResume] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const bgJob = useBackgroundJob(id);
   const isBgGenerating = bgJob && !["complete", "error"].includes(bgJob.status);

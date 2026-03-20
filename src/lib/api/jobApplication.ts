@@ -152,6 +152,12 @@ export async function saveJobApplication(app: {
   generation_error?: string;
   research_reasoning?: string;
 }) {
+  // Ensure user_id is set for RLS compliance
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.user?.id) {
+    throw new Error("You must be logged in to save an application.");
+  }
+
   if (app.id) {
     const { data, error } = await supabase
       .from('job_applications')
@@ -164,7 +170,7 @@ export async function saveJobApplication(app: {
   } else {
     const { data, error } = await supabase
       .from('job_applications')
-      .insert(app)
+      .insert({ ...app, user_id: session.user.id })
       .select()
       .single();
     if (error) throw new Error(error.message);

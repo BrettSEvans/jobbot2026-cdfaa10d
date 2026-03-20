@@ -344,6 +344,50 @@ const ApplicationDetail = () => {
     }
   };
 
+  // Cover letter Vibe Edit handler
+  const handleCoverLetterVibeEdit = async () => {
+    if (!clChatInput.trim() || clRefining || !coverLetter) return;
+    const msg = clChatInput.trim();
+    setClChatInput("");
+    const newHistory = [...clChatHistory, { role: "user", content: msg }];
+    setClChatHistory(newHistory);
+    setClRefining(true);
+
+    try {
+      // Save revision before refinement
+      if (id) {
+        try {
+          await saveCoverLetterRevision(id, coverLetter, `Before: ${msg.slice(0, 50)}`);
+          setCoverLetterRevisionTrigger((t) => t + 1);
+        } catch { /* non-critical */ }
+      }
+
+      let accumulated = "";
+      await streamRefineMaterial({
+        currentContent: coverLetter,
+        contentType: "text",
+        assetName: "Cover Letter",
+        userMessage: msg,
+        chatHistory: newHistory,
+        onDelta: (text) => {
+          accumulated += text;
+          setCoverLetter(accumulated);
+        },
+        onDone: () => {},
+      });
+
+      if (accumulated && id) {
+        await saveField({ cover_letter: accumulated });
+        setClChatHistory((prev) => [...prev, { role: "assistant", content: "✅ Changes applied" }]);
+      }
+    } catch (err: any) {
+      toast({ title: "Refinement failed", description: err.message, variant: "destructive" });
+      setClChatHistory((prev) => [...prev, { role: "assistant", content: `❌ Error: ${err.message}` }]);
+    } finally {
+      setClRefining(false);
+    }
+  };
+
   // Regenerate dashboard
   const handleRegenerateDashboard = async () => {
     if (!jobDescription.trim()) return;

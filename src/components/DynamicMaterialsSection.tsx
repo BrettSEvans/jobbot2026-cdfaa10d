@@ -80,6 +80,31 @@ function downloadHtmlFile(html: string, filename: string) {
   URL.revokeObjectURL(url);
 }
 
+/** Print-to-PDF via hidden iframe for materials */
+function downloadMaterialPdf(html: string, _filename: string) {
+  const printCss = `
+    <style>
+      @media print {
+        @page { size: letter; margin: 0.5in; }
+        body { margin: 0; padding: 0; }
+      }
+    </style>
+  `;
+  const injected = html.replace('</head>', `${printCss}</head>`);
+  const iframe = document.createElement('iframe');
+  iframe.style.cssText = 'position:fixed;left:-9999px;top:-9999px;width:0;height:0;';
+  document.body.appendChild(iframe);
+  const doc = iframe.contentDocument || iframe.contentWindow?.document;
+  if (!doc) return;
+  doc.open();
+  doc.write(injected);
+  doc.close();
+  setTimeout(() => {
+    iframe.contentWindow?.print();
+    setTimeout(() => document.body.removeChild(iframe), 2000);
+  }, 600);
+}
+
 interface DynamicMaterialsSectionProps {
   applicationId: string;
   app: any;

@@ -237,16 +237,17 @@ DATE CONTEXT: The application date is ${anchorStr}. Use this as your temporal an
 - Always use realistic, specific dates (e.g. "Week of ${anchorStr}", "Q2 2026") — never use placeholder dates like "Month 1" or "TBD".
 
 OUTPUT: Return a single self-contained HTML document with embedded CSS. The document MUST:
-- Fit on EXACTLY ONE printed page (US Letter / A4). This is a hard constraint.
-- Use compact but readable font sizes (10-11pt body, 13-14pt headings)
-- Limit content to what fits in ~950px height at normal zoom
-- Use @page { size: letter; margin: 0.5in; } and body { max-height: 9.5in; overflow: hidden; }
+- Fit on EXACTLY ONE printed page (US Letter 8.5" x 11"). This is a HARD constraint — no exceptions.
+- DO NOT generate more content than fits on a single page. Prefer fewer, higher-impact sections over trying to cover everything.
+- Use compact but readable font sizes (9-10pt body, 12-13pt headings)
+- The total rendered height MUST NOT exceed 900px. Use CSS: html, body { height: 10in; max-height: 10in; overflow: hidden; margin: 0; padding: 0.4in; box-sizing: border-box; }
+- Use @page { size: letter; margin: 0; } to eliminate browser margins
+- Keep to 3-5 sections maximum. Each section should be concise (2-4 bullet points or compact table rows).
+- Use multi-column layouts (CSS grid/flexbox) to maximize horizontal space rather than vertical scrolling
 - Be professional, clean, and printable
 - Include a header with the company name, job title, and document title
-- Well-structured with clear sections, tables, or visual elements as appropriate
 - Specific to the role and company context — not generic
 - Visually polished with modern styling
-- Prioritize information density — use multi-column layouts, compact tables, or grids to fit more content
 
 Company: ${companyName || 'Unknown'}
 Job Title: ${jobTitle || 'Unknown'}
@@ -281,6 +282,16 @@ ${bpSection}${existingPatternsSection}${variabilitySection}`;
     if (htmlStart > 0) content = content.slice(htmlStart);
     const htmlEnd = content.lastIndexOf('</html>');
     if (htmlEnd !== -1) content = content.slice(0, htmlEnd + 7);
+
+    // Inject hard one-page constraint CSS to guarantee single-page output
+    const onePageCss = `<style>@page{size:letter;margin:0}html,body{width:8.5in;max-height:10in;overflow:hidden;box-sizing:border-box}</style>`;
+    if (content.includes('</head>')) {
+      content = content.replace('</head>', `${onePageCss}</head>`);
+    } else if (content.includes('<body')) {
+      content = content.replace('<body', `${onePageCss}<body`);
+    } else {
+      content = onePageCss + content;
+    }
 
     return new Response(JSON.stringify({ success: true, html: content }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

@@ -128,11 +128,10 @@ function enforceOnePageLayout(html: string): string {
     overflow: visible !important;
   }
 
-  /* ===== FLOW-SAFE RULES: let text containers grow naturally ===== */
-  .page-content *,
-  .page-content *::before,
-  .page-content *::after {
-    /* REMOVED: overflow: hidden — this was clipping text */
+  /* ===== FLOW-SAFE RULES: let TEXT elements grow naturally ===== */
+  .page-content p,
+  .page-content h1, .page-content h2, .page-content h3, .page-content h4,
+  .page-content li, .page-content span, .page-content blockquote {
     overflow: visible !important;
     overflow-x: visible !important;
     overflow-y: visible !important;
@@ -146,19 +145,16 @@ function enforceOnePageLayout(html: string): string {
     word-wrap: break-word !important;
   }
 
-  /* Strip ONLY absolute/fixed positioning — keep relative and static */
+  /* Strip ONLY absolute/fixed positioning — allow relative universally */
   .page-content *:not(svg *) {
-    position: static !important;
     top: auto !important;
     left: auto !important;
     right: auto !important;
     bottom: auto !important;
-    transform: none !important;
   }
-  /* Allow relative positioning for controlled layout */
-  .page-content [style*="position: relative"],
-  .page-content [style*="position:relative"] {
-    position: relative !important;
+  .page-content *:not(svg *):not([style*="position: relative"]):not([style*="position:relative"]):not(header):not(.header):not([class*="header"]):not([class*="banner"]):not([class*="hero"]):not([class*="sidebar"]):not(aside) {
+    position: static !important;
+    transform: none !important;
   }
 
   /* Headers: flow-safe, visible text, generous padding */
@@ -285,16 +281,14 @@ function enforceOnePageLayout(html: string): string {
   .page-content table {
     width: 100%;
   }
-  /* Prevent negative margins from causing overlap */
-  .page-content div,
-  .page-content section,
-  .page-content article {
+  /* Only strip negative margins — preserve intentional spacing */
+  .page-content [style*="margin-top: -"],
+  .page-content [style*="margin-top:-"] {
     margin-top: 0 !important;
-    margin-bottom: 0.08in !important;
   }
-  .page-content div:first-child,
-  .page-content section:first-child {
-    margin-top: 0 !important;
+  .page-content [style*="margin-bottom: -"],
+  .page-content [style*="margin-bottom:-"] {
+    margin-bottom: 0 !important;
   }
 </style>`;
 
@@ -715,10 +709,11 @@ function deriveComplementaryColor(hexOrCss: string): string {
   return `#${rr.toString(16).padStart(2, '0')}${gg.toString(16).padStart(2, '0')}${bb.toString(16).padStart(2, '0')}`;
 }
 
-function buildStyleFamilies(brandColors: string[]): StyleFamily[] {
-  const primary = brandColors[0] || '#1a365d';
-  const secondary = brandColors[1] || '#2d3748';
-  const accent = brandColors[2] || '#e53e3e';
+function buildStyleFamilies(brandColors: string[], colorRotation: number = 0): StyleFamily[] {
+  const len = brandColors.length;
+  const primary = len > 0 ? brandColors[colorRotation % len] : '#1a365d';
+  const secondary = len > 1 ? brandColors[(1 + colorRotation) % len] : '#2d3748';
+  const accent = len > 2 ? brandColors[(2 + colorRotation) % len] : '#e53e3e';
   const complementary = deriveComplementaryColor(primary);
 
   return [
@@ -976,7 +971,9 @@ Deno.serve(async (req) => {
         }
       }
     }
-    const families = buildStyleFamilies([...new Set(brandColorsForFamilies)].slice(0, 8));
+    // Determine color rotation: use sibling count for initial gen, regenerationCount for re-gens
+    const regenCount = typeof regenerationCount === 'number' ? regenerationCount : 0;
+    let colorRotation = regenCount;
 
     // Determine which families siblings already use
     let usedFamilyIds: string[] = [];
@@ -991,15 +988,21 @@ Deno.serve(async (req) => {
 
       if (siblingAssets) {
         usedFamilyIds = siblingAssets.map((a: any) => {
-          const familyMatch = (a.html || '').match(/data-style-family="([A-F])"/);
+          const familyMatch = (a.html || '').match(/data-style-family="([A-I])"/);
           return familyMatch ? familyMatch[1] : '';
         }).filter(Boolean);
+        // For initial generation, rotate color by sibling index
+        if (regenCount === 0) {
+          colorRotation = siblingAssets.length;
+        }
       }
     }
 
-    const regenCount = typeof regenerationCount === 'number' ? regenerationCount : 0;
+    const uniqueBrandColors = [...new Set(brandColorsForFamilies)].slice(0, 8);
+    const families = buildStyleFamilies(uniqueBrandColors, colorRotation);
+
     const selectedFamily = selectStyleFamily(families, assetName, assetDescription || '', usedFamilyIds, regenCount);
-    console.log(`Selected style family: ${selectedFamily.id} — ${selectedFamily.name} (regen=${regenCount}, used=${usedFamilyIds.join(',')})`);
+    console.log(`Selected style family: ${selectedFamily.id} — ${selectedFamily.name} (regen=${regenCount}, colorRotation=${colorRotation}, used=${usedFamilyIds.join(',')})`);
 
     const styleFamilySection = `\n\n${selectedFamily.promptBlock}\n\nIMPORTANT: Add data-style-family="${selectedFamily.id}" to the <body> tag so the system can track which family was used.`;
 
@@ -1206,9 +1209,44 @@ ${brandingSection}${bpSection}${existingPatternsSection}${styleFamilySection}`;
       }
     }
 
+    // Sparse content detection — if document is too empty, expand it
+    const isSparse = textLength < 1500 || sectionCount < 2;
+    if (isSparse && !isDense) {
+      console.log(`Sparse content detected: chars=${textLength}, sections=${sectionCount}. Running expansion pass.`);
+      const expandResp = await aiFetchWithRetry(LOVABLE_API_KEY, {
+        model: 'google/gemini-2.5-flash',
+        messages: [
+          { role: 'system', content: `You are a document editor. The following HTML document is TOO SPARSE — it only fills about 10-40% of a US Letter page. Expand it to fill 80-85% of the page:
+1. Add 1-2 more body sections (max 3 total) with relevant professional content
+2. Add 2-3 more bullet points per existing section
+3. Expand short paragraphs to 2 full sentences (but still max 50 words per paragraph)
+4. Add a relevant data element if none exists (metric cards, progress bars, or a small table)
+5. Keep the SAME style family, layout, colors, and fonts — just add more content
+6. NEVER use overflow:hidden on any text container
+7. Return ONLY the complete expanded HTML — no explanations, no markdown fences` },
+          { role: 'user', content: content },
+        ],
+        temperature: 0.3,
+        max_tokens: 4500,
+      });
+      if (expandResp.ok) {
+        const ed = await expandResp.json();
+        const expanded = (ed.choices?.[0]?.message?.content || '').trim();
+        if (expanded.length > content.length) {
+          content = enforceOnePageLayout(expanded);
+          console.log('Expansion applied successfully');
+        }
+      }
+    }
+
     // Review pipeline: combined UI + QA Review + deterministic audit
     const { html: finalHtml, reviewResults } = await reviewPipeline(content, assetName, LOVABLE_API_KEY);
     content = finalHtml;
+
+    // Force-inject data-style-family attribute if not present
+    if (!content.includes('data-style-family=')) {
+      content = content.replace(/<body([^>]*)>/, `<body$1 data-style-family="${selectedFamily.id}">`);
+    }
 
     return new Response(JSON.stringify({
       success: true,

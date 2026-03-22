@@ -961,10 +961,47 @@ Deno.serve(async (req) => {
       }
     }
 
-    let variabilitySection = '';
-    if (variabilityRecommendations && Array.isArray(variabilityRecommendations) && variabilityRecommendations.length > 0) {
-      variabilitySection = `\n\n## Design Variability Recommendations (from prior analysis)\nFollow these specific recommendations to improve design diversity across this application's materials:\n${variabilityRecommendations.map((r: string, i: number) => `${i + 1}. ${r}`).join('\n')}\n\nApply these recommendations directly to the layout, structure, and visual approach of this document.`;
+    // ====== STYLE FAMILY SELECTION ======
+    // Extract brand colors for style family building
+    const brandColorsForFamilies: string[] = [];
+    if (branding) {
+      if (branding.colorPalette && Array.isArray(branding.colorPalette)) {
+        brandColorsForFamilies.push(...branding.colorPalette);
+      } else {
+        if (branding.colors && typeof branding.colors === 'object') {
+          Object.values(branding.colors).forEach((v: any) => { if (typeof v === 'string' && v.length < 60) brandColorsForFamilies.push(v); });
+        }
+        if (branding.extractedColors && typeof branding.extractedColors === 'object') {
+          Object.values(branding.extractedColors).forEach((v: any) => { if (typeof v === 'string' && v.length < 60) brandColorsForFamilies.push(v); });
+        }
+      }
     }
+    const families = buildStyleFamilies([...new Set(brandColorsForFamilies)].slice(0, 8));
+
+    // Determine which families siblings already use
+    let usedFamilyIds: string[] = [];
+    if (applicationId) {
+      const { data: siblingAssets } = await supabaseAdmin
+        .from('generated_assets')
+        .select('asset_name, html')
+        .eq('application_id', applicationId)
+        .eq('generation_status', 'complete')
+        .not('html', 'eq', '')
+        .neq('asset_name', assetName);
+
+      if (siblingAssets) {
+        usedFamilyIds = siblingAssets.map((a: any) => {
+          const familyMatch = (a.html || '').match(/data-style-family="([A-F])"/);
+          return familyMatch ? familyMatch[1] : '';
+        }).filter(Boolean);
+      }
+    }
+
+    const regenCount = typeof regenerationCount === 'number' ? regenerationCount : 0;
+    const selectedFamily = selectStyleFamily(families, assetName, assetDescription || '', usedFamilyIds, regenCount);
+    console.log(`Selected style family: ${selectedFamily.id} — ${selectedFamily.name} (regen=${regenCount}, used=${usedFamilyIds.join(',')})`);
+
+    const styleFamilySection = `\n\n${selectedFamily.promptBlock}\n\nIMPORTANT: Add data-style-family="${selectedFamily.id}" to the <body> tag so the system can track which family was used.`;
 
     const anchorDate = applicationCreatedAt ? new Date(applicationCreatedAt) : new Date();
     const anchorStr = anchorDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });

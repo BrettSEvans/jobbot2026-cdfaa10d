@@ -281,16 +281,14 @@ function enforceOnePageLayout(html: string): string {
   .page-content table {
     width: 100%;
   }
-  /* Prevent negative margins from causing overlap */
-  .page-content div,
-  .page-content section,
-  .page-content article {
+  /* Only strip negative margins — preserve intentional spacing */
+  .page-content [style*="margin-top: -"],
+  .page-content [style*="margin-top:-"] {
     margin-top: 0 !important;
-    margin-bottom: 0.08in !important;
   }
-  .page-content div:first-child,
-  .page-content section:first-child {
-    margin-top: 0 !important;
+  .page-content [style*="margin-bottom: -"],
+  .page-content [style*="margin-bottom:-"] {
+    margin-bottom: 0 !important;
   }
 </style>`;
 

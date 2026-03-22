@@ -191,11 +191,34 @@ Deno.serve(async (req) => {
       branding.extractedFonts = extractedFonts;
     }
 
+    // Build consolidated colorPalette array
+    const paletteSet = new Set<string>();
+    // Firecrawl colors first
+    if (firecrawlBranding?.colors && typeof firecrawlBranding.colors === 'object') {
+      Object.values(firecrawlBranding.colors).forEach((v: any) => {
+        if (typeof v === 'string' && v.length < 60) paletteSet.add(v);
+      });
+    }
+    // Then extracted dominant colors
+    Object.entries(extractedColors).forEach(([key, val]) => {
+      if (key.startsWith('dominant-') || key.startsWith('rgb-dominant-')) {
+        paletteSet.add(val);
+      }
+    });
+    // Then CSS property colors
+    Object.entries(extractedColors).forEach(([key, val]) => {
+      if (key.startsWith('css-') || key.startsWith('--')) {
+        paletteSet.add(val);
+      }
+    });
+    branding.colorPalette = [...paletteSet].slice(0, 10);
+
     console.log('Branding result:', JSON.stringify({
       hasFirecrawlBranding: !!firecrawlBranding,
       firecrawlColorCount: firecrawlBranding?.colors ? Object.keys(firecrawlBranding.colors).length : 0,
       extractedColorCount: Object.keys(extractedColors).length,
       extractedFontCount: extractedFonts.length,
+      colorPaletteCount: branding.colorPalette.length,
     }));
 
     return new Response(

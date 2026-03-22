@@ -58,6 +58,44 @@ import CoverLetterRevisions from "@/components/CoverLetterRevisions";
 import ResumeRevisions from "@/components/ResumeRevisions";
 import InlineHtmlEditor from "@/components/InlineHtmlEditor";
 import DynamicMaterialsSection from "@/components/DynamicMaterialsSection";
+import { useRef as _useRef2, useState as _useState2, useEffect as _useEffect2, useCallback as _cb2 } from "react";
+
+/** Fit-to-page preview for resume (same approach as materials) */
+function ResumePagePreview({ html }: { html: string }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setScale(Math.min(entry.contentRect.width / 816, 1));
+      }
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <Card className="overflow-hidden">
+      <div ref={containerRef} className="w-full bg-white" style={{ height: `${1056 * scale}px`, overflow: "hidden" }}>
+        <iframe
+          srcDoc={html}
+          sandbox="allow-scripts"
+          title="Resume Preview"
+          style={{
+            width: "816px",
+            height: "1056px",
+            border: "none",
+            transform: `scale(${scale})`,
+            transformOrigin: "top left",
+          }}
+        />
+      </div>
+    </Card>
+  );
+}
 import { backgroundGenerator } from "@/lib/backgroundGenerator";
 import { saveDashboardRevision } from "@/lib/api/dashboardRevisions";
 import { saveCoverLetterRevision } from "@/lib/api/coverLetterRevisions";

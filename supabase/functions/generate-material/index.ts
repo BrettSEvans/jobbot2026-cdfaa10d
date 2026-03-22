@@ -954,17 +954,17 @@ ${brandingSection}${bpSection}${existingPatternsSection}${variabilitySection}`;
       const condenseResp = await aiFetchWithRetry(LOVABLE_API_KEY, {
         model: 'google/gemini-2.5-flash',
         messages: [
-          { role: 'system', content: `You are a document editor. The following HTML document is TOO DENSE for a single US Letter page. Condense it:
-1. Merge sections down to max 3-4 total (combine related ones)
-2. Cut bullet lists to max 4-5 bullets each (keep the most impactful)
-3. Cut table rows to max 4-5 (keep highest-value rows)
-4. Shorten all paragraphs to max 2 sentences
-5. Remove any section that is low-value or redundant
-6. Keep ALL branding, colors, fonts, and layout structure intact
-7. Use a SIMPLE single-column or two-column 60/40 layout
-8. NEVER use overflow:hidden on any text container. Use height:auto and overflow:visible.
-9. NEVER use fixed height or max-height on text-containing elements.
-10. Return ONLY the complete fixed HTML — no explanations, no markdown fences` },
+          { role: 'system', content: `You are a document editor. This HTML is TOO DENSE for one US Letter page. Apply RADICAL condensation:
+1. MAX 3 body sections total. Merge or remove extras ruthlessly.
+2. MAX 3-4 bullets per section, MAX 10 words each.
+3. MAX 4 table rows, MAX 4 columns, MAX 6 words per cell.
+4. Paragraphs: MAX 2 sentences, MAX 50 words.
+5. Remove any section that repeats themes from another section.
+6. Use ONLY single-column or two-column 60/40 layout. Remove framed cards/boxes.
+7. Keep branding colors and fonts intact.
+8. NEVER use overflow:hidden, fixed height, max-height, or absolute positioning on any text container.
+9. Target 200-300 words total. Less is always better.
+10. Return ONLY the complete HTML — no explanations, no markdown fences` },
           { role: 'user', content: content },
         ],
         temperature: 0.1,

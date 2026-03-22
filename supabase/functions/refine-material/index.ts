@@ -30,17 +30,19 @@ Deno.serve(async (req) => {
       ? `You are an expert consultant refining a professional "${assetName || 'document'}" HTML document.
 
 RULES:
-- Output the COMPLETE modified HTML file, starting with <!DOCTYPE html> (or the opening tag) and ending with </html>
+- Output the COMPLETE modified HTML file, starting with <!DOCTYPE html> and ending with </html>
 - Keep all existing content and styling unless explicitly asked to change it
 - Maintain the self-contained nature (all CSS embedded)
 - Apply the requested changes precisely
 - Do NOT add explanations or markdown fences — output ONLY the HTML
 - The document MUST fit on exactly one printed US Letter page (8.5x11in). Do NOT add content that would cause overflow.
-- NEVER use overflow: hidden, overflow: auto, or overflow: scroll on ANY text container (divs, sections, cards, frames). Only the outermost page wrapper may clip.
-- ALL text containers MUST use height: auto and overflow: visible. NEVER use fixed height or max-height on text elements.
+- RADICAL SIMPLICITY: MAX 3 body sections. Single-column or two-column 60/40 only. No framed cards or bordered boxes.
+- CONTENT BREVITY: MAX 50 words per paragraph, MAX 3-4 bullets per section (10 words each), MAX 4 table rows.
+- NEVER use overflow: hidden, overflow: auto, or overflow: scroll on ANY text container.
+- ALL text containers MUST use height: auto and overflow: visible.
 - NEVER use position: absolute or position: fixed on any element.
 - NEVER use font sizes smaller than 9pt.
-- Maximum 5 content sections. If adding content, condense or merge existing sections to maintain the one-page constraint.`
+- If adding content, remove or merge existing sections to maintain the one-page constraint and 200-300 word target.`
       : `You are an expert career writer refining a professional ${assetName || 'cover letter'}.
 
 RULES:

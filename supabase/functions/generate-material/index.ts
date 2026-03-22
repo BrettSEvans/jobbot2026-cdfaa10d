@@ -1140,7 +1140,7 @@ Job Title: ${jobTitle || 'Unknown'}
 Competitors: ${(competitors || []).join(', ') || 'N/A'}
 Products: ${(products || []).join(', ') || 'N/A'}
 Customers: ${(customers || []).join(', ') || 'N/A'}
-${brandingSection}${bpSection}${existingPatternsSection}${variabilitySection}`;
+${brandingSection}${bpSection}${existingPatternsSection}${styleFamilySection}`;
 
     const response = await aiFetchWithRetry(LOVABLE_API_KEY, {
       model: 'google/gemini-2.5-flash',

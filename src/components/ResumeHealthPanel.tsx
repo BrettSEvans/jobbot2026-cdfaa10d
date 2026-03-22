@@ -205,17 +205,11 @@ export default function ResumeHealthPanel({
     }
   }, [resumeHtml, jobDescription, toast]);
 
-  // Auto-trigger on mount — skip if cache hit
+  // Auto-trigger ONLY the instant format check on mount.
+  // Keyword analysis and bullet coaching are AI calls — only run when the user
+  // explicitly clicks the section's re-run (↻) button.
   useEffect(() => {
-    const hasCachedData = cached !== null;
-
-    if (!hasCachedData) {
-      runFormatCheck();
-      if (jobDescription && jobDescription.length >= 50) {
-        runKeywordAnalysis();
-        runBulletAnalysis();
-      }
-    } else {
+    if (cached) {
       // Restore collapse state from cached scores
       if (cached.kwResult && cached.kwResult.matchPercent < 80) setKwOpen(true);
       if (cached.formatResult && cached.formatResult.score < 80) setFmtOpen(true);
@@ -223,6 +217,8 @@ export default function ResumeHealthPanel({
         const bs = Math.round((cached.bullets.filter(b => b.strength === "strong").length / cached.bullets.length) * 100);
         if (bs < 80) setBulletOpen(true);
       }
+    } else {
+      runFormatCheck();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

@@ -45,5 +45,17 @@ export async function scoreDesignVariability(
 }
 
 export function getCachedVariability(app: any): VariabilityResult | null {
-  return app?.design_variability ?? null;
+  const cached = app?.design_variability;
+  if (!cached) return null;
+  return {
+    overallScore: cached.overallScore ?? 0,
+    brandingScore: cached.brandingScore ?? 0,
+    storytellingScore: cached.storytellingScore ?? 0,
+    styleScore: cached.styleScore ?? 0,
+    pairwiseScores: cached.pairwiseScores ?? [],
+    structuralPatterns: cached.structuralPatterns ?? [],
+    narrativePatterns: cached.narrativePatterns ?? [],
+    contentFlowPatterns: cached.contentFlowPatterns ?? [],
+    recommendations: cached.recommendations ?? [],
+  };
 }

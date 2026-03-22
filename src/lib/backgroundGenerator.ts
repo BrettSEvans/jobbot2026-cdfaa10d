@@ -367,7 +367,7 @@ class BackgroundGenerationManager {
                     'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
                     'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
                   },
-                  body: JSON.stringify({
+                    body: JSON.stringify({
                     assetName: asset.name,
                     assetDescription: asset.brief_description,
                     jobDescription: markdown,
@@ -377,6 +377,7 @@ class BackgroundGenerationManager {
                     products,
                     customers,
                     applicationId: appId,
+                    applicationCreatedAt: new Date().toISOString(),
                   }),
                 }
               );

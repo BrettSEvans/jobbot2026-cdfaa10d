@@ -623,7 +623,7 @@ export default function DynamicMaterialsSection({
                   </Button>
                 </>
               )}
-              {asset.downloaded_at && (
+              {asset.downloaded_at && !isAdmin && (
                 <Badge variant="secondary" className="text-xs">🔒 Downloaded — locked</Badge>
               )}
               {asset.html && (

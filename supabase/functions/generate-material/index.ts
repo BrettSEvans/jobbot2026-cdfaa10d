@@ -103,22 +103,42 @@ function enforceOnePageLayout(html: string): string {
     font-size: 10pt;
     line-height: 1.3;
   }
+  /* Reset ALL AI-generated height/overflow/position conflicts */
+  body > * {
+    height: auto !important;
+    max-height: none !important;
+  }
   body > .page-shell {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    padding: 0.35in 0.5in 0.32in;
-    gap: 0;
+    width: 100% !important;
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    padding: 0.4in 0.5in 0.32in !important;
+    gap: 0 !important;
   }
   .page-content {
-    flex: 1 1 auto;
-    min-height: 0;
-    overflow: hidden;
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+  }
+  /* Kill ALL overflow:auto/scroll inside page-content */
+  .page-content *,
+  .page-content *::before,
+  .page-content *::after {
+    overflow: hidden !important;
+    overflow-x: hidden !important;
+    overflow-y: hidden !important;
+  }
+  /* Strip absolute/fixed positioning on footers */
+  footer, .page-footer, [class*="footer"] {
+    position: static !important;
+    bottom: auto !important;
+    left: auto !important;
+    right: auto !important;
   }
   .page-footer {
-    flex: 0 0 auto;
+    flex: 0 0 auto !important;
     margin-top: 0.14in;
     padding-top: 0.12in;
     border-top: 1px solid rgba(0,0,0,0.18);
@@ -146,9 +166,6 @@ function enforceOnePageLayout(html: string): string {
   .page-content .page-wrapper {
     min-height: 0 !important;
     max-height: none !important;
-  }
-  .page-content .container,
-  .page-content .page-wrapper {
     height: auto !important;
   }
   .page-content h1,
@@ -215,6 +232,77 @@ function enforceOnePageLayout(html: string): string {
   ${safeBody}
 </body>
 </html>`;
+}
+
+// --- Overflow detection and auto-condensation ---
+async function detectAndCondense(
+  html: string,
+  assetName: string,
+  LOVABLE_API_KEY: string,
+): Promise<{ html: string; condensed: boolean }> {
+  try {
+    const checkResp = await aiFetchWithRetry(LOVABLE_API_KEY, {
+      model: 'google/gemini-2.5-flash',
+      messages: [
+        {
+          role: 'system',
+          content: `You are an expert layout auditor for one-page printed documents (US Letter 8.5×11in with 0.4in top/bottom and 0.5in side padding). The usable area is approximately 10.2in tall × 7.5in wide.
+
+Evaluate whether the HTML content below fits on ONE page without overflow.
+
+Consider:
+- Number of sections and their content density
+- Font sizes (body should be 9-11pt)
+- Tables, lists, grids — estimate vertical space consumed
+- Header height, footer height
+- Multi-column layouts reduce vertical need
+
+If the content FITS on one page: respond with exactly "FITS_OK" (nothing else).
+
+If it OVERFLOWS: return a CONDENSED version of the full HTML document that fits on one page. Rules for condensing:
+- Use font size 9pt or larger (never smaller than 9pt)
+- If reducing font to 9pt still overflows, TRIM content: reduce bullet counts, merge sections, drop lower-priority details
+- Keep the document professionally complete — it should not look cut off
+- Keep the same visual style, colors, and branding
+- The content should conclude logically and visibly — no hidden or clipped sections
+- Maximum 5 content sections
+- NEVER use overflow: auto/scroll on any element
+- Return ONLY the HTML, no explanations or markdown fences`,
+        },
+        {
+          role: 'user',
+          content: `Document: "${assetName}"\n\nHTML:\n${html}`,
+        },
+      ],
+      temperature: 0.2,
+      max_tokens: 6000,
+    });
+
+    if (!checkResp.ok) {
+      console.warn('Overflow check failed with status:', checkResp.status);
+      return { html, condensed: false };
+    }
+
+    const checkData = await checkResp.json();
+    const result = (checkData.choices?.[0]?.message?.content || '').trim();
+
+    if (result === 'FITS_OK' || result.startsWith('FITS_OK')) {
+      return { html, condensed: false };
+    }
+
+    // AI returned condensed HTML — run it through enforceOnePageLayout
+    let condensed = result.replace(/^```html?\n?/i, '').replace(/\n?```$/i, '').trim();
+    if (condensed.length > 200) {
+      condensed = enforceOnePageLayout(condensed);
+      console.log('Overflow detected — condensed version applied');
+      return { html: condensed, condensed: true };
+    }
+
+    return { html, condensed: false };
+  } catch (e) {
+    console.warn('Overflow detection error:', e);
+    return { html, condensed: false };
+  }
 }
 
 async function getBestPractices(
@@ -430,18 +518,22 @@ DATE CONTEXT: The application date is ${anchorStr}. Use this as your temporal an
 OUTPUT: Return a single self-contained HTML document with embedded CSS. The document MUST:
 - Fit on EXACTLY ONE printed page (US Letter 8.5" x 11"). This is a HARD constraint — no exceptions.
 - DO NOT generate more content than fits on a single page. If content risks overflow, condense aggressively, reduce bullet counts, shorten labels, and drop lower-priority details.
+- NEVER use more than 5 content sections. If the document type demands more, merge sections.
 - Reserve space for a footer when one is present. The footer must NEVER cover content.
-- Use compact but readable font sizes (8.5-9.5pt body, 11-13pt headings)
+- Titles must have at minimum 0.1in of clear space above them. Never position content at the very edge of the page.
+- Use compact but readable font sizes (9-10pt body, 11-13pt headings). NEVER use font sizes smaller than 9pt.
+- NEVER use overflow: auto, overflow: scroll, overflow-y: auto, or overflow-x: auto on ANY element. All content must be statically laid out.
+- NEVER use position: absolute or position: fixed on footers or any page-level container.
 - Use this EXACT structure to prevent footer overlap: <body><div class="page-wrapper"><div class="page-content">...main content...</div><footer>...footer...</footer></div></body>
 - Use this EXACT CSS layout pattern to prevent footer from covering content:
   @page { size: letter; margin: 0; }
   html, body { width: 8.5in; height: 11in; margin: 0; padding: 0; overflow: hidden; }
-  .page-wrapper { width: 100%; height: 100%; display: flex; flex-direction: column; padding: 0.35in 0.5in; box-sizing: border-box; }
+  .page-wrapper { width: 100%; height: 100%; display: flex; flex-direction: column; padding: 0.4in 0.5in; box-sizing: border-box; }
   .page-content { flex: 1; min-height: 0; overflow: hidden; }
   footer, .page-footer { flex-shrink: 0; padding-top: 0.15in; border-top: 1px solid #ccc; font-size: 8pt; }
 - The footer MUST be inside the flex wrapper, NOT position:absolute. This ensures the main content area automatically shrinks to accommodate the footer.
 - Never put height: calc(...) on the main content container to guess footer space.
-- The usable content area is approximately 9.4in tall × 7.5in wide after padding and footer reserve. Plan content to fill 85-90% of this.
+- The usable content area is approximately 9.2in tall × 7.5in wide after padding and footer reserve. Plan content to fill 85-90% of this.
 - Keep to 3-5 sections maximum. Each section should be concise (2-4 bullet points or compact table rows).
 - Use multi-column layouts (CSS grid/flexbox) WITHIN .page-content to maximize horizontal space
 - Be professional, clean, and printable
@@ -463,7 +555,7 @@ ${bpSection}${existingPatternsSection}${variabilitySection}`;
         { role: 'user', content: `Job Description:\n${(jobDescription || '').slice(0, 6000)}\n\nGenerate the "${assetName}" HTML document now.` },
       ],
       temperature: 0.5,
-      max_tokens: 8000,
+      max_tokens: 6000,
     });
 
     if (!response.ok) {
@@ -478,9 +570,13 @@ ${bpSection}${existingPatternsSection}${variabilitySection}`;
     }
 
     const data = await response.json();
-    const content = enforceOnePageLayout(data.choices?.[0]?.message?.content || '');
+    let content = enforceOnePageLayout(data.choices?.[0]?.message?.content || '');
 
-    return new Response(JSON.stringify({ success: true, html: content }), {
+    // Auto-retry: detect overflow and condense if needed
+    const { html: finalHtml, condensed } = await detectAndCondense(content, assetName, LOVABLE_API_KEY);
+    content = finalHtml;
+
+    return new Response(JSON.stringify({ success: true, html: content, condensation_applied: condensed }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (e) {

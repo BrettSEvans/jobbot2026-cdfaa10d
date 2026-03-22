@@ -1,4 +1,4 @@
-import { useState, useEffect, RefObject } from "react";
+import { useState, useEffect, useRef, useCallback, RefObject } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -80,7 +80,69 @@ function downloadHtmlFile(html: string, filename: string) {
   URL.revokeObjectURL(url);
 }
 
-/** Print-to-PDF via hidden iframe for materials */
+/** Inject one-page guard CSS into HTML for vibe-edited content */
+function injectOnePageGuard(html: string): string {
+  if (html.includes('lovable-one-page-guard')) return html;
+  const guardCss = `<style id="lovable-one-page-guard">
+  @page { size: letter; margin: 0; }
+  * { box-sizing: border-box; }
+  html, body { width: 8.5in !important; height: 11in !important; margin: 0 !important; padding: 0 !important; overflow: hidden !important; }
+  body > * { height: auto !important; max-height: none !important; }
+  .page-shell { width: 100% !important; height: 100% !important; display: flex !important; flex-direction: column !important; overflow: hidden !important; padding: 0.4in 0.5in 0.32in !important; }
+  .page-content { flex: 1 1 auto !important; min-height: 0 !important; overflow: hidden !important; }
+  .page-content * { overflow: hidden !important; }
+  .page-footer { flex: 0 0 auto !important; position: static !important; }
+  footer, [class*="footer"] { position: static !important; }
+</style>`;
+  return html.replace('</head>', `${guardCss}\n</head>`);
+}
+
+/** Fit-to-page preview: scales iframe to show full US Letter page without scrolling */
+function FitPagePreview({ html, title }: { html: string; title: string }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+
+  const PAGE_W = 816; // 8.5in @ 96dpi
+  const PAGE_H = 1056; // 11in @ 96dpi
+
+  const updateScale = useCallback(() => {
+    if (containerRef.current) {
+      const containerWidth = containerRef.current.clientWidth;
+      setScale(Math.min(containerWidth / PAGE_W, 1));
+    }
+  }, []);
+
+  useEffect(() => {
+    updateScale();
+    const obs = new ResizeObserver(updateScale);
+    if (containerRef.current) obs.observe(containerRef.current);
+    return () => obs.disconnect();
+  }, [updateScale]);
+
+  return (
+    <Card className="overflow-hidden border">
+      <div ref={containerRef} className="w-full bg-white" style={{ height: `${PAGE_H * scale}px`, overflow: 'hidden', position: 'relative' }}>
+        <iframe
+          srcDoc={html}
+          className="border-0"
+          style={{
+            width: `${PAGE_W}px`,
+            height: `${PAGE_H}px`,
+            transform: `scale(${scale})`,
+            transformOrigin: 'top left',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+          }}
+          sandbox="allow-scripts"
+          title={title}
+        />
+      </div>
+    </Card>
+  );
+}
+
+
 function downloadMaterialPdf(html: string, _filename: string) {
   const printCss = `
     <style>
@@ -439,8 +501,10 @@ export default function DynamicMaterialsSection({
           if (htmlEnd !== -1) cleaned = cleaned.slice(0, htmlEnd + 7);
 
           if (cleaned) {
-            await supabase.from("generated_assets").update({ html: cleaned }).eq("id", assetId);
-            setGeneratedAssets(prev => prev.map(a => a.id === assetId ? { ...a, html: cleaned } : a));
+            // Inject one-page guard CSS for vibe-edited content
+            const guardedHtml = injectOnePageGuard(cleaned);
+            await supabase.from("generated_assets").update({ html: guardedHtml }).eq("id", assetId);
+            setGeneratedAssets(prev => prev.map(a => a.id === assetId ? { ...a, html: guardedHtml } : a));
             setAssetChatHistory(prev => ({
               ...prev,
               [assetId]: [...(prev[assetId] || []), { role: 'assistant', content: '✅ Changes applied' }],
@@ -691,11 +755,7 @@ export default function DynamicMaterialsSection({
             )}
 
             {asset.generation_status === 'complete' && asset.html ? (
-            <Card className="overflow-auto border">
-                <div className="w-full bg-white" style={{ maxHeight: "80vh", overflow: "auto" }}>
-                  <iframe srcDoc={assetPreviewHtml[asset.id] || asset.html} className="w-full border-0" style={{ width: "100%", height: "1160px" }} sandbox="allow-scripts" title={asset.asset_name} />
-                </div>
-              </Card>
+              <FitPagePreview html={assetPreviewHtml[asset.id] || asset.html} title={asset.asset_name} />
             ) : asset.generation_status === 'generating' ? (
               <Card><CardContent className="py-12 text-center space-y-3">
                 <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
@@ -726,11 +786,7 @@ export default function DynamicMaterialsSection({
                   toast({ title: "Printing PDF" });
                 }}><Download className="mr-2 h-4 w-4" /> Download PDF</Button>
               </div>
-              <Card className="overflow-hidden">
-                <div className="w-full bg-white" style={{ height: "60vh" }}>
-                  <iframe srcDoc={legacy.html} className="w-full h-full border-0" sandbox="allow-scripts" title={legacy.name} />
-                </div>
-              </Card>
+              <FitPagePreview html={legacy.html} title={legacy.name} />
             </TabsContent>
           ))}
       </Tabs>

@@ -709,10 +709,11 @@ function deriveComplementaryColor(hexOrCss: string): string {
   return `#${rr.toString(16).padStart(2, '0')}${gg.toString(16).padStart(2, '0')}${bb.toString(16).padStart(2, '0')}`;
 }
 
-function buildStyleFamilies(brandColors: string[]): StyleFamily[] {
-  const primary = brandColors[0] || '#1a365d';
-  const secondary = brandColors[1] || '#2d3748';
-  const accent = brandColors[2] || '#e53e3e';
+function buildStyleFamilies(brandColors: string[], colorRotation: number = 0): StyleFamily[] {
+  const len = brandColors.length;
+  const primary = len > 0 ? brandColors[colorRotation % len] : '#1a365d';
+  const secondary = len > 1 ? brandColors[(1 + colorRotation) % len] : '#2d3748';
+  const accent = len > 2 ? brandColors[(2 + colorRotation) % len] : '#e53e3e';
   const complementary = deriveComplementaryColor(primary);
 
   return [

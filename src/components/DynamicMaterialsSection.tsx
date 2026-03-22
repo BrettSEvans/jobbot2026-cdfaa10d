@@ -440,6 +440,8 @@ export default function DynamicMaterialsSection({
           applicationId,
           variabilityRecommendations: app?.design_variability?.recommendations || [],
           applicationCreatedAt: app?.created_at,
+          branding: app?.branding,
+          regenerationCount: 0,
         }),
       });
 
@@ -650,6 +652,16 @@ export default function DynamicMaterialsSection({
                         await saveGeneratedAssetRevision(applicationId, asset.id, asset.html, "Before regeneration");
                       } catch { /* non-critical */ }
 
+                      // Count existing revisions to pass regenerationCount
+                      let regenCount = 0;
+                      try {
+                        const { data: revisions } = await supabase
+                          .from("generated_asset_revisions")
+                          .select("id")
+                          .eq("asset_id", asset.id);
+                        regenCount = revisions?.length || 0;
+                      } catch { /* non-critical */ }
+
                       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-material`, {
                         method: 'POST',
                         headers: {
@@ -669,6 +681,8 @@ export default function DynamicMaterialsSection({
                           applicationId,
                           variabilityRecommendations: app?.design_variability?.recommendations || [],
                           applicationCreatedAt: app?.created_at,
+                          branding: app?.branding,
+                          regenerationCount: regenCount,
                         }),
                       });
                       if (resp.ok) {

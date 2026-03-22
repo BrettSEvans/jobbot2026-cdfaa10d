@@ -405,6 +405,7 @@ export default function AssetReviewCarousel() {
             <SelectItem value="all">All</SelectItem>
             <SelectItem value="unreviewed">Unreviewed</SelectItem>
             <SelectItem value="up">👍 Approved</SelectItem>
+            <SelectItem value="mid">⚖️ Mid</SelectItem>
             <SelectItem value="down">👎 Rejected</SelectItem>
           </SelectContent>
         </Select>

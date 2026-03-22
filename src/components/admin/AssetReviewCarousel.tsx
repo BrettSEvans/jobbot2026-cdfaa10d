@@ -147,8 +147,26 @@ function wrapCoverLetter(text: string): string {
     .join("")}</body></html>`;
 }
 
-type ReviewFilter = "all" | "unreviewed" | "up" | "down";
+type ReviewFilter = "all" | "unreviewed" | "up" | "mid" | "down";
 type TypeFilter = "all" | string;
+
+/** For "mid" ratings we store JSON { pros, cons } in the notes field */
+function parseMidNotes(raw: string | null): { pros: string; cons: string } {
+  if (!raw) return { pros: "", cons: "" };
+  try {
+    const parsed = JSON.parse(raw);
+    if (typeof parsed === "object" && parsed !== null) {
+      return { pros: parsed.pros ?? "", cons: parsed.cons ?? "" };
+    }
+  } catch {
+    // not JSON — legacy plain text
+  }
+  return { pros: "", cons: "" };
+}
+
+function serializeMidNotes(pros: string, cons: string): string {
+  return JSON.stringify({ pros, cons });
+}
 
 export default function AssetReviewCarousel() {
   const { user } = useAuth();
@@ -157,7 +175,9 @@ export default function AssetReviewCarousel() {
   const { data: reviews } = useAssetReviews();
   const [idx, setIdx] = useState(0);
   const [notes, setNotes] = useState("");
-  const [pendingRating, setPendingRating] = useState<"up" | "down" | null>(null);
+  const [midPros, setMidPros] = useState("");
+  const [midCons, setMidCons] = useState("");
+  const [pendingRating, setPendingRating] = useState<RatingValue | null>(null);
   const [reviewFilter, setReviewFilter] = useState<ReviewFilter>("all");
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
 

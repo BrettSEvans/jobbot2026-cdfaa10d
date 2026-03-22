@@ -1,38 +1,31 @@
 
 
-## Plan: Fix frame overlap, sparse content, and color repetition in materials
+## Plan: Enhance Asset Review Carousel — Full Material Coverage + Multi-Select Filter
 
-### Problems identified
+### Problem
+1. **Missing granularity**: All `generated_assets` are lumped under one "Custom Material" filter option, so you can't filter by individual dynamic material types (e.g., "90-Day Plan", "Stakeholder Map", etc.)
+2. **Single-select type filter**: Can only view one asset type at a time — need multi-select to compare across types
 
-1. **Frame overlap bugs**: The CSS guard forces `position: static !important` on ALL content elements and resets ALL margins to `0 / 0.08in`, breaking intended spacing between frames and sections.
-2. **Sparse content (10% fill)**: No detection or fix for documents that are too empty — only density (too much) triggers condensation.
-3. **Same colors on every regeneration**: `buildStyleFamilies` always maps `brandColors[0]` → primary, `brandColors[1]` → secondary. Different families get different layouts but identical color assignments.
-4. **`data-style-family` not reliably injected**: Relies on AI prompt compliance; needs programmatic fallback.
+### Changes (single file: `src/components/admin/AssetReviewCarousel.tsx`)
 
-### Changes
+**1. Use individual `asset_name` values as filter keys for generated assets**
+- Instead of mapping all generated_assets to `"generated_asset"` in the type filter, derive the filter key from `asset_name` for generated assets (e.g., `"generated_asset::90-Day Plan"`)
+- Update `ASSET_TYPE_LABELS` dynamically from the actual asset names found in the data
+- This ensures every unique material type appears as its own filterable option
 
-#### 1. Fix CSS guard overlap issues (`enforceOnePageLayout`)
-- Remove `margin-top: 0 !important; margin-bottom: 0.08in !important` from ALL divs/sections — this strips intended spacing and causes frames to collapse together
-- Keep `position: static` only for `absolute/fixed` elements; allow `relative` positioning universally (current regex allowlist is too narrow)
-- Remove the blanket `overflow: visible !important` on `.page-content *` — it fights with table cells and sidebar containers. Instead, only override `overflow: hidden` to `visible` on text-specific elements (p, h1-h6, li, span, blockquote)
+**2. Replace single-select type filter with multi-select toggle chips**
+- Remove the `Select` dropdown for asset type
+- Replace with a row of clickable `Badge`/`Button` chips — one per asset type found in the data
+- Clicking a chip toggles it on/off; multiple can be active simultaneously
+- An "All" chip selects/deselects everything
+- Store selected types as a `Set<string>` instead of a single string
 
-#### 2. Add sparse content detection + expansion pass
-After generation and density check, count stripped text characters. If `< 1500 chars` or `< 2 sections`, trigger an expansion prompt asking the AI to:
-- Add content to reach 80-85% page fill
-- Add 1-2 more bullet points per section
-- Expand short paragraphs to 2 sentences
-- Keep the same layout and style family
+**3. Keep review status filter as single-select** (mutually exclusive states — makes sense as-is)
 
-#### 3. Rotate colors across families and regenerations
-- Change `buildStyleFamilies` to accept a `colorRotation: number` parameter
-- Rotate the color array: `colors[(0 + rotation) % len]` → primary, etc.
-- For initial generation: `colorRotation = assetIndex` (0, 1, 2 for each sibling)
-- For regeneration: `colorRotation = regenerationCount`
-- This ensures each material AND each regeneration uses a different primary color from the brand palette
-
-#### 4. Force-inject `data-style-family` attribute
-After `enforceOnePageLayout`, programmatically check if `<body` tag contains `data-style-family`. If not, inject it using string replacement on the `<body` tag.
-
-### Files to modify
-- `supabase/functions/generate-material/index.ts` — all 4 changes above
+### Technical Details
+- `typeFilter` state changes from `string` to `Set<string>`
+- Filter logic: if set is empty or contains all types, show everything; otherwise filter to matching types
+- Generated assets use `assetType` = `"generated_asset::${asset_name}"` for filtering but keep `"generated_asset"` for the `needsScripts` check and review key compatibility
+- Add a `filterType` field to `FlatAsset` to separate display filtering from the persisted `assetType`
+- Chips use `variant="default"` when selected, `variant="outline"` when not
 

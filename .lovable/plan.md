@@ -1,34 +1,105 @@
 
+## Plan: Enforce one-page best practices across all materials
 
-# Fix Resume Left Margin + Enhance WYSIWYG Editor
+### What I found
+- The current best-practices research prompt is still too open-ended and asks for “comprehensive” guidance, which encourages verbose output.
+- `generate-material` then injects that full `best_practices` text directly into the generation prompt, so overly long research becomes overly long documents.
+- The cached `asset_best_practices` records are already populated, so even if generation rules improved, old verbose guidance can keep affecting new runs.
+- The review step mainly fixes HTML after generation; it does not strongly reduce content early enough when the design budget is already blown.
 
-## 1. Fix resume preview left margin (`src/pages/ApplicationDetail.tsx`)
+## Implementation plan
 
-Add horizontal padding (`px-4`) to the `ResumePagePreview` wrapper `Card` so the scaled iframe has visible margin on left and right sides.
+### 1. Replace verbose best practices with a strict one-page rubric
+Update both best-practice generators so they produce compact, structured guidance specifically for one-page printable materials.
 
-## 2. Enhance InlineHtmlEditor with new toolbar features (`src/components/InlineHtmlEditor.tsx`)
+Files:
+- `supabase/functions/research-asset-best-practices/index.ts`
+- `supabase/functions/generate-material/index.ts`
 
-All features use the existing iframe `document.execCommand` API — no new libraries needed.
+Changes:
+- Rewrite the research prompt to require:
+  - max 3-4 body sections
+  - max content budgets per section
+  - preferred simple layouts only
+  - banned patterns that cause overlap
+  - one-page spacing / footer / header rules
+  - concise “do / avoid / content budget / layout pattern” format
+- Make winning-pattern extraction prefer:
+  - simple section flow
+  - short tables / bullets
+  - low-complexity layouts
+  - no dense dashboards / swimlanes / layered graphics
 
-**New toolbar groups to add:**
+### 2. Normalize best practices before they reach generation
+Do not pass raw long-form research directly into the material prompt.
 
-- **Font family picker** — `<select>` dropdown with common fonts (Arial, Times New Roman, Georgia, Courier New, Verdana, Tahoma). Uses `execCommand("fontName", false, fontName)`.
+File:
+- `supabase/functions/generate-material/index.ts`
 
-- **Font size picker** — `<select>` dropdown with sizes 1–7 (browser scale). Uses `execCommand("fontSize", false, size)`.
+Changes:
+- Add a normalization step that compresses cached best practices into a short “generation rubric” such as:
+  - allowed layouts
+  - maximum sections
+  - max bullets / words / rows
+  - banned patterns
+  - required whitespace and footer reserve
+- Pass only that compact rubric into the final generation prompt.
 
-- **Text color** — Color `<input type="color">` that calls `execCommand("foreColor", false, hex)`.
+### 3. Add a stricter content-budget system in generation
+Strengthen generation so the model writes for the page first, not just the topic.
 
-- **Highlight color** — Color `<input type="color">` that calls `execCommand("hiliteColor", false, hex)`.
+File:
+- `supabase/functions/generate-material/index.ts`
 
-- **Text alignment** — 4 buttons: Left, Center, Right, Justify. Uses `justifyLeft`, `justifyCenter`, `justifyRight`, `justifyFull`.
+Changes:
+- Define explicit page budgets by block type:
+  - header budget
+  - body section budget
+  - optional visual budget
+  - footer budget
+- Instruct the model to choose a simpler pattern whenever content is dense.
+- Reduce allowed verbosity another step beyond the current limits.
+- Prefer general, role-relevant phrasing over detailed narrative when space is tight.
 
-- **Insert link** — Button that prompts for URL via `window.prompt`, calls `execCommand("createLink", false, url)`.
+### 4. Add a fallback “condense and simplify” retry
+If the first result still appears too dense, retry generation with a simplified pattern instead of relying only on HTML repair.
 
-- **Indent / Outdent** — Two buttons using `execCommand("indent")` and `execCommand("outdent")`.
+File:
+- `supabase/functions/generate-material/index.ts`
 
-**Toolbar layout:** Group buttons logically with separators between groups. Font/size selectors use compact `<select>` elements styled to match the toolbar. Color inputs use small color swatches. The toolbar wraps naturally on narrow screens.
+Changes:
+- After first-pass generation/review, detect risky output signals such as:
+  - too many sections
+  - too many bullets / rows
+  - too much text volume
+  - layout types known to overflow
+- If detected, run one regeneration pass using a forced simplified template family:
+  - clean single-column brief
+  - compact two-column 60/40
+  - short table + bullets
+- Only then run final review/QA.
 
-### Files to modify
-- `src/pages/ApplicationDetail.tsx` — add padding to `ResumePagePreview`
-- `src/components/InlineHtmlEditor.tsx` — add new toolbar controls
+### 5. Refresh all cached best practices
+Backfill the existing `asset_best_practices` rows so all current asset types start using one-page-safe guidance.
 
+Uses existing table:
+- `public.asset_best_practices`
+
+Changes:
+- Rebuild each cached asset type with the new rubric prompt.
+- Keep the same table; no schema change needed.
+- This ensures previously cached verbose guidance no longer contaminates future generations.
+
+## Technical notes
+- No database schema changes are required.
+- The main root cause is prompt/data shape, not storage design.
+- The two places that must stay aligned are:
+  - `research-asset-best-practices` (cache creation)
+  - `generate-material` (cache consumption + final generation)
+- The safest direction is to make best practices more general and constraint-driven, not more descriptive.
+
+## Expected outcome
+- New and cached best practices will both enforce the one-page standard.
+- Materials will use simpler, more reliable layouts.
+- Text blocks will be shorter and more general when necessary.
+- Overflow, clipping, and frame-collision bugs should drop significantly because the content budget is constrained before HTML is generated.

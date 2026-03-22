@@ -151,7 +151,12 @@ function wrapCoverLetter(text: string): string {
 }
 
 type ReviewFilter = "all" | "unreviewed" | "up" | "mid" | "down";
-type TypeFilter = "all" | string;
+
+function filterLabel(ft: string): string {
+  if (ASSET_TYPE_LABELS[ft]) return ASSET_TYPE_LABELS[ft];
+  if (ft.startsWith("generated_asset::")) return ft.replace("generated_asset::", "");
+  return ft;
+}
 
 /** For "mid" ratings we store JSON { pros, cons } in the notes field */
 function parseMidNotes(raw: string | null): { pros: string; cons: string } {

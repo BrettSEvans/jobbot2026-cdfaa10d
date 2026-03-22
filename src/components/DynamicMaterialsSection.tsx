@@ -91,6 +91,11 @@ function injectOnePageGuard(html: string): string {
   .page-shell { width: 100% !important; height: 100% !important; display: flex !important; flex-direction: column !important; overflow: hidden !important; padding: 0.4in 0.5in 0.32in !important; }
   .page-content { flex: 1 1 auto !important; min-height: 0 !important; overflow: hidden !important; }
   .page-content * { overflow: hidden !important; }
+  .page-content *:not(svg *) { position: static !important; top: auto !important; left: auto !important; right: auto !important; bottom: auto !important; transform: none !important; }
+  .page-content [style*="position: relative"], .page-content [style*="position:relative"] { position: relative !important; }
+  .page-content header, .page-content .header, .page-content [class*="header"], .page-content [class*="banner"] { position: relative !important; overflow: hidden !important; width: 100% !important; }
+  .page-content header *, .page-content .header *, .page-content [class*="header"] * { position: static !important; max-width: 100% !important; word-wrap: break-word !important; }
+  .page-content div, .page-content section { margin-top: 0 !important; margin-bottom: 0.08in !important; }
   .page-footer { flex: 0 0 auto !important; position: static !important; }
   footer, [class*="footer"] { position: static !important; }
 </style>`;

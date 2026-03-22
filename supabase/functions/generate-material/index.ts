@@ -1209,9 +1209,44 @@ ${brandingSection}${bpSection}${existingPatternsSection}${styleFamilySection}`;
       }
     }
 
+    // Sparse content detection — if document is too empty, expand it
+    const isSparse = textLength < 1500 || sectionCount < 2;
+    if (isSparse && !isDense) {
+      console.log(`Sparse content detected: chars=${textLength}, sections=${sectionCount}. Running expansion pass.`);
+      const expandResp = await aiFetchWithRetry(LOVABLE_API_KEY, {
+        model: 'google/gemini-2.5-flash',
+        messages: [
+          { role: 'system', content: `You are a document editor. The following HTML document is TOO SPARSE — it only fills about 10-40% of a US Letter page. Expand it to fill 80-85% of the page:
+1. Add 1-2 more body sections (max 3 total) with relevant professional content
+2. Add 2-3 more bullet points per existing section
+3. Expand short paragraphs to 2 full sentences (but still max 50 words per paragraph)
+4. Add a relevant data element if none exists (metric cards, progress bars, or a small table)
+5. Keep the SAME style family, layout, colors, and fonts — just add more content
+6. NEVER use overflow:hidden on any text container
+7. Return ONLY the complete expanded HTML — no explanations, no markdown fences` },
+          { role: 'user', content: content },
+        ],
+        temperature: 0.3,
+        max_tokens: 4500,
+      });
+      if (expandResp.ok) {
+        const ed = await expandResp.json();
+        const expanded = (ed.choices?.[0]?.message?.content || '').trim();
+        if (expanded.length > content.length) {
+          content = enforceOnePageLayout(expanded);
+          console.log('Expansion applied successfully');
+        }
+      }
+    }
+
     // Review pipeline: combined UI + QA Review + deterministic audit
     const { html: finalHtml, reviewResults } = await reviewPipeline(content, assetName, LOVABLE_API_KEY);
     content = finalHtml;
+
+    // Force-inject data-style-family attribute if not present
+    if (!content.includes('data-style-family=')) {
+      content = content.replace(/<body([^>]*)>/, `<body$1 data-style-family="${selectedFamily.id}">`);
+    }
 
     return new Response(JSON.stringify({
       success: true,

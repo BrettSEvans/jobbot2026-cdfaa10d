@@ -1,19 +1,27 @@
 
-## Plan: Enforce simplicity across all materials + collapsible variability card
+## Plan: 6 Style Families with premium design guidance
 
 ### Status: IMPLEMENTED ✅
 
 ### What was done
 
-1. **Tightened density thresholds** — Sections: 5→4, Bullets: 25→16, Table rows: 8→5, Chars: 4000→3000
-2. **Strengthened generation prompt** — Max 3 body sections, 3-4 bullets/section, 50-word paragraph cap, 80-85% page fill target, banned framed/boxed containers for plan/template docs
-3. **Tightened condensation pass** — Max 3 sections, 3-4 bullets, 3-4 table rows, removes framed containers
-4. **Updated best-practices research rubric** — Both inline (generate-material) and standalone (research-asset-best-practices) now enforce max 3 sections, stricter budgets
-5. **Made DesignVariabilityCard collapsible** — Wrapped in Collapsible component, starts collapsed, shows score badge in header
-6. **Updated refine-material** — Same 3-section, 50-word, no-frames rules
+1. **Defined 6 distinct style families** in `generate-material/index.ts`:
+   - **A — Executive Bold**: Full-width dark banner, metric cards, Montserrat+Lato
+   - **B — Modern Split**: 60/40 sidebar, quick-facts, Bebas Neue+Roboto
+   - **C — Clean Contrast**: Alternating bands, pull-quote, complementary color scheme, Playfair+Garamond
+   - **D — Data Storyteller**: Styled HTML table (3-4 rows), Montserrat+DM Sans
+   - **E — Visual Metrics**: CSS progress bars/donut charts, Bebas Neue+Lato
+   - **F — Editorial Minimal**: Magazine-style narrow column, large pull-quote, Playfair+Source Sans
+
+2. **Best-fit family selection** — classifies asset type (analytical-table, analytical-chart, strategic, communication, report, general) and maps to preferred families, excluding siblings' used families
+
+3. **Forced family switch on 2+ regenerations** — client passes `regenerationCount`, edge function excludes current family when count ≥ 2
+
+4. **Premium design rules** injected per family — 60-30-10 color rule, specific typography pairings, signature visual elements, narrative angles, white space guidance
+
+5. **Client updates** — `DynamicMaterialsSection.tsx` counts revisions and passes `regenerationCount`; `backgroundGenerator.ts` passes `regenerationCount: 0` on initial generation
 
 ### Files changed
-- `supabase/functions/generate-material/index.ts` — thresholds, prompts, condensation
-- `supabase/functions/refine-material/index.ts` — prompt update
-- `supabase/functions/research-asset-best-practices/index.ts` — rubric limits
-- `src/components/admin/DesignVariabilityCard.tsx` — collapsible UI
+- `supabase/functions/generate-material/index.ts` — style family definitions, selection logic, prompt injection
+- `src/components/DynamicMaterialsSection.tsx` — regeneration count tracking
+- `src/lib/backgroundGenerator.ts` — pass regenerationCount on initial generation

@@ -144,6 +144,50 @@ export type Database = {
           },
         ]
       }
+      asset_reviews: {
+        Row: {
+          application_id: string
+          asset_id: string | null
+          asset_type: string
+          created_at: string
+          id: string
+          notes: string | null
+          rating: string
+          reviewer_id: string
+          updated_at: string
+        }
+        Insert: {
+          application_id: string
+          asset_id?: string | null
+          asset_type: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          rating?: string
+          reviewer_id: string
+          updated_at?: string
+        }
+        Update: {
+          application_id?: string
+          asset_id?: string | null
+          asset_type?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          rating?: string
+          reviewer_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_reviews_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "job_applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       blocked_scrape_sites: {
         Row: {
           blocked_at: string

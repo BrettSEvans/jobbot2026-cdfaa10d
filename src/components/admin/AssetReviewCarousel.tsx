@@ -447,10 +447,10 @@ export default function AssetReviewCarousel() {
             </div>
             {currentReview && (
               <Badge
-                variant={currentReview.rating === "up" ? "default" : "destructive"}
+                variant={currentReview.rating === "up" ? "default" : currentReview.rating === "mid" ? "secondary" : "destructive"}
                 className="text-[10px]"
               >
-                {currentReview.rating === "up" ? "👍 Approved" : "👎 Rejected"}
+                {currentReview.rating === "up" ? "👍 Approved" : currentReview.rating === "mid" ? "⚖️ Mid" : "👎 Rejected"}
               </Badge>
             )}
           </div>

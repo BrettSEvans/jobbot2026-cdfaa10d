@@ -315,7 +315,7 @@ ${bpSection}${existingPatternsSection}${variabilitySection}`;
     if (htmlEnd !== -1) content = content.slice(0, htmlEnd + 7);
 
     // Inject hard one-page constraint CSS to guarantee single-page output
-    const onePageCss = `<style>@page{size:letter;margin:0}html,body{width:8.5in;max-height:10in;overflow:hidden;box-sizing:border-box}</style>`;
+    const onePageCss = `<style>@page{size:letter;margin:0}html,body{width:8.5in;height:11in;max-height:11in;overflow:hidden;margin:0;padding:0.35in 0.5in;box-sizing:border-box;position:relative}</style>`;
     if (content.includes('</head>')) {
       content = content.replace('</head>', `${onePageCss}</head>`);
     } else if (content.includes('<body')) {

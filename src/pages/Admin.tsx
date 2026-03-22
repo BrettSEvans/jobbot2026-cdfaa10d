@@ -14,26 +14,29 @@ import AssetReviewCarousel from "@/components/admin/AssetReviewCarousel";
 import { format } from "date-fns";
 
 function useAdminRole() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+
   return useQuery({
     queryKey: ["user_role_admin", user?.id],
-    enabled: !!user,
+    enabled: !!user && !loading,
     staleTime: 60_000,
     retry: 2,
     queryFn: async () => {
-      // Re-check session is valid before querying
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return false;
+      if (!session || !user) return false;
+
       const { data, error } = await supabase
         .from("user_roles")
         .select("role")
-        .eq("user_id", user!.id)
+        .eq("user_id", user.id)
         .eq("role", "admin")
         .maybeSingle();
+
       if (error) {
         console.error("Admin role check failed:", error.message);
         return false;
       }
+
       return !!data;
     },
   });

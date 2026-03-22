@@ -452,7 +452,13 @@ export default function AssetReviewCarousel() {
               <Badge>{current.assetName}</Badge>
               {current.companyName && (
                 <span className="flex items-center gap-1 text-xs text-muted-foreground truncate">
-                  <Building2 className="h-3 w-3 shrink-0" /> {current.companyName}
+                  <CompanyIcon
+                    companyName={current.companyName}
+                    companyUrl={current.companyUrl}
+                    iconUrl={current.companyIconUrl}
+                    size="sm"
+                  />
+                  {current.companyName}
                 </span>
               )}
               {current.jobTitle && (

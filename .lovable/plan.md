@@ -1,47 +1,63 @@
+# Fix Material Overflow, Preview, and Auto-Retry
 
+## Problems Identified
 
-# Add Style Variability Metric
+1. **Title text clipped at top** — padding in `.page-shell` is insufficient or AI-generated styles override it
+2. **Footer not visible / overlaps content** — AI-generated CSS conflicts with the enforced one-page guard styles (e.g., the AI sets its own `height`, `position`, or `overflow` on containers)
+3. **Scrollable frames inside documents** — the iframe preview container has `overflow: auto` and the iframe has a fixed `height: 1160px`, which allows scrolling instead of fitting to page
+4. **Content cut off at bottom** — AI generates too many sections; no post-generation overflow detection or auto-retry exists
+5. **No overflow detector** — content is saved even when it overflows
 
-## Overview
+## Plan
 
-Add a **style variability** dimension to the existing design variability scoring system. This metric specifically evaluates the **content flow pattern** of each document (e.g., "text block → chart → text block → bullet points" vs. "header → two-column grid → metrics cards → timeline") and penalizes documents that share similar content-block sequencing or layout formats (e.g., multiple documents using two-column format).
+### 1. Harden `enforceOnePageLayout` post-processor (`supabase/functions/generate-material/index.ts`)
 
-## Changes
+**Strip conflicting AI-generated styles more aggressively:**
 
-### 1. Update the scoring edge function prompt (`supabase/functions/score-design-variability/index.ts`)
+- Add CSS overrides in the one-page guard that reset common AI conflicts: `body > * { height: auto !important; }`, strip any `position: absolute/fixed` on footer-like elements, reset `overflow: scroll/auto` to `hidden` on all elements inside `.page-content`
+- Add `overflow: hidden !important` to ALL elements inside `.page-content` to prevent any scrollable regions
+- Increase top padding slightly to prevent title clipping (0.35in → 0.4in)
 
-Expand the AI evaluation criteria to include a dedicated **style variability** analysis:
-- **Content flow pattern**: Extract the sequence of content block types in each document (e.g., "header → paragraph → table → bullet list → chart")
-- **Column layout detection**: Identify whether documents use single-column, two-column, sidebar, or grid layouts
-- **Visual rhythm**: Assess spacing patterns, section density, and content block sizing
-- Add a new `styleScore` (0-100) to the JSON response schema
-- Add `contentFlowPatterns` array showing each document's detected flow sequence (e.g., `{ assetName: "...", flowPattern: "header → two-column-grid → metrics-cards → bullet-list", layoutType: "two-column" }`)
-- Include style-specific recommendations when documents share similar flow patterns
+### 2. Add overflow detection and auto-retry in the edge function (`supabase/functions/generate-material/index.ts`)
 
-### 2. Update TypeScript types (`src/lib/api/designVariability.ts`)
+After the AI generates HTML and `enforceOnePageLayout` processes it:
 
-Add to `VariabilityResult`:
-- `styleScore: number`
-- `contentFlowPatterns: Array<{ assetName: string; flowPattern: string; layoutType: string }>`
+- Send a **second AI call** asking: "Given this HTML document constrained to 8.5x11in with 0.4in padding, does the content likely overflow? Count the sections, estimate line counts, check for dense tables. If it overflows, return a condensed version that fits.  the condensed verion should use font size 9 or larger.  if the resize make sthe font smaller than 9, the content needs to be trimmed to fit. If it fits, return FITS_OK."
+- Parse the response: if the AI returns revised HTML, use the condensed version through `enforceOnePageLayout` again
+- Limit to 1 retry to avoid excessive API calls
+- Add a `condensation_applied` flag in the response so the frontend knows
 
-Map these from the edge function response.
+### 3. Strengthen the system prompt (`supabase/functions/generate-material/index.ts`)
 
-### 3. Update the UI card (`src/components/admin/DesignVariabilityCard.tsx`)
+- Add explicit rule: "NEVER use `overflow: auto`, `overflow: scroll`, or `overflow-y: auto` on any element. All content must be statically laid out."
+- Add: "NEVER use more than 5 content sections. If the document type demands more, merge sections."
+- Add: "Titles must have at minimum 0.1in of clear space above them. Never position content at the very edge of the page."
+- Reduce `max_tokens` from 8000 to 6000 to naturally limit content volume
 
-- Add the `styleScore` as a third metric alongside Variety and Branding
-- Display the content flow patterns section showing each document's detected pattern and layout type
-- Use color coding to highlight documents with similar patterns (indicating low variability)
+### 4. Fix iframe preview to "fit page" mode (`src/components/DynamicMaterialsSection.tsx`)
 
-### 4. Feed style patterns into generation (`supabase/functions/generate-material/index.ts`)
+Change the material preview from a scrollable iframe to a scaled-to-fit preview:
 
-Enhance the existing variability section in the generation prompt to include content flow awareness:
-- Extract the content block sequence from each existing asset (not just HTML tag hierarchy)
-- Tell the AI to use a different content flow pattern (e.g., if existing docs use "header → paragraph → table → bullets", the new doc should use "header → metrics grid → timeline → callout box")
-- Explicitly list layout types already used (two-column, single-column, sidebar) so the AI avoids repeating them
+- Replace the current `style={{ width: "100%", height: "1160px" }}` with a CSS transform approach:
+  - Set iframe to actual page dimensions (816px × 1056px = 8.5in × 11in at 96dpi)
+  - Use `transform: scale(X)` where X is calculated from container width / 816
+  - Set `overflow: hidden` on the container — no scrolling allowed
+- Remove `overflow: auto` from the Card wrapper
+- Apply same treatment to legacy asset iframes
+
+### 5. Apply one-page guard to Vibe Edit output (`src/components/DynamicMaterialsSection.tsx`)
+
+After the Vibe Edit streaming completes (line ~441), run the cleaned HTML through the same `enforceOnePageLayout` normalization. Since that function lives in the edge function, extract the CSS injection logic into a shared client-side utility or add the one-page guard CSS string injection in the `onDone` callback.
+
+### 6. Update `refine-material` prompt (`supabase/functions/refine-material/index.ts`)
+
+Add to the system prompt:
+
+- "The document MUST fit on exactly one printed US Letter page (8.5x11in). Do NOT add content that would cause overflow."
+- "NEVER use overflow: auto or overflow: scroll on any element."
 
 ### Files to modify
-- `supabase/functions/score-design-variability/index.ts` — expanded prompt with style analysis
-- `src/lib/api/designVariability.ts` — new type fields
-- `src/components/admin/DesignVariabilityCard.tsx` — display style score + flow patterns
-- `supabase/functions/generate-material/index.ts` — content flow awareness in generation prompt
 
+- `supabase/functions/generate-material/index.ts` — harden CSS, add overflow detector/auto-retry, strengthen prompt
+- `supabase/functions/refine-material/index.ts` — add one-page constraint to refine prompt
+- `src/components/DynamicMaterialsSection.tsx` — fit-page preview, client-side one-page guard for vibe edits

@@ -362,6 +362,9 @@ export default function AssetReviewCarousel() {
             <Badge variant="outline" className="gap-1 text-green-600 border-green-300">
               <ThumbsUp className="h-3 w-3" /> {upCount}
             </Badge>
+            <Badge variant="outline" className="gap-1 text-amber-600 border-amber-300">
+              <Scale className="h-3 w-3" /> {midCount}
+            </Badge>
             <Badge variant="outline" className="gap-1 text-red-600 border-red-300">
               <ThumbsDown className="h-3 w-3" /> {downCount}
             </Badge>

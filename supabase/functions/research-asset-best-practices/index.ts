@@ -57,13 +57,13 @@ Deno.serve(async (req) => {
 
 Output EXACTLY this format (keep each line short):
 
-SECTIONS (max 3-4):
+SECTIONS (max 3):
 - [section name]: [1-sentence purpose, max 15 words]
 
 CONTENT BUDGET:
 - Header: max 2 lines (title + subtitle)
-- Per section: max 4-5 bullets OR 1 short paragraph (2 sentences max)
-- Table rows: max 4-5 if used
+- Per section: max 3-4 bullets OR 1 short paragraph (2 sentences, 50 words max)
+- Table rows: max 3-4 if used
 - Footer: max 1 line
 
 ALLOWED LAYOUTS (pick ONE per document):
@@ -77,13 +77,14 @@ BANNED PATTERNS:
 - Nested grids deeper than 1 level
 - Absolute/fixed positioning on any element
 - Dense infographics or complex SVG charts
-- More than 4 content sections
+- More than 3 body sections
 - Paragraphs longer than 2 sentences
+- Framed/boxed section containers (use simple headers with underlines)
 
 VISUAL RULES:
 - Font: 9-10pt body, 11-13pt headings, 8pt footer
 - Spacing: 0.15in between sections minimum
-- Page fill target: 75-80% (leave breathing room)
+- Page fill target: 80-85% (look complete but not cramped)
 - One optional simple data element (progress bars, small table, or 3-4 metric cards)
 
 WHAT MAKES IT GREAT (max 3 bullets):

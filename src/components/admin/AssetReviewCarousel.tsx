@@ -534,12 +534,37 @@ export default function AssetReviewCarousel() {
 
           {/* Notes */}
           <div className="space-y-2">
-            <Textarea
-              placeholder="Add notes about this asset (layout issues, good patterns, color problems, etc.)..."
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              rows={3}
-            />
+            {pendingRating === "mid" ? (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-green-600">👍 Pros — What works well</label>
+                  <Textarea
+                    placeholder="Good layout, strong color palette, clear hierarchy..."
+                    value={midPros}
+                    onChange={(e) => setMidPros(e.target.value)}
+                    rows={3}
+                    className="border-green-200 focus-visible:ring-green-400"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-red-600">👎 Cons — Needs improvement</label>
+                  <Textarea
+                    placeholder="Font too small, chart labels overlap, spacing issues..."
+                    value={midCons}
+                    onChange={(e) => setMidCons(e.target.value)}
+                    rows={3}
+                    className="border-red-200 focus-visible:ring-red-400"
+                  />
+                </div>
+              </div>
+            ) : (
+              <Textarea
+                placeholder="Add notes about this asset (layout issues, good patterns, color problems, etc.)..."
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                rows={3}
+              />
+            )}
             <Button
               size="sm"
               variant="secondary"

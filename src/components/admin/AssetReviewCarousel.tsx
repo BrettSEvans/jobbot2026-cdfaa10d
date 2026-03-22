@@ -37,6 +37,8 @@ type FlatAsset = {
   jobTitle: string | null;
 };
 
+type RatingValue = "up" | "mid" | "down";
+
 const ASSET_TYPE_LABELS: Record<string, string> = {
   dashboard_html: "Dashboard",
   cover_letter: "Cover Letter",

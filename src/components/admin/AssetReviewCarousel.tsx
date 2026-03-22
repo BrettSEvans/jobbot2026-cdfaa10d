@@ -187,7 +187,7 @@ export default function AssetReviewCarousel() {
   const [midCons, setMidCons] = useState("");
   const [pendingRating, setPendingRating] = useState<RatingValue | null>(null);
   const [reviewFilter, setReviewFilter] = useState<ReviewFilter>("all");
-  const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
+  const [typeFilters, setTypeFilters] = useState<Set<string>>(new Set());
 
   // Build review map
   const reviewMap = useMemo(() => {

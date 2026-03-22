@@ -352,42 +352,59 @@ class BackgroundGenerationManager {
               generation_status: "generating",
             }).select().single();
 
-            const resp = await fetch(
-              `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-material`,
-              {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-                  'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-                },
-                body: JSON.stringify({
-                  assetName: asset.name,
-                  assetDescription: asset.brief_description,
-                  jobDescription: markdown,
-                  companyName,
-                  jobTitle,
-                  competitors,
-                  products,
-                  customers,
-                  applicationId: appId,
-                }),
-              }
-            );
+            // Add timeout to prevent hanging on slow/unresponsive edge functions
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 120_000); // 2 min timeout
 
-            if (resp.ok) {
-              const data = await resp.json();
-              if (data.html && assetRow) {
+            try {
+              const resp = await fetch(
+                `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-material`,
+                {
+                  method: 'POST',
+                  signal: controller.signal,
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+                    'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+                  },
+                  body: JSON.stringify({
+                    assetName: asset.name,
+                    assetDescription: asset.brief_description,
+                    jobDescription: markdown,
+                    companyName,
+                    jobTitle,
+                    competitors,
+                    products,
+                    customers,
+                    applicationId: appId,
+                  }),
+                }
+              );
+              clearTimeout(timeoutId);
+
+              if (resp.ok) {
+                const data = await resp.json();
+                if (data.html && assetRow) {
+                  await supabase.from("generated_assets").update({
+                    html: data.html,
+                    generation_status: "complete",
+                  }).eq("id", assetRow.id);
+                }
+              } else if (assetRow) {
                 await supabase.from("generated_assets").update({
-                  html: data.html,
-                  generation_status: "complete",
+                  generation_status: "error",
+                  generation_error: `HTTP ${resp.status}`,
                 }).eq("id", assetRow.id);
               }
-            } else if (assetRow) {
-              await supabase.from("generated_assets").update({
-                generation_status: "error",
-                generation_error: `HTTP ${resp.status}`,
-              }).eq("id", assetRow.id);
+            } catch (fetchErr: any) {
+              clearTimeout(timeoutId);
+              console.warn(`Material fetch timed out or failed for ${asset.name}:`, fetchErr.message);
+              if (assetRow) {
+                await supabase.from("generated_assets").update({
+                  generation_status: "error",
+                  generation_error: fetchErr.name === "AbortError" ? "Timed out after 2 minutes" : fetchErr.message,
+                }).eq("id", assetRow.id);
+              }
             }
           } catch (e) {
             console.warn(`Material generation failed for ${asset.name}:`, e);

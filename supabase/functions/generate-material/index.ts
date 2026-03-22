@@ -687,7 +687,7 @@ ${brandingSection}${bpSection}${existingPatternsSection}${variabilitySection}`;
         { role: 'user', content: `Job Description:\n${(jobDescription || '').slice(0, 6000)}\n\nGenerate the "${assetName}" HTML document now.` },
       ],
       temperature: 0.5,
-      max_tokens: 6000,
+      max_tokens: 4500,
     });
 
     if (!response.ok) {

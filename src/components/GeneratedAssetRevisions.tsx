@@ -28,7 +28,9 @@ export default function GeneratedAssetRevisions({
   const { toast } = useToast();
 
   useEffect(() => {
-    loadRevisions();
+    if (assetId) {
+      loadRevisions();
+    }
   }, [assetId, refreshTrigger]);
 
   const loadRevisions = async () => {

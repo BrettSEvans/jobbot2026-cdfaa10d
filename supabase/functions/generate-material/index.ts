@@ -882,13 +882,18 @@ AVOID these complex patterns that frequently cause overlap:
 - Any layout requiring more than 2 levels of nesting
 
 ## CONTENT BREVITY: LESS IS MORE
-Your text blocks are TOO LONG by default. Follow these strict word limits:
-- Paragraph blocks: MAX 2 sentences (25-35 words each). No paragraph should exceed 70 words.
-- Bullet lists: MAX 4-5 bullets per section. Each bullet MAX 12-15 words.
-- Table cells: MAX 8-10 words per cell. Use fragments, not full sentences.
+A clean, well-spaced document with 3 strong sections impresses more than a cramped document with 6 mediocre sections.
+The document must fill the page but NOT overflow — aim for 80-85% page fill so it looks complete, not empty.
+Follow these strict word limits:
+- MAX 3 body sections (header + 3 sections + footer). Never exceed 3 body sections.
+- Paragraph blocks: MAX 2 sentences (20-25 words each). No paragraph should exceed 50 words.
+- Bullet lists: MAX 3-4 bullets per section. Each bullet MAX 12 words.
+- Table cells: MAX 8 words per cell. Use fragments, not full sentences.
+- Table rows: MAX 3-4 rows per table.
 - Section headings: MAX 6 words.
-- Executive summaries / introductions: MAX 3 sentences total.
+- Executive summaries / introductions: MAX 2 sentences total.
 - Footer text: MAX 1 line.
+- Do NOT use framed/boxed section containers for "plan", "template", or "strategy" documents — use simple headers with underlines instead.
 Prefer short, punchy phrases over elaborate explanations. White space is better than overflow.
 
 ## CRITICAL CSS RULES (violations will cause automatic rejection):

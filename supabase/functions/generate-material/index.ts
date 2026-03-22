@@ -280,7 +280,7 @@ function enforceOnePageLayout(html: string): string {
 </html>`;
 }
 
-// --- Single-pass combined UI + QA review (avoids timeout from multiple AI calls) ---
+// --- Combined UI + QA review with up to 3 retry cycles ---
 
 const COMBINED_REVIEW_PROMPT = `You are a senior UI designer AND QA engineer reviewing a one-page printed HTML document (US Letter 8.5×11in, usable area ~9.2in tall × 7.5in wide after 0.4in/0.5in padding).
 
@@ -288,69 +288,89 @@ Run ALL of these checks:
 
 **VISUAL/LAYOUT:**
 1. OVERLAP: Elements whose text/background covers another element's content
-2. HIDDEN TEXT: Text clipped by overflow:hidden, off-screen, or same color as background
+2. HIDDEN TEXT: ANY text that is clipped, truncated, or invisible due to:
+   - overflow:hidden on a container with fixed height that is too small for its content
+   - Text extending below a div/section with a set max-height or height
+   - Text same color as background
+   - Text pushed off-screen by transforms or negative margins
+   - Header/banner sections where text overflows the colored background area
+   - Content blocks (cards, frames, sections) where the last lines of text are cut off
+   To check: for EVERY container with overflow:hidden or a fixed height, verify that the text content fits within the available space. If the container has more text than fits, the text IS hidden.
 3. OVERFLOW: Content extending beyond 11-inch page height
 4. SPACING: Sections jammed together or headers touching body text
 5. FONT SIZE: Any text smaller than 9pt (12px)
 
 **STRUCTURAL/QA:**
 6. FOOTER: Must be inside flex wrapper, never position:absolute/fixed, never covering content
-7. HEADER: Background color must fully contain all header text
+7. HEADER: Background color area must be tall enough to fully contain ALL header text including subtitles. If header has a colored background, increase its padding/height so no text is clipped.
 8. CSS SAFETY: No overflow:auto/scroll, no position:absolute/fixed on content, no negative margins
 9. READABILITY: Sufficient contrast, no placeholder text ("TBD", "[Insert]", "Lorem ipsum")
 10. CONTENT: No mid-sentence cutoffs, no empty sections
 
 RESPONSE FORMAT:
-- If ALL checks pass: respond with exactly "REVIEW_PASS" (nothing else)
-- If ANY issues: return the COMPLETE FIXED HTML. Rules:
-  - Fix ONLY the identified issues — preserve all content, colors, branding
+- If ALL checks pass with ZERO issues: respond with exactly "REVIEW_PASS" (nothing else)
+- If ANY issues found: return the COMPLETE FIXED HTML. Fix rules:
+  - For HIDDEN TEXT: either increase the container height, remove the fixed height, remove overflow:hidden, or reduce the text content to fit
+  - For header clipping: increase header padding-bottom and min-height so all text is visible
+  - For section/card clipping: remove fixed heights, use height:auto, or reduce content
   - Simplify layouts causing overlap (flatten nested grids, remove absolute positioning)
-  - If content overflows, reduce bullet counts and merge sections — never use font below 9pt
+  - If content overflows the page, reduce bullet counts and merge sections — never use font below 9pt
   - Ensure every section has margin-bottom: 0.12in minimum
   - Footer inside flex column wrapper, never absolute/fixed
   - Return ONLY raw HTML — no markdown fences, no explanations`;
+
+const MAX_REVIEW_CYCLES = 3;
 
 async function reviewPipeline(
   html: string,
   assetName: string,
   LOVABLE_API_KEY: string,
-): Promise<{ html: string; reviewResults: { uiPassed: boolean; qaPassed: boolean } }> {
-  try {
-    const resp = await aiFetchWithRetry(LOVABLE_API_KEY, {
-      model: 'google/gemini-2.5-flash',
-      messages: [
-        { role: 'system', content: COMBINED_REVIEW_PROMPT },
-        { role: 'user', content: `Document: "${assetName}"\n\nHTML to review:\n${html}` },
-      ],
-      temperature: 0.1,
-      max_tokens: 5000,
-    });
+): Promise<{ html: string; reviewResults: { uiPassed: boolean; qaPassed: boolean; reviewCycles: number } }> {
+  let currentHtml = html;
+  let cycles = 0;
 
-    if (!resp.ok) {
-      console.warn('Review failed with status:', resp.status);
-      return { html, reviewResults: { uiPassed: true, qaPassed: true } };
+  for (let i = 0; i < MAX_REVIEW_CYCLES; i++) {
+    cycles = i + 1;
+    try {
+      const resp = await aiFetchWithRetry(LOVABLE_API_KEY, {
+        model: 'google/gemini-2.5-flash',
+        messages: [
+          { role: 'system', content: COMBINED_REVIEW_PROMPT },
+          { role: 'user', content: `Document: "${assetName}" (Review cycle ${cycles}/${MAX_REVIEW_CYCLES})\n\nHTML to review:\n${currentHtml}` },
+        ],
+        temperature: 0.1,
+        max_tokens: 5000,
+      });
+
+      if (!resp.ok) {
+        console.warn(`Review cycle ${cycles} failed with status:`, resp.status);
+        break;
+      }
+
+      const data = await resp.json();
+      const result = (data.choices?.[0]?.message?.content || '').trim();
+
+      if (result === 'REVIEW_PASS' || result.startsWith('REVIEW_PASS')) {
+        console.log(`Review PASSED on cycle ${cycles}/${MAX_REVIEW_CYCLES}`);
+        return { html: currentHtml, reviewResults: { uiPassed: true, qaPassed: true, reviewCycles: cycles } };
+      }
+
+      let fixed = result.replace(/^```html?\n?/i, '').replace(/\n?```$/i, '').trim();
+      if (fixed.length > 200) {
+        currentHtml = enforceOnePageLayout(fixed);
+        console.log(`Review cycle ${cycles}: issues found and fixed, ${i < MAX_REVIEW_CYCLES - 1 ? 'retrying...' : 'max cycles reached'}`);
+      } else {
+        console.log(`Review cycle ${cycles}: response too short, accepting current HTML`);
+        break;
+      }
+    } catch (e) {
+      console.warn(`Review cycle ${cycles} error:`, e);
+      break;
     }
-
-    const data = await resp.json();
-    const result = (data.choices?.[0]?.message?.content || '').trim();
-
-    if (result === 'REVIEW_PASS' || result.startsWith('REVIEW_PASS')) {
-      console.log('Combined Review: PASSED');
-      return { html, reviewResults: { uiPassed: true, qaPassed: true } };
-    }
-
-    let fixed = result.replace(/^```html?\n?/i, '').replace(/\n?```$/i, '').trim();
-    if (fixed.length > 200) {
-      fixed = enforceOnePageLayout(fixed);
-      console.log('Combined Review: Issues found and fixed');
-      return { html: fixed, reviewResults: { uiPassed: false, qaPassed: true } };
-    }
-
-    return { html, reviewResults: { uiPassed: true, qaPassed: true } };
-  } catch (e) {
-    console.warn('Review error:', e);
-    return { html, reviewResults: { uiPassed: true, qaPassed: true } };
   }
+
+  console.log(`Review completed after ${cycles} cycles without clean pass — presenting best effort`);
+  return { html: currentHtml, reviewResults: { uiPassed: false, qaPassed: false, reviewCycles: cycles } };
 }
 
 async function getBestPractices(

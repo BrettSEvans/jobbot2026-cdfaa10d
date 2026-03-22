@@ -35,10 +35,13 @@ export async function saveGeneratedAssetRevision(
 export async function getGeneratedAssetRevisions(assetId: string) {
   const { data, error } = await supabase
     .from('generated_asset_revisions')
-    .select('*')
+    .select('id, asset_id, application_id, revision_number, label, created_at, html')
     .eq('asset_id', assetId)
     .order('revision_number', { ascending: false });
 
-  if (error) throw new Error(error.message);
-  return data;
+  if (error) {
+    console.error('getGeneratedAssetRevisions error:', error.message, 'assetId:', assetId);
+    throw new Error(error.message);
+  }
+  return data || [];
 }

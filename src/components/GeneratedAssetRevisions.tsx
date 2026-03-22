@@ -28,7 +28,9 @@ export default function GeneratedAssetRevisions({
   const { toast } = useToast();
 
   useEffect(() => {
-    loadRevisions();
+    if (assetId) {
+      loadRevisions();
+    }
   }, [assetId, refreshTrigger]);
 
   const loadRevisions = async () => {
@@ -36,7 +38,9 @@ export default function GeneratedAssetRevisions({
     try {
       const data = await getGeneratedAssetRevisions(assetId);
       setRevisions(data);
-    } catch { /* silent */ } finally {
+    } catch (err) {
+      console.error('Failed to load asset revisions:', err);
+    } finally {
       setLoading(false);
     }
   };

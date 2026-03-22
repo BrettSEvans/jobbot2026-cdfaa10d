@@ -280,75 +280,107 @@ function enforceOnePageLayout(html: string): string {
 </html>`;
 }
 
-// --- Overflow detection and auto-condensation ---
-async function detectAndCondense(
+// --- Two-pass AI review pipeline (UI Review + QA Review) ---
+
+const UI_REVIEW_PROMPT = `You are a senior UI designer reviewing a one-page printed HTML document (US Letter 8.5×11in, usable area ~9.2in tall × 7.5in wide after 0.4in/0.5in padding).
+
+Inspect the HTML for these SPECIFIC visual defects:
+
+1. **OVERLAP**: Any element whose text or background covers another element's content. Check headers overlapping body, sections overlapping each other, footer covering content, decorative elements hiding text.
+2. **HIDDEN TEXT**: Any text that would be clipped by overflow:hidden, positioned off-screen, or rendered with the same color as its background.
+3. **OVERFLOW**: Content that would extend beyond the 11-inch page height. Count approximate vertical space used by each section.
+4. **SPACING**: Sections jammed together with no visual separation, or headers touching body text with no gap.
+5. **FONT SIZE**: Any text smaller than 9pt (12px).
+6. **BROKEN LAYOUT**: CSS grid/flex items that would collapse, stack incorrectly, or leave large empty gaps.
+
+RESPONSE FORMAT:
+- If ALL checks pass with no issues: respond with exactly "REVIEW_PASS" (nothing else).
+- If ANY issues found: return the COMPLETE FIXED HTML document. Rules for fixing:
+  - Fix ONLY the identified issues — preserve all content, colors, branding, and style
+  - Simplify complex layouts that cause overlap (flatten nested grids, remove absolute positioning)
+  - If content overflows, reduce bullet counts and merge sections — never use font below 9pt
+  - Ensure every section has margin-bottom: 0.12in minimum
+  - Ensure footer is inside a flex column wrapper, never absolute/fixed
+  - Return ONLY the raw HTML — no markdown fences, no explanations`;
+
+const QA_REVIEW_PROMPT = `You are a QA engineer performing final acceptance testing on a one-page printed HTML document (US Letter 8.5×11in).
+
+Run these checks:
+
+1. **STRUCTURE**: Document has <html>, <head>, <body>. Body contains a flex-column wrapper with .page-content and optional footer.
+2. **FOOTER**: If present, footer must be INSIDE the flex wrapper (not position:absolute/fixed). Footer must not cover any content above it.
+3. **HEADER/BANNER**: Header background color must fully contain all header text. No text should "leak" outside the colored area.
+4. **CSS SAFETY**: No overflow:auto, overflow:scroll, overflow-y:auto on any element. No position:absolute or position:fixed on content elements. No negative margins.
+5. **READABILITY**: All text must have sufficient contrast against its background. No text smaller than 9pt. No empty sections or placeholder text like "Lorem ipsum", "TBD", "[Insert]".
+6. **CONTENT COMPLETENESS**: The document should end logically — no mid-sentence cutoffs, no sections with headers but no body content.
+7. **PRINT SAFETY**: Total content height must fit within ~9.2in usable area. Count sections and estimate: headers ~0.8-1.2in, body sections ~1.5-2.5in each, footer ~0.4in.
+
+RESPONSE FORMAT:
+- If ALL checks pass: respond with exactly "QA_PASS" (nothing else).
+- If ANY issues found: return the COMPLETE FIXED HTML document with all issues resolved. Return ONLY the raw HTML — no markdown fences, no explanations.`;
+
+async function runReviewPass(
+  html: string,
+  assetName: string,
+  systemPrompt: string,
+  passLabel: string,
+  passKeyword: string,
+  LOVABLE_API_KEY: string,
+): Promise<{ html: string; passed: boolean }> {
+  try {
+    const resp = await aiFetchWithRetry(LOVABLE_API_KEY, {
+      model: 'google/gemini-2.5-flash',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: `Document: "${assetName}"\n\nHTML to review:\n${html}` },
+      ],
+      temperature: 0.1,
+      max_tokens: 5000,
+    });
+
+    if (!resp.ok) {
+      console.warn(`${passLabel} failed with status:`, resp.status);
+      return { html, passed: true }; // fail-open
+    }
+
+    const data = await resp.json();
+    const result = (data.choices?.[0]?.message?.content || '').trim();
+
+    if (result === passKeyword || result.startsWith(passKeyword)) {
+      console.log(`${passLabel}: PASSED`);
+      return { html, passed: true };
+    }
+
+    // AI returned fixed HTML
+    let fixed = result.replace(/^```html?\n?/i, '').replace(/\n?```$/i, '').trim();
+    if (fixed.length > 200) {
+      fixed = enforceOnePageLayout(fixed);
+      console.log(`${passLabel}: Issues found and fixed`);
+      return { html: fixed, passed: false };
+    }
+
+    return { html, passed: true };
+  } catch (e) {
+    console.warn(`${passLabel} error:`, e);
+    return { html, passed: true }; // fail-open
+  }
+}
+
+async function reviewPipeline(
   html: string,
   assetName: string,
   LOVABLE_API_KEY: string,
-): Promise<{ html: string; condensed: boolean }> {
-  try {
-    const checkResp = await aiFetchWithRetry(LOVABLE_API_KEY, {
-      model: 'google/gemini-2.5-flash',
-      messages: [
-        {
-          role: 'system',
-          content: `You are an expert layout auditor for one-page printed documents (US Letter 8.5×11in with 0.4in top/bottom and 0.5in side padding). The usable area is approximately 10.2in tall × 7.5in wide.
+): Promise<{ html: string; reviewResults: { uiPassed: boolean; qaPassed: boolean } }> {
+  // Pass 1: UI Review
+  const ui = await runReviewPass(html, assetName, UI_REVIEW_PROMPT, 'UI Review', 'REVIEW_PASS', LOVABLE_API_KEY);
 
-Evaluate whether the HTML content below fits on ONE page without overflow.
+  // Pass 2: QA Review (on potentially fixed HTML from UI review)
+  const qa = await runReviewPass(ui.html, assetName, QA_REVIEW_PROMPT, 'QA Review', 'QA_PASS', LOVABLE_API_KEY);
 
-Consider:
-- Number of sections and their content density
-- Font sizes (body should be 9-11pt)
-- Tables, lists, grids — estimate vertical space consumed
-- Header height, footer height
-- Multi-column layouts reduce vertical need
-
-If the content FITS on one page: respond with exactly "FITS_OK" (nothing else).
-
-If it OVERFLOWS: return a CONDENSED version of the full HTML document that fits on one page. Rules for condensing:
-- Use font size 9pt or larger (never smaller than 9pt)
-- If reducing font to 9pt still overflows, TRIM content: reduce bullet counts, merge sections, drop lower-priority details
-- Keep the document professionally complete — it should not look cut off
-- Keep the same visual style, colors, and branding
-- The content should conclude logically and visibly — no hidden or clipped sections
-- Maximum 5 content sections
-- NEVER use overflow: auto/scroll on any element
-- Return ONLY the HTML, no explanations or markdown fences`,
-        },
-        {
-          role: 'user',
-          content: `Document: "${assetName}"\n\nHTML:\n${html}`,
-        },
-      ],
-      temperature: 0.2,
-      max_tokens: 6000,
-    });
-
-    if (!checkResp.ok) {
-      console.warn('Overflow check failed with status:', checkResp.status);
-      return { html, condensed: false };
-    }
-
-    const checkData = await checkResp.json();
-    const result = (checkData.choices?.[0]?.message?.content || '').trim();
-
-    if (result === 'FITS_OK' || result.startsWith('FITS_OK')) {
-      return { html, condensed: false };
-    }
-
-    // AI returned condensed HTML — run it through enforceOnePageLayout
-    let condensed = result.replace(/^```html?\n?/i, '').replace(/\n?```$/i, '').trim();
-    if (condensed.length > 200) {
-      condensed = enforceOnePageLayout(condensed);
-      console.log('Overflow detected — condensed version applied');
-      return { html: condensed, condensed: true };
-    }
-
-    return { html, condensed: false };
-  } catch (e) {
-    console.warn('Overflow detection error:', e);
-    return { html, condensed: false };
-  }
+  return {
+    html: qa.html,
+    reviewResults: { uiPassed: ui.passed, qaPassed: qa.passed },
+  };
 }
 
 async function getBestPractices(
@@ -704,11 +736,15 @@ ${brandingSection}${bpSection}${existingPatternsSection}${variabilitySection}`;
     const data = await response.json();
     let content = enforceOnePageLayout(data.choices?.[0]?.message?.content || '');
 
-    // Auto-retry: detect overflow and condense if needed
-    const { html: finalHtml, condensed } = await detectAndCondense(content, assetName, LOVABLE_API_KEY);
+    // Two-pass review pipeline: UI Review → QA Review
+    const { html: finalHtml, reviewResults } = await reviewPipeline(content, assetName, LOVABLE_API_KEY);
     content = finalHtml;
 
-    return new Response(JSON.stringify({ success: true, html: content, condensation_applied: condensed }), {
+    return new Response(JSON.stringify({
+      success: true,
+      html: content,
+      review: reviewResults,
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (e) {

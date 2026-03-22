@@ -388,43 +388,66 @@ export default function AssetReviewCarousel() {
       </div>
 
       {/* Filters */}
-      <div className="flex items-center gap-3 flex-wrap">
+      <div className="space-y-2">
         <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-          <Filter className="h-3.5 w-3.5" /> Filters:
+          <Filter className="h-3.5 w-3.5" /> Asset types:
         </div>
-        <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v)}>
-          <SelectTrigger className="w-[180px] h-8 text-xs">
-            <SelectValue placeholder="Asset type" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All types</SelectItem>
-            {assetTypes.map((t) => (
-              <SelectItem key={t} value={t}>
-                {ASSET_TYPE_LABELS[t] ?? t}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={reviewFilter} onValueChange={(v) => setReviewFilter(v as ReviewFilter)}>
-          <SelectTrigger className="w-[160px] h-8 text-xs">
-            <SelectValue placeholder="Review status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All</SelectItem>
-            <SelectItem value="unreviewed">Unreviewed</SelectItem>
-            <SelectItem value="up">👍 Approved</SelectItem>
-            <SelectItem value="mid">⚖️ Mid</SelectItem>
-            <SelectItem value="down">👎 Rejected</SelectItem>
-          </SelectContent>
-        </Select>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="gap-1 text-xs"
-          onClick={skipToNextUnreviewed}
-        >
-          <SkipForward className="h-3.5 w-3.5" /> Skip to unreviewed
-        </Button>
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <Button
+            size="sm"
+            variant={typeFilters.size === 0 ? "default" : "outline"}
+            className="h-7 text-xs px-2.5"
+            onClick={() => setTypeFilters(new Set())}
+          >
+            All
+          </Button>
+          {allFilterTypes.map((ft) => {
+            const active = typeFilters.has(ft);
+            return (
+              <Button
+                key={ft}
+                size="sm"
+                variant={active ? "default" : "outline"}
+                className="h-7 text-xs px-2.5"
+                onClick={() => {
+                  setTypeFilters((prev) => {
+                    const next = new Set(prev);
+                    if (next.has(ft)) next.delete(ft);
+                    else next.add(ft);
+                    return next;
+                  });
+                }}
+              >
+                {filterLabel(ft)}
+              </Button>
+            );
+          })}
+        </div>
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+            <Filter className="h-3.5 w-3.5" /> Status:
+          </div>
+          <Select value={reviewFilter} onValueChange={(v) => setReviewFilter(v as ReviewFilter)}>
+            <SelectTrigger className="w-[160px] h-8 text-xs">
+              <SelectValue placeholder="Review status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="unreviewed">Unreviewed</SelectItem>
+              <SelectItem value="up">👍 Approved</SelectItem>
+              <SelectItem value="mid">⚖️ Mid</SelectItem>
+              <SelectItem value="down">👎 Rejected</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-1 text-xs"
+            onClick={skipToNextUnreviewed}
+          >
+            <SkipForward className="h-3.5 w-3.5" /> Skip to unreviewed
+          </Button>
+        </div>
       </div>
 
       {filtered.length === 0 ? (

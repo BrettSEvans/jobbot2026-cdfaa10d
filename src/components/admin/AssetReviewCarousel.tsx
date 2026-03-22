@@ -95,6 +95,8 @@ function useAllAssets() {
               assetName: t.label,
               html,
               companyName: app.company_name,
+              companyUrl: app.company_url,
+              companyIconUrl: app.company_icon_url,
               jobTitle: app.job_title,
             });
           }

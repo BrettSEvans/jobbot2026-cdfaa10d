@@ -3,8 +3,12 @@ import { supabase } from '@/integrations/supabase/client';
 export interface VariabilityResult {
   overallScore: number;
   brandingScore: number;
+  storytellingScore: number;
+  styleScore: number;
   pairwiseScores: Array<{ asset1: string; asset2: string; similarity: number }>;
   structuralPatterns: Array<{ assetName: string; dominantPattern: string }>;
+  narrativePatterns: Array<{ assetName: string; narrativeAngle: string }>;
+  contentFlowPatterns: Array<{ assetName: string; flowPattern: string; layoutType: string }>;
   recommendations: string[];
 }
 
@@ -23,8 +27,12 @@ export async function scoreDesignVariability(
   const result: VariabilityResult = {
     overallScore: data.overallScore ?? 0,
     brandingScore: data.brandingScore ?? 0,
+    storytellingScore: data.storytellingScore ?? 0,
+    styleScore: data.styleScore ?? 0,
     pairwiseScores: data.pairwiseScores ?? [],
     structuralPatterns: data.structuralPatterns ?? [],
+    narrativePatterns: data.narrativePatterns ?? [],
+    contentFlowPatterns: data.contentFlowPatterns ?? [],
     recommendations: data.recommendations ?? [],
   };
 

@@ -58,15 +58,23 @@ export default function DesignVariabilityCard({ appId, assets, branding, cachedV
       </CardHeader>
       {result && (
         <CardContent className="space-y-4">
-          {/* Overall scores */}
-          <div className="flex gap-4">
+          {/* Scores grid */}
+          <div className="grid grid-cols-4 gap-3">
             <div className="text-center">
               <div className={`text-2xl font-bold ${scoreColor(result.overallScore)}`}>{result.overallScore}%</div>
-              <div className="text-xs text-muted-foreground">Variety</div>
+              <div className="text-xs text-muted-foreground">Layout</div>
             </div>
             <div className="text-center">
               <div className={`text-2xl font-bold ${scoreColor(result.brandingScore)}`}>{result.brandingScore}%</div>
               <div className="text-xs text-muted-foreground">Branding</div>
+            </div>
+            <div className="text-center">
+              <div className={`text-2xl font-bold ${scoreColor(result.storytellingScore)}`}>{result.storytellingScore}%</div>
+              <div className="text-xs text-muted-foreground">Storytelling</div>
+            </div>
+            <div className="text-center">
+              <div className={`text-2xl font-bold ${scoreColor(result.styleScore)}`}>{result.styleScore}%</div>
+              <div className="text-xs text-muted-foreground">Style</div>
             </div>
           </div>
 
@@ -81,6 +89,37 @@ export default function DesignVariabilityCard({ appId, assets, branding, cachedV
                     <Badge variant={scoreBadge(100 - p.similarity)} className="ml-2">
                       {p.similarity}% similar
                     </Badge>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Content flow patterns */}
+          {result.contentFlowPatterns.length > 0 && (
+            <div>
+              <h4 className="text-sm font-medium mb-2">Content Flow & Layout</h4>
+              <div className="space-y-1">
+                {result.contentFlowPatterns.map((p, i) => (
+                  <div key={i} className="text-xs">
+                    <span className="font-medium">{p.assetName}</span>
+                    <Badge variant="outline" className="ml-1 text-[10px]">{p.layoutType}</Badge>
+                    <div className="text-muted-foreground mt-0.5">{p.flowPattern}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Narrative patterns */}
+          {result.narrativePatterns.length > 0 && (
+            <div>
+              <h4 className="text-sm font-medium mb-2">Narrative Angles</h4>
+              <div className="space-y-1">
+                {result.narrativePatterns.map((p, i) => (
+                  <div key={i} className="text-xs">
+                    <span className="font-medium">{p.assetName}:</span>{" "}
+                    <span className="text-muted-foreground">{p.narrativeAngle}</span>
                   </div>
                 ))}
               </div>

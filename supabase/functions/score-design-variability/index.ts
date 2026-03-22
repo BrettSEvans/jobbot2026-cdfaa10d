@@ -42,22 +42,40 @@ Deno.serve(async (req) => {
       messages: [
         {
           role: 'system',
-          content: `You are a design analyst evaluating structural and visual diversity across a set of HTML documents generated for the same job application. 
+          content: `You are a design analyst evaluating structural, visual, storytelling, and style diversity across a set of HTML documents generated for the same job application. 
 
-Evaluate:
-1. Layout diversity — do documents use different layout patterns (tables, timelines, grids, cards, charts, lists)?
-2. Visual structure variety — different header styles, section arrangements, color usage patterns?
-3. Branding consistency — do all documents appropriately use the company's brand colors/fonts?
-4. Structural uniqueness — for each pair of documents, how similar is their HTML tag hierarchy?
+Evaluate these dimensions:
+
+## 1. Layout Diversity (feeds into overallScore)
+- Do documents use different layout patterns (tables, timelines, grids, cards, charts, lists)?
+- Different header styles, section arrangements, color usage patterns?
+
+## 2. Branding Consistency (feeds into brandingScore)
+- Do all documents appropriately use the company's brand colors/fonts?
+
+## 3. Storytelling Variability (feeds into storytellingScore)
+- Does each document frame the candidate from a DIFFERENT narrative angle? (e.g., strategic leader vs. analytical problem-solver vs. cross-functional collaborator vs. innovation driver)
+- Are DIFFERENT skills and competencies highlighted across documents, or do they repeat the same talking points?
+- Do documents use different framing techniques? (metrics/ROI, case studies, frameworks, stakeholder impact, before/after)
+
+## 4. Style Variability (feeds into styleScore)
+- **Content flow pattern**: What is the sequence of content block types in each document? (e.g., "header → paragraph → table → bullet list → chart" vs "header → two-column-grid → metrics-cards → timeline")
+- **Column layout type**: Does each document use a different layout format? (single-column, two-column, sidebar, grid, centered, asymmetric)
+- **Visual rhythm**: Do documents vary in spacing patterns, section density, and content block sizing?
+- Penalize documents that share similar content-block sequencing or layout formats.
 
 ${brandingContext}
 
 Return ONLY valid JSON matching this schema:
 {
-  "overallScore": <0-100, higher = more variety>,
+  "overallScore": <0-100, higher = more layout variety>,
   "brandingScore": <0-100, how well assets match company branding>,
+  "storytellingScore": <0-100, higher = more narrative diversity and skill breadth>,
+  "styleScore": <0-100, higher = more content flow and layout format variety>,
   "pairwiseScores": [{"asset1": "<name>", "asset2": "<name>", "similarity": <0-100>}],
   "structuralPatterns": [{"assetName": "<name>", "dominantPattern": "<description>"}],
+  "narrativePatterns": [{"assetName": "<name>", "narrativeAngle": "<e.g. strategic leader, data-driven analyst>"}],
+  "contentFlowPatterns": [{"assetName": "<name>", "flowPattern": "<e.g. header → two-column-grid → metrics-cards → bullet-list>", "layoutType": "<e.g. two-column, single-column, sidebar, grid>"}],
   "recommendations": ["<string>"]
 }`
         },
@@ -68,7 +86,7 @@ Return ONLY valid JSON matching this schema:
       ],
       response_format: { type: 'json_object' },
       temperature: 0.2,
-      max_tokens: 3000,
+      max_tokens: 4000,
     });
 
     if (!resp.ok) {

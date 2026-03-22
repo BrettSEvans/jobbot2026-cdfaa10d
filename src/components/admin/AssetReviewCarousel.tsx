@@ -37,6 +37,8 @@ type FlatAsset = {
   assetName: string;
   html: string;
   companyName: string | null;
+  companyUrl: string | null;
+  companyIconUrl: string | null;
   jobTitle: string | null;
 };
 

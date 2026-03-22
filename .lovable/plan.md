@@ -1,26 +1,43 @@
 
-## Plan: Permanently eliminate hidden/clipped text in generated materials
 
-### Status: IMPLEMENTED ✅
+## Plan: Enforce simplicity across all materials + collapsible variability card
 
-### What was done
+### Problem
+The Cross-Functional M&A Communication Plan Template (and potentially other materials) still generates overly complex designs with too much content. The current density thresholds are too generous (5 sections, 25 bullets, 8 table rows, 4000 chars), allowing dense output to skip condensation. The simplicity rules exist but are not strict enough to prevent verbose, complex layouts across all asset types.
 
-1. **Replaced clipping CSS guard with flow-safe layout** — `enforceOnePageLayout()` now uses `overflow: visible` for all text containers inside `.page-content`. Only the outermost `page-shell` clips at page boundary. Fixed heights, max-heights, and overflow:hidden are removed from all inner elements.
+### Changes
 
-2. **Added deterministic HTML audit** — `auditHtmlForClipping()` inspects generated HTML for fixed heights, inline overflow:hidden, CSS overflow:hidden on content selectors, max-height on content elements, and absolute/fixed positioning. Returns typed violations.
+#### 1. Tighten density thresholds in `generate-material/index.ts`
+Current thresholds allow too much content before triggering condensation:
+- Sections: 5 → **4**
+- Bullets: 25 → **16**
+- Table rows: 8 → **5**
+- Text chars: 4000 → **3000**
 
-3. **Added automatic clipping pattern stripper** — `stripClippingPatterns()` deterministically removes overflow:hidden, fixed heights, and absolute positioning from inline styles on text containers before AI review.
+#### 2. Strengthen the generation system prompt
+- Reduce max sections from 4 to **3 body sections** (header + 3 sections + footer)
+- Reduce bullet limits: 4-5 → **3-4 per section**
+- Reduce paragraph word limits: 70 → **50 words max**
+- Add explicit rule: "The document must fill the page but NOT overflow — aim for 80-85% page fill"
+- Emphasize: "A clean, well-spaced document with 3 strong sections impresses more than a cramped document with 6 mediocre sections"
+- Ban "template" or "plan" style documents from using framed/boxed sections (they cause the most clipping)
 
-4. **Upgraded 3-cycle review with dual gate** — Review loop now requires BOTH AI `REVIEW_PASS` AND deterministic audit pass. Violations are fed back as context to the AI for targeted fixing. After 3 failed cycles, presents best-effort with explicit QA metadata.
+#### 3. Tighten the condensation pass instructions
+- Target max 3 sections instead of 3-4
+- Max 3-4 bullets instead of 4-5
+- Max 3-4 table rows instead of 4-5
+- Add instruction: "Remove all framed/boxed section containers — use simple headers with underlines instead"
 
-5. **Updated generation prompt** — Added explicit CSS rules banning overflow:hidden on content elements, requiring height:auto and overflow:visible on all text containers.
+#### 4. Tighten best-practices research rubric
+Update the inline research prompt to match the stricter limits:
+- Max 3 body sections (not 3-4)
+- Max 3-4 bullets per section (not 4-5)
+- Max 3-4 table rows (not 4-5)
 
-6. **Updated refine-material** — Same overflow:hidden ban in the refinement system prompt.
+#### 5. Make DesignVariabilityCard collapsible
+Wrap the card content in a `Collapsible` component (already available in the project) so it starts collapsed and can be toggled open.
 
-7. **QA status in revision history UI** — Revision labels now include audit status (audit-clean vs best-effort). Badges show "Clean" (green) or "QA Issues" (red) in the revision list.
+### Files to modify
+- `supabase/functions/generate-material/index.ts` — tighten thresholds, prompts, condensation
+- `src/components/admin/DesignVariabilityCard.tsx` — wrap in Collapsible
 
-### Files changed
-- `supabase/functions/generate-material/index.ts` — core engine rewrite
-- `supabase/functions/refine-material/index.ts` — prompt update
-- `src/components/GeneratedAssetRevisions.tsx` — QA status badges
-- `src/components/DynamicMaterialsSection.tsx` — QA metadata in revision labels

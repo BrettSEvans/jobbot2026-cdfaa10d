@@ -289,7 +289,7 @@ ${bpSection}${existingPatternsSection}${variabilitySection}`;
         { role: 'system', content: systemPrompt },
         { role: 'user', content: `Job Description:\n${(jobDescription || '').slice(0, 6000)}\n\nGenerate the "${assetName}" HTML document now.` },
       ],
-      temperature: 0.3,
+      temperature: 0.5,
       max_tokens: 8000,
     });
 

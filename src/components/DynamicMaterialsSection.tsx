@@ -693,11 +693,7 @@ export default function DynamicMaterialsSection({
             )}
 
             {asset.generation_status === 'complete' && asset.html ? (
-            <Card className="overflow-auto border">
-                <div className="w-full bg-white" style={{ maxHeight: "80vh", overflow: "auto" }}>
-                  <iframe srcDoc={assetPreviewHtml[asset.id] || asset.html} className="w-full border-0" style={{ width: "100%", height: "1160px" }} sandbox="allow-scripts" title={asset.asset_name} />
-                </div>
-              </Card>
+              <FitPagePreview html={assetPreviewHtml[asset.id] || asset.html} title={asset.asset_name} />
             ) : asset.generation_status === 'generating' ? (
               <Card><CardContent className="py-12 text-center space-y-3">
                 <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />

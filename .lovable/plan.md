@@ -1,27 +1,38 @@
 
-## Plan: 6 Style Families with premium design guidance
 
-### Status: IMPLEMENTED ✅
+## Plan: Fix frame overlap, sparse content, and color repetition in materials
 
-### What was done
+### Problems identified
 
-1. **Defined 6 distinct style families** in `generate-material/index.ts`:
-   - **A — Executive Bold**: Full-width dark banner, metric cards, Montserrat+Lato
-   - **B — Modern Split**: 60/40 sidebar, quick-facts, Bebas Neue+Roboto
-   - **C — Clean Contrast**: Alternating bands, pull-quote, complementary color scheme, Playfair+Garamond
-   - **D — Data Storyteller**: Styled HTML table (3-4 rows), Montserrat+DM Sans
-   - **E — Visual Metrics**: CSS progress bars/donut charts, Bebas Neue+Lato
-   - **F — Editorial Minimal**: Magazine-style narrow column, large pull-quote, Playfair+Source Sans
+1. **Frame overlap bugs**: The CSS guard forces `position: static !important` on ALL content elements and resets ALL margins to `0 / 0.08in`, breaking intended spacing between frames and sections.
+2. **Sparse content (10% fill)**: No detection or fix for documents that are too empty — only density (too much) triggers condensation.
+3. **Same colors on every regeneration**: `buildStyleFamilies` always maps `brandColors[0]` → primary, `brandColors[1]` → secondary. Different families get different layouts but identical color assignments.
+4. **`data-style-family` not reliably injected**: Relies on AI prompt compliance; needs programmatic fallback.
 
-2. **Best-fit family selection** — classifies asset type (analytical-table, analytical-chart, strategic, communication, report, general) and maps to preferred families, excluding siblings' used families
+### Changes
 
-3. **Forced family switch on 2+ regenerations** — client passes `regenerationCount`, edge function excludes current family when count ≥ 2
+#### 1. Fix CSS guard overlap issues (`enforceOnePageLayout`)
+- Remove `margin-top: 0 !important; margin-bottom: 0.08in !important` from ALL divs/sections — this strips intended spacing and causes frames to collapse together
+- Keep `position: static` only for `absolute/fixed` elements; allow `relative` positioning universally (current regex allowlist is too narrow)
+- Remove the blanket `overflow: visible !important` on `.page-content *` — it fights with table cells and sidebar containers. Instead, only override `overflow: hidden` to `visible` on text-specific elements (p, h1-h6, li, span, blockquote)
 
-4. **Premium design rules** injected per family — 60-30-10 color rule, specific typography pairings, signature visual elements, narrative angles, white space guidance
+#### 2. Add sparse content detection + expansion pass
+After generation and density check, count stripped text characters. If `< 1500 chars` or `< 2 sections`, trigger an expansion prompt asking the AI to:
+- Add content to reach 80-85% page fill
+- Add 1-2 more bullet points per section
+- Expand short paragraphs to 2 sentences
+- Keep the same layout and style family
 
-5. **Client updates** — `DynamicMaterialsSection.tsx` counts revisions and passes `regenerationCount`; `backgroundGenerator.ts` passes `regenerationCount: 0` on initial generation
+#### 3. Rotate colors across families and regenerations
+- Change `buildStyleFamilies` to accept a `colorRotation: number` parameter
+- Rotate the color array: `colors[(0 + rotation) % len]` → primary, etc.
+- For initial generation: `colorRotation = assetIndex` (0, 1, 2 for each sibling)
+- For regeneration: `colorRotation = regenerationCount`
+- This ensures each material AND each regeneration uses a different primary color from the brand palette
 
-### Files changed
-- `supabase/functions/generate-material/index.ts` — style family definitions, selection logic, prompt injection
-- `src/components/DynamicMaterialsSection.tsx` — regeneration count tracking
-- `src/lib/backgroundGenerator.ts` — pass regenerationCount on initial generation
+#### 4. Force-inject `data-style-family` attribute
+After `enforceOnePageLayout`, programmatically check if `<body` tag contains `data-style-family`. If not, inject it using string replacement on the `<body` tag.
+
+### Files to modify
+- `supabase/functions/generate-material/index.ts` — all 4 changes above
+

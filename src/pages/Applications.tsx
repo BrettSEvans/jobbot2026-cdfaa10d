@@ -21,6 +21,7 @@ import {
   X,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { CompanyIcon } from "@/components/CompanyIcon";
 import {
   Table,
   TableBody,

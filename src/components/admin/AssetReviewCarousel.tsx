@@ -30,8 +30,7 @@ function useAllAssets() {
       const { data: apps, error: appErr } = await supabase
         .from("job_applications")
         .select("id, company_name, job_title, dashboard_html, cover_letter, resume_html, executive_report_html, raid_log_html, architecture_diagram_html, roadmap_html")
-        .not("deleted_at", "is", null)
-        .or("deleted_at.is.null")
+        .order("created_at", { ascending: false });
         .order("created_at", { ascending: false });
 
       if (appErr) throw appErr;

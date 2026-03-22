@@ -267,8 +267,12 @@ OUTPUT: Return a single self-contained HTML document with embedded CSS. The docu
 - Fit on EXACTLY ONE printed page (US Letter 8.5" x 11"). This is a HARD constraint — no exceptions.
 - DO NOT generate more content than fits on a single page. Prefer fewer, higher-impact sections over trying to cover everything.
 - Use compact but readable font sizes (9-10pt body, 12-13pt headings)
-- The total rendered height MUST NOT exceed 900px. Use CSS: html, body { height: 10in; max-height: 10in; overflow: hidden; margin: 0; padding: 0.4in; box-sizing: border-box; }
-- Use @page { size: letter; margin: 0; } to eliminate browser margins
+- Account for header AND footer content when sizing — the TOTAL content height including any footer must not exceed the printable area.
+- Use this CSS foundation:
+  @page { size: letter; margin: 0; }
+  html, body { width: 8.5in; height: 11in; max-height: 11in; overflow: hidden; margin: 0; padding: 0.35in 0.5in; box-sizing: border-box; }
+- The usable content area is approximately 10.3in tall × 7.5in wide. Plan your content to fill 90-95% of this — not more.
+- If the document has a footer (name, date, page number, etc.), reduce body content by the footer height. Use CSS: footer { position: absolute; bottom: 0.35in; left: 0.5in; right: 0.5in; }
 - Keep to 3-5 sections maximum. Each section should be concise (2-4 bullet points or compact table rows).
 - Use multi-column layouts (CSS grid/flexbox) to maximize horizontal space rather than vertical scrolling
 - Be professional, clean, and printable
@@ -311,7 +315,7 @@ ${bpSection}${existingPatternsSection}${variabilitySection}`;
     if (htmlEnd !== -1) content = content.slice(0, htmlEnd + 7);
 
     // Inject hard one-page constraint CSS to guarantee single-page output
-    const onePageCss = `<style>@page{size:letter;margin:0}html,body{width:8.5in;max-height:10in;overflow:hidden;box-sizing:border-box}</style>`;
+    const onePageCss = `<style>@page{size:letter;margin:0}html,body{width:8.5in;height:11in;max-height:11in;overflow:hidden;margin:0;padding:0.35in 0.5in;box-sizing:border-box;position:relative}</style>`;
     if (content.includes('</head>')) {
       content = content.replace('</head>', `${onePageCss}</head>`);
     } else if (content.includes('<body')) {

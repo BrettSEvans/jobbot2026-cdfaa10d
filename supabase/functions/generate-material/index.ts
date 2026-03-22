@@ -283,6 +283,16 @@ ${bpSection}${existingPatternsSection}${variabilitySection}`;
     const htmlEnd = content.lastIndexOf('</html>');
     if (htmlEnd !== -1) content = content.slice(0, htmlEnd + 7);
 
+    // Inject hard one-page constraint CSS to guarantee single-page output
+    const onePageCss = `<style>@page{size:letter;margin:0}html,body{width:8.5in;max-height:10in;overflow:hidden;box-sizing:border-box}</style>`;
+    if (content.includes('</head>')) {
+      content = content.replace('</head>', `${onePageCss}</head>`);
+    } else if (content.includes('<body')) {
+      content = content.replace('<body', `${onePageCss}<body`);
+    } else {
+      content = onePageCss + content;
+    }
+
     return new Response(JSON.stringify({ success: true, html: content }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

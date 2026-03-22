@@ -77,7 +77,7 @@ function ResumePagePreview({ html }: { html: string }) {
   }, []);
 
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden px-6">
       <div ref={containerRef} className="w-full bg-white" style={{ height: `${1056 * scale}px`, overflow: "hidden" }}>
         <iframe
           srcDoc={html}

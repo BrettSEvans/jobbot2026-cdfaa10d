@@ -91,6 +91,7 @@ function useAllAssets() {
             flat.push({
               applicationId: app.id,
               assetType: t.key,
+              filterType: t.key,
               assetId: null,
               assetName: t.label,
               html,

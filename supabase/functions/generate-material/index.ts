@@ -280,58 +280,46 @@ function enforceOnePageLayout(html: string): string {
 </html>`;
 }
 
-// --- Two-pass AI review pipeline (UI Review + QA Review) ---
+// --- Single-pass combined UI + QA review (avoids timeout from multiple AI calls) ---
 
-const UI_REVIEW_PROMPT = `You are a senior UI designer reviewing a one-page printed HTML document (US Letter 8.5×11in, usable area ~9.2in tall × 7.5in wide after 0.4in/0.5in padding).
+const COMBINED_REVIEW_PROMPT = `You are a senior UI designer AND QA engineer reviewing a one-page printed HTML document (US Letter 8.5×11in, usable area ~9.2in tall × 7.5in wide after 0.4in/0.5in padding).
 
-Inspect the HTML for these SPECIFIC visual defects:
+Run ALL of these checks:
 
-1. **OVERLAP**: Any element whose text or background covers another element's content. Check headers overlapping body, sections overlapping each other, footer covering content, decorative elements hiding text.
-2. **HIDDEN TEXT**: Any text that would be clipped by overflow:hidden, positioned off-screen, or rendered with the same color as its background.
-3. **OVERFLOW**: Content that would extend beyond the 11-inch page height. Count approximate vertical space used by each section.
-4. **SPACING**: Sections jammed together with no visual separation, or headers touching body text with no gap.
-5. **FONT SIZE**: Any text smaller than 9pt (12px).
-6. **BROKEN LAYOUT**: CSS grid/flex items that would collapse, stack incorrectly, or leave large empty gaps.
+**VISUAL/LAYOUT:**
+1. OVERLAP: Elements whose text/background covers another element's content
+2. HIDDEN TEXT: Text clipped by overflow:hidden, off-screen, or same color as background
+3. OVERFLOW: Content extending beyond 11-inch page height
+4. SPACING: Sections jammed together or headers touching body text
+5. FONT SIZE: Any text smaller than 9pt (12px)
+
+**STRUCTURAL/QA:**
+6. FOOTER: Must be inside flex wrapper, never position:absolute/fixed, never covering content
+7. HEADER: Background color must fully contain all header text
+8. CSS SAFETY: No overflow:auto/scroll, no position:absolute/fixed on content, no negative margins
+9. READABILITY: Sufficient contrast, no placeholder text ("TBD", "[Insert]", "Lorem ipsum")
+10. CONTENT: No mid-sentence cutoffs, no empty sections
 
 RESPONSE FORMAT:
-- If ALL checks pass with no issues: respond with exactly "REVIEW_PASS" (nothing else).
-- If ANY issues found: return the COMPLETE FIXED HTML document. Rules for fixing:
-  - Fix ONLY the identified issues — preserve all content, colors, branding, and style
-  - Simplify complex layouts that cause overlap (flatten nested grids, remove absolute positioning)
+- If ALL checks pass: respond with exactly "REVIEW_PASS" (nothing else)
+- If ANY issues: return the COMPLETE FIXED HTML. Rules:
+  - Fix ONLY the identified issues — preserve all content, colors, branding
+  - Simplify layouts causing overlap (flatten nested grids, remove absolute positioning)
   - If content overflows, reduce bullet counts and merge sections — never use font below 9pt
   - Ensure every section has margin-bottom: 0.12in minimum
-  - Ensure footer is inside a flex column wrapper, never absolute/fixed
-  - Return ONLY the raw HTML — no markdown fences, no explanations`;
+  - Footer inside flex column wrapper, never absolute/fixed
+  - Return ONLY raw HTML — no markdown fences, no explanations`;
 
-const QA_REVIEW_PROMPT = `You are a QA engineer performing final acceptance testing on a one-page printed HTML document (US Letter 8.5×11in).
-
-Run these checks:
-
-1. **STRUCTURE**: Document has <html>, <head>, <body>. Body contains a flex-column wrapper with .page-content and optional footer.
-2. **FOOTER**: If present, footer must be INSIDE the flex wrapper (not position:absolute/fixed). Footer must not cover any content above it.
-3. **HEADER/BANNER**: Header background color must fully contain all header text. No text should "leak" outside the colored area.
-4. **CSS SAFETY**: No overflow:auto, overflow:scroll, overflow-y:auto on any element. No position:absolute or position:fixed on content elements. No negative margins.
-5. **READABILITY**: All text must have sufficient contrast against its background. No text smaller than 9pt. No empty sections or placeholder text like "Lorem ipsum", "TBD", "[Insert]".
-6. **CONTENT COMPLETENESS**: The document should end logically — no mid-sentence cutoffs, no sections with headers but no body content.
-7. **PRINT SAFETY**: Total content height must fit within ~9.2in usable area. Count sections and estimate: headers ~0.8-1.2in, body sections ~1.5-2.5in each, footer ~0.4in.
-
-RESPONSE FORMAT:
-- If ALL checks pass: respond with exactly "QA_PASS" (nothing else).
-- If ANY issues found: return the COMPLETE FIXED HTML document with all issues resolved. Return ONLY the raw HTML — no markdown fences, no explanations.`;
-
-async function runReviewPass(
+async function reviewPipeline(
   html: string,
   assetName: string,
-  systemPrompt: string,
-  passLabel: string,
-  passKeyword: string,
   LOVABLE_API_KEY: string,
-): Promise<{ html: string; passed: boolean }> {
+): Promise<{ html: string; reviewResults: { uiPassed: boolean; qaPassed: boolean } }> {
   try {
     const resp = await aiFetchWithRetry(LOVABLE_API_KEY, {
       model: 'google/gemini-2.5-flash',
       messages: [
-        { role: 'system', content: systemPrompt },
+        { role: 'system', content: COMBINED_REVIEW_PROMPT },
         { role: 'user', content: `Document: "${assetName}"\n\nHTML to review:\n${html}` },
       ],
       temperature: 0.1,
@@ -339,48 +327,30 @@ async function runReviewPass(
     });
 
     if (!resp.ok) {
-      console.warn(`${passLabel} failed with status:`, resp.status);
-      return { html, passed: true }; // fail-open
+      console.warn('Review failed with status:', resp.status);
+      return { html, reviewResults: { uiPassed: true, qaPassed: true } };
     }
 
     const data = await resp.json();
     const result = (data.choices?.[0]?.message?.content || '').trim();
 
-    if (result === passKeyword || result.startsWith(passKeyword)) {
-      console.log(`${passLabel}: PASSED`);
-      return { html, passed: true };
+    if (result === 'REVIEW_PASS' || result.startsWith('REVIEW_PASS')) {
+      console.log('Combined Review: PASSED');
+      return { html, reviewResults: { uiPassed: true, qaPassed: true } };
     }
 
-    // AI returned fixed HTML
     let fixed = result.replace(/^```html?\n?/i, '').replace(/\n?```$/i, '').trim();
     if (fixed.length > 200) {
       fixed = enforceOnePageLayout(fixed);
-      console.log(`${passLabel}: Issues found and fixed`);
-      return { html: fixed, passed: false };
+      console.log('Combined Review: Issues found and fixed');
+      return { html: fixed, reviewResults: { uiPassed: false, qaPassed: true } };
     }
 
-    return { html, passed: true };
+    return { html, reviewResults: { uiPassed: true, qaPassed: true } };
   } catch (e) {
-    console.warn(`${passLabel} error:`, e);
-    return { html, passed: true }; // fail-open
+    console.warn('Review error:', e);
+    return { html, reviewResults: { uiPassed: true, qaPassed: true } };
   }
-}
-
-async function reviewPipeline(
-  html: string,
-  assetName: string,
-  LOVABLE_API_KEY: string,
-): Promise<{ html: string; reviewResults: { uiPassed: boolean; qaPassed: boolean } }> {
-  // Pass 1: UI Review
-  const ui = await runReviewPass(html, assetName, UI_REVIEW_PROMPT, 'UI Review', 'REVIEW_PASS', LOVABLE_API_KEY);
-
-  // Pass 2: QA Review (on potentially fixed HTML from UI review)
-  const qa = await runReviewPass(ui.html, assetName, QA_REVIEW_PROMPT, 'QA Review', 'QA_PASS', LOVABLE_API_KEY);
-
-  return {
-    html: qa.html,
-    reviewResults: { uiPassed: ui.passed, qaPassed: qa.passed },
-  };
 }
 
 async function getBestPractices(

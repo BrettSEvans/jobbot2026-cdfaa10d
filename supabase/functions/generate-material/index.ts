@@ -736,11 +736,15 @@ ${brandingSection}${bpSection}${existingPatternsSection}${variabilitySection}`;
     const data = await response.json();
     let content = enforceOnePageLayout(data.choices?.[0]?.message?.content || '');
 
-    // Auto-retry: detect overflow and condense if needed
-    const { html: finalHtml, condensed } = await detectAndCondense(content, assetName, LOVABLE_API_KEY);
+    // Two-pass review pipeline: UI Review → QA Review
+    const { html: finalHtml, reviewResults } = await reviewPipeline(content, assetName, LOVABLE_API_KEY);
     content = finalHtml;
 
-    return new Response(JSON.stringify({ success: true, html: content, condensation_applied: condensed }), {
+    return new Response(JSON.stringify({
+      success: true,
+      html: content,
+      review: reviewResults,
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (e) {

@@ -337,13 +337,8 @@ export default function AssetReviewCarousel() {
       </p>
     );
 
-  // Build srcDoc — dashboards/materials need scripts, cover letters need HTML wrapping
-  const getSrcDoc = (asset: FlatAsset) => {
-    if (asset.assetType === "cover_letter" && !asset.html.trim().startsWith("<")) {
-      return wrapCoverLetter(asset.html);
-    }
-    return asset.html;
-  };
+  // Build srcDoc
+  const getSrcDoc = (asset: FlatAsset) => asset.html;
 
   // Dashboards and custom materials need allow-scripts for Chart.js, etc.
   const needsScripts = (asset: FlatAsset) =>

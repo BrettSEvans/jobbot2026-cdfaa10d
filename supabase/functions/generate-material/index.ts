@@ -978,16 +978,18 @@ ${brandingSection}${bpSection}${existingPatternsSection}${variabilitySection}`;
         model: 'google/gemini-2.5-flash',
         messages: [
           { role: 'system', content: `You are a document editor. The following HTML document is TOO DENSE for a single US Letter page. Condense it:
-1. Merge sections down to max 3-4 total (combine related ones)
-2. Cut bullet lists to max 4-5 bullets each (keep the most impactful)
-3. Cut table rows to max 4-5 (keep highest-value rows)
-4. Shorten all paragraphs to max 2 sentences
+1. Merge sections down to max 3 body sections (combine related ones aggressively)
+2. Cut bullet lists to max 3-4 bullets each (keep the most impactful)
+3. Cut table rows to max 3-4 (keep highest-value rows)
+4. Shorten all paragraphs to max 2 sentences, max 50 words per paragraph
 5. Remove any section that is low-value or redundant
-6. Keep ALL branding, colors, fonts, and layout structure intact
-7. Use a SIMPLE single-column or two-column 60/40 layout
-8. NEVER use overflow:hidden on any text container. Use height:auto and overflow:visible.
-9. NEVER use fixed height or max-height on text-containing elements.
-10. Return ONLY the complete fixed HTML — no explanations, no markdown fences` },
+6. Remove all framed/boxed section containers — use simple headers with underlines instead
+7. Keep ALL branding, colors, fonts intact
+8. Use a SIMPLE single-column or two-column 60/40 layout
+9. NEVER use overflow:hidden on any text container. Use height:auto and overflow:visible.
+10. NEVER use fixed height or max-height on text-containing elements.
+11. The document should fill 80-85% of the page — enough to look complete but not cramped.
+12. Return ONLY the complete fixed HTML — no explanations, no markdown fences` },
           { role: 'user', content: content },
         ],
         temperature: 0.1,

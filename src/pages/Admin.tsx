@@ -170,13 +170,13 @@ function ApprovalQueue() {
 }
 
 export default function Admin() {
-  const { data: isAdmin, isLoading } = useAdminRole();
+  const { data: isAdmin, isLoading, authLoading, hasUser } = useAdminRole();
 
-  if (isLoading) {
+  if (authLoading || (hasUser && (isLoading || typeof isAdmin === "undefined"))) {
     return <div className="flex items-center justify-center h-[60vh]"><Skeleton className="w-48 h-8" /></div>;
   }
 
-  if (!isAdmin) {
+  if (!hasUser || isAdmin === false) {
     return <Navigate to="/" replace />;
   }
 

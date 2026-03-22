@@ -267,14 +267,17 @@ OUTPUT: Return a single self-contained HTML document with embedded CSS. The docu
 - Fit on EXACTLY ONE printed page (US Letter 8.5" x 11"). This is a HARD constraint — no exceptions.
 - DO NOT generate more content than fits on a single page. Prefer fewer, higher-impact sections over trying to cover everything.
 - Use compact but readable font sizes (9-10pt body, 12-13pt headings)
-- Account for header AND footer content when sizing — the TOTAL content height including any footer must not exceed the printable area.
-- Use this CSS foundation:
+- Use this EXACT CSS layout pattern to prevent footer from covering content:
   @page { size: letter; margin: 0; }
-  html, body { width: 8.5in; height: 11in; max-height: 11in; overflow: hidden; margin: 0; padding: 0.35in 0.5in; box-sizing: border-box; }
-- The usable content area is approximately 10.3in tall × 7.5in wide. Plan your content to fill 90-95% of this — not more.
-- If the document has a footer (name, date, page number, etc.), reduce body content by the footer height. Use CSS: footer { position: absolute; bottom: 0.35in; left: 0.5in; right: 0.5in; }
+  html, body { width: 8.5in; height: 11in; margin: 0; padding: 0; overflow: hidden; }
+  .page-wrapper { width: 100%; height: 100%; display: flex; flex-direction: column; padding: 0.35in 0.5in; box-sizing: border-box; }
+  .page-content { flex: 1; overflow: hidden; }
+  footer, .page-footer { flex-shrink: 0; padding-top: 0.15in; border-top: 1px solid #ccc; font-size: 8pt; }
+- Structure your HTML as: <body><div class="page-wrapper"><div class="page-content">...main content...</div><footer>...footer...</footer></div></body>
+- The footer MUST be inside the flex wrapper, NOT position:absolute. This ensures the main content area automatically shrinks to accommodate the footer.
+- The usable content area is approximately 9.8in tall × 7.5in wide (after padding and footer). Plan content to fill 90-95% of this.
 - Keep to 3-5 sections maximum. Each section should be concise (2-4 bullet points or compact table rows).
-- Use multi-column layouts (CSS grid/flexbox) to maximize horizontal space rather than vertical scrolling
+- Use multi-column layouts (CSS grid/flexbox) WITHIN .page-content to maximize horizontal space
 - Be professional, clean, and printable
 - Include a header with the company name, job title, and document title
 - Specific to the role and company context — not generic

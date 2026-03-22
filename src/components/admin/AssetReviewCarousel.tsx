@@ -74,8 +74,6 @@ function useAllAssets() {
 
       const inlineTypes = [
         { key: "dashboard_html", label: "Dashboard" },
-        { key: "cover_letter", label: "Cover Letter" },
-        { key: "resume_html", label: "Resume" },
         { key: "executive_report_html", label: "Executive Report" },
         { key: "raid_log_html", label: "RAID Log" },
         { key: "architecture_diagram_html", label: "Architecture Diagram" },

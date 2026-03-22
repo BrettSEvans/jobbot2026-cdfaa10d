@@ -689,9 +689,9 @@ export default function DynamicMaterialsSection({
             )}
 
             {asset.generation_status === 'complete' && asset.html ? (
-              <Card className="overflow-hidden">
-                <div className="w-full bg-white" style={{ height: "60vh" }}>
-                  <iframe srcDoc={assetPreviewHtml[asset.id] || asset.html} className="w-full h-full border-0" sandbox="allow-scripts" title={asset.asset_name} />
+            <Card className="overflow-hidden">
+                <div className="w-full bg-white" style={{ minHeight: "11in", height: "auto" }}>
+                  <iframe srcDoc={assetPreviewHtml[asset.id] || asset.html} className="w-full border-0" style={{ width: "100%", height: "11in" }} sandbox="allow-scripts" title={asset.asset_name} />
                 </div>
               </Card>
             ) : asset.generation_status === 'generating' ? (

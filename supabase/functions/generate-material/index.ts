@@ -859,75 +859,57 @@ Deno.serve(async (req) => {
 ASSET DESCRIPTION: ${assetDescription || assetName}
 
 DATE CONTEXT: The application date is ${anchorStr}. Use this as your temporal anchor:
-- For REPORTS, ASSESSMENTS, ANALYSES, or RETROSPECTIVE documents: use dates in the recent past relative to ${anchorStr}. Data, metrics, and findings should reference the weeks/months leading up to this date.
-- For PLANS, ROADMAPS, STRATEGIES, or FORWARD-LOOKING documents: dates should start from ${anchorStr} and extend into the future (30/60/90 days, quarters, etc.).
-- Always use realistic, specific dates (e.g. "Week of ${anchorStr}", "Q2 2026") — never use placeholder dates like "Month 1" or "TBD".
+- For REPORTS, ASSESSMENTS, ANALYSES: use dates in the recent past relative to ${anchorStr}.
+- For PLANS, ROADMAPS, STRATEGIES: start from ${anchorStr} and extend forward.
+- Always use specific dates — never "Month 1" or "TBD".
 
-## DESIGN PHILOSOPHY: SIMPLICITY FIRST
-Your #1 priority is a CLEAN, READABLE document with NO content overlap. Simple designs that render correctly are infinitely better than complex designs with broken layouts.
+## DESIGN PHILOSOPHY: RADICAL SIMPLICITY
+Your #1 priority is a CLEAN, READABLE, one-page document. Think executive brief — concise, scannable, professional.
 
-PREFER these simple, reliable layout patterns:
-- Single-column with clear section headers and adequate spacing
-- Two-column grid (equal or 60/40 split) using CSS grid with explicit gap
-- Simple table with 3-5 rows
-- Bullet-point sections with clear headings
-- Clean header banner + body sections + footer
+MANDATORY layout rules:
+- MAX 3 body sections (header + 3 sections + footer). NO EXCEPTIONS.
+- Pick ONE simple layout: single-column OR two-column (60/40). Nothing else.
+- NO framed cards, NO bordered boxes, NO multi-panel dashboards.
+- NO nested grids, NO kanban, NO swimlanes, NO complex infographics.
+- NO decorative shapes, overlapping elements, or layered backgrounds.
+- MAX nesting depth: 2 levels (body > section > content). Never deeper.
 
-AVOID these complex patterns that frequently cause overlap:
-- Multi-layer nested grids or complex CSS grid layouts
-- Overlapping decorative elements or background shapes
-- Kanban boards, swimlanes, or dashboard-style multi-panel layouts
-- Complex infographics with many positioned elements
-- Stacked cards with shadows that depend on precise spacing
-- Any layout requiring more than 2 levels of nesting
+## CONTENT BREVITY: BE RUTHLESSLY CONCISE
+Every word must earn its place. Write like a busy executive will read this in 30 seconds.
+- Paragraphs: MAX 2 sentences, MAX 50 words total per paragraph.
+- Bullet lists: MAX 3-4 bullets per section. Each bullet MAX 10 words.
+- Tables: MAX 4 rows, MAX 4 columns. Cell text MAX 6 words.
+- Section headings: MAX 5 words.
+- Header/intro: MAX 2 sentences total.
+- Footer: MAX 1 short line.
+- TOTAL document text: aim for 200-300 words. Less is better.
+Prefer short fragments and keywords over full sentences. White space > text overflow.
 
-## CONTENT BREVITY: LESS IS MORE
-Your text blocks are TOO LONG by default. Follow these strict word limits:
-- Paragraph blocks: MAX 2 sentences (25-35 words each). No paragraph should exceed 70 words.
-- Bullet lists: MAX 4-5 bullets per section. Each bullet MAX 12-15 words.
-- Table cells: MAX 8-10 words per cell. Use fragments, not full sentences.
-- Section headings: MAX 6 words.
-- Executive summaries / introductions: MAX 3 sentences total.
-- Footer text: MAX 1 line.
-Prefer short, punchy phrases over elaborate explanations. White space is better than overflow.
+## CRITICAL CSS RULES (violations = automatic rejection):
+- NEVER use overflow: hidden/auto/scroll on ANY content element.
+- NEVER use fixed height or max-height on text elements. Always height: auto.
+- NEVER use position: absolute or position: fixed.
+- NEVER use negative margins or transforms on content.
+- ALL text containers: height: auto; overflow: visible;
+- Headers: generous padding (0.2in+), height: auto, visible overflow.
+- NEVER use font sizes smaller than 9pt.
 
-## CRITICAL CSS RULES (violations will cause automatic rejection):
-- NEVER use overflow: hidden, overflow: auto, or overflow: scroll on ANY content element (divs, sections, cards, frames, headers). Only the outermost page wrapper may clip.
-- NEVER use fixed height or max-height on text-containing elements. Always use height: auto.
-- NEVER use position: absolute or position: fixed on ANY element. Use normal document flow only.
-- NEVER use negative margins or transform: translateY() to position content.
-- ALL text containers MUST use: height: auto; overflow: visible;
-- Header/banner sections MUST use generous padding (0.2in min) and height: auto so text is never clipped.
-
-OUTPUT: Return a single self-contained HTML document with embedded CSS. The document MUST:
-- Fit on EXACTLY ONE printed page (US Letter 8.5" x 11"). This is a HARD constraint — no exceptions.
-- DO NOT generate more content than fits on a single page. When in doubt, write LESS. Shorter is always safer.
-- NEVER use more than 4 content sections (e.g., header + 3 body sections + footer). Fewer sections = cleaner document.
-- Reserve space for a footer when one is present. The footer must NEVER cover content.
-- Titles must have at minimum 0.1in of clear space above them.
-- Use compact but readable font sizes (9-10pt body, 11-13pt headings). NEVER use font sizes smaller than 9pt.
-- All text in header/banner sections MUST be contained within the colored background area with generous padding.
-- Keep header/banner sections compact: max 1.2in tall. Use a single background color with white text.
-- Use this EXACT structure: <body><div class="page-wrapper"><div class="page-content">...main content...</div><footer>...footer...</footer></div></body>
-- Use this EXACT CSS layout pattern:
+OUTPUT: Single self-contained HTML with embedded CSS.
+- EXACTLY ONE printed US Letter page (8.5" x 11"). HARD constraint.
+- Structure: <body><div class="page-wrapper"><div class="page-content">...</div><footer>...</footer></div></body>
+- CSS pattern:
   @page { size: letter; margin: 0; }
   html, body { width: 8.5in; height: 11in; margin: 0; padding: 0; overflow: hidden; }
   .page-wrapper { width: 100%; height: 100%; display: flex; flex-direction: column; padding: 0.4in 0.5in; box-sizing: border-box; }
   .page-content { flex: 1; min-height: 0; }
-  footer, .page-footer { flex-shrink: 0; padding-top: 0.15in; border-top: 1px solid #ccc; font-size: 8pt; }
-- The footer MUST be inside the flex wrapper, NOT position:absolute.
-- The usable content area is approximately 9.2in tall × 7.5in wide after padding and footer reserve. Plan content to fill 75-80% of this — leave generous breathing room.
-- Use generous spacing between sections (margin-bottom: 0.15in minimum).
-- Be professional, clean, and printable
-- Include a header with the company name, job title, and document title
-- Specific to the role and company context — not generic
+  footer { flex-shrink: 0; padding-top: 0.15in; border-top: 1px solid #ccc; font-size: 8pt; }
+- Footer INSIDE flex wrapper. NEVER position:absolute.
+- Usable area ~9.2in × 7.5in. Fill 70-80%. Leave breathing room.
+- Section spacing: margin-bottom 0.15in minimum.
+- Font: 9-10pt body, 11-13pt headings.
 
-## Optional: ONE Simple Data Element
-You MAY include ONE simple data element per document. Keep it minimal:
-- Progress bars (CSS-only, max 3-4 bars)
-- A compact table with 3-5 rows
-- Simple metric cards (max 3-4 in a row using flexbox)
-Use ONLY CSS-only visualizations. Avoid SVG charts. Maximum ONE per page. Keep under 1.2in tall.
+## Optional: ONE Simple Visual (max)
+You MAY include ONE of: 3-4 CSS progress bars, a compact table, or 3 metric cards. CSS-only. Under 1in tall.
 
 Company: ${companyName || 'Unknown'}
 Job Title: ${jobTitle || 'Unknown'}

@@ -724,11 +724,7 @@ export default function DynamicMaterialsSection({
                   toast({ title: "Printing PDF" });
                 }}><Download className="mr-2 h-4 w-4" /> Download PDF</Button>
               </div>
-              <Card className="overflow-hidden">
-                <div className="w-full bg-white" style={{ height: "60vh" }}>
-                  <iframe srcDoc={legacy.html} className="w-full h-full border-0" sandbox="allow-scripts" title={legacy.name} />
-                </div>
-              </Card>
+              <FitPagePreview html={legacy.html} title={legacy.name} />
             </TabsContent>
           ))}
       </Tabs>

@@ -439,8 +439,10 @@ export default function DynamicMaterialsSection({
           if (htmlEnd !== -1) cleaned = cleaned.slice(0, htmlEnd + 7);
 
           if (cleaned) {
-            await supabase.from("generated_assets").update({ html: cleaned }).eq("id", assetId);
-            setGeneratedAssets(prev => prev.map(a => a.id === assetId ? { ...a, html: cleaned } : a));
+            // Inject one-page guard CSS for vibe-edited content
+            const guardedHtml = injectOnePageGuard(cleaned);
+            await supabase.from("generated_assets").update({ html: guardedHtml }).eq("id", assetId);
+            setGeneratedAssets(prev => prev.map(a => a.id === assetId ? { ...a, html: guardedHtml } : a));
             setAssetChatHistory(prev => ({
               ...prev,
               [assetId]: [...(prev[assetId] || []), { role: 'assistant', content: '✅ Changes applied' }],

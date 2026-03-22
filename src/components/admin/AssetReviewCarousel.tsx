@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { CompanyIcon } from "@/components/CompanyIcon";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
@@ -19,7 +20,7 @@ import {
   ThumbsDown,
   ChevronLeft,
   ChevronRight,
-  Building2,
+  
   Briefcase,
   Filter,
   SkipForward,
@@ -36,6 +37,8 @@ type FlatAsset = {
   assetName: string;
   html: string;
   companyName: string | null;
+  companyUrl: string | null;
+  companyIconUrl: string | null;
   jobTitle: string | null;
 };
 
@@ -58,7 +61,7 @@ function useAllAssets() {
       const { data: apps, error: appErr } = await supabase
         .from("job_applications")
         .select(
-          "id, company_name, job_title, dashboard_html, executive_report_html, raid_log_html, architecture_diagram_html, roadmap_html"
+          "id, company_name, company_url, company_icon_url, job_title, dashboard_html, executive_report_html, raid_log_html, architecture_diagram_html, roadmap_html"
         )
         .order("created_at", { ascending: false });
 
@@ -92,6 +95,8 @@ function useAllAssets() {
               assetName: t.label,
               html,
               companyName: app.company_name,
+              companyUrl: app.company_url,
+              companyIconUrl: app.company_icon_url,
               jobTitle: app.job_title,
             });
           }
@@ -109,6 +114,8 @@ function useAllAssets() {
           assetName: ga.asset_name,
           html: ga.html,
           companyName: parent?.company_name ?? null,
+          companyUrl: parent?.company_url ?? null,
+          companyIconUrl: parent?.company_icon_url ?? null,
           jobTitle: parent?.job_title ?? null,
         });
       }
@@ -445,7 +452,13 @@ export default function AssetReviewCarousel() {
               <Badge>{current.assetName}</Badge>
               {current.companyName && (
                 <span className="flex items-center gap-1 text-xs text-muted-foreground truncate">
-                  <Building2 className="h-3 w-3 shrink-0" /> {current.companyName}
+                  <CompanyIcon
+                    companyName={current.companyName}
+                    companyUrl={current.companyUrl}
+                    iconUrl={current.companyIconUrl}
+                    size="sm"
+                  />
+                  {current.companyName}
                 </span>
               )}
               {current.jobTitle && (

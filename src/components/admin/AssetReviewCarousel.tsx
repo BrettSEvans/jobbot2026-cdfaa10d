@@ -43,8 +43,6 @@ type RatingValue = "up" | "mid" | "down";
 
 const ASSET_TYPE_LABELS: Record<string, string> = {
   dashboard_html: "Dashboard",
-  cover_letter: "Cover Letter",
-  resume_html: "Resume",
   executive_report_html: "Executive Report",
   raid_log_html: "RAID Log",
   architecture_diagram_html: "Architecture Diagram",
@@ -60,7 +58,7 @@ function useAllAssets() {
       const { data: apps, error: appErr } = await supabase
         .from("job_applications")
         .select(
-          "id, company_name, job_title, dashboard_html, cover_letter, resume_html, executive_report_html, raid_log_html, architecture_diagram_html, roadmap_html"
+          "id, company_name, job_title, dashboard_html, executive_report_html, raid_log_html, architecture_diagram_html, roadmap_html"
         )
         .order("created_at", { ascending: false });
 
@@ -76,8 +74,6 @@ function useAllAssets() {
 
       const inlineTypes = [
         { key: "dashboard_html", label: "Dashboard" },
-        { key: "cover_letter", label: "Cover Letter" },
-        { key: "resume_html", label: "Resume" },
         { key: "executive_report_html", label: "Executive Report" },
         { key: "raid_log_html", label: "RAID Log" },
         { key: "architecture_diagram_html", label: "Architecture Diagram" },
@@ -138,17 +134,6 @@ function reviewKey(a: FlatAsset) {
   return `${a.applicationId}::${a.assetType}::${a.assetId ?? "inline"}`;
 }
 
-/** Wrap plain-text cover letters in styled HTML */
-function wrapCoverLetter(text: string): string {
-  return `<!DOCTYPE html><html><head><style>
-    body { font-family: Georgia, 'Times New Roman', serif; font-size: 14px; line-height: 1.7;
-           color: #1a1a1a; background: #fff; max-width: 680px; margin: 32px auto; padding: 24px; }
-    p { margin-bottom: 1em; }
-  </style></head><body>${text
-    .split(/\n\n+/)
-    .map((p) => `<p>${p.replace(/\n/g, "<br/>")}</p>`)
-    .join("")}</body></html>`;
-}
 
 type ReviewFilter = "all" | "unreviewed" | "up" | "mid" | "down";
 
@@ -341,13 +326,8 @@ export default function AssetReviewCarousel() {
       </p>
     );
 
-  // Build srcDoc — dashboards/materials need scripts, cover letters need HTML wrapping
-  const getSrcDoc = (asset: FlatAsset) => {
-    if (asset.assetType === "cover_letter" && !asset.html.trim().startsWith("<")) {
-      return wrapCoverLetter(asset.html);
-    }
-    return asset.html;
-  };
+  // Build srcDoc
+  const getSrcDoc = (asset: FlatAsset) => asset.html;
 
   // Dashboards and custom materials need allow-scripts for Chart.js, etc.
   const needsScripts = (asset: FlatAsset) =>

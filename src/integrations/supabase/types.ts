@@ -1590,6 +1590,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      owns_application: { Args: { _application_id: string }; Returns: boolean }
       set_active_resume: { Args: { p_resume_id: string }; Returns: undefined }
     }
     Enums: {

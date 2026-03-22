@@ -145,19 +145,16 @@ function enforceOnePageLayout(html: string): string {
     word-wrap: break-word !important;
   }
 
-  /* Strip ONLY absolute/fixed positioning — keep relative and static */
+  /* Strip ONLY absolute/fixed positioning — allow relative universally */
   .page-content *:not(svg *) {
-    position: static !important;
     top: auto !important;
     left: auto !important;
     right: auto !important;
     bottom: auto !important;
-    transform: none !important;
   }
-  /* Allow relative positioning for controlled layout */
-  .page-content [style*="position: relative"],
-  .page-content [style*="position:relative"] {
-    position: relative !important;
+  .page-content *:not(svg *):not([style*="position: relative"]):not([style*="position:relative"]):not(header):not(.header):not([class*="header"]):not([class*="banner"]):not([class*="hero"]):not([class*="sidebar"]):not(aside) {
+    position: static !important;
+    transform: none !important;
   }
 
   /* Headers: flow-safe, visible text, generous padding */

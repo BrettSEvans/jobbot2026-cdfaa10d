@@ -533,7 +533,7 @@ Deno.serve(async (req) => {
           return `- ${a.asset_name}: layout=${layoutType}, flow=${blocks.join(' → ') || 'mixed'}`;
         }).join('\n');
 
-        existingPatternsSection = `\n\n## CRITICAL: Design & Style Variability Requirement (80%+ uniqueness)\nThe following assets have ALREADY been generated for this application. Your output MUST be structurally AND stylistically DIFFERENT from all of them.\n\n### Layout Types Already Used (DO NOT repeat):\n${flowSummaries}\n\n### Rules:\n1. If existing assets use two-column layout, use single-column, sidebar, centered, or asymmetric layout instead\n2. If existing assets use table-heavy content, use cards, timelines, or infographic style instead\n3. Use a DIFFERENT content block sequence — if others go "header → paragraph → table → bullets", try "header → metrics grid → timeline → callout box"\n4. Each document should tell the candidate's story from a DIFFERENT angle (strategic leader, analytical problem-solver, cross-functional collaborator, innovation driver)\n5. Highlight DIFFERENT skills and competencies than other documents\n6. Avoid body-level height math or layouts that depend on absolute-positioned footers; content must reserve space naturally for the footer\n\nChoose a DIFFERENT dominant layout pattern. Examples:\n- Timeline/chronological flow\n- Scorecard/metric grid with KPI cards\n- Executive brief with sidebar navigation\n- Kanban/swimlane layout\n- Infographic with icons and visual hierarchy\n- Matrix/quadrant analysis\n- Dashboard with charts and data panels\n\nExisting asset structures to AVOID duplicating:\n${patternSummaries}`;
+        existingPatternsSection = `\n\n## CRITICAL: Design & Style Variability Requirement (80%+ uniqueness)\nThe following assets have ALREADY been generated for this application. Your output MUST be structurally AND stylistically DIFFERENT from all of them.\n\n### Layout Types Already Used (DO NOT repeat):\n${flowSummaries}\n\n### Rules:\n1. If existing assets use two-column layout, use single-column or a different grid split\n2. If existing assets use table-heavy content, use bullet lists or metric cards instead\n3. Use a DIFFERENT content block sequence — vary the order of sections\n4. Each document should tell the candidate's story from a DIFFERENT angle (strategic leader, analytical problem-solver, cross-functional collaborator, innovation driver)\n5. Highlight DIFFERENT skills and competencies than other documents\n6. KEEP LAYOUTS SIMPLE — variety comes from content structure and color use, NOT from complex CSS layouts\n\nChoose a DIFFERENT but SIMPLE layout pattern. Examples:\n- Single-column with alternating section backgrounds\n- Two-column (60/40) with sidebar highlights\n- Clean table-based layout with clear headers\n- Metric cards row + bullet sections below\n- Timeline as a simple vertical list with date markers\n\nExisting asset structures to AVOID duplicating:\n${patternSummaries}`;
       }
     }
 
@@ -612,10 +612,28 @@ DATE CONTEXT: The application date is ${anchorStr}. Use this as your temporal an
 - For PLANS, ROADMAPS, STRATEGIES, or FORWARD-LOOKING documents: dates should start from ${anchorStr} and extend into the future (30/60/90 days, quarters, etc.).
 - Always use realistic, specific dates (e.g. "Week of ${anchorStr}", "Q2 2026") — never use placeholder dates like "Month 1" or "TBD".
 
+## DESIGN PHILOSOPHY: SIMPLICITY FIRST
+Your #1 priority is a CLEAN, READABLE document with NO content overlap. Simple designs that render correctly are infinitely better than complex designs with broken layouts.
+
+PREFER these simple, reliable layout patterns:
+- Single-column with clear section headers and adequate spacing
+- Two-column grid (equal or 60/40 split) using CSS grid with explicit gap
+- Simple table with 3-5 rows
+- Bullet-point sections with clear headings
+- Clean header banner + body sections + footer
+
+AVOID these complex patterns that frequently cause overlap:
+- Multi-layer nested grids or complex CSS grid layouts
+- Overlapping decorative elements or background shapes
+- Kanban boards, swimlanes, or dashboard-style multi-panel layouts
+- Complex infographics with many positioned elements
+- Stacked cards with shadows that depend on precise spacing
+- Any layout requiring more than 2 levels of nesting
+
 OUTPUT: Return a single self-contained HTML document with embedded CSS. The document MUST:
 - Fit on EXACTLY ONE printed page (US Letter 8.5" x 11"). This is a HARD constraint — no exceptions.
 - DO NOT generate more content than fits on a single page. If content risks overflow, condense aggressively, reduce bullet counts, shorten labels, and drop lower-priority details.
-- NEVER use more than 5 content sections. If the document type demands more, merge sections.
+- NEVER use more than 4 content sections (e.g., header + 3 body sections + footer). Fewer sections = cleaner document.
 - Reserve space for a footer when one is present. The footer must NEVER cover content.
 - Titles must have at minimum 0.1in of clear space above them. Never position content at the very edge of the page.
 - Use compact but readable font sizes (9-10pt body, 11-13pt headings). NEVER use font sizes smaller than 9pt.
@@ -623,32 +641,27 @@ OUTPUT: Return a single self-contained HTML document with embedded CSS. The docu
 - NEVER use position: absolute or position: fixed on ANY element including headers, footers, content blocks, or decorative elements. Everything must use normal document flow (position: static or relative only).
 - NEVER use negative margins or transform: translateY() to position content — this causes blocks to overlap and become unreadable.
 - All text in header/banner sections MUST be contained within the colored background area. Use padding inside the colored container, not absolute positioning of text outside it.
-- Use this EXACT structure to prevent footer overlap: <body><div class="page-wrapper"><div class="page-content">...main content...</div><footer>...footer...</footer></div></body>
-- Use this EXACT CSS layout pattern to prevent footer from covering content:
+- Keep header/banner sections compact: max 1.2in tall. Use a single background color with white text and generous padding (0.2in minimum).
+- Use this EXACT structure: <body><div class="page-wrapper"><div class="page-content">...main content...</div><footer>...footer...</footer></div></body>
+- Use this EXACT CSS layout pattern:
   @page { size: letter; margin: 0; }
   html, body { width: 8.5in; height: 11in; margin: 0; padding: 0; overflow: hidden; }
   .page-wrapper { width: 100%; height: 100%; display: flex; flex-direction: column; padding: 0.4in 0.5in; box-sizing: border-box; }
   .page-content { flex: 1; min-height: 0; overflow: hidden; }
   footer, .page-footer { flex-shrink: 0; padding-top: 0.15in; border-top: 1px solid #ccc; font-size: 8pt; }
-- The footer MUST be inside the flex wrapper, NOT position:absolute. This ensures the main content area automatically shrinks to accommodate the footer.
-- Never put height: calc(...) on the main content container to guess footer space.
-- The usable content area is approximately 9.2in tall × 7.5in wide after padding and footer reserve. Plan content to fill 85-90% of this.
-- Keep to 3-5 sections maximum. Each section should be concise (2-4 bullet points or compact table rows).
-- Use multi-column layouts (CSS grid/flexbox) WITHIN .page-content to maximize horizontal space
+- The footer MUST be inside the flex wrapper, NOT position:absolute.
+- The usable content area is approximately 9.2in tall × 7.5in wide after padding and footer reserve. Plan content to fill 80-85% of this — leave breathing room.
+- Use generous spacing between sections (margin-bottom: 0.15in minimum).
 - Be professional, clean, and printable
 - Include a header with the company name, job title, and document title
 - Specific to the role and company context — not generic
-- Visually polished with modern styling
 
-## Optional: Data Visualization Element
-You MAY include ONE small data visualization element per document to increase visual variety. This is optional but encouraged when it adds analytical value. Options:
-- Mini bar/column chart (inline SVG — <svg> with <rect> elements)
-- Progress bars (CSS-only with percentage labels)
-- Simple Gantt-style timeline (CSS grid or table-based)
-- Compact data table with 3-5 rows
-- Scorecard/KPI cards with metric values
-- Donut/pie chart (inline SVG with <circle> and stroke-dasharray)
-Use ONLY inline SVG or CSS-only visualizations — no external charting libraries. Maximum ONE per page. Keep compact (under 1.5in tall).
+## Optional: ONE Simple Data Element
+You MAY include ONE simple data element per document. Keep it minimal:
+- Progress bars (CSS-only, max 3-4 bars)
+- A compact table with 3-5 rows
+- Simple metric cards (max 3-4 in a row using flexbox)
+Use ONLY CSS-only visualizations. Avoid SVG charts. Maximum ONE per page. Keep under 1.2in tall.
 
 Company: ${companyName || 'Unknown'}
 Job Title: ${jobTitle || 'Unknown'}

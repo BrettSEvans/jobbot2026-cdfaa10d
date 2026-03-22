@@ -7,7 +7,23 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
-import { ThumbsUp, ThumbsDown, ChevronLeft, ChevronRight, Building2, Briefcase } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  ThumbsUp,
+  ThumbsDown,
+  ChevronLeft,
+  ChevronRight,
+  Building2,
+  Briefcase,
+  Filter,
+  SkipForward,
+} from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -21,28 +37,37 @@ type FlatAsset = {
   jobTitle: string | null;
 };
 
+const ASSET_TYPE_LABELS: Record<string, string> = {
+  dashboard_html: "Dashboard",
+  cover_letter: "Cover Letter",
+  resume_html: "Resume",
+  executive_report_html: "Executive Report",
+  raid_log_html: "RAID Log",
+  architecture_diagram_html: "Architecture Diagram",
+  roadmap_html: "Roadmap",
+  generated_asset: "Custom Material",
+};
+
 function useAllAssets() {
   return useQuery({
     queryKey: ["admin_all_assets"],
     staleTime: 30_000,
     queryFn: async () => {
-      // Fetch job_applications with inline HTML assets
       const { data: apps, error: appErr } = await supabase
         .from("job_applications")
-        .select("id, company_name, job_title, dashboard_html, cover_letter, resume_html, executive_report_html, raid_log_html, architecture_diagram_html, roadmap_html")
+        .select(
+          "id, company_name, job_title, dashboard_html, cover_letter, resume_html, executive_report_html, raid_log_html, architecture_diagram_html, roadmap_html"
+        )
         .order("created_at", { ascending: false });
 
       if (appErr) throw appErr;
 
-      // Fetch generated_assets
       const { data: genAssets, error: genErr } = await supabase
         .from("generated_assets")
         .select("id, application_id, asset_name, html, generation_status");
       if (genErr) throw genErr;
 
-      // Get company/job info for generated assets
       const appMap = new Map((apps ?? []).map((a) => [a.id, a]));
-
       const flat: FlatAsset[] = [];
 
       const inlineTypes = [
@@ -107,6 +132,21 @@ function reviewKey(a: FlatAsset) {
   return `${a.applicationId}::${a.assetType}::${a.assetId ?? "inline"}`;
 }
 
+/** Wrap plain-text cover letters in styled HTML */
+function wrapCoverLetter(text: string): string {
+  return `<!DOCTYPE html><html><head><style>
+    body { font-family: Georgia, 'Times New Roman', serif; font-size: 14px; line-height: 1.7;
+           color: #1a1a1a; background: #fff; max-width: 680px; margin: 32px auto; padding: 24px; }
+    p { margin-bottom: 1em; }
+  </style></head><body>${text
+    .split(/\n\n+/)
+    .map((p) => `<p>${p.replace(/\n/g, "<br/>")}</p>`)
+    .join("")}</body></html>`;
+}
+
+type ReviewFilter = "all" | "unreviewed" | "up" | "down";
+type TypeFilter = "all" | string;
+
 export default function AssetReviewCarousel() {
   const { user } = useAuth();
   const qc = useQueryClient();
@@ -115,7 +155,10 @@ export default function AssetReviewCarousel() {
   const [idx, setIdx] = useState(0);
   const [notes, setNotes] = useState("");
   const [pendingRating, setPendingRating] = useState<"up" | "down" | null>(null);
+  const [reviewFilter, setReviewFilter] = useState<ReviewFilter>("all");
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
 
+  // Build review map
   const reviewMap = useMemo(() => {
     const m = new Map<string, (typeof reviews extends (infer T)[] | undefined ? T : never)>();
     for (const r of reviews ?? []) {
@@ -125,14 +168,42 @@ export default function AssetReviewCarousel() {
     return m;
   }, [reviews]);
 
-  const current = assets?.[idx];
+  // Unique asset types for filter dropdown
+  const assetTypes = useMemo(() => {
+    if (!assets) return [];
+    const s = new Set(assets.map((a) => a.assetType));
+    return Array.from(s).sort();
+  }, [assets]);
+
+  // Filtered asset list
+  const filtered = useMemo(() => {
+    if (!assets) return [];
+    return assets.filter((a) => {
+      if (typeFilter !== "all" && a.assetType !== typeFilter) return false;
+      if (reviewFilter === "all") return true;
+      const rev = reviewMap.get(reviewKey(a));
+      if (reviewFilter === "unreviewed") return !rev;
+      if (reviewFilter === "up") return rev?.rating === "up";
+      if (reviewFilter === "down") return rev?.rating === "down";
+      return true;
+    });
+  }, [assets, typeFilter, reviewFilter, reviewMap]);
+
+  // Reset index when filters change
+  useEffect(() => {
+    setIdx(0);
+  }, [typeFilter, reviewFilter]);
+
+  const current = filtered[idx];
   const currentReview = current ? reviewMap.get(reviewKey(current)) : undefined;
 
-  // sync notes/rating when navigating
+  // Sync notes/rating when navigating
   useEffect(() => {
     if (currentReview) {
       setNotes(currentReview.notes ?? "");
-      setPendingRating(currentReview.rating === "up" ? "up" : currentReview.rating === "down" ? "down" : null);
+      setPendingRating(
+        currentReview.rating === "up" ? "up" : currentReview.rating === "down" ? "down" : null
+      );
     } else {
       setNotes("");
       setPendingRating(null);
@@ -173,7 +244,7 @@ export default function AssetReviewCarousel() {
       setPendingRating(r);
       saveMutation.mutate({ rating: r, notesVal: notes });
     },
-    [notes, saveMutation],
+    [notes, saveMutation]
   );
 
   const handleSaveNotes = useCallback(() => {
@@ -186,120 +257,241 @@ export default function AssetReviewCarousel() {
 
   const go = useCallback(
     (dir: -1 | 1) => {
-      if (!assets) return;
-      setIdx((prev) => Math.max(0, Math.min(assets.length - 1, prev + dir)));
+      setIdx((prev) => Math.max(0, Math.min(filtered.length - 1, prev + dir)));
     },
-    [assets],
+    [filtered]
   );
 
+  const skipToNextUnreviewed = useCallback(() => {
+    const start = idx + 1;
+    for (let i = start; i < filtered.length; i++) {
+      if (!reviewMap.get(reviewKey(filtered[i]))) {
+        setIdx(i);
+        return;
+      }
+    }
+    toast.info("No more unreviewed assets ahead");
+  }, [idx, filtered, reviewMap]);
+
   // Stats
+  const totalAssets = assets?.length ?? 0;
+  const reviewedCount = (reviews ?? []).length;
   const upCount = (reviews ?? []).filter((r) => r.rating === "up").length;
   const downCount = (reviews ?? []).filter((r) => r.rating === "down").length;
+  const unreviewedCount = totalAssets - reviewedCount;
+  const progressPct = totalAssets > 0 ? Math.round((reviewedCount / totalAssets) * 100) : 0;
 
   if (assetsLoading) return <Skeleton className="h-[500px] w-full" />;
-  if (!assets || assets.length === 0) return <p className="text-muted-foreground text-center py-12">No generated assets found in the database.</p>;
+  if (!assets || assets.length === 0)
+    return (
+      <p className="text-muted-foreground text-center py-12">
+        No generated assets found in the database.
+      </p>
+    );
+
+  // Build srcDoc — dashboards/materials need scripts, cover letters need HTML wrapping
+  const getSrcDoc = (asset: FlatAsset) => {
+    if (asset.assetType === "cover_letter" && !asset.html.trim().startsWith("<")) {
+      return wrapCoverLetter(asset.html);
+    }
+    return asset.html;
+  };
+
+  // Dashboards and custom materials need allow-scripts for Chart.js, etc.
+  const needsScripts = (asset: FlatAsset) =>
+    ["dashboard_html", "roadmap_html", "architecture_diagram_html", "generated_asset"].includes(
+      asset.assetType
+    );
 
   return (
     <div className="space-y-4">
-      {/* Stats bar */}
-      <div className="flex items-center justify-between text-sm">
-        <span className="text-muted-foreground">
-          Asset <span className="font-semibold text-foreground">{idx + 1}</span> of{" "}
-          <span className="font-semibold text-foreground">{assets.length}</span>
-        </span>
-        <div className="flex items-center gap-3">
-          <Badge variant="outline" className="gap-1 text-green-600 border-green-300">
-            <ThumbsUp className="h-3 w-3" /> {upCount}
-          </Badge>
-          <Badge variant="outline" className="gap-1 text-red-600 border-red-300">
-            <ThumbsDown className="h-3 w-3" /> {downCount}
-          </Badge>
-          <Badge variant="secondary">{(reviews ?? []).length} reviewed</Badge>
-        </div>
-      </div>
-
-      {/* Header for current asset */}
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-2 min-w-0">
-          <Badge>{current.assetName}</Badge>
-          {current.companyName && (
-            <span className="flex items-center gap-1 text-xs text-muted-foreground truncate">
-              <Building2 className="h-3 w-3 shrink-0" /> {current.companyName}
-            </span>
-          )}
-          {current.jobTitle && (
-            <span className="flex items-center gap-1 text-xs text-muted-foreground truncate">
-              <Briefcase className="h-3 w-3 shrink-0" /> {current.jobTitle}
-            </span>
-          )}
-        </div>
-        {currentReview && (
-          <Badge
-            variant={currentReview.rating === "up" ? "default" : "destructive"}
-            className="text-[10px]"
-          >
-            {currentReview.rating === "up" ? "👍 Approved" : "👎 Rejected"}
-          </Badge>
-        )}
-      </div>
-
-      {/* Preview iframe */}
-      <Card className="overflow-hidden">
-        <CardContent className="p-0">
-          <iframe
-            srcDoc={current.html}
-            title="Asset preview"
-            className="w-full border-0"
-            style={{ height: "600px" }}
-            sandbox="allow-same-origin"
-          />
-        </CardContent>
-      </Card>
-
-      {/* Navigation + rating */}
-      <div className="flex items-center justify-between gap-4">
-        <Button variant="outline" size="sm" disabled={idx === 0} onClick={() => go(-1)} className="gap-1">
-          <ChevronLeft className="h-4 w-4" /> Previous
-        </Button>
-
-        <div className="flex items-center gap-2">
-          <Button
-            size="sm"
-            variant={pendingRating === "up" ? "default" : "outline"}
-            className={cn("gap-1", pendingRating === "up" && "bg-green-600 hover:bg-green-700 text-white")}
-            onClick={() => handleRate("up")}
-            disabled={saveMutation.isPending}
-          >
-            <ThumbsUp className="h-4 w-4" /> Good
-          </Button>
-          <Button
-            size="sm"
-            variant={pendingRating === "down" ? "destructive" : "outline"}
-            className="gap-1"
-            onClick={() => handleRate("down")}
-            disabled={saveMutation.isPending}
-          >
-            <ThumbsDown className="h-4 w-4" /> Poor
-          </Button>
-        </div>
-
-        <Button variant="outline" size="sm" disabled={idx === assets.length - 1} onClick={() => go(1)} className="gap-1">
-          Next <ChevronRight className="h-4 w-4" />
-        </Button>
-      </div>
-
-      {/* Notes */}
+      {/* Progress + stats bar */}
       <div className="space-y-2">
-        <Textarea
-          placeholder="Add notes about this asset (layout issues, good patterns, color problems, etc.)..."
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          rows={3}
-        />
-        <Button size="sm" variant="secondary" onClick={handleSaveNotes} disabled={saveMutation.isPending}>
-          Save Notes
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-muted-foreground">
+            Review progress:{" "}
+            <span className="font-semibold text-foreground">
+              {reviewedCount}/{totalAssets}
+            </span>{" "}
+            ({progressPct}%)
+          </span>
+          <div className="flex items-center gap-3">
+            <Badge variant="outline" className="gap-1 text-green-600 border-green-300">
+              <ThumbsUp className="h-3 w-3" /> {upCount}
+            </Badge>
+            <Badge variant="outline" className="gap-1 text-red-600 border-red-300">
+              <ThumbsDown className="h-3 w-3" /> {downCount}
+            </Badge>
+            <Badge variant="secondary">{unreviewedCount} remaining</Badge>
+          </div>
+        </div>
+        <div className="h-2 rounded-full bg-muted overflow-hidden">
+          <div
+            className="h-full rounded-full bg-primary transition-all"
+            style={{ width: `${progressPct}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+          <Filter className="h-3.5 w-3.5" /> Filters:
+        </div>
+        <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v)}>
+          <SelectTrigger className="w-[180px] h-8 text-xs">
+            <SelectValue placeholder="Asset type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All types</SelectItem>
+            {assetTypes.map((t) => (
+              <SelectItem key={t} value={t}>
+                {ASSET_TYPE_LABELS[t] ?? t}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={reviewFilter} onValueChange={(v) => setReviewFilter(v as ReviewFilter)}>
+          <SelectTrigger className="w-[160px] h-8 text-xs">
+            <SelectValue placeholder="Review status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All</SelectItem>
+            <SelectItem value="unreviewed">Unreviewed</SelectItem>
+            <SelectItem value="up">👍 Approved</SelectItem>
+            <SelectItem value="down">👎 Rejected</SelectItem>
+          </SelectContent>
+        </Select>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="gap-1 text-xs"
+          onClick={skipToNextUnreviewed}
+        >
+          <SkipForward className="h-3.5 w-3.5" /> Skip to unreviewed
         </Button>
       </div>
+
+      {filtered.length === 0 ? (
+        <Card>
+          <CardContent className="py-12 text-center text-muted-foreground">
+            No assets match the current filters.
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          {/* Header for current asset */}
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-2 min-w-0">
+              <Badge>{current.assetName}</Badge>
+              {current.companyName && (
+                <span className="flex items-center gap-1 text-xs text-muted-foreground truncate">
+                  <Building2 className="h-3 w-3 shrink-0" /> {current.companyName}
+                </span>
+              )}
+              {current.jobTitle && (
+                <span className="flex items-center gap-1 text-xs text-muted-foreground truncate">
+                  <Briefcase className="h-3 w-3 shrink-0" /> {current.jobTitle}
+                </span>
+              )}
+              <span className="text-xs text-muted-foreground">
+                ({idx + 1}/{filtered.length})
+              </span>
+            </div>
+            {currentReview && (
+              <Badge
+                variant={currentReview.rating === "up" ? "default" : "destructive"}
+                className="text-[10px]"
+              >
+                {currentReview.rating === "up" ? "👍 Approved" : "👎 Rejected"}
+              </Badge>
+            )}
+          </div>
+
+          {/* Preview iframe */}
+          <Card className="overflow-hidden">
+            <CardContent className="p-0">
+              <iframe
+                key={reviewKey(current)}
+                srcDoc={getSrcDoc(current)}
+                title="Asset preview"
+                className="w-full border-0 bg-white"
+                style={{ height: "600px" }}
+                sandbox={
+                  needsScripts(current)
+                    ? "allow-scripts allow-same-origin"
+                    : "allow-same-origin"
+                }
+              />
+            </CardContent>
+          </Card>
+
+          {/* Navigation + rating */}
+          <div className="flex items-center justify-between gap-4">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={idx === 0}
+              onClick={() => go(-1)}
+              className="gap-1"
+            >
+              <ChevronLeft className="h-4 w-4" /> Previous
+            </Button>
+
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant={pendingRating === "up" ? "default" : "outline"}
+                className={cn(
+                  "gap-1",
+                  pendingRating === "up" && "bg-green-600 hover:bg-green-700 text-white"
+                )}
+                onClick={() => handleRate("up")}
+                disabled={saveMutation.isPending}
+              >
+                <ThumbsUp className="h-4 w-4" /> Good
+              </Button>
+              <Button
+                size="sm"
+                variant={pendingRating === "down" ? "destructive" : "outline"}
+                className="gap-1"
+                onClick={() => handleRate("down")}
+                disabled={saveMutation.isPending}
+              >
+                <ThumbsDown className="h-4 w-4" /> Poor
+              </Button>
+            </div>
+
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={idx === filtered.length - 1}
+              onClick={() => go(1)}
+              className="gap-1"
+            >
+              Next <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+
+          {/* Notes */}
+          <div className="space-y-2">
+            <Textarea
+              placeholder="Add notes about this asset (layout issues, good patterns, color problems, etc.)..."
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={3}
+            />
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={handleSaveNotes}
+              disabled={saveMutation.isPending}
+            >
+              Save Notes
+            </Button>
+          </div>
+        </>
+      )}
     </div>
   );
 }

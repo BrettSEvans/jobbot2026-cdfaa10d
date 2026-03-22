@@ -378,6 +378,7 @@ class BackgroundGenerationManager {
                     customers,
                     applicationId: appId,
                     applicationCreatedAt: new Date().toISOString(),
+                    branding: brandingData,
                   }),
                 }
               );

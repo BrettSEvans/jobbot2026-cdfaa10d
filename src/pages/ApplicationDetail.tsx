@@ -743,16 +743,7 @@ const ApplicationDetail = () => {
                     onCancel={() => setEditingResume(false)}
                   />
                 ) : (
-                  <Card className="overflow-hidden">
-                    <div className="w-full bg-white" style={{ height: "60vh" }}>
-                      <iframe
-                        srcDoc={previewResumeHtml || app.resume_html}
-                        className="w-full h-full border-0"
-                        sandbox="allow-scripts"
-                        title="Resume Preview"
-                      />
-                    </div>
-                  </Card>
+                  <ResumePagePreview html={previewResumeHtml || app.resume_html} />
                 )}
 
                 {/* Resume Revision History */}

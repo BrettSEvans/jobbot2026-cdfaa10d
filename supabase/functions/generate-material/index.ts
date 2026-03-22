@@ -420,6 +420,7 @@ Deno.serve(async (req) => {
       applicationId,
       variabilityRecommendations,
       applicationCreatedAt,
+      branding,
     } = await req.json();
 
     if (!assetName || !jobDescription) {

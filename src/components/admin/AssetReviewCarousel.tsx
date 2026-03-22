@@ -244,8 +244,16 @@ export default function AssetReviewCarousel() {
     }
   }, [idx, currentReview]);
 
+  const getNotesForSave = useCallback(
+    (rating: RatingValue) => {
+      if (rating === "mid") return serializeMidNotes(midPros, midCons);
+      return notes;
+    },
+    [notes, midPros, midCons]
+  );
+
   const saveMutation = useMutation({
-    mutationFn: async ({ rating, notesVal }: { rating: "up" | "down"; notesVal: string }) => {
+    mutationFn: async ({ rating, notesVal }: { rating: RatingValue; notesVal: string }) => {
       if (!current || !user) return;
       const existing = reviewMap.get(reviewKey(current));
       if (existing) {
@@ -274,20 +282,20 @@ export default function AssetReviewCarousel() {
   });
 
   const handleRate = useCallback(
-    (r: "up" | "down") => {
+    (r: RatingValue) => {
       setPendingRating(r);
-      saveMutation.mutate({ rating: r, notesVal: notes });
+      saveMutation.mutate({ rating: r, notesVal: getNotesForSave(r) });
     },
-    [notes, saveMutation]
+    [getNotesForSave, saveMutation]
   );
 
   const handleSaveNotes = useCallback(() => {
     if (!pendingRating) {
-      toast.info("Please rate thumbs up or down first");
+      toast.info("Please rate the asset first");
       return;
     }
-    saveMutation.mutate({ rating: pendingRating, notesVal: notes });
-  }, [pendingRating, notes, saveMutation]);
+    saveMutation.mutate({ rating: pendingRating, notesVal: getNotesForSave(pendingRating) });
+  }, [pendingRating, getNotesForSave, saveMutation]);
 
   const go = useCallback(
     (dir: -1 | 1) => {

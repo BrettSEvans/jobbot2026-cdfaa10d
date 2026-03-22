@@ -224,7 +224,7 @@ export default function AssetReviewCarousel() {
   // Reset index when filters change
   useEffect(() => {
     setIdx(0);
-  }, [typeFilter, reviewFilter]);
+  }, [typeFilters, reviewFilter]);
 
   const current = filtered[idx];
   const currentReview = current ? reviewMap.get(reviewKey(current)) : undefined;

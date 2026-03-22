@@ -630,9 +630,19 @@ AVOID these complex patterns that frequently cause overlap:
 - Stacked cards with shadows that depend on precise spacing
 - Any layout requiring more than 2 levels of nesting
 
+## CONTENT BREVITY: LESS IS MORE
+Your text blocks are TOO LONG by default. Follow these strict word limits:
+- Paragraph blocks: MAX 2 sentences (25-35 words each). No paragraph should exceed 70 words.
+- Bullet lists: MAX 4-5 bullets per section. Each bullet MAX 12-15 words.
+- Table cells: MAX 8-10 words per cell. Use fragments, not full sentences.
+- Section headings: MAX 6 words.
+- Executive summaries / introductions: MAX 3 sentences total.
+- Footer text: MAX 1 line.
+Prefer short, punchy phrases over elaborate explanations. White space is better than overflow.
+
 OUTPUT: Return a single self-contained HTML document with embedded CSS. The document MUST:
 - Fit on EXACTLY ONE printed page (US Letter 8.5" x 11"). This is a HARD constraint — no exceptions.
-- DO NOT generate more content than fits on a single page. If content risks overflow, condense aggressively, reduce bullet counts, shorten labels, and drop lower-priority details.
+- DO NOT generate more content than fits on a single page. When in doubt, write LESS. Shorter is always safer.
 - NEVER use more than 4 content sections (e.g., header + 3 body sections + footer). Fewer sections = cleaner document.
 - Reserve space for a footer when one is present. The footer must NEVER cover content.
 - Titles must have at minimum 0.1in of clear space above them. Never position content at the very edge of the page.
@@ -650,7 +660,7 @@ OUTPUT: Return a single self-contained HTML document with embedded CSS. The docu
   .page-content { flex: 1; min-height: 0; overflow: hidden; }
   footer, .page-footer { flex-shrink: 0; padding-top: 0.15in; border-top: 1px solid #ccc; font-size: 8pt; }
 - The footer MUST be inside the flex wrapper, NOT position:absolute.
-- The usable content area is approximately 9.2in tall × 7.5in wide after padding and footer reserve. Plan content to fill 80-85% of this — leave breathing room.
+- The usable content area is approximately 9.2in tall × 7.5in wide after padding and footer reserve. Plan content to fill 75-80% of this — leave generous breathing room.
 - Use generous spacing between sections (margin-bottom: 0.15in minimum).
 - Be professional, clean, and printable
 - Include a header with the company name, job title, and document title

@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { CheckCircle, XCircle, Clock, Users, Shield } from "lucide-react";
+import { CheckCircle, XCircle, Clock, Users, Shield, Images } from "lucide-react";
+import AssetReviewCarousel from "@/components/admin/AssetReviewCarousel";
 import { format } from "date-fns";
 
 function useAdminRole() {

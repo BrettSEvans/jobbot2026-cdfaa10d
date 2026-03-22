@@ -570,7 +570,7 @@ export default function DynamicMaterialsSection({
         {generatedAssets.map((asset) => (
           <TabsContent key={asset.id} value={`asset-${asset.id}`} className="space-y-4">
             <div className="flex flex-wrap gap-2">
-              {asset.html && asset.generation_status === 'complete' && !asset.downloaded_at && (
+              {asset.html && asset.generation_status === 'complete' && (!asset.downloaded_at || isAdmin) && (
                 <>
                   <Button variant="outline" size="sm" onClick={async () => {
                     if (!jobDescription.trim()) return;

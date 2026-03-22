@@ -377,11 +377,26 @@ async function getBestPractices(
     const researchResp = await aiFetchWithRetry(LOVABLE_API_KEY, {
       model: 'google/gemini-2.5-flash',
       messages: [
-        { role: 'system', content: 'You are an expert consultant who researches best practices for professional documents and deliverables.' },
-        { role: 'user', content: `Research and provide comprehensive best practices for creating an excellent "${assetType}" document for a professional job context. Cover:\n1. Optimal structure and sections\n2. Content depth and specificity guidelines\n3. Visual design and formatting principles\n4. Common mistakes to avoid\n5. What makes a great version vs a mediocre one\n\nBe specific and actionable. Output as markdown.` },
+        { role: 'system', content: 'You are a document design consultant specializing in ONE-PAGE professional deliverables (US Letter 8.5×11in). Produce compact, constraint-driven rubrics — NOT verbose essays.' },
+        { role: 'user', content: `Create a ONE-PAGE GENERATION RUBRIC for "${assetType}". Use this exact format (keep each line short, total under 250 words):
+
+SECTIONS (max 3-4):
+- [name]: [purpose, max 15 words]
+
+CONTENT BUDGET:
+- Header: max 2 lines
+- Per section: max 4-5 bullets OR 1 short paragraph (2 sentences)
+- Table rows: max 4-5
+- Footer: max 1 line
+
+ALLOWED LAYOUTS: single-column | two-column 60/40 | compact table + bullets | metric cards + body
+BANNED: kanban, swimlanes, nested grids, absolute positioning, dense infographics, >4 sections
+VISUAL: 9-10pt body, 11-13pt headings, 0.15in section spacing, 75-80% page fill
+GREAT (3 bullets): ...
+MISTAKES (3 bullets): ...` },
       ],
       temperature: 0.3,
-      max_tokens: 3000,
+      max_tokens: 1500,
     });
 
     if (researchResp.ok) {

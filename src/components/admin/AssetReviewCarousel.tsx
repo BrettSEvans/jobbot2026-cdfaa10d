@@ -114,6 +114,8 @@ function useAllAssets() {
           assetName: ga.asset_name,
           html: ga.html,
           companyName: parent?.company_name ?? null,
+          companyUrl: parent?.company_url ?? null,
+          companyIconUrl: parent?.company_icon_url ?? null,
           jobTitle: parent?.job_title ?? null,
         });
       }

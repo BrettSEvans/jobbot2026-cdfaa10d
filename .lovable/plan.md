@@ -1,26 +1,19 @@
 
-## Plan: Permanently eliminate hidden/clipped text in generated materials
+## Plan: Enforce simplicity across all materials + collapsible variability card
 
 ### Status: IMPLEMENTED ✅
 
 ### What was done
 
-1. **Replaced clipping CSS guard with flow-safe layout** — `enforceOnePageLayout()` now uses `overflow: visible` for all text containers inside `.page-content`. Only the outermost `page-shell` clips at page boundary. Fixed heights, max-heights, and overflow:hidden are removed from all inner elements.
-
-2. **Added deterministic HTML audit** — `auditHtmlForClipping()` inspects generated HTML for fixed heights, inline overflow:hidden, CSS overflow:hidden on content selectors, max-height on content elements, and absolute/fixed positioning. Returns typed violations.
-
-3. **Added automatic clipping pattern stripper** — `stripClippingPatterns()` deterministically removes overflow:hidden, fixed heights, and absolute positioning from inline styles on text containers before AI review.
-
-4. **Upgraded 3-cycle review with dual gate** — Review loop now requires BOTH AI `REVIEW_PASS` AND deterministic audit pass. Violations are fed back as context to the AI for targeted fixing. After 3 failed cycles, presents best-effort with explicit QA metadata.
-
-5. **Updated generation prompt** — Added explicit CSS rules banning overflow:hidden on content elements, requiring height:auto and overflow:visible on all text containers.
-
-6. **Updated refine-material** — Same overflow:hidden ban in the refinement system prompt.
-
-7. **QA status in revision history UI** — Revision labels now include audit status (audit-clean vs best-effort). Badges show "Clean" (green) or "QA Issues" (red) in the revision list.
+1. **Tightened density thresholds** — Sections: 5→4, Bullets: 25→16, Table rows: 8→5, Chars: 4000→3000
+2. **Strengthened generation prompt** — Max 3 body sections, 3-4 bullets/section, 50-word paragraph cap, 80-85% page fill target, banned framed/boxed containers for plan/template docs
+3. **Tightened condensation pass** — Max 3 sections, 3-4 bullets, 3-4 table rows, removes framed containers
+4. **Updated best-practices research rubric** — Both inline (generate-material) and standalone (research-asset-best-practices) now enforce max 3 sections, stricter budgets
+5. **Made DesignVariabilityCard collapsible** — Wrapped in Collapsible component, starts collapsed, shows score badge in header
+6. **Updated refine-material** — Same 3-section, 50-word, no-frames rules
 
 ### Files changed
-- `supabase/functions/generate-material/index.ts` — core engine rewrite
+- `supabase/functions/generate-material/index.ts` — thresholds, prompts, condensation
 - `supabase/functions/refine-material/index.ts` — prompt update
-- `src/components/GeneratedAssetRevisions.tsx` — QA status badges
-- `src/components/DynamicMaterialsSection.tsx` — QA metadata in revision labels
+- `supabase/functions/research-asset-best-practices/index.ts` — rubric limits
+- `src/components/admin/DesignVariabilityCard.tsx` — collapsible UI

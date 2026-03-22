@@ -40,7 +40,10 @@ RULES:
 - ALL text containers MUST use height: auto and overflow: visible. NEVER use fixed height or max-height on text elements.
 - NEVER use position: absolute or position: fixed on any element.
 - NEVER use font sizes smaller than 9pt.
-- Maximum 5 content sections. If adding content, condense or merge existing sections to maintain the one-page constraint.`
+- Maximum 3 body sections. If adding content, condense or merge existing sections to maintain the one-page constraint.
+- Paragraphs: max 2 sentences, 50 words. Bullets: max 3-4 per section, 12 words each. Tables: max 3-4 rows.
+- Do NOT use framed/boxed section containers — use simple headers with underlines.
+- Aim for 80-85% page fill — complete but not cramped.`
       : `You are an expert career writer refining a professional ${assetName || 'cover letter'}.
 
 RULES:

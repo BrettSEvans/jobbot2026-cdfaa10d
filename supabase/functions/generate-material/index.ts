@@ -921,7 +921,7 @@ OUTPUT: Return a single self-contained HTML document with embedded CSS. The docu
   .page-content { flex: 1; min-height: 0; }
   footer, .page-footer { flex-shrink: 0; padding-top: 0.15in; border-top: 1px solid #ccc; font-size: 8pt; }
 - The footer MUST be inside the flex wrapper, NOT position:absolute.
-- The usable content area is approximately 9.2in tall × 7.5in wide after padding and footer reserve. Plan content to fill 75-80% of this — leave generous breathing room.
+- The usable content area is approximately 9.2in tall × 7.5in wide after padding and footer reserve. Plan content to fill 80-85% of this — enough to look complete but with breathing room.
 - Use generous spacing between sections (margin-bottom: 0.15in minimum).
 - Be professional, clean, and printable
 - Include a header with the company name, job title, and document title

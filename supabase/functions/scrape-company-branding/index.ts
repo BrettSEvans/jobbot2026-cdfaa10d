@@ -158,6 +158,14 @@ Deno.serve(async (req) => {
 
     if (!response.ok) {
       console.error('Firecrawl branding error:', data);
+      // Graceful fallback: if Firecrawl refuses the site (403), return empty branding instead of failing
+      if (response.status === 403 || (data.error && data.error.includes('do not support this site'))) {
+        console.log('Site not supported by Firecrawl, returning empty branding fallback');
+        return new Response(
+          JSON.stringify({ success: true, branding: { colors: {}, fonts: [], colorPalette: [] }, markdown: '', metadata: {}, links: [] }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
       return new Response(
         JSON.stringify({ success: false, error: data.error || 'Failed to scrape branding' }),
         { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

@@ -732,7 +732,43 @@ ${brandingSection}${bpSection}${existingPatternsSection}${variabilitySection}`;
     const data = await response.json();
     let content = enforceOnePageLayout(data.choices?.[0]?.message?.content || '');
 
-    // Two-pass review pipeline: UI Review → QA Review
+    // Density check — detect risky output before review
+    const sectionCount = (content.match(/<h[23][^>]*>/gi) || []).length;
+    const bulletCount = (content.match(/<li[^>]*>/gi) || []).length;
+    const tableRowCount = (content.match(/<tr[^>]*>/gi) || []).length;
+    const textLength = content.replace(/<[^>]+>/g, '').length;
+    const isDense = sectionCount > 5 || bulletCount > 25 || tableRowCount > 8 || textLength > 4000;
+
+    if (isDense) {
+      console.log(`Density detected: sections=${sectionCount}, bullets=${bulletCount}, rows=${tableRowCount}, chars=${textLength}. Running condensation retry.`);
+      const condenseResp = await aiFetchWithRetry(LOVABLE_API_KEY, {
+        model: 'google/gemini-2.5-flash',
+        messages: [
+          { role: 'system', content: `You are a document editor. The following HTML document is TOO DENSE for a single US Letter page. Condense it:
+1. Merge sections down to max 3-4 total (combine related ones)
+2. Cut bullet lists to max 4-5 bullets each (keep the most impactful)
+3. Cut table rows to max 4-5 (keep highest-value rows)
+4. Shorten all paragraphs to max 2 sentences
+5. Remove any section that is low-value or redundant
+6. Keep ALL branding, colors, fonts, and layout structure intact
+7. Use a SIMPLE single-column or two-column 60/40 layout
+8. Return ONLY the complete fixed HTML — no explanations, no markdown fences` },
+          { role: 'user', content: content },
+        ],
+        temperature: 0.1,
+        max_tokens: 4000,
+      });
+      if (condenseResp.ok) {
+        const cd = await condenseResp.json();
+        const condensed = (cd.choices?.[0]?.message?.content || '').trim();
+        if (condensed.length > 200) {
+          content = enforceOnePageLayout(condensed);
+          console.log('Condensation applied successfully');
+        }
+      }
+    }
+
+    // Review pipeline: combined UI + QA Review
     const { html: finalHtml, reviewResults } = await reviewPipeline(content, assetName, LOVABLE_API_KEY);
     content = finalHtml;
 

@@ -693,6 +693,169 @@ MISTAKES (3 bullets): ...` },
   return { best_practices: bestPracticesText, winning_patterns: winningPatterns };
 }
 
+// ====== STYLE FAMILY SYSTEM ======
+
+interface StyleFamily {
+  id: string;
+  name: string;
+  promptBlock: string;
+  bestForTypes: string[];
+}
+
+function deriveComplementaryColor(hexOrCss: string): string {
+  const hex = hexOrCss.replace(/^#/, '');
+  if (hex.length !== 6 && hex.length !== 3) return '#2E7D6F';
+  const full = hex.length === 3 ? hex.split('').map(c => c + c).join('') : hex;
+  const r = parseInt(full.slice(0, 2), 16);
+  const g = parseInt(full.slice(2, 4), 16);
+  const b = parseInt(full.slice(4, 6), 16);
+  const rr = Math.round((r + 128) % 256 * 0.7 + 40);
+  const gg = Math.round((g + 100) % 256 * 0.7 + 40);
+  const bb = Math.round((b + 80) % 256 * 0.7 + 40);
+  return `#${rr.toString(16).padStart(2, '0')}${gg.toString(16).padStart(2, '0')}${bb.toString(16).padStart(2, '0')}`;
+}
+
+function buildStyleFamilies(brandColors: string[]): StyleFamily[] {
+  const primary = brandColors[0] || '#1a365d';
+  const secondary = brandColors[1] || '#2d3748';
+  const accent = brandColors[2] || '#e53e3e';
+  const complementary = deriveComplementaryColor(primary);
+
+  return [
+    {
+      id: 'A', name: 'Executive Bold',
+      bestForTypes: ['strategy', 'plan', 'roadmap', 'executive', 'assessment', 'blueprint'],
+      promptBlock: `## STYLE FAMILY A — "Executive Bold" (MANDATORY — follow exactly)
+LAYOUT: Single-column body beneath a full-width dark header banner (background: ${primary}, white text).
+GRID: One column. Sections stack vertically with 0.15in gaps.
+COLOR RULE (60-30-10): 60% white page, 30% ${primary} on header + section accent bars, 10% ${accent} on metric highlights.
+TYPOGRAPHY: Add <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Lato:wght@400;600&display=swap" rel="stylesheet"> in <head>.
+Use font-family: 'Montserrat', sans-serif for ALL headings. Use font-family: 'Lato', sans-serif for body text.
+SIGNATURE VISUAL (MANDATORY): Include a row of 3-4 metric cards. Each card: large bold number (24pt+), short label below (8pt), subtle left-border accent in ${accent}. Use display:flex; gap:0.15in.
+NARRATIVE: Frame as strategic leadership — the candidate drives outcomes at org level.
+WHITE SPACE: Generous padding (0.25in sides), section gaps 0.15in, no paragraph > 3 sentences.
+ICONS: Use ▸ or ◆ instead of standard bullets.`,
+    },
+    {
+      id: 'B', name: 'Modern Split',
+      bestForTypes: ['communication', 'stakeholder', 'team', 'collaboration', 'template', 'cross-functional'],
+      promptBlock: `## STYLE FAMILY B — "Modern Split" (MANDATORY — follow exactly)
+LAYOUT: Two-column grid: 60% left (main narrative) + 40% right (colored sidebar). Use CSS grid: grid-template-columns: 1fr 0.7fr; gap: 0.2in.
+COLOR RULE (60-30-10): 60% white main body, 30% ${secondary} sidebar background, 10% ${primary} for heading underlines + accent dots.
+TYPOGRAPHY: Add <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500&display=swap" rel="stylesheet"> in <head>.
+Use font-family: 'Bebas Neue', sans-serif for headings (letter-spacing: 0.05em). Use font-family: 'Roboto', sans-serif for body.
+SIGNATURE VISUAL (MANDATORY): The sidebar contains 4-5 quick-fact items. Each: ● marker in ${primary} + bold label + value. Sidebar has border-radius: 6px, padding: 0.2in.
+NARRATIVE: Frame as cross-functional collaborator — breadth of impact across teams.
+WHITE SPACE: Main column has 0.15in section gaps. Sidebar items spaced with 0.12in gaps.
+ICONS: Use ● colored markers for sidebar items, ▸ for main body bullets.`,
+    },
+    {
+      id: 'C', name: 'Clean Contrast',
+      bestForTypes: ['report', 'analysis', 'brief', 'insight', 'review'],
+      promptBlock: `## STYLE FAMILY C — "Clean Contrast" — DIFFERENT COLOR SCHEME (MANDATORY — follow exactly)
+LAYOUT: Single-column. Sections alternate between white and light-tinted (${complementary}15) backgrounds.
+COLOR RULE (60-30-10): 60% neutral #f8f9fa, 30% ${complementary} on alternate section backgrounds, 10% ${primary} accent text.
+IMPORTANT: This family deliberately uses ${complementary} instead of the brand primary for its dominant color.
+TYPOGRAPHY: Add <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=EB+Garamond:wght@400;500&display=swap" rel="stylesheet"> in <head>.
+Use font-family: 'Playfair Display', serif for headings. Use font-family: 'EB Garamond', serif for body.
+SIGNATURE VISUAL (MANDATORY): Include ONE pull-quote callout between sections. Style: font-style: italic; font-size: 13pt; border-left: 4px solid ${complementary}; padding-left: 0.15in; margin: 0.12in 0.
+NARRATIVE: Frame as thought leader — unique industry perspective and expertise.
+WHITE SPACE: Extra generous — 0.2in section gaps, narrow text column (max-width: 6.5in centered).
+ICONS: Use minimal ◇ or → markers.`,
+    },
+    {
+      id: 'D', name: 'Data Storyteller',
+      bestForTypes: ['matrix', 'comparison', 'log', 'tracker', 'scorecard', 'audit', 'benchmark', 'risk', 'raid'],
+      promptBlock: `## STYLE FAMILY D — "Data Storyteller" — TABLE-FOCUSED (MANDATORY — follow exactly)
+LAYOUT: Header banner + ONE styled data table + 2 short bullet sections below.
+COLOR RULE (60-30-10): 60% white, 30% ${primary} on table header + header banner, 10% #E8913A warm accent on key data points.
+TYPOGRAPHY: Add <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet"> in <head>.
+Use font-family: 'Montserrat', sans-serif for headings. Use font-family: 'DM Sans', sans-serif for body/table text.
+SIGNATURE VISUAL (MANDATORY — TABLE REQUIRED):
+Include a STYLED HTML TABLE with:
+- 3-4 data rows (never more than 4)
+- Header row: background: ${primary}; color: white; font-weight: 700; text-transform: uppercase; font-size: 8pt; letter-spacing: 0.05em
+- Body rows: alternating white / #f7f7f7
+- Cell padding: 6px 10px; border-collapse: collapse; border: 1px solid #e2e2e2
+- Table cells: MAX 8 words each, use fragments not sentences
+NARRATIVE: Frame as analytical problem-solver — structured thinking, evidence-based.
+WHITE SPACE: Table centered, max-width: 95%. Sections below have 0.12in gaps.
+ICONS: Use ✓ ⚠ ● status markers in table cells.`,
+    },
+    {
+      id: 'E', name: 'Visual Metrics',
+      bestForTypes: ['dashboard', 'metrics', 'kpi', 'performance', 'progress', 'status', 'impact'],
+      promptBlock: `## STYLE FAMILY E — "Visual Metrics" — CHART-FOCUSED (MANDATORY — follow exactly)
+LAYOUT: Compact header + row of 3-4 visual metrics + 2 short narrative sections.
+COLOR RULE (60-30-10): 60% #f5f5f5 page background, 30% ${secondary} on metric backgrounds, 10% #22C55E on progress fills and highlights.
+TYPOGRAPHY: Add <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Lato:wght@400;600&display=swap" rel="stylesheet"> in <head>.
+Use font-family: 'Bebas Neue', sans-serif for headings (letter-spacing: 0.08em). Use font-family: 'Lato', sans-serif for body.
+SIGNATURE VISUAL (MANDATORY — CHARTS REQUIRED):
+Include 3-4 CSS-ONLY visual metrics. Choose ONE:
+OPTION A — Progress Bars: <div style="background:#e0e0e0;border-radius:5px;height:10px;width:100%"><div style="background:#22C55E;border-radius:5px;height:10px;width:78%"></div></div>
+Below each: bold percentage (16pt) + label (8pt)
+OPTION B — Donut Charts: <div style="width:60px;height:60px;border-radius:50%;background:conic-gradient(${accent} 0% 78%, #e0e0e0 78% 100%)"></div>
+Arrange in flexbox row: display:flex; gap:0.2in; justify-content:space-between.
+NARRATIVE: Frame as results-driven achiever — quantified outcomes, measurable impact.
+WHITE SPACE: Metrics row gets 0.15in vertical margin. Body sections brief (3-4 bullets max).
+ICONS: Use ↑ ↓ → trend markers next to metric labels.`,
+    },
+    {
+      id: 'F', name: 'Editorial Minimal',
+      bestForTypes: ['brief', 'summary', 'overview', 'narrative', 'proposal', 'vision', 'memo'],
+      promptBlock: `## STYLE FAMILY F — "Editorial Minimal" (MANDATORY — follow exactly)
+LAYOUT: Single narrow column (max-width: 6in, centered). Magazine-style reading experience.
+COLOR RULE (60-30-10): 60% off-white #FAFAF8, 30% charcoal #2D2D2D on headings and horizontal rules, 10% ${primary} on one accent element.
+TYPOGRAPHY: Add <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet"> in <head>.
+Use font-family: 'Playfair Display', serif for headings. Use font-family: 'Source Sans 3', sans-serif for body.
+SIGNATURE VISUAL (MANDATORY): One LARGE pull-quote: font-size: 16pt; font-style: italic; font-family: 'Playfair Display'; text-align: center; with thin 1px #2D2D2D horizontal rules above and below (margin: 0.15in 0).
+NARRATIVE: Frame as innovation driver — forward-looking vision, creative solutions.
+WHITE SPACE: Most generous of all families. Content centered, wide margins. Line-height: 1.5 for body.
+ICONS: Use → for all bullet points. Minimal, elegant.`,
+    },
+  ];
+}
+
+function classifyAssetType(assetName: string, assetDescription: string): string {
+  const combined = `${assetName} ${assetDescription}`.toLowerCase();
+  if (/matrix|comparison|log|tracker|scorecard|audit|benchmark|risk|raid/.test(combined)) return 'analytical-table';
+  if (/metric|kpi|performance|progress|status|impact|dashboard|score/.test(combined)) return 'analytical-chart';
+  if (/strategy|plan|roadmap|executive|assessment|blueprint/.test(combined)) return 'strategic';
+  if (/communication|stakeholder|team|collaborat|template|cross.?functional/.test(combined)) return 'communication';
+  if (/report|analysis|brief|insight|review/.test(combined)) return 'analytical-report';
+  return 'general';
+}
+
+function selectStyleFamily(
+  families: StyleFamily[],
+  assetName: string,
+  assetDescription: string,
+  usedFamilyIds: string[],
+  regenerationCount: number,
+  currentFamilyId?: string,
+): StyleFamily {
+  const assetType = classifyAssetType(assetName, assetDescription);
+  const preferenceMap: Record<string, string[]> = {
+    'analytical-table': ['D', 'A', 'B'],
+    'analytical-chart': ['E', 'D', 'A'],
+    'strategic': ['A', 'F', 'C'],
+    'communication': ['B', 'C', 'F'],
+    'analytical-report': ['C', 'D', 'F'],
+    'general': ['F', 'B', 'A'],
+  };
+  const preferred = preferenceMap[assetType] || preferenceMap['general'];
+  const excluded = new Set(usedFamilyIds);
+  if (regenerationCount >= 2 && currentFamilyId) excluded.add(currentFamilyId);
+
+  for (const fId of preferred) {
+    if (!excluded.has(fId)) return families.find(f => f.id === fId)!;
+  }
+  for (const f of families) {
+    if (!excluded.has(f.id)) return f;
+  }
+  return families.find(f => f.id === preferred[0])!;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
@@ -710,6 +873,7 @@ Deno.serve(async (req) => {
       variabilityRecommendations,
       applicationCreatedAt,
       branding,
+      regenerationCount,
     } = await req.json();
 
     if (!assetName || !jobDescription) {

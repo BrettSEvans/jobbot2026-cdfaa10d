@@ -21,6 +21,7 @@ import {
   X,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { CompanyIcon } from "@/components/CompanyIcon";
 import {
   Table,
   TableBody,
@@ -262,7 +263,14 @@ const Applications = () => {
                       onClick={() => navigate(`/applications/${app.id}`)}
                     >
                       <TableCell className="font-medium">
-                        {app.company_name || "Unknown"}
+                        <div className="flex items-center gap-2">
+                          <CompanyIcon
+                            companyName={app.company_name}
+                            companyUrl={app.company_url}
+                            iconUrl={app.company_icon_url}
+                          />
+                          {app.company_name || "Unknown"}
+                        </div>
                       </TableCell>
                       <TableCell>{app.job_title || "Unknown"}</TableCell>
                       <TableCell>

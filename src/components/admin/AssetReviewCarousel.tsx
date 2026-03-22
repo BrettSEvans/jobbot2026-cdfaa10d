@@ -31,7 +31,6 @@ function useAllAssets() {
         .from("job_applications")
         .select("id, company_name, job_title, dashboard_html, cover_letter, resume_html, executive_report_html, raid_log_html, architecture_diagram_html, roadmap_html")
         .order("created_at", { ascending: false });
-        .order("created_at", { ascending: false });
 
       if (appErr) throw appErr;
 

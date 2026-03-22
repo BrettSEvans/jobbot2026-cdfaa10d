@@ -36,8 +36,9 @@ RULES:
 - Apply the requested changes precisely
 - Do NOT add explanations or markdown fences — output ONLY the HTML
 - The document MUST fit on exactly one printed US Letter page (8.5x11in). Do NOT add content that would cause overflow.
-- NEVER use overflow: auto, overflow: scroll, or overflow-y: auto on any element. All content must be statically laid out.
-- NEVER use position: absolute or position: fixed on footers.
+- NEVER use overflow: hidden, overflow: auto, or overflow: scroll on ANY text container (divs, sections, cards, frames). Only the outermost page wrapper may clip.
+- ALL text containers MUST use height: auto and overflow: visible. NEVER use fixed height or max-height on text elements.
+- NEVER use position: absolute or position: fixed on any element.
 - NEVER use font sizes smaller than 9pt.
 - Maximum 5 content sections. If adding content, condense or merge existing sections to maintain the one-page constraint.`
       : `You are an expert career writer refining a professional ${assetName || 'cover letter'}.

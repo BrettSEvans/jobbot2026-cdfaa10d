@@ -105,6 +105,12 @@ export default function GeneratedAssetRevisions({
                     <div className="flex items-center gap-2 min-w-0">
                       <Badge variant="outline" className="text-xs shrink-0">v{rev.revision_number}</Badge>
                       <span className="truncate text-muted-foreground">{rev.label}</span>
+                      {rev.label?.includes('best-effort') && (
+                        <Badge variant="destructive" className="text-[10px] shrink-0">QA Issues</Badge>
+                      )}
+                      {rev.label?.includes('audit-clean') && (
+                        <Badge className="text-[10px] shrink-0 bg-green-600 text-white">Clean</Badge>
+                      )}
                       <span className="text-xs text-muted-foreground shrink-0">
                         {new Date(rev.created_at).toLocaleDateString()}{" "}
                         {new Date(rev.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}

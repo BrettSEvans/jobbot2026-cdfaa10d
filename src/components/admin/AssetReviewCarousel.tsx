@@ -31,6 +31,7 @@ import { cn } from "@/lib/utils";
 type FlatAsset = {
   applicationId: string;
   assetType: string;
+  filterType: string;
   assetId: string | null;
   assetName: string;
   html: string;
@@ -90,6 +91,7 @@ function useAllAssets() {
             flat.push({
               applicationId: app.id,
               assetType: t.key,
+              filterType: t.key,
               assetId: null,
               assetName: t.label,
               html,
@@ -106,6 +108,7 @@ function useAllAssets() {
         flat.push({
           applicationId: ga.application_id,
           assetType: "generated_asset",
+          filterType: `generated_asset::${ga.asset_name}`,
           assetId: ga.id,
           assetName: ga.asset_name,
           html: ga.html,
@@ -148,7 +151,12 @@ function wrapCoverLetter(text: string): string {
 }
 
 type ReviewFilter = "all" | "unreviewed" | "up" | "mid" | "down";
-type TypeFilter = "all" | string;
+
+function filterLabel(ft: string): string {
+  if (ASSET_TYPE_LABELS[ft]) return ASSET_TYPE_LABELS[ft];
+  if (ft.startsWith("generated_asset::")) return ft.replace("generated_asset::", "");
+  return ft;
+}
 
 /** For "mid" ratings we store JSON { pros, cons } in the notes field */
 function parseMidNotes(raw: string | null): { pros: string; cons: string } {
@@ -179,7 +187,7 @@ export default function AssetReviewCarousel() {
   const [midCons, setMidCons] = useState("");
   const [pendingRating, setPendingRating] = useState<RatingValue | null>(null);
   const [reviewFilter, setReviewFilter] = useState<ReviewFilter>("all");
-  const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
+  const [typeFilters, setTypeFilters] = useState<Set<string>>(new Set());
 
   // Build review map
   const reviewMap = useMemo(() => {
@@ -192,9 +200,9 @@ export default function AssetReviewCarousel() {
   }, [reviews]);
 
   // Unique asset types for filter dropdown
-  const assetTypes = useMemo(() => {
+  const allFilterTypes = useMemo(() => {
     if (!assets) return [];
-    const s = new Set(assets.map((a) => a.assetType));
+    const s = new Set(assets.map((a) => a.filterType));
     return Array.from(s).sort();
   }, [assets]);
 
@@ -202,7 +210,7 @@ export default function AssetReviewCarousel() {
   const filtered = useMemo(() => {
     if (!assets) return [];
     return assets.filter((a) => {
-      if (typeFilter !== "all" && a.assetType !== typeFilter) return false;
+      if (typeFilters.size > 0 && !typeFilters.has(a.filterType)) return false;
       if (reviewFilter === "all") return true;
       const rev = reviewMap.get(reviewKey(a));
       if (reviewFilter === "unreviewed") return !rev;
@@ -211,12 +219,12 @@ export default function AssetReviewCarousel() {
       if (reviewFilter === "down") return rev?.rating === "down";
       return true;
     });
-  }, [assets, typeFilter, reviewFilter, reviewMap]);
+  }, [assets, typeFilters, reviewFilter, reviewMap]);
 
   // Reset index when filters change
   useEffect(() => {
     setIdx(0);
-  }, [typeFilter, reviewFilter]);
+  }, [typeFilters, reviewFilter]);
 
   const current = filtered[idx];
   const currentReview = current ? reviewMap.get(reviewKey(current)) : undefined;
@@ -380,43 +388,66 @@ export default function AssetReviewCarousel() {
       </div>
 
       {/* Filters */}
-      <div className="flex items-center gap-3 flex-wrap">
+      <div className="space-y-2">
         <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-          <Filter className="h-3.5 w-3.5" /> Filters:
+          <Filter className="h-3.5 w-3.5" /> Asset types:
         </div>
-        <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v)}>
-          <SelectTrigger className="w-[180px] h-8 text-xs">
-            <SelectValue placeholder="Asset type" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All types</SelectItem>
-            {assetTypes.map((t) => (
-              <SelectItem key={t} value={t}>
-                {ASSET_TYPE_LABELS[t] ?? t}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={reviewFilter} onValueChange={(v) => setReviewFilter(v as ReviewFilter)}>
-          <SelectTrigger className="w-[160px] h-8 text-xs">
-            <SelectValue placeholder="Review status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All</SelectItem>
-            <SelectItem value="unreviewed">Unreviewed</SelectItem>
-            <SelectItem value="up">👍 Approved</SelectItem>
-            <SelectItem value="mid">⚖️ Mid</SelectItem>
-            <SelectItem value="down">👎 Rejected</SelectItem>
-          </SelectContent>
-        </Select>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="gap-1 text-xs"
-          onClick={skipToNextUnreviewed}
-        >
-          <SkipForward className="h-3.5 w-3.5" /> Skip to unreviewed
-        </Button>
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <Button
+            size="sm"
+            variant={typeFilters.size === 0 ? "default" : "outline"}
+            className="h-7 text-xs px-2.5"
+            onClick={() => setTypeFilters(new Set())}
+          >
+            All
+          </Button>
+          {allFilterTypes.map((ft) => {
+            const active = typeFilters.has(ft);
+            return (
+              <Button
+                key={ft}
+                size="sm"
+                variant={active ? "default" : "outline"}
+                className="h-7 text-xs px-2.5"
+                onClick={() => {
+                  setTypeFilters((prev) => {
+                    const next = new Set(prev);
+                    if (next.has(ft)) next.delete(ft);
+                    else next.add(ft);
+                    return next;
+                  });
+                }}
+              >
+                {filterLabel(ft)}
+              </Button>
+            );
+          })}
+        </div>
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+            <Filter className="h-3.5 w-3.5" /> Status:
+          </div>
+          <Select value={reviewFilter} onValueChange={(v) => setReviewFilter(v as ReviewFilter)}>
+            <SelectTrigger className="w-[160px] h-8 text-xs">
+              <SelectValue placeholder="Review status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="unreviewed">Unreviewed</SelectItem>
+              <SelectItem value="up">👍 Approved</SelectItem>
+              <SelectItem value="mid">⚖️ Mid</SelectItem>
+              <SelectItem value="down">👎 Rejected</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-1 text-xs"
+            onClick={skipToNextUnreviewed}
+          >
+            <SkipForward className="h-3.5 w-3.5" /> Skip to unreviewed
+          </Button>
+        </div>
       </div>
 
       {filtered.length === 0 ? (

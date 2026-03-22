@@ -224,12 +224,22 @@ export default function AssetReviewCarousel() {
   // Sync notes/rating when navigating
   useEffect(() => {
     if (currentReview) {
-      setNotes(currentReview.notes ?? "");
-      setPendingRating(
-        currentReview.rating === "up" ? "up" : currentReview.rating === "down" ? "down" : null
-      );
+      const r = currentReview.rating as RatingValue;
+      setPendingRating(["up", "mid", "down"].includes(r) ? r : null);
+      if (r === "mid") {
+        const parsed = parseMidNotes(currentReview.notes);
+        setMidPros(parsed.pros);
+        setMidCons(parsed.cons);
+        setNotes("");
+      } else {
+        setNotes(currentReview.notes ?? "");
+        setMidPros("");
+        setMidCons("");
+      }
     } else {
       setNotes("");
+      setMidPros("");
+      setMidCons("");
       setPendingRating(null);
     }
   }, [idx, currentReview]);

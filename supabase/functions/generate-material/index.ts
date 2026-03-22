@@ -135,6 +135,7 @@ Deno.serve(async (req) => {
       customers,
       applicationId,
       variabilityRecommendations,
+      applicationCreatedAt,
     } = await req.json();
 
     if (!assetName || !jobDescription) {
@@ -222,9 +223,18 @@ ${variabilityRecommendations.map((r: string, i: number) => `${i + 1}. ${r}`).joi
 Apply these recommendations directly to the layout, structure, and visual approach of this document.`;
     }
 
+    // Determine contextual date anchor
+    const anchorDate = applicationCreatedAt ? new Date(applicationCreatedAt) : new Date();
+    const anchorStr = anchorDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
     const systemPrompt = `You are an expert consultant creating a professional "${assetName}" document.
 
 ASSET DESCRIPTION: ${assetDescription || assetName}
+
+DATE CONTEXT: The application date is ${anchorStr}. Use this as your temporal anchor:
+- For REPORTS, ASSESSMENTS, ANALYSES, or RETROSPECTIVE documents: use dates in the recent past relative to ${anchorStr}. Data, metrics, and findings should reference the weeks/months leading up to this date.
+- For PLANS, ROADMAPS, STRATEGIES, or FORWARD-LOOKING documents: dates should start from ${anchorStr} and extend into the future (30/60/90 days, quarters, etc.).
+- Always use realistic, specific dates (e.g. "Week of ${anchorStr}", "Q2 2026") — never use placeholder dates like "Month 1" or "TBD".
 
 OUTPUT: Return a single self-contained HTML document with embedded CSS. The document MUST:
 - Fit on EXACTLY ONE printed page (US Letter / A4). This is a hard constraint.

@@ -372,6 +372,7 @@ export default function DynamicMaterialsSection({
           customers: app?.customers,
           applicationId,
           variabilityRecommendations: app?.design_variability?.recommendations || [],
+          applicationCreatedAt: app?.created_at,
         }),
       });
 
@@ -598,6 +599,7 @@ export default function DynamicMaterialsSection({
                           customers: app?.customers,
                           applicationId,
                           variabilityRecommendations: app?.design_variability?.recommendations || [],
+                          applicationCreatedAt: app?.created_at,
                         }),
                       });
                       if (resp.ok) {
@@ -689,9 +691,9 @@ export default function DynamicMaterialsSection({
             )}
 
             {asset.generation_status === 'complete' && asset.html ? (
-            <Card className="overflow-visible">
-                <div className="w-full bg-white">
-                  <iframe srcDoc={assetPreviewHtml[asset.id] || asset.html} className="w-full border-0" style={{ width: "100%", minHeight: "1160px", height: "88vh" }} sandbox="allow-scripts" title={asset.asset_name} />
+            <Card className="overflow-auto border">
+                <div className="w-full bg-white" style={{ maxHeight: "80vh", overflow: "auto" }}>
+                  <iframe srcDoc={assetPreviewHtml[asset.id] || asset.html} className="w-full border-0" style={{ width: "100%", height: "1160px" }} sandbox="allow-scripts" title={asset.asset_name} />
                 </div>
               </Card>
             ) : asset.generation_status === 'generating' ? (

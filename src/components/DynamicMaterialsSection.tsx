@@ -674,8 +674,14 @@ export default function DynamicMaterialsSection({
                       if (resp.ok) {
                         const data = await resp.json();
                         if (data.html) {
+                          const qaLabel = data.review?.auditPassed && data.review?.uiPassed
+                            ? `Regenerated (audit-clean, cycle ${data.review.reviewCycles})`
+                            : data.review?.auditPassed
+                            ? `Regenerated (audit-clean, review best-effort)`
+                            : `Regenerated (best-effort, ${data.review?.violations?.length || 0} issues)`;
                           await supabase.from("generated_assets").update({ html: data.html }).eq("id", asset.id);
                           setGeneratedAssets(prev => prev.map(a => a.id === asset.id ? { ...a, html: data.html } : a));
+                          try { await saveGeneratedAssetRevision(applicationId, asset.id, data.html, qaLabel); } catch { /* non-critical */ }
                           toast({ title: `${asset.asset_name} regenerated!` });
                           setAssetRevisionTriggers(prev => ({ ...prev, [asset.id]: (prev[asset.id] || 0) + 1 }));
                         }

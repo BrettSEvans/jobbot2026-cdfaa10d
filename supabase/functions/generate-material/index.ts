@@ -80,6 +80,11 @@ function normalizeGeneratedHtml(raw: string): string {
   return content;
 }
 
+/**
+ * Flow-safe one-page layout guard.
+ * Key change: inner content uses overflow:visible + height:auto so text is NEVER clipped.
+ * Only the outermost page-shell clips at the page boundary.
+ */
 function enforceOnePageLayout(html: string): string {
   const normalized = normalizeGeneratedHtml(html);
   const originalHead = extractHeadInner(normalized);
@@ -101,9 +106,8 @@ function enforceOnePageLayout(html: string): string {
   body {
     display: block !important;
     font-size: 10pt;
-    line-height: 1.3;
+    line-height: 1.35;
   }
-  /* Reset ALL AI-generated height/overflow/position conflicts */
   body > * {
     height: auto !important;
     max-height: none !important;
@@ -120,17 +124,29 @@ function enforceOnePageLayout(html: string): string {
   .page-content {
     flex: 1 1 auto !important;
     min-height: 0 !important;
-    overflow: hidden !important;
+    /* FLOW-SAFE: visible overflow so text is never clipped within content area */
+    overflow: visible !important;
   }
-  /* Kill ALL overflow:auto/scroll inside page-content */
+
+  /* ===== FLOW-SAFE RULES: let text containers grow naturally ===== */
   .page-content *,
   .page-content *::before,
   .page-content *::after {
-    overflow: hidden !important;
-    overflow-x: hidden !important;
-    overflow-y: hidden !important;
+    /* REMOVED: overflow: hidden — this was clipping text */
+    overflow: visible !important;
+    overflow-x: visible !important;
+    overflow-y: visible !important;
   }
-  /* CRITICAL: Prevent content block overlap — strip absolute/fixed positioning on ALL content elements */
+
+  /* Tables need hidden overflow for cell containment only */
+  .page-content table,
+  .page-content td,
+  .page-content th {
+    overflow: hidden !important;
+    word-wrap: break-word !important;
+  }
+
+  /* Strip ONLY absolute/fixed positioning — keep relative and static */
   .page-content *:not(svg *) {
     position: static !important;
     top: auto !important;
@@ -138,22 +154,26 @@ function enforceOnePageLayout(html: string): string {
     right: auto !important;
     bottom: auto !important;
     transform: none !important;
-    margin-top: revert !important;
   }
-  /* Allow relative positioning only for controlled layout purposes */
+  /* Allow relative positioning for controlled layout */
   .page-content [style*="position: relative"],
   .page-content [style*="position:relative"] {
     position: relative !important;
   }
-  /* Ensure headers contain their text within background areas */
+
+  /* Headers: flow-safe, visible text, generous padding */
   .page-content header,
   .page-content .header,
   .page-content [class*="header"],
   .page-content [class*="banner"],
   .page-content [class*="hero"] {
     position: relative !important;
-    overflow: hidden !important;
+    overflow: visible !important;
     width: 100% !important;
+    min-height: auto !important;
+    height: auto !important;
+    max-height: none !important;
+    padding: 0.2in 0.25in !important;
   }
   .page-content header *,
   .page-content .header *,
@@ -164,8 +184,27 @@ function enforceOnePageLayout(html: string): string {
     max-width: 100% !important;
     word-wrap: break-word !important;
     overflow-wrap: break-word !important;
+    overflow: visible !important;
   }
-  /* Strip absolute/fixed positioning on footers */
+
+  /* CRITICAL: All text containers must have auto height and visible overflow */
+  .page-content div,
+  .page-content section,
+  .page-content article,
+  .page-content .card,
+  .page-content .frame,
+  .page-content [class*="card"],
+  .page-content [class*="frame"],
+  .page-content [class*="section"],
+  .page-content [class*="phase"],
+  .page-content [class*="block"] {
+    height: auto !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+
+  /* Footers */
   footer, .page-footer, [class*="footer"] {
     position: static !important;
     bottom: auto !important;
@@ -179,6 +218,7 @@ function enforceOnePageLayout(html: string): string {
     border-top: 1px solid rgba(0,0,0,0.18);
     font-size: 8pt;
     line-height: 1.2;
+    overflow: hidden !important;
   }
   .page-content footer,
   .page-content .page-footer {
@@ -202,6 +242,7 @@ function enforceOnePageLayout(html: string): string {
     min-height: 0 !important;
     max-height: none !important;
     height: auto !important;
+    overflow: visible !important;
   }
   .page-content h1,
   .page-content h2,
@@ -221,6 +262,9 @@ function enforceOnePageLayout(html: string): string {
   .page-content .timeline-container {
     break-inside: avoid;
     page-break-inside: avoid;
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
   }
   .page-content p,
   .page-content ul,
@@ -280,7 +324,115 @@ function enforceOnePageLayout(html: string): string {
 </html>`;
 }
 
-// --- Combined UI + QA review with up to 3 retry cycles ---
+// ====== DETERMINISTIC HTML AUDIT ======
+
+interface AuditViolation {
+  type: string;
+  detail: string;
+}
+
+/**
+ * Deterministic server-side audit for clipping/hidden-text risks.
+ * Inspects the raw HTML/CSS for patterns known to cause text clipping.
+ * Returns violations list (empty = pass).
+ */
+function auditHtmlForClipping(html: string): AuditViolation[] {
+  const violations: AuditViolation[] = [];
+
+  // Extract all inline styles from the generated content (not our guard)
+  const guardEnd = html.indexOf('</style>');
+  const contentAfterGuard = guardEnd > 0 ? html.slice(guardEnd) : html;
+
+  // 1. Fixed height on text-containing elements (in inline styles within content)
+  const fixedHeightPattern = /style="[^"]*(?:height:\s*\d+(?:px|pt|in|cm|em|rem)[^"]*)"[^>]*>(?:[^<]*<(?:p|span|li|h[1-6]|div)[^>]*>[^<]*)/gi;
+  let match;
+  while ((match = fixedHeightPattern.exec(contentAfterGuard)) !== null) {
+    const styleStr = match[0];
+    // Skip if it also has height:auto or min-height
+    if (/height:\s*auto/i.test(styleStr)) continue;
+    violations.push({ type: 'FIXED_HEIGHT', detail: `Fixed height on text container: ${styleStr.slice(0, 120)}` });
+  }
+
+  // 2. overflow:hidden in inline styles on content elements (not our guard style block)
+  const inlineOverflowHidden = /style="[^"]*overflow\s*:\s*hidden[^"]*"/gi;
+  const styleBlocks = contentAfterGuard.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
+  let ohMatch;
+  while ((ohMatch = inlineOverflowHidden.exec(styleBlocks)) !== null) {
+    violations.push({ type: 'INLINE_OVERFLOW_HIDDEN', detail: `Inline overflow:hidden found: ${ohMatch[0].slice(0, 120)}` });
+  }
+
+  // 3. Check embedded <style> blocks (not our guard) for overflow:hidden on content selectors
+  const embeddedStyles = contentAfterGuard.match(/<style[^>]*>([\s\S]*?)<\/style>/gi) || [];
+  for (const block of embeddedStyles) {
+    if (block.includes('lovable-one-page-guard')) continue;
+    // Check for overflow:hidden on content selectors
+    const ohInCss = block.match(/[^{]*\{[^}]*overflow\s*:\s*hidden[^}]*\}/gi) || [];
+    for (const rule of ohInCss) {
+      // Skip if it's on html/body (those are fine)
+      if (/^[\s]*(html|body)\s*[,{]/i.test(rule)) continue;
+      violations.push({ type: 'CSS_OVERFLOW_HIDDEN', detail: `CSS rule with overflow:hidden: ${rule.slice(0, 150)}` });
+    }
+
+    // Check for fixed heights on content selectors
+    const fixedH = block.match(/[^{]*\{[^}]*(?:^|;|\s)height\s*:\s*\d+(?:px|pt|in|cm)[^}]*\}/gi) || [];
+    for (const rule of fixedH) {
+      if (/^[\s]*(html|body|\.page-shell)\s*[,{]/i.test(rule)) continue;
+      if (/height\s*:\s*auto/i.test(rule)) continue;
+      violations.push({ type: 'CSS_FIXED_HEIGHT', detail: `CSS rule with fixed height: ${rule.slice(0, 150)}` });
+    }
+  }
+
+  // 4. max-height on content elements
+  const maxHeightPattern = /max-height\s*:\s*\d+(?:px|pt|in|cm|em|rem)/gi;
+  const maxHMatches = styleBlocks.match(maxHeightPattern) || [];
+  for (const mh of maxHMatches) {
+    violations.push({ type: 'MAX_HEIGHT', detail: `max-height found on content element: ${mh}` });
+  }
+
+  // 5. Absolute/fixed positioning in inline styles
+  const absFixedPattern = /style="[^"]*position\s*:\s*(?:absolute|fixed)[^"]*"/gi;
+  let afMatch;
+  while ((afMatch = absFixedPattern.exec(styleBlocks)) !== null) {
+    violations.push({ type: 'ABSOLUTE_POSITIONING', detail: `Absolute/fixed positioning: ${afMatch[0].slice(0, 120)}` });
+  }
+
+  return violations;
+}
+
+/**
+ * Remove dangerous CSS patterns from the HTML before the AI review step.
+ * This is a deterministic fix that strips known clipping causes.
+ */
+function stripClippingPatterns(html: string): string {
+  let result = html;
+
+  // Remove inline overflow:hidden from content elements (not our guard)
+  // Only target style attributes, not our <style> block
+  result = result.replace(
+    /(<(?:div|section|article|header|p|span|li|ul|ol|h[1-6])[^>]*style="[^"]*?)overflow\s*:\s*hidden\s*;?\s*/gi,
+    '$1'
+  );
+
+  // Remove fixed height from inline styles on text containers
+  result = result.replace(
+    /(<(?:div|section|article|header|p|span)[^>]*style="[^"]*?)(?:max-)?height\s*:\s*\d+(?:px|pt|in|cm|em|rem)\s*;?\s*/gi,
+    (match, prefix) => {
+      // Keep it if it's on an SVG, img, or explicit layout element
+      if (/(?:svg|img|canvas|\.page-shell)/i.test(match)) return match;
+      return prefix;
+    }
+  );
+
+  // Remove absolute/fixed positioning from inline styles on content elements
+  result = result.replace(
+    /(<(?:div|section|article|header|footer|p|span|h[1-6])[^>]*style="[^"]*?)position\s*:\s*(?:absolute|fixed)\s*;?\s*/gi,
+    '$1position: static; '
+  );
+
+  return result;
+}
+
+// --- Combined UI + QA review with up to 3 retry cycles + deterministic audit ---
 
 const COMBINED_REVIEW_PROMPT = `You are a senior UI designer AND QA engineer reviewing a one-page printed HTML document (US Letter 8.5×11in, usable area ~9.2in tall × 7.5in wide after 0.4in/0.5in padding).
 
@@ -303,20 +455,21 @@ Run ALL of these checks:
 **STRUCTURAL/QA:**
 6. FOOTER: Must be inside flex wrapper, never position:absolute/fixed, never covering content
 7. HEADER: Background color area must be tall enough to fully contain ALL header text including subtitles. If header has a colored background, increase its padding/height so no text is clipped.
-8. CSS SAFETY: No overflow:auto/scroll, no position:absolute/fixed on content, no negative margins
+8. CSS SAFETY: No overflow:auto/scroll, no overflow:hidden on text containers (divs, sections, paragraphs), no position:absolute/fixed on content, no negative margins
 9. READABILITY: Sufficient contrast, no placeholder text ("TBD", "[Insert]", "Lorem ipsum")
 10. CONTENT: No mid-sentence cutoffs, no empty sections
 
 RESPONSE FORMAT:
 - If ALL checks pass with ZERO issues: respond with exactly "REVIEW_PASS" (nothing else)
 - If ANY issues found: return the COMPLETE FIXED HTML. Fix rules:
-  - For HIDDEN TEXT: either increase the container height, remove the fixed height, remove overflow:hidden, or reduce the text content to fit
-  - For header clipping: increase header padding-bottom and min-height so all text is visible
-  - For section/card clipping: remove fixed heights, use height:auto, or reduce content
+  - For HIDDEN TEXT: REMOVE overflow:hidden and fixed heights from text containers. Use height:auto and overflow:visible.
+  - For header clipping: increase header padding and use height:auto so all text is visible
+  - For section/card clipping: remove fixed heights, use height:auto, remove overflow:hidden
   - Simplify layouts causing overlap (flatten nested grids, remove absolute positioning)
   - If content overflows the page, reduce bullet counts and merge sections — never use font below 9pt
   - Ensure every section has margin-bottom: 0.12in minimum
   - Footer inside flex column wrapper, never absolute/fixed
+  - NEVER add overflow:hidden to any text container in your fix
   - Return ONLY raw HTML — no markdown fences, no explanations`;
 
 const MAX_REVIEW_CYCLES = 3;
@@ -325,18 +478,44 @@ async function reviewPipeline(
   html: string,
   assetName: string,
   LOVABLE_API_KEY: string,
-): Promise<{ html: string; reviewResults: { uiPassed: boolean; qaPassed: boolean; reviewCycles: number } }> {
+): Promise<{ html: string; reviewResults: { uiPassed: boolean; qaPassed: boolean; auditPassed: boolean; reviewCycles: number; violations: string[] } }> {
   let currentHtml = html;
   let cycles = 0;
+  let lastViolations: string[] = [];
 
   for (let i = 0; i < MAX_REVIEW_CYCLES; i++) {
     cycles = i + 1;
+
+    // Step 1: Deterministic audit — strip known clipping patterns first
+    const preAuditViolations = auditHtmlForClipping(currentHtml);
+    if (preAuditViolations.length > 0) {
+      console.log(`Cycle ${cycles}: Pre-audit found ${preAuditViolations.length} violations, stripping clipping patterns`);
+      currentHtml = stripClippingPatterns(currentHtml);
+      // Re-enforce layout after stripping
+      currentHtml = enforceOnePageLayout(currentHtml);
+    }
+
+    // Step 2: Post-strip audit
+    const postAuditViolations = auditHtmlForClipping(currentHtml);
+    const auditPassed = postAuditViolations.length === 0;
+    lastViolations = postAuditViolations.map(v => `${v.type}: ${v.detail}`);
+
+    if (!auditPassed) {
+      console.log(`Cycle ${cycles}: Audit still has ${postAuditViolations.length} violations after strip:`, lastViolations.slice(0, 3));
+    }
+
+    // Step 3: AI review
     try {
+      let violationContext = '';
+      if (lastViolations.length > 0) {
+        violationContext = `\n\nDETERMINISTIC AUDIT VIOLATIONS FOUND (you MUST fix these):\n${lastViolations.slice(0, 5).join('\n')}\n\nFix ALL of these by removing overflow:hidden from text containers, removing fixed heights, and using height:auto + overflow:visible instead.`;
+      }
+
       const resp = await aiFetchWithRetry(LOVABLE_API_KEY, {
         model: 'google/gemini-2.5-flash',
         messages: [
           { role: 'system', content: COMBINED_REVIEW_PROMPT },
-          { role: 'user', content: `Document: "${assetName}" (Review cycle ${cycles}/${MAX_REVIEW_CYCLES})\n\nHTML to review:\n${currentHtml}` },
+          { role: 'user', content: `Document: "${assetName}" (Review cycle ${cycles}/${MAX_REVIEW_CYCLES})${violationContext}\n\nHTML to review:\n${currentHtml}` },
         ],
         temperature: 0.1,
         max_tokens: 5000,
@@ -350,13 +529,21 @@ async function reviewPipeline(
       const data = await resp.json();
       const result = (data.choices?.[0]?.message?.content || '').trim();
 
+      if ((result === 'REVIEW_PASS' || result.startsWith('REVIEW_PASS')) && auditPassed) {
+        console.log(`Review PASSED (AI + audit) on cycle ${cycles}/${MAX_REVIEW_CYCLES}`);
+        return { html: currentHtml, reviewResults: { uiPassed: true, qaPassed: true, auditPassed: true, reviewCycles: cycles, violations: [] } };
+      }
+
       if (result === 'REVIEW_PASS' || result.startsWith('REVIEW_PASS')) {
-        console.log(`Review PASSED on cycle ${cycles}/${MAX_REVIEW_CYCLES}`);
-        return { html: currentHtml, reviewResults: { uiPassed: true, qaPassed: true, reviewCycles: cycles } };
+        // AI passed but audit failed — continue loop
+        console.log(`Cycle ${cycles}: AI passed but audit failed with ${lastViolations.length} violations`);
+        continue;
       }
 
       let fixed = result.replace(/^```html?\n?/i, '').replace(/\n?```$/i, '').trim();
       if (fixed.length > 200) {
+        // Strip clipping patterns from AI's fix too
+        fixed = stripClippingPatterns(fixed);
         currentHtml = enforceOnePageLayout(fixed);
         console.log(`Review cycle ${cycles}: issues found and fixed, ${i < MAX_REVIEW_CYCLES - 1 ? 'retrying...' : 'max cycles reached'}`);
       } else {
@@ -369,8 +556,27 @@ async function reviewPipeline(
     }
   }
 
-  console.log(`Review completed after ${cycles} cycles without clean pass — presenting best effort`);
-  return { html: currentHtml, reviewResults: { uiPassed: false, qaPassed: false, reviewCycles: cycles } };
+  // Final audit check
+  const finalViolations = auditHtmlForClipping(currentHtml);
+  if (finalViolations.length > 0) {
+    // One last deterministic strip attempt
+    currentHtml = stripClippingPatterns(currentHtml);
+    currentHtml = enforceOnePageLayout(currentHtml);
+  }
+
+  const finalAuditResult = auditHtmlForClipping(currentHtml);
+  console.log(`Review completed after ${cycles} cycles — ${finalAuditResult.length === 0 ? 'audit clean' : `${finalAuditResult.length} residual violations`}`);
+
+  return {
+    html: currentHtml,
+    reviewResults: {
+      uiPassed: false,
+      qaPassed: false,
+      auditPassed: finalAuditResult.length === 0,
+      reviewCycles: cycles,
+      violations: finalAuditResult.map(v => `${v.type}: ${v.detail}`),
+    },
+  };
 }
 
 async function getBestPractices(
@@ -410,7 +616,7 @@ CONTENT BUDGET:
 - Footer: max 1 line
 
 ALLOWED LAYOUTS: single-column | two-column 60/40 | compact table + bullets | metric cards + body
-BANNED: kanban, swimlanes, nested grids, absolute positioning, dense infographics, >4 sections
+BANNED: kanban, swimlanes, nested grids, absolute positioning, dense infographics, >4 sections, overflow:hidden on text containers, fixed heights on content divs
 VISUAL: 9-10pt body, 11-13pt headings, 0.15in section spacing, 75-80% page fill
 GREAT (3 bullets): ...
 MISTAKES (3 bullets): ...` },
@@ -577,12 +783,10 @@ Deno.serve(async (req) => {
     // Normalize best practices into a compact generation rubric
     let bpSection = '';
     if (best_practices) {
-      // Truncate verbose best practices to max 600 chars to prevent prompt bloat
       const trimmedBp = best_practices.length > 600 ? best_practices.slice(0, 600).replace(/\n[^\n]*$/, '') + '\n...' : best_practices;
       bpSection += `\n\n## Generation Rubric (one-page constraints)\n${trimmedBp}`;
     }
     if (winning_patterns && Object.keys(winning_patterns).length > 0) {
-      // Only include simple pattern keys, not full HTML
       const compactPatterns: Record<string, any> = {};
       if (winning_patterns.common_sections) compactPatterns.sections = winning_patterns.common_sections;
       if (winning_patterns.layout_approach) compactPatterns.layout = winning_patterns.layout_approach;
@@ -605,7 +809,6 @@ Deno.serve(async (req) => {
     let brandingSection = '';
     if (branding) {
       const colors: string[] = [];
-      // Collect all available colors
       if (branding.colorPalette && Array.isArray(branding.colorPalette)) {
         colors.push(...branding.colorPalette);
       } else {
@@ -688,24 +891,29 @@ Your text blocks are TOO LONG by default. Follow these strict word limits:
 - Footer text: MAX 1 line.
 Prefer short, punchy phrases over elaborate explanations. White space is better than overflow.
 
+## CRITICAL CSS RULES (violations will cause automatic rejection):
+- NEVER use overflow: hidden, overflow: auto, or overflow: scroll on ANY content element (divs, sections, cards, frames, headers). Only the outermost page wrapper may clip.
+- NEVER use fixed height or max-height on text-containing elements. Always use height: auto.
+- NEVER use position: absolute or position: fixed on ANY element. Use normal document flow only.
+- NEVER use negative margins or transform: translateY() to position content.
+- ALL text containers MUST use: height: auto; overflow: visible;
+- Header/banner sections MUST use generous padding (0.2in min) and height: auto so text is never clipped.
+
 OUTPUT: Return a single self-contained HTML document with embedded CSS. The document MUST:
 - Fit on EXACTLY ONE printed page (US Letter 8.5" x 11"). This is a HARD constraint — no exceptions.
 - DO NOT generate more content than fits on a single page. When in doubt, write LESS. Shorter is always safer.
 - NEVER use more than 4 content sections (e.g., header + 3 body sections + footer). Fewer sections = cleaner document.
 - Reserve space for a footer when one is present. The footer must NEVER cover content.
-- Titles must have at minimum 0.1in of clear space above them. Never position content at the very edge of the page.
+- Titles must have at minimum 0.1in of clear space above them.
 - Use compact but readable font sizes (9-10pt body, 11-13pt headings). NEVER use font sizes smaller than 9pt.
-- NEVER use overflow: auto, overflow: scroll, overflow-y: auto, or overflow-x: auto on ANY element. All content must be statically laid out.
-- NEVER use position: absolute or position: fixed on ANY element including headers, footers, content blocks, or decorative elements. Everything must use normal document flow (position: static or relative only).
-- NEVER use negative margins or transform: translateY() to position content — this causes blocks to overlap and become unreadable.
-- All text in header/banner sections MUST be contained within the colored background area. Use padding inside the colored container, not absolute positioning of text outside it.
-- Keep header/banner sections compact: max 1.2in tall. Use a single background color with white text and generous padding (0.2in minimum).
+- All text in header/banner sections MUST be contained within the colored background area with generous padding.
+- Keep header/banner sections compact: max 1.2in tall. Use a single background color with white text.
 - Use this EXACT structure: <body><div class="page-wrapper"><div class="page-content">...main content...</div><footer>...footer...</footer></div></body>
 - Use this EXACT CSS layout pattern:
   @page { size: letter; margin: 0; }
   html, body { width: 8.5in; height: 11in; margin: 0; padding: 0; overflow: hidden; }
   .page-wrapper { width: 100%; height: 100%; display: flex; flex-direction: column; padding: 0.4in 0.5in; box-sizing: border-box; }
-  .page-content { flex: 1; min-height: 0; overflow: hidden; }
+  .page-content { flex: 1; min-height: 0; }
   footer, .page-footer { flex-shrink: 0; padding-top: 0.15in; border-top: 1px solid #ccc; font-size: 8pt; }
 - The footer MUST be inside the flex wrapper, NOT position:absolute.
 - The usable content area is approximately 9.2in tall × 7.5in wide after padding and footer reserve. Plan content to fill 75-80% of this — leave generous breathing room.
@@ -772,7 +980,9 @@ ${brandingSection}${bpSection}${existingPatternsSection}${variabilitySection}`;
 5. Remove any section that is low-value or redundant
 6. Keep ALL branding, colors, fonts, and layout structure intact
 7. Use a SIMPLE single-column or two-column 60/40 layout
-8. Return ONLY the complete fixed HTML — no explanations, no markdown fences` },
+8. NEVER use overflow:hidden on any text container. Use height:auto and overflow:visible.
+9. NEVER use fixed height or max-height on text-containing elements.
+10. Return ONLY the complete fixed HTML — no explanations, no markdown fences` },
           { role: 'user', content: content },
         ],
         temperature: 0.1,
@@ -788,7 +998,7 @@ ${brandingSection}${bpSection}${existingPatternsSection}${variabilitySection}`;
       }
     }
 
-    // Review pipeline: combined UI + QA Review
+    // Review pipeline: combined UI + QA Review + deterministic audit
     const { html: finalHtml, reviewResults } = await reviewPipeline(content, assetName, LOVABLE_API_KEY);
     content = finalHtml;
 

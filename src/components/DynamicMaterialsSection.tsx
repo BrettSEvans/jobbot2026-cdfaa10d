@@ -534,14 +534,25 @@ export default function DynamicMaterialsSection({
     <>
       <Tabs defaultValue="dashboard" className="space-y-4">
         <TabsList className="w-full justify-start flex-wrap">
-          {allMaterialTabs.map((tab) => (
-            <TabsTrigger key={tab.value} value={tab.value} className="flex items-center gap-1.5">
-              {tab.label}
-              {('asset' in tab && tab.asset?.generation_status === 'generating') && (
-                <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
-              )}
-            </TabsTrigger>
-          ))}
+          {allMaterialTabs.map((tab) => {
+            const familyMatch = 'asset' in tab && tab.asset?.html
+              ? tab.asset.html.match(/data-style-family="([A-F])"/)
+              : null;
+            const familyId = familyMatch ? familyMatch[1] : null;
+            return (
+              <TabsTrigger key={tab.value} value={tab.value} className="flex items-center gap-1.5">
+                {tab.label}
+                {isAdmin && familyId && (
+                  <span className="ml-0.5 inline-flex items-center justify-center rounded bg-muted text-[10px] font-mono leading-none px-1 py-0.5 text-muted-foreground">
+                    {familyId}
+                  </span>
+                )}
+                {('asset' in tab && tab.asset?.generation_status === 'generating') && (
+                  <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                )}
+              </TabsTrigger>
+            );
+          })}
           {isBgGenerating && generatedAssets.length === 0 && legacyAssets.length === 0 && (
             <TabsTrigger value="_loading" disabled className="flex items-center gap-1.5 opacity-50">
               <Loader2 className="h-3 w-3 animate-spin" /> Generating...

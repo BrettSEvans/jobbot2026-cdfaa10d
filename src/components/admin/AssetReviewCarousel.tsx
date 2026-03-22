@@ -210,7 +210,7 @@ export default function AssetReviewCarousel() {
   const filtered = useMemo(() => {
     if (!assets) return [];
     return assets.filter((a) => {
-      if (typeFilter !== "all" && a.assetType !== typeFilter) return false;
+      if (typeFilters.size > 0 && !typeFilters.has(a.filterType)) return false;
       if (reviewFilter === "all") return true;
       const rev = reviewMap.get(reviewKey(a));
       if (reviewFilter === "unreviewed") return !rev;
@@ -219,7 +219,7 @@ export default function AssetReviewCarousel() {
       if (reviewFilter === "down") return rev?.rating === "down";
       return true;
     });
-  }, [assets, typeFilter, reviewFilter, reviewMap]);
+  }, [assets, typeFilters, reviewFilter, reviewMap]);
 
   // Reset index when filters change
   useEffect(() => {

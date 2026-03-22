@@ -31,6 +31,7 @@ import { cn } from "@/lib/utils";
 type FlatAsset = {
   applicationId: string;
   assetType: string;
+  filterType: string;
   assetId: string | null;
   assetName: string;
   html: string;

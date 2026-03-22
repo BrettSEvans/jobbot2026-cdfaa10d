@@ -58,6 +58,43 @@ import CoverLetterRevisions from "@/components/CoverLetterRevisions";
 import ResumeRevisions from "@/components/ResumeRevisions";
 import InlineHtmlEditor from "@/components/InlineHtmlEditor";
 import DynamicMaterialsSection from "@/components/DynamicMaterialsSection";
+
+/** Fit-to-page preview for resume (same approach as materials) */
+function ResumePagePreview({ html }: { html: string }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setScale(Math.min(entry.contentRect.width / 816, 1));
+      }
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <Card className="overflow-hidden">
+      <div ref={containerRef} className="w-full bg-white" style={{ height: `${1056 * scale}px`, overflow: "hidden" }}>
+        <iframe
+          srcDoc={html}
+          sandbox="allow-scripts"
+          title="Resume Preview"
+          style={{
+            width: "816px",
+            height: "1056px",
+            border: "none",
+            transform: `scale(${scale})`,
+            transformOrigin: "top left",
+          }}
+        />
+      </div>
+    </Card>
+  );
+}
 import { backgroundGenerator } from "@/lib/backgroundGenerator";
 import { saveDashboardRevision } from "@/lib/api/dashboardRevisions";
 import { saveCoverLetterRevision } from "@/lib/api/coverLetterRevisions";
@@ -743,16 +780,7 @@ const ApplicationDetail = () => {
                     onCancel={() => setEditingResume(false)}
                   />
                 ) : (
-                  <Card className="overflow-hidden">
-                    <div className="w-full bg-white" style={{ height: "60vh" }}>
-                      <iframe
-                        srcDoc={previewResumeHtml || app.resume_html}
-                        className="w-full h-full border-0"
-                        sandbox="allow-scripts"
-                        title="Resume Preview"
-                      />
-                    </div>
-                  </Card>
+                  <ResumePagePreview html={previewResumeHtml || app.resume_html} />
                 )}
 
                 {/* Resume Revision History */}

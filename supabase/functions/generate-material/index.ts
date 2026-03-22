@@ -420,6 +420,7 @@ Deno.serve(async (req) => {
       applicationId,
       variabilityRecommendations,
       applicationCreatedAt,
+      branding,
     } = await req.json();
 
     if (!assetName || !jobDescription) {
@@ -506,6 +507,56 @@ Deno.serve(async (req) => {
     const anchorDate = applicationCreatedAt ? new Date(applicationCreatedAt) : new Date();
     const anchorStr = anchorDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
+    // Build branding section for the prompt
+    let brandingSection = '';
+    if (branding) {
+      const colors: string[] = [];
+      // Collect all available colors
+      if (branding.colorPalette && Array.isArray(branding.colorPalette)) {
+        colors.push(...branding.colorPalette);
+      } else {
+        if (branding.colors && typeof branding.colors === 'object') {
+          Object.values(branding.colors).forEach((v: any) => {
+            if (typeof v === 'string' && v.length < 60) colors.push(v);
+          });
+        }
+        if (branding.extractedColors && typeof branding.extractedColors === 'object') {
+          Object.values(branding.extractedColors).forEach((v: any) => {
+            if (typeof v === 'string' && v.length < 60) colors.push(v);
+          });
+        }
+      }
+      const uniqueColors = [...new Set(colors)].slice(0, 8);
+
+      const fonts: string[] = [];
+      if (branding.fonts && Array.isArray(branding.fonts)) {
+        branding.fonts.forEach((f: any) => { if (f?.family) fonts.push(f.family); });
+      }
+      if (branding.extractedFonts && Array.isArray(branding.extractedFonts)) {
+        branding.extractedFonts.forEach((f: string) => fonts.push(f));
+      }
+      const uniqueFonts = [...new Set(fonts)].slice(0, 4);
+
+      if (uniqueColors.length > 0 || uniqueFonts.length > 0) {
+        brandingSection = `\n\n## Company Branding (MUST USE)\n`;
+        if (uniqueColors.length > 0) {
+          brandingSection += `Colors: ${uniqueColors.join(', ')}\n`;
+          brandingSection += `Use at least 3 different brand colors across the document:\n`;
+          brandingSection += `- Color 1 (${uniqueColors[0]}) for headers, section titles, and primary accents\n`;
+          if (uniqueColors[1]) brandingSection += `- Color 2 (${uniqueColors[1]}) for backgrounds, borders, and secondary elements\n`;
+          if (uniqueColors[2]) brandingSection += `- Color 3 (${uniqueColors[2]}) for highlights, callout boxes, and accent details\n`;
+          brandingSection += `Do NOT use just one color — distribute the palette across the document in a similar pattern to their website.\n`;
+        }
+        if (uniqueFonts.length > 0) {
+          const fontFamilies = uniqueFonts.map(f => `'${f}'`).join(', ');
+          const googleFontsUrl = `https://fonts.googleapis.com/css2?${uniqueFonts.map(f => `family=${encodeURIComponent(f)}:wght@400;600;700`).join('&')}&display=swap`;
+          brandingSection += `Fonts: ${uniqueFonts.join(', ')}\n`;
+          brandingSection += `Add this in the <head>: <link href="${googleFontsUrl}" rel="stylesheet">\n`;
+          brandingSection += `Use font-family: ${fontFamilies}, sans-serif for all text.\n`;
+        }
+      }
+    }
+
     const systemPrompt = `You are an expert consultant creating a professional "${assetName}" document.
 
 ASSET DESCRIPTION: ${assetDescription || assetName}
@@ -541,12 +592,22 @@ OUTPUT: Return a single self-contained HTML document with embedded CSS. The docu
 - Specific to the role and company context — not generic
 - Visually polished with modern styling
 
+## Optional: Data Visualization Element
+You MAY include ONE small data visualization element per document to increase visual variety. This is optional but encouraged when it adds analytical value. Options:
+- Mini bar/column chart (inline SVG — <svg> with <rect> elements)
+- Progress bars (CSS-only with percentage labels)
+- Simple Gantt-style timeline (CSS grid or table-based)
+- Compact data table with 3-5 rows
+- Scorecard/KPI cards with metric values
+- Donut/pie chart (inline SVG with <circle> and stroke-dasharray)
+Use ONLY inline SVG or CSS-only visualizations — no external charting libraries. Maximum ONE per page. Keep compact (under 1.5in tall).
+
 Company: ${companyName || 'Unknown'}
 Job Title: ${jobTitle || 'Unknown'}
 Competitors: ${(competitors || []).join(', ') || 'N/A'}
 Products: ${(products || []).join(', ') || 'N/A'}
 Customers: ${(customers || []).join(', ') || 'N/A'}
-${bpSection}${existingPatternsSection}${variabilitySection}`;
+${brandingSection}${bpSection}${existingPatternsSection}${variabilitySection}`;
 
     const response = await aiFetchWithRetry(LOVABLE_API_KEY, {
       model: 'google/gemini-2.5-flash',

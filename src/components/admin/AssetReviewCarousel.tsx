@@ -23,6 +23,7 @@ import {
   Briefcase,
   Filter,
   SkipForward,
+  Scale,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -36,6 +37,8 @@ type FlatAsset = {
   companyName: string | null;
   jobTitle: string | null;
 };
+
+type RatingValue = "up" | "mid" | "down";
 
 const ASSET_TYPE_LABELS: Record<string, string> = {
   dashboard_html: "Dashboard",
@@ -144,8 +147,26 @@ function wrapCoverLetter(text: string): string {
     .join("")}</body></html>`;
 }
 
-type ReviewFilter = "all" | "unreviewed" | "up" | "down";
+type ReviewFilter = "all" | "unreviewed" | "up" | "mid" | "down";
 type TypeFilter = "all" | string;
+
+/** For "mid" ratings we store JSON { pros, cons } in the notes field */
+function parseMidNotes(raw: string | null): { pros: string; cons: string } {
+  if (!raw) return { pros: "", cons: "" };
+  try {
+    const parsed = JSON.parse(raw);
+    if (typeof parsed === "object" && parsed !== null) {
+      return { pros: parsed.pros ?? "", cons: parsed.cons ?? "" };
+    }
+  } catch {
+    // not JSON — legacy plain text
+  }
+  return { pros: "", cons: "" };
+}
+
+function serializeMidNotes(pros: string, cons: string): string {
+  return JSON.stringify({ pros, cons });
+}
 
 export default function AssetReviewCarousel() {
   const { user } = useAuth();
@@ -154,7 +175,9 @@ export default function AssetReviewCarousel() {
   const { data: reviews } = useAssetReviews();
   const [idx, setIdx] = useState(0);
   const [notes, setNotes] = useState("");
-  const [pendingRating, setPendingRating] = useState<"up" | "down" | null>(null);
+  const [midPros, setMidPros] = useState("");
+  const [midCons, setMidCons] = useState("");
+  const [pendingRating, setPendingRating] = useState<RatingValue | null>(null);
   const [reviewFilter, setReviewFilter] = useState<ReviewFilter>("all");
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
 
@@ -184,6 +207,7 @@ export default function AssetReviewCarousel() {
       const rev = reviewMap.get(reviewKey(a));
       if (reviewFilter === "unreviewed") return !rev;
       if (reviewFilter === "up") return rev?.rating === "up";
+      if (reviewFilter === "mid") return rev?.rating === "mid";
       if (reviewFilter === "down") return rev?.rating === "down";
       return true;
     });
@@ -200,18 +224,36 @@ export default function AssetReviewCarousel() {
   // Sync notes/rating when navigating
   useEffect(() => {
     if (currentReview) {
-      setNotes(currentReview.notes ?? "");
-      setPendingRating(
-        currentReview.rating === "up" ? "up" : currentReview.rating === "down" ? "down" : null
-      );
+      const r = currentReview.rating as RatingValue;
+      setPendingRating(["up", "mid", "down"].includes(r) ? r : null);
+      if (r === "mid") {
+        const parsed = parseMidNotes(currentReview.notes);
+        setMidPros(parsed.pros);
+        setMidCons(parsed.cons);
+        setNotes("");
+      } else {
+        setNotes(currentReview.notes ?? "");
+        setMidPros("");
+        setMidCons("");
+      }
     } else {
       setNotes("");
+      setMidPros("");
+      setMidCons("");
       setPendingRating(null);
     }
   }, [idx, currentReview]);
 
+  const getNotesForSave = useCallback(
+    (rating: RatingValue) => {
+      if (rating === "mid") return serializeMidNotes(midPros, midCons);
+      return notes;
+    },
+    [notes, midPros, midCons]
+  );
+
   const saveMutation = useMutation({
-    mutationFn: async ({ rating, notesVal }: { rating: "up" | "down"; notesVal: string }) => {
+    mutationFn: async ({ rating, notesVal }: { rating: RatingValue; notesVal: string }) => {
       if (!current || !user) return;
       const existing = reviewMap.get(reviewKey(current));
       if (existing) {
@@ -240,20 +282,20 @@ export default function AssetReviewCarousel() {
   });
 
   const handleRate = useCallback(
-    (r: "up" | "down") => {
+    (r: RatingValue) => {
       setPendingRating(r);
-      saveMutation.mutate({ rating: r, notesVal: notes });
+      saveMutation.mutate({ rating: r, notesVal: getNotesForSave(r) });
     },
-    [notes, saveMutation]
+    [getNotesForSave, saveMutation]
   );
 
   const handleSaveNotes = useCallback(() => {
     if (!pendingRating) {
-      toast.info("Please rate thumbs up or down first");
+      toast.info("Please rate the asset first");
       return;
     }
-    saveMutation.mutate({ rating: pendingRating, notesVal: notes });
-  }, [pendingRating, notes, saveMutation]);
+    saveMutation.mutate({ rating: pendingRating, notesVal: getNotesForSave(pendingRating) });
+  }, [pendingRating, getNotesForSave, saveMutation]);
 
   const go = useCallback(
     (dir: -1 | 1) => {
@@ -277,6 +319,7 @@ export default function AssetReviewCarousel() {
   const totalAssets = assets?.length ?? 0;
   const reviewedCount = (reviews ?? []).length;
   const upCount = (reviews ?? []).filter((r) => r.rating === "up").length;
+  const midCount = (reviews ?? []).filter((r) => r.rating === "mid").length;
   const downCount = (reviews ?? []).filter((r) => r.rating === "down").length;
   const unreviewedCount = totalAssets - reviewedCount;
   const progressPct = totalAssets > 0 ? Math.round((reviewedCount / totalAssets) * 100) : 0;
@@ -319,6 +362,9 @@ export default function AssetReviewCarousel() {
             <Badge variant="outline" className="gap-1 text-green-600 border-green-300">
               <ThumbsUp className="h-3 w-3" /> {upCount}
             </Badge>
+            <Badge variant="outline" className="gap-1 text-amber-600 border-amber-300">
+              <Scale className="h-3 w-3" /> {midCount}
+            </Badge>
             <Badge variant="outline" className="gap-1 text-red-600 border-red-300">
               <ThumbsDown className="h-3 w-3" /> {downCount}
             </Badge>
@@ -359,6 +405,7 @@ export default function AssetReviewCarousel() {
             <SelectItem value="all">All</SelectItem>
             <SelectItem value="unreviewed">Unreviewed</SelectItem>
             <SelectItem value="up">👍 Approved</SelectItem>
+            <SelectItem value="mid">⚖️ Mid</SelectItem>
             <SelectItem value="down">👎 Rejected</SelectItem>
           </SelectContent>
         </Select>
@@ -400,10 +447,10 @@ export default function AssetReviewCarousel() {
             </div>
             {currentReview && (
               <Badge
-                variant={currentReview.rating === "up" ? "default" : "destructive"}
+                variant={currentReview.rating === "up" ? "default" : currentReview.rating === "mid" ? "secondary" : "destructive"}
                 className="text-[10px]"
               >
-                {currentReview.rating === "up" ? "👍 Approved" : "👎 Rejected"}
+                {currentReview.rating === "up" ? "👍 Approved" : currentReview.rating === "mid" ? "⚖️ Mid" : "👎 Rejected"}
               </Badge>
             )}
           </div>
@@ -453,6 +500,18 @@ export default function AssetReviewCarousel() {
               </Button>
               <Button
                 size="sm"
+                variant={pendingRating === "mid" ? "default" : "outline"}
+                className={cn(
+                  "gap-1",
+                  pendingRating === "mid" && "bg-amber-500 hover:bg-amber-600 text-white"
+                )}
+                onClick={() => handleRate("mid")}
+                disabled={saveMutation.isPending}
+              >
+                <Scale className="h-4 w-4" /> Mid
+              </Button>
+              <Button
+                size="sm"
                 variant={pendingRating === "down" ? "destructive" : "outline"}
                 className="gap-1"
                 onClick={() => handleRate("down")}
@@ -475,12 +534,37 @@ export default function AssetReviewCarousel() {
 
           {/* Notes */}
           <div className="space-y-2">
-            <Textarea
-              placeholder="Add notes about this asset (layout issues, good patterns, color problems, etc.)..."
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              rows={3}
-            />
+            {pendingRating === "mid" ? (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-green-600">👍 Pros — What works well</label>
+                  <Textarea
+                    placeholder="Good layout, strong color palette, clear hierarchy..."
+                    value={midPros}
+                    onChange={(e) => setMidPros(e.target.value)}
+                    rows={3}
+                    className="border-green-200 focus-visible:ring-green-400"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-red-600">👎 Cons — Needs improvement</label>
+                  <Textarea
+                    placeholder="Font too small, chart labels overlap, spacing issues..."
+                    value={midCons}
+                    onChange={(e) => setMidCons(e.target.value)}
+                    rows={3}
+                    className="border-red-200 focus-visible:ring-red-400"
+                  />
+                </div>
+              </div>
+            ) : (
+              <Textarea
+                placeholder="Add notes about this asset (layout issues, good patterns, color problems, etc.)..."
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                rows={3}
+              />
+            )}
             <Button
               size="sm"
               variant="secondary"

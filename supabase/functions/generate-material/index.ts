@@ -620,7 +620,9 @@ OUTPUT: Return a single self-contained HTML document with embedded CSS. The docu
 - Titles must have at minimum 0.1in of clear space above them. Never position content at the very edge of the page.
 - Use compact but readable font sizes (9-10pt body, 11-13pt headings). NEVER use font sizes smaller than 9pt.
 - NEVER use overflow: auto, overflow: scroll, overflow-y: auto, or overflow-x: auto on ANY element. All content must be statically laid out.
-- NEVER use position: absolute or position: fixed on footers or any page-level container.
+- NEVER use position: absolute or position: fixed on ANY element including headers, footers, content blocks, or decorative elements. Everything must use normal document flow (position: static or relative only).
+- NEVER use negative margins or transform: translateY() to position content — this causes blocks to overlap and become unreadable.
+- All text in header/banner sections MUST be contained within the colored background area. Use padding inside the colored container, not absolute positioning of text outside it.
 - Use this EXACT structure to prevent footer overlap: <body><div class="page-wrapper"><div class="page-content">...main content...</div><footer>...footer...</footer></div></body>
 - Use this EXACT CSS layout pattern to prevent footer from covering content:
   @page { size: letter; margin: 0; }

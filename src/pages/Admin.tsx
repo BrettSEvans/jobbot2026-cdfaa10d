@@ -15,20 +15,16 @@ import { format } from "date-fns";
 
 function useAdminRole() {
   const { user, loading } = useAuth();
-
-  return useQuery({
+  const query = useQuery({
     queryKey: ["user_role_admin", user?.id],
     enabled: !!user && !loading,
     staleTime: 60_000,
     retry: 2,
     queryFn: async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session || !user) return false;
-
       const { data, error } = await supabase
         .from("user_roles")
         .select("role")
-        .eq("user_id", user.id)
+        .eq("user_id", user!.id)
         .eq("role", "admin")
         .maybeSingle();
 
@@ -40,6 +36,12 @@ function useAdminRole() {
       return !!data;
     },
   });
+
+  return {
+    ...query,
+    authLoading: loading,
+    hasUser: !!user,
+  };
 }
 
 function useApprovalQueue() {

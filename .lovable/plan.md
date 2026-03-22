@@ -1,49 +1,47 @@
 
 
-## Add Revision History + Change Asset Feature
+# Add Style Variability Metric
 
-### Current State
-- **Resume tab**: Saves revisions to `resume_revisions` table on regeneration, but **no UI to browse them**
-- **Cover Letter tab**: Has `CoverLetterRevisions` component showing history with Preview/Download -- working
-- **Dashboard tab**: Has `DashboardRevisions` component showing history -- working
-- **Generated assets** (Materials tab): `generated_asset_revisions` table exists but **no UI** and **no code saving revisions**
-- **Change Asset**: `proposed_assets` table stores JD-recommended assets. Generated ones go into `generated_assets`. No swap mechanism exists.
+## Overview
 
-### What We're Building
+Add a **style variability** dimension to the existing design variability scoring system. This metric specifically evaluates the **content flow pattern** of each document (e.g., "text block → chart → text block → bullet points" vs. "header → two-column grid → metrics cards → timeline") and penalizes documents that share similar content-block sequencing or layout formats (e.g., multiple documents using two-column format).
 
-**1. Resume Revision History UI**
-- Create `src/components/ResumeRevisions.tsx` (modeled on `DashboardRevisions`)
-- Fetches from `resume_revisions` table, shows collapsible history with Preview (swap iframe srcDoc) and Download buttons
-- Add to Resume tab in `ApplicationDetail.tsx` below action buttons
+## Changes
 
-**2. Generated Asset Revision History**
-- Create `src/lib/api/generatedAssetRevisions.ts` with save/get/delete helpers
-- Create `src/components/GeneratedAssetRevisions.tsx` (same pattern as DashboardRevisions but keyed to `asset_id`)
-- In `DynamicMaterialsSection.tsx`: add revision history under each asset's action bar
-- Save a revision before regeneration in the asset regenerate handler
+### 1. Update the scoring edge function prompt (`supabase/functions/score-design-variability/index.ts`)
 
-**3. Auto-save Revisions on Regeneration**
-- Resume: already saves before regen -- confirmed
-- Cover Letter: verify it saves before regen (it does via `saveCoverLetterRevision`)
-- Generated assets: add revision save before regeneration in `DynamicMaterialsSection.tsx`
+Expand the AI evaluation criteria to include a dedicated **style variability** analysis:
+- **Content flow pattern**: Extract the sequence of content block types in each document (e.g., "header → paragraph → table → bullet list → chart")
+- **Column layout detection**: Identify whether documents use single-column, two-column, sidebar, or grid layouts
+- **Visual rhythm**: Assess spacing patterns, section density, and content block sizing
+- Add a new `styleScore` (0-100) to the JSON response schema
+- Add `contentFlowPatterns` array showing each document's detected flow sequence (e.g., `{ assetName: "...", flowPattern: "header → two-column-grid → metrics-cards → bullet-list", layoutType: "two-column" }`)
+- Include style-specific recommendations when documents share similar flow patterns
 
-**4. Change Asset (Swap) Feature**
-- Add a "Change Asset" button on each generated asset tab (only when not downloaded/locked)
-- Opens a dialog listing alternative materials from `proposed_assets` (where `selected = false`) plus a few new suggestions from the JD intelligence data, each with name + description
-- On confirm: saves current asset as a revision, updates `generated_assets` row with new `asset_name`/`brief_description`, calls `generate-material` edge function, marks old `proposed_asset` as `selected = false` and new one as `selected = true`
-- Total material count stays the same -- one swapped out
+### 2. Update TypeScript types (`src/lib/api/designVariability.ts`)
 
-### Files to Create/Modify
+Add to `VariabilityResult`:
+- `styleScore: number`
+- `contentFlowPatterns: Array<{ assetName: string; flowPattern: string; layoutType: string }>`
 
-| File | Action |
-|------|--------|
-| `src/components/ResumeRevisions.tsx` | New -- resume revision history UI |
-| `src/lib/api/resumeRevisions.ts` | New -- CRUD helpers for resume_revisions |
-| `src/lib/api/generatedAssetRevisions.ts` | New -- CRUD helpers for generated_asset_revisions |
-| `src/components/GeneratedAssetRevisions.tsx` | New -- asset revision history UI |
-| `src/pages/ApplicationDetail.tsx` | Add ResumeRevisions component to Resume tab |
-| `src/components/DynamicMaterialsSection.tsx` | Add revision history per asset + "Change Asset" button/dialog + save revision before regen |
+Map these from the edge function response.
 
-### No database changes needed
-All required tables (`resume_revisions`, `generated_asset_revisions`, `proposed_assets`) and RLS policies already exist.
+### 3. Update the UI card (`src/components/admin/DesignVariabilityCard.tsx`)
+
+- Add the `styleScore` as a third metric alongside Variety and Branding
+- Display the content flow patterns section showing each document's detected pattern and layout type
+- Use color coding to highlight documents with similar patterns (indicating low variability)
+
+### 4. Feed style patterns into generation (`supabase/functions/generate-material/index.ts`)
+
+Enhance the existing variability section in the generation prompt to include content flow awareness:
+- Extract the content block sequence from each existing asset (not just HTML tag hierarchy)
+- Tell the AI to use a different content flow pattern (e.g., if existing docs use "header → paragraph → table → bullets", the new doc should use "header → metrics grid → timeline → callout box")
+- Explicitly list layout types already used (two-column, single-column, sidebar) so the AI avoids repeating them
+
+### Files to modify
+- `supabase/functions/score-design-variability/index.ts` — expanded prompt with style analysis
+- `src/lib/api/designVariability.ts` — new type fields
+- `src/components/admin/DesignVariabilityCard.tsx` — display style score + flow patterns
+- `supabase/functions/generate-material/index.ts` — content flow awareness in generation prompt
 

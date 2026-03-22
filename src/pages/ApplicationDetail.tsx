@@ -1280,6 +1280,33 @@ const ApplicationDetail = () => {
                     <InfoRow label="Updated" value={new Date(app.updated_at).toLocaleDateString()} />
                   </div>
                 )}
+
+                {/* Collapsible Job Description */}
+                <Collapsible className="mt-4 border-t pt-3">
+                  <CollapsibleTrigger className="flex items-center justify-between w-full text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+                    <span className="flex items-center gap-2">
+                      <FileText className="h-4 w-4" />
+                      Job Description
+                    </span>
+                    <ChevronRightIcon className="h-4 w-4 transition-transform [[data-state=open]>&]:rotate-90" />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="mt-3 space-y-2">
+                    <Textarea
+                      value={jobDescription}
+                      onChange={(e) => setJobDescription(e.target.value)}
+                      rows={12}
+                      className="font-mono text-sm"
+                      placeholder="Paste or type the job description here…"
+                    />
+                    <Button
+                      size="sm"
+                      disabled={saving}
+                      onClick={() => saveField({ job_description_markdown: jobDescription })}
+                    >
+                      <Check className="mr-2 h-3.5 w-3.5" /> Save
+                    </Button>
+                  </CollapsibleContent>
+                </Collapsible>
               </CardContent>
             </Card>
 

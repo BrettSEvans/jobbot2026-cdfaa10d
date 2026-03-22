@@ -319,6 +319,7 @@ export default function AssetReviewCarousel() {
   const totalAssets = assets?.length ?? 0;
   const reviewedCount = (reviews ?? []).length;
   const upCount = (reviews ?? []).filter((r) => r.rating === "up").length;
+  const midCount = (reviews ?? []).filter((r) => r.rating === "mid").length;
   const downCount = (reviews ?? []).filter((r) => r.rating === "down").length;
   const unreviewedCount = totalAssets - reviewedCount;
   const progressPct = totalAssets > 0 ? Math.round((reviewedCount / totalAssets) * 100) : 0;

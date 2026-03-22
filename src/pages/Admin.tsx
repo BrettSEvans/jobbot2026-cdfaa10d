@@ -179,6 +179,9 @@ export default function Admin() {
           <TabsTrigger value="approvals" className="gap-1.5">
             <Users className="h-3.5 w-3.5" /> Approvals
           </TabsTrigger>
+          <TabsTrigger value="asset-review" className="gap-1.5">
+            <Images className="h-3.5 w-3.5" /> Asset Review
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="approvals">
@@ -189,6 +192,18 @@ export default function Admin() {
             </CardHeader>
             <CardContent>
               <ApprovalQueue />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="asset-review">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Asset Quality Review</CardTitle>
+              <CardDescription>Rate generated materials to train quality benchmarks</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <AssetReviewCarousel />
             </CardContent>
           </Card>
         </TabsContent>

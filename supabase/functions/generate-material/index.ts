@@ -606,18 +606,18 @@ async function getBestPractices(
         { role: 'system', content: 'You are a document design consultant specializing in ONE-PAGE professional deliverables (US Letter 8.5×11in). Produce compact, constraint-driven rubrics — NOT verbose essays.' },
         { role: 'user', content: `Create a ONE-PAGE GENERATION RUBRIC for "${assetType}". Use this exact format (keep each line short, total under 250 words):
 
-SECTIONS (max 3-4):
+SECTIONS (max 3):
 - [name]: [purpose, max 15 words]
 
 CONTENT BUDGET:
 - Header: max 2 lines
-- Per section: max 4-5 bullets OR 1 short paragraph (2 sentences)
-- Table rows: max 4-5
+- Per section: max 3-4 bullets OR 1 short paragraph (2 sentences, 50 words max)
+- Table rows: max 3-4
 - Footer: max 1 line
 
 ALLOWED LAYOUTS: single-column | two-column 60/40 | compact table + bullets | metric cards + body
-BANNED: kanban, swimlanes, nested grids, absolute positioning, dense infographics, >4 sections, overflow:hidden on text containers, fixed heights on content divs
-VISUAL: 9-10pt body, 11-13pt headings, 0.15in section spacing, 75-80% page fill
+BANNED: kanban, swimlanes, nested grids, absolute positioning, dense infographics, >3 body sections, overflow:hidden on text containers, fixed heights on content divs, framed/boxed section containers
+VISUAL: 9-10pt body, 11-13pt headings, 0.15in section spacing, 80-85% page fill target
 GREAT (3 bullets): ...
 MISTAKES (3 bullets): ...` },
       ],
@@ -882,13 +882,18 @@ AVOID these complex patterns that frequently cause overlap:
 - Any layout requiring more than 2 levels of nesting
 
 ## CONTENT BREVITY: LESS IS MORE
-Your text blocks are TOO LONG by default. Follow these strict word limits:
-- Paragraph blocks: MAX 2 sentences (25-35 words each). No paragraph should exceed 70 words.
-- Bullet lists: MAX 4-5 bullets per section. Each bullet MAX 12-15 words.
-- Table cells: MAX 8-10 words per cell. Use fragments, not full sentences.
+A clean, well-spaced document with 3 strong sections impresses more than a cramped document with 6 mediocre sections.
+The document must fill the page but NOT overflow — aim for 80-85% page fill so it looks complete, not empty.
+Follow these strict word limits:
+- MAX 3 body sections (header + 3 sections + footer). Never exceed 3 body sections.
+- Paragraph blocks: MAX 2 sentences (20-25 words each). No paragraph should exceed 50 words.
+- Bullet lists: MAX 3-4 bullets per section. Each bullet MAX 12 words.
+- Table cells: MAX 8 words per cell. Use fragments, not full sentences.
+- Table rows: MAX 3-4 rows per table.
 - Section headings: MAX 6 words.
-- Executive summaries / introductions: MAX 3 sentences total.
+- Executive summaries / introductions: MAX 2 sentences total.
 - Footer text: MAX 1 line.
+- Do NOT use framed/boxed section containers for "plan", "template", or "strategy" documents — use simple headers with underlines instead.
 Prefer short, punchy phrases over elaborate explanations. White space is better than overflow.
 
 ## CRITICAL CSS RULES (violations will cause automatic rejection):
@@ -902,7 +907,7 @@ Prefer short, punchy phrases over elaborate explanations. White space is better 
 OUTPUT: Return a single self-contained HTML document with embedded CSS. The document MUST:
 - Fit on EXACTLY ONE printed page (US Letter 8.5" x 11"). This is a HARD constraint — no exceptions.
 - DO NOT generate more content than fits on a single page. When in doubt, write LESS. Shorter is always safer.
-- NEVER use more than 4 content sections (e.g., header + 3 body sections + footer). Fewer sections = cleaner document.
+- NEVER use more than 3 body sections (header + 3 body sections + footer). Fewer sections = cleaner document.
 - Reserve space for a footer when one is present. The footer must NEVER cover content.
 - Titles must have at minimum 0.1in of clear space above them.
 - Use compact but readable font sizes (9-10pt body, 11-13pt headings). NEVER use font sizes smaller than 9pt.
@@ -916,7 +921,7 @@ OUTPUT: Return a single self-contained HTML document with embedded CSS. The docu
   .page-content { flex: 1; min-height: 0; }
   footer, .page-footer { flex-shrink: 0; padding-top: 0.15in; border-top: 1px solid #ccc; font-size: 8pt; }
 - The footer MUST be inside the flex wrapper, NOT position:absolute.
-- The usable content area is approximately 9.2in tall × 7.5in wide after padding and footer reserve. Plan content to fill 75-80% of this — leave generous breathing room.
+- The usable content area is approximately 9.2in tall × 7.5in wide after padding and footer reserve. Plan content to fill 80-85% of this — enough to look complete but with breathing room.
 - Use generous spacing between sections (margin-bottom: 0.15in minimum).
 - Be professional, clean, and printable
 - Include a header with the company name, job title, and document title
@@ -965,7 +970,7 @@ ${brandingSection}${bpSection}${existingPatternsSection}${variabilitySection}`;
     const bulletCount = (content.match(/<li[^>]*>/gi) || []).length;
     const tableRowCount = (content.match(/<tr[^>]*>/gi) || []).length;
     const textLength = content.replace(/<[^>]+>/g, '').length;
-    const isDense = sectionCount > 5 || bulletCount > 25 || tableRowCount > 8 || textLength > 4000;
+    const isDense = sectionCount > 4 || bulletCount > 16 || tableRowCount > 5 || textLength > 3000;
 
     if (isDense) {
       console.log(`Density detected: sections=${sectionCount}, bullets=${bulletCount}, rows=${tableRowCount}, chars=${textLength}. Running condensation retry.`);
@@ -973,16 +978,18 @@ ${brandingSection}${bpSection}${existingPatternsSection}${variabilitySection}`;
         model: 'google/gemini-2.5-flash',
         messages: [
           { role: 'system', content: `You are a document editor. The following HTML document is TOO DENSE for a single US Letter page. Condense it:
-1. Merge sections down to max 3-4 total (combine related ones)
-2. Cut bullet lists to max 4-5 bullets each (keep the most impactful)
-3. Cut table rows to max 4-5 (keep highest-value rows)
-4. Shorten all paragraphs to max 2 sentences
+1. Merge sections down to max 3 body sections (combine related ones aggressively)
+2. Cut bullet lists to max 3-4 bullets each (keep the most impactful)
+3. Cut table rows to max 3-4 (keep highest-value rows)
+4. Shorten all paragraphs to max 2 sentences, max 50 words per paragraph
 5. Remove any section that is low-value or redundant
-6. Keep ALL branding, colors, fonts, and layout structure intact
-7. Use a SIMPLE single-column or two-column 60/40 layout
-8. NEVER use overflow:hidden on any text container. Use height:auto and overflow:visible.
-9. NEVER use fixed height or max-height on text-containing elements.
-10. Return ONLY the complete fixed HTML — no explanations, no markdown fences` },
+6. Remove all framed/boxed section containers — use simple headers with underlines instead
+7. Keep ALL branding, colors, fonts intact
+8. Use a SIMPLE single-column or two-column 60/40 layout
+9. NEVER use overflow:hidden on any text container. Use height:auto and overflow:visible.
+10. NEVER use fixed height or max-height on text-containing elements.
+11. The document should fill 80-85% of the page — enough to look complete but not cramped.
+12. Return ONLY the complete fixed HTML — no explanations, no markdown fences` },
           { role: 'user', content: content },
         ],
         temperature: 0.1,

@@ -947,7 +947,7 @@ ${brandingSection}${bpSection}${existingPatternsSection}${variabilitySection}`;
     const bulletCount = (content.match(/<li[^>]*>/gi) || []).length;
     const tableRowCount = (content.match(/<tr[^>]*>/gi) || []).length;
     const textLength = content.replace(/<[^>]+>/g, '').length;
-    const isDense = sectionCount > 5 || bulletCount > 25 || tableRowCount > 8 || textLength > 4000;
+    const isDense = sectionCount > 4 || bulletCount > 16 || tableRowCount > 6 || textLength > 2500;
 
     if (isDense) {
       console.log(`Density detected: sections=${sectionCount}, bullets=${bulletCount}, rows=${tableRowCount}, chars=${textLength}. Running condensation retry.`);

@@ -200,9 +200,9 @@ export default function AssetReviewCarousel() {
   }, [reviews]);
 
   // Unique asset types for filter dropdown
-  const assetTypes = useMemo(() => {
+  const allFilterTypes = useMemo(() => {
     if (!assets) return [];
-    const s = new Set(assets.map((a) => a.assetType));
+    const s = new Set(assets.map((a) => a.filterType));
     return Array.from(s).sort();
   }, [assets]);
 

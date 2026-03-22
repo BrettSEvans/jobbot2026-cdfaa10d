@@ -20,7 +20,7 @@ import {
   ThumbsDown,
   ChevronLeft,
   ChevronRight,
-  Building2,
+  
   Briefcase,
   Filter,
   SkipForward,

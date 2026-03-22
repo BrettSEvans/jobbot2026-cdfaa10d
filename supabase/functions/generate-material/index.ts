@@ -128,11 +128,10 @@ function enforceOnePageLayout(html: string): string {
     overflow: visible !important;
   }
 
-  /* ===== FLOW-SAFE RULES: let text containers grow naturally ===== */
-  .page-content *,
-  .page-content *::before,
-  .page-content *::after {
-    /* REMOVED: overflow: hidden — this was clipping text */
+  /* ===== FLOW-SAFE RULES: let TEXT elements grow naturally ===== */
+  .page-content p,
+  .page-content h1, .page-content h2, .page-content h3, .page-content h4,
+  .page-content li, .page-content span, .page-content blockquote {
     overflow: visible !important;
     overflow-x: visible !important;
     overflow-y: visible !important;

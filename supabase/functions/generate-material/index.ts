@@ -181,16 +181,43 @@ Deno.serve(async (req) => {
           return `- ${a.asset_name}: ${stripped.slice(0, 500)}`;
         }).join('\n');
 
-        existingPatternsSection = `\n\n## CRITICAL: Design Variability Requirement (80%+ uniqueness)
-The following assets have ALREADY been generated for this application. Your output MUST be structurally DIFFERENT from all of them.
-DO NOT reuse the same:
-- Header/banner layout pattern
-- Section arrangement (e.g. if others use "header → bold paragraph → grey block", use a different structure)
-- Table/grid/list styling approach
-- Color block patterns
-- Typography hierarchy
+        // Detect content flow patterns and layout types from existing assets
+        const flowSummaries = existingAssets.map((a: any) => {
+          const html = a.html || '';
+          const hasGrid = /display:\s*grid|grid-template/i.test(html);
+          const hasFlex = /display:\s*flex/i.test(html);
+          const hasTwoCol = /grid-template-columns:\s*[^;]*\s+[^;]*|columns:\s*2|two-col|col-2/i.test(html);
+          const hasTable = /<table/i.test(html);
+          const hasChart = /chart|svg.*rect|canvas/i.test(html);
+          const hasList = /<ul|<ol/i.test(html);
+          const hasSidebar = /sidebar|aside|side-panel/i.test(html);
+          const layoutType = hasSidebar ? 'sidebar' : hasTwoCol ? 'two-column' : hasGrid ? 'grid' : 'single-column';
+          const blocks: string[] = [];
+          if (/<h[12]/i.test(html)) blocks.push('header');
+          if (/<p[>\s]/i.test(html)) blocks.push('paragraph');
+          if (hasTable) blocks.push('table');
+          if (hasList) blocks.push('bullet-list');
+          if (hasChart) blocks.push('chart/visual');
+          if (/callout|highlight|alert|badge/i.test(html)) blocks.push('callout-box');
+          if (/metric|kpi|score/i.test(html)) blocks.push('metrics');
+          if (/timeline/i.test(html)) blocks.push('timeline');
+          return `- ${a.asset_name}: layout=${layoutType}, flow=${blocks.join(' → ')}`;
+        }).join('\n');
 
-Choose a DIFFERENT dominant layout pattern. Examples of distinct patterns:
+        existingPatternsSection = `\n\n## CRITICAL: Design & Style Variability Requirement (80%+ uniqueness)
+The following assets have ALREADY been generated for this application. Your output MUST be structurally AND stylistically DIFFERENT from all of them.
+
+### Layout Types Already Used (DO NOT repeat):
+${flowSummaries}
+
+### Rules:
+1. If existing assets use two-column layout, use single-column, sidebar, or centered layout instead
+2. If existing assets use table-heavy content, use cards, timelines, or infographic style instead
+3. Use a DIFFERENT content block sequence — if others go "header → paragraph → table → bullets", try "header → metrics grid → timeline → callout box"
+4. Each document should tell the candidate's story from a DIFFERENT angle (strategic leader, analytical problem-solver, cross-functional collaborator, innovation driver)
+5. Highlight DIFFERENT skills and competencies than other documents
+
+Choose a DIFFERENT dominant layout pattern. Examples:
 - Timeline/chronological flow
 - Scorecard/metric grid with KPI cards
 - Executive brief with sidebar navigation

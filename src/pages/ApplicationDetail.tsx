@@ -58,7 +58,6 @@ import CoverLetterRevisions from "@/components/CoverLetterRevisions";
 import ResumeRevisions from "@/components/ResumeRevisions";
 import InlineHtmlEditor from "@/components/InlineHtmlEditor";
 import DynamicMaterialsSection from "@/components/DynamicMaterialsSection";
-import { useRef as _useRef2, useState as _useState2, useEffect as _useEffect2, useCallback as _cb2 } from "react";
 
 /** Fit-to-page preview for resume (same approach as materials) */
 function ResumePagePreview({ html }: { html: string }) {

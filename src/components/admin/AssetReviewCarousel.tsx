@@ -207,6 +207,7 @@ export default function AssetReviewCarousel() {
       const rev = reviewMap.get(reviewKey(a));
       if (reviewFilter === "unreviewed") return !rev;
       if (reviewFilter === "up") return rev?.rating === "up";
+      if (reviewFilter === "mid") return rev?.rating === "mid";
       if (reviewFilter === "down") return rev?.rating === "down";
       return true;
     });

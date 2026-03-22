@@ -1042,6 +1042,50 @@ const ApplicationDetail = () => {
 
           {/* Story 2.1: JD Analysis Tab (split from old Job Description tab) */}
           <TabsContent value="jd-analysis" className="space-y-4">
+            {/* Collapsible Job & Company URL fields */}
+            <Collapsible defaultOpen={false}>
+              <Card className="border-dashed">
+                <CardContent className="pt-3 pb-3">
+                  <CollapsibleTrigger className="flex items-center justify-between w-full text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+                    <span className="flex items-center gap-2">
+                      <Globe className="h-4 w-4" />
+                      Job &amp; Company URLs
+                    </span>
+                    <ChevronRightIcon className="h-4 w-4 transition-transform [[data-state=open]>&]:rotate-90" />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="mt-3 space-y-3">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-muted-foreground">Job URL / Pasted Text</label>
+                      <Input
+                        value={app?.job_url || ""}
+                        readOnly
+                        className="text-sm bg-muted/40"
+                        placeholder="No job URL"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-muted-foreground">Company URL</label>
+                      <div className="flex gap-2">
+                        <Input
+                          value={companyUrl}
+                          onChange={(e) => setCompanyUrl(e.target.value)}
+                          className="text-sm"
+                          placeholder="https://company.com"
+                        />
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={saving}
+                          onClick={() => saveField({ company_url: companyUrl })}
+                        >
+                          <Check className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CollapsibleContent>
+                </CardContent>
+              </Card>
+            </Collapsible>
             {/* Story 1.1: Empty state for JD tools */}
             {!jobDescription ? (
               <Card>

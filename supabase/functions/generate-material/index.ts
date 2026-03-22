@@ -539,12 +539,23 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Normalize best practices into a compact generation rubric
     let bpSection = '';
     if (best_practices) {
-      bpSection += `\n\n## Best Practices Research\n${best_practices}`;
+      // Truncate verbose best practices to max 600 chars to prevent prompt bloat
+      const trimmedBp = best_practices.length > 600 ? best_practices.slice(0, 600).replace(/\n[^\n]*$/, '') + '\n...' : best_practices;
+      bpSection += `\n\n## Generation Rubric (one-page constraints)\n${trimmedBp}`;
     }
     if (winning_patterns && Object.keys(winning_patterns).length > 0) {
-      bpSection += `\n\n## Patterns from High-Quality Examples (user-approved downloads)\n${JSON.stringify(winning_patterns, null, 2)}`;
+      // Only include simple pattern keys, not full HTML
+      const compactPatterns: Record<string, any> = {};
+      if (winning_patterns.common_sections) compactPatterns.sections = winning_patterns.common_sections;
+      if (winning_patterns.layout_approach) compactPatterns.layout = winning_patterns.layout_approach;
+      if (winning_patterns.content_density) compactPatterns.density = winning_patterns.content_density;
+      if (winning_patterns.visual_element) compactPatterns.visual = winning_patterns.visual_element;
+      if (Object.keys(compactPatterns).length > 0) {
+        bpSection += `\n\nWinning patterns: ${JSON.stringify(compactPatterns)}`;
+      }
     }
 
     let variabilitySection = '';

@@ -48,15 +48,54 @@ Deno.serve(async (req) => {
       }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    // Research via AI
+    // Research via AI — strict one-page rubric format
     const researchResp = await aiFetchWithRetry(LOVABLE_API_KEY, {
       model: 'google/gemini-2.5-flash',
       messages: [
-        { role: 'system', content: 'You are an expert consultant researching best practices for professional documents.' },
-        { role: 'user', content: `Research best practices for creating an excellent "${asset_type}" document in a professional job context. Cover structure, content, visual design, and common mistakes. Be specific.` },
+        { role: 'system', content: `You are a document design consultant who specializes in ONE-PAGE professional deliverables that fit on a single US Letter page (8.5×11in). You produce compact, constraint-driven rubrics — NOT verbose essays.` },
+        { role: 'user', content: `Create a ONE-PAGE GENERATION RUBRIC for a "${asset_type}" document in a professional job context.
+
+Output EXACTLY this format (keep each line short):
+
+SECTIONS (max 3-4):
+- [section name]: [1-sentence purpose, max 15 words]
+
+CONTENT BUDGET:
+- Header: max 2 lines (title + subtitle)
+- Per section: max 4-5 bullets OR 1 short paragraph (2 sentences max)
+- Table rows: max 4-5 if used
+- Footer: max 1 line
+
+ALLOWED LAYOUTS (pick ONE per document):
+- Single-column with section headers
+- Two-column 60/40 split
+- Compact table + bullet sections
+- Metric cards row + body sections
+
+BANNED PATTERNS:
+- Kanban boards, swimlanes, multi-panel dashboards
+- Nested grids deeper than 1 level
+- Absolute/fixed positioning on any element
+- Dense infographics or complex SVG charts
+- More than 4 content sections
+- Paragraphs longer than 2 sentences
+
+VISUAL RULES:
+- Font: 9-10pt body, 11-13pt headings, 8pt footer
+- Spacing: 0.15in between sections minimum
+- Page fill target: 75-80% (leave breathing room)
+- One optional simple data element (progress bars, small table, or 3-4 metric cards)
+
+WHAT MAKES IT GREAT (max 3 bullets):
+- [quality indicator]
+
+COMMON MISTAKES (max 3 bullets):
+- [mistake to avoid]
+
+Keep the entire rubric under 250 words. Be specific to "${asset_type}" but stay compact.` },
       ],
       temperature: 0.3,
-      max_tokens: 3000,
+      max_tokens: 1500,
     });
 
     let bestPracticesText = '';
@@ -65,7 +104,7 @@ Deno.serve(async (req) => {
       bestPracticesText = rd.choices?.[0]?.message?.content || '';
     }
 
-    // Analyze download signals
+    // Analyze download signals for winning patterns
     let winningPatterns: any = {};
     const { data: signals } = await supabaseAdmin
       .from('asset_download_signals')
@@ -84,16 +123,16 @@ Deno.serve(async (req) => {
         .limit(10);
 
       if (assets && assets.length >= 3) {
-        const samples = assets.map((a: any) => a.html.slice(0, 2000)).join('\n---SAMPLE---\n');
+        const samples = assets.map((a: any) => a.html.slice(0, 1500)).join('\n---SAMPLE---\n');
         const patternResp = await aiFetchWithRetry(LOVABLE_API_KEY, {
           model: 'google/gemini-2.5-flash',
           messages: [
-            { role: 'system', content: 'Analyze HTML document samples and extract common patterns. Return JSON only.' },
-            { role: 'user', content: `These "${asset_type}" documents were downloaded (approval signal). Extract patterns:\n${samples}\n\nReturn JSON: { "common_sections": [], "visual_patterns": [], "content_patterns": [], "layout_approach": "" }` },
+            { role: 'system', content: 'Extract simple layout patterns from downloaded HTML documents. Prefer simple patterns. Return JSON only.' },
+            { role: 'user', content: `These "${asset_type}" documents were downloaded (approval signal). Extract SIMPLE patterns only:\n${samples}\n\nReturn JSON: { "common_sections": ["section1","section2","section3"], "layout_approach": "single-column|two-column|table-based", "content_density": "low|medium", "visual_element": "none|progress-bars|metric-cards|small-table" }` },
           ],
           response_format: { type: 'json_object' },
           temperature: 0.2,
-          max_tokens: 2000,
+          max_tokens: 800,
         });
         if (patternResp.ok) {
           const pd = await patternResp.json();

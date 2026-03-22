@@ -377,11 +377,26 @@ async function getBestPractices(
     const researchResp = await aiFetchWithRetry(LOVABLE_API_KEY, {
       model: 'google/gemini-2.5-flash',
       messages: [
-        { role: 'system', content: 'You are an expert consultant who researches best practices for professional documents and deliverables.' },
-        { role: 'user', content: `Research and provide comprehensive best practices for creating an excellent "${assetType}" document for a professional job context. Cover:\n1. Optimal structure and sections\n2. Content depth and specificity guidelines\n3. Visual design and formatting principles\n4. Common mistakes to avoid\n5. What makes a great version vs a mediocre one\n\nBe specific and actionable. Output as markdown.` },
+        { role: 'system', content: 'You are a document design consultant specializing in ONE-PAGE professional deliverables (US Letter 8.5×11in). Produce compact, constraint-driven rubrics — NOT verbose essays.' },
+        { role: 'user', content: `Create a ONE-PAGE GENERATION RUBRIC for "${assetType}". Use this exact format (keep each line short, total under 250 words):
+
+SECTIONS (max 3-4):
+- [name]: [purpose, max 15 words]
+
+CONTENT BUDGET:
+- Header: max 2 lines
+- Per section: max 4-5 bullets OR 1 short paragraph (2 sentences)
+- Table rows: max 4-5
+- Footer: max 1 line
+
+ALLOWED LAYOUTS: single-column | two-column 60/40 | compact table + bullets | metric cards + body
+BANNED: kanban, swimlanes, nested grids, absolute positioning, dense infographics, >4 sections
+VISUAL: 9-10pt body, 11-13pt headings, 0.15in section spacing, 75-80% page fill
+GREAT (3 bullets): ...
+MISTAKES (3 bullets): ...` },
       ],
       temperature: 0.3,
-      max_tokens: 3000,
+      max_tokens: 1500,
     });
 
     if (researchResp.ok) {
@@ -539,12 +554,23 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Normalize best practices into a compact generation rubric
     let bpSection = '';
     if (best_practices) {
-      bpSection += `\n\n## Best Practices Research\n${best_practices}`;
+      // Truncate verbose best practices to max 600 chars to prevent prompt bloat
+      const trimmedBp = best_practices.length > 600 ? best_practices.slice(0, 600).replace(/\n[^\n]*$/, '') + '\n...' : best_practices;
+      bpSection += `\n\n## Generation Rubric (one-page constraints)\n${trimmedBp}`;
     }
     if (winning_patterns && Object.keys(winning_patterns).length > 0) {
-      bpSection += `\n\n## Patterns from High-Quality Examples (user-approved downloads)\n${JSON.stringify(winning_patterns, null, 2)}`;
+      // Only include simple pattern keys, not full HTML
+      const compactPatterns: Record<string, any> = {};
+      if (winning_patterns.common_sections) compactPatterns.sections = winning_patterns.common_sections;
+      if (winning_patterns.layout_approach) compactPatterns.layout = winning_patterns.layout_approach;
+      if (winning_patterns.content_density) compactPatterns.density = winning_patterns.content_density;
+      if (winning_patterns.visual_element) compactPatterns.visual = winning_patterns.visual_element;
+      if (Object.keys(compactPatterns).length > 0) {
+        bpSection += `\n\nWinning patterns: ${JSON.stringify(compactPatterns)}`;
+      }
     }
 
     let variabilitySection = '';
@@ -706,7 +732,43 @@ ${brandingSection}${bpSection}${existingPatternsSection}${variabilitySection}`;
     const data = await response.json();
     let content = enforceOnePageLayout(data.choices?.[0]?.message?.content || '');
 
-    // Two-pass review pipeline: UI Review → QA Review
+    // Density check — detect risky output before review
+    const sectionCount = (content.match(/<h[23][^>]*>/gi) || []).length;
+    const bulletCount = (content.match(/<li[^>]*>/gi) || []).length;
+    const tableRowCount = (content.match(/<tr[^>]*>/gi) || []).length;
+    const textLength = content.replace(/<[^>]+>/g, '').length;
+    const isDense = sectionCount > 5 || bulletCount > 25 || tableRowCount > 8 || textLength > 4000;
+
+    if (isDense) {
+      console.log(`Density detected: sections=${sectionCount}, bullets=${bulletCount}, rows=${tableRowCount}, chars=${textLength}. Running condensation retry.`);
+      const condenseResp = await aiFetchWithRetry(LOVABLE_API_KEY, {
+        model: 'google/gemini-2.5-flash',
+        messages: [
+          { role: 'system', content: `You are a document editor. The following HTML document is TOO DENSE for a single US Letter page. Condense it:
+1. Merge sections down to max 3-4 total (combine related ones)
+2. Cut bullet lists to max 4-5 bullets each (keep the most impactful)
+3. Cut table rows to max 4-5 (keep highest-value rows)
+4. Shorten all paragraphs to max 2 sentences
+5. Remove any section that is low-value or redundant
+6. Keep ALL branding, colors, fonts, and layout structure intact
+7. Use a SIMPLE single-column or two-column 60/40 layout
+8. Return ONLY the complete fixed HTML — no explanations, no markdown fences` },
+          { role: 'user', content: content },
+        ],
+        temperature: 0.1,
+        max_tokens: 4000,
+      });
+      if (condenseResp.ok) {
+        const cd = await condenseResp.json();
+        const condensed = (cd.choices?.[0]?.message?.content || '').trim();
+        if (condensed.length > 200) {
+          content = enforceOnePageLayout(condensed);
+          console.log('Condensation applied successfully');
+        }
+      }
+    }
+
+    // Review pipeline: combined UI + QA Review
     const { html: finalHtml, reviewResults } = await reviewPipeline(content, assetName, LOVABLE_API_KEY);
     content = finalHtml;
 

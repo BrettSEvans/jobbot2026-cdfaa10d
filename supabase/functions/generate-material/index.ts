@@ -971,7 +971,9 @@ Deno.serve(async (req) => {
         }
       }
     }
-    const families = buildStyleFamilies([...new Set(brandColorsForFamilies)].slice(0, 8));
+    // Determine color rotation: use sibling count for initial gen, regenerationCount for re-gens
+    const regenCount = typeof regenerationCount === 'number' ? regenerationCount : 0;
+    let colorRotation = regenCount;
 
     // Determine which families siblings already use
     let usedFamilyIds: string[] = [];
@@ -986,15 +988,21 @@ Deno.serve(async (req) => {
 
       if (siblingAssets) {
         usedFamilyIds = siblingAssets.map((a: any) => {
-          const familyMatch = (a.html || '').match(/data-style-family="([A-F])"/);
+          const familyMatch = (a.html || '').match(/data-style-family="([A-I])"/);
           return familyMatch ? familyMatch[1] : '';
         }).filter(Boolean);
+        // For initial generation, rotate color by sibling index
+        if (regenCount === 0) {
+          colorRotation = siblingAssets.length;
+        }
       }
     }
 
-    const regenCount = typeof regenerationCount === 'number' ? regenerationCount : 0;
+    const uniqueBrandColors = [...new Set(brandColorsForFamilies)].slice(0, 8);
+    const families = buildStyleFamilies(uniqueBrandColors, colorRotation);
+
     const selectedFamily = selectStyleFamily(families, assetName, assetDescription || '', usedFamilyIds, regenCount);
-    console.log(`Selected style family: ${selectedFamily.id} — ${selectedFamily.name} (regen=${regenCount}, used=${usedFamilyIds.join(',')})`);
+    console.log(`Selected style family: ${selectedFamily.id} — ${selectedFamily.name} (regen=${regenCount}, colorRotation=${colorRotation}, used=${usedFamilyIds.join(',')})`);
 
     const styleFamilySection = `\n\n${selectedFamily.promptBlock}\n\nIMPORTANT: Add data-style-family="${selectedFamily.id}" to the <body> tag so the system can track which family was used.`;
 

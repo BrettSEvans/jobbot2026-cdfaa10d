@@ -43,8 +43,6 @@ type RatingValue = "up" | "mid" | "down";
 
 const ASSET_TYPE_LABELS: Record<string, string> = {
   dashboard_html: "Dashboard",
-  cover_letter: "Cover Letter",
-  resume_html: "Resume",
   executive_report_html: "Executive Report",
   raid_log_html: "RAID Log",
   architecture_diagram_html: "Architecture Diagram",

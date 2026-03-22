@@ -130,6 +130,41 @@ function enforceOnePageLayout(html: string): string {
     overflow-x: hidden !important;
     overflow-y: hidden !important;
   }
+  /* CRITICAL: Prevent content block overlap — strip absolute/fixed positioning on ALL content elements */
+  .page-content *:not(svg *) {
+    position: static !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    transform: none !important;
+    margin-top: revert !important;
+  }
+  /* Allow relative positioning only for controlled layout purposes */
+  .page-content [style*="position: relative"],
+  .page-content [style*="position:relative"] {
+    position: relative !important;
+  }
+  /* Ensure headers contain their text within background areas */
+  .page-content header,
+  .page-content .header,
+  .page-content [class*="header"],
+  .page-content [class*="banner"],
+  .page-content [class*="hero"] {
+    position: relative !important;
+    overflow: hidden !important;
+    width: 100% !important;
+  }
+  .page-content header *,
+  .page-content .header *,
+  .page-content [class*="header"] *,
+  .page-content [class*="banner"] *,
+  .page-content [class*="hero"] * {
+    position: static !important;
+    max-width: 100% !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+  }
   /* Strip absolute/fixed positioning on footers */
   footer, .page-footer, [class*="footer"] {
     position: static !important;
@@ -205,6 +240,17 @@ function enforceOnePageLayout(html: string): string {
   }
   .page-content table {
     width: 100%;
+  }
+  /* Prevent negative margins from causing overlap */
+  .page-content div,
+  .page-content section,
+  .page-content article {
+    margin-top: 0 !important;
+    margin-bottom: 0.08in !important;
+  }
+  .page-content div:first-child,
+  .page-content section:first-child {
+    margin-top: 0 !important;
   }
 </style>`;
 

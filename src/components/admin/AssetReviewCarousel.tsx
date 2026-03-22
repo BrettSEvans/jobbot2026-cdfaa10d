@@ -152,7 +152,8 @@ function wrapCoverLetter(text: string): string {
 
 type ReviewFilter = "all" | "unreviewed" | "up" | "mid" | "down";
 
-function filterLabel(ft: string): string {
+function filterLabel(ft: string | undefined): string {
+  if (!ft) return "Unknown";
   if (ASSET_TYPE_LABELS[ft]) return ASSET_TYPE_LABELS[ft];
   if (ft.startsWith("generated_asset::")) return ft.replace("generated_asset::", "");
   return ft;

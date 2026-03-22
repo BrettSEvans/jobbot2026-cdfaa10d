@@ -1,16 +1,222 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { aiFetchWithRetry } from "../_shared/aiRetry.ts";
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
-/** Normalize asset type for cache key: lowercase, spaces→underscores */
 function normalizeAssetType(name: string): string {
   return name.trim().toLowerCase().replace(/[\s-]+/g, '_');
 }
 
-/** Fetch best practices from cache, research if stale/missing */
+function stripScriptsAndStyles(html: string): string {
+  return (html || '')
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[\s\S]*?<\/style>/gi, '')
+    .trim();
+}
+
+function extractHeadInner(html: string): string {
+  return html.match(/<head[^>]*>([\s\S]*?)<\/head>/i)?.[1]?.trim() || '';
+}
+
+function extractBodyInner(html: string): string {
+  const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+  if (bodyMatch?.[1]) return bodyMatch[1].trim();
+
+  return html
+    .replace(/<!doctype[^>]*>/gi, '')
+    .replace(/<html[^>]*>/gi, '')
+    .replace(/<\/html>/gi, '')
+    .replace(/<head[^>]*>[\s\S]*?<\/head>/gi, '')
+    .trim();
+}
+
+function unwrapKnownPageWrappers(html: string): string {
+  return html
+    .replace(/<div[^>]*class=["'][^"']*page-wrapper[^"']*["'][^>]*>/gi, '')
+    .replace(/<div[^>]*class=["'][^"']*page-content[^"']*["'][^>]*>/gi, '')
+    .replace(/<\/div>\s*$/i, (match) => match)
+    .trim();
+}
+
+function extractFooterHtml(bodyInner: string): { bodyWithoutFooter: string; footerInner: string } {
+  const footerMatch = bodyInner.match(/<footer\b[^>]*>([\s\S]*?)<\/footer>/i)
+    || bodyInner.match(/<div\b[^>]*class=["'][^"']*page-footer[^"']*["'][^>]*>([\s\S]*?)<\/div>/i);
+
+  if (!footerMatch) {
+    return { bodyWithoutFooter: bodyInner.trim(), footerInner: '' };
+  }
+
+  const fullMatch = footerMatch[0];
+  const footerInner = footerMatch[1]?.trim() || '';
+  const bodyWithoutFooter = bodyInner.replace(fullMatch, '').trim();
+
+  return { bodyWithoutFooter, footerInner };
+}
+
+function normalizeGeneratedHtml(raw: string): string {
+  let content = (raw || '').trim();
+  content = content.replace(/^```html?\n?/i, '').replace(/\n?```$/i, '').trim();
+
+  const doctypeIndex = content.search(/<!doctype html>/i);
+  if (doctypeIndex > 0) {
+    content = content.slice(doctypeIndex);
+  }
+
+  const htmlEnd = content.search(/<\/html>\s*$/i);
+  if (htmlEnd !== -1) {
+    const closing = content.match(/<\/html>\s*$/i)?.[0] || '</html>';
+    content = content.slice(0, htmlEnd + closing.length);
+  }
+
+  if (!/<html[\s>]/i.test(content) && !/<body[\s>]/i.test(content)) {
+    content = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head><body>${content}</body></html>`;
+  } else if (!/<html[\s>]/i.test(content) && /<body[\s>]/i.test(content)) {
+    content = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>${content}</html>`;
+  }
+
+  return content;
+}
+
+function enforceOnePageLayout(html: string): string {
+  const normalized = normalizeGeneratedHtml(html);
+  const originalHead = extractHeadInner(normalized);
+  const originalBody = unwrapKnownPageWrappers(extractBodyInner(normalized));
+  const { bodyWithoutFooter, footerInner } = extractFooterHtml(originalBody);
+
+  const onePageCss = `
+<style id="lovable-one-page-guard">
+  @page { size: letter; margin: 0; }
+  * { box-sizing: border-box; }
+  html, body {
+    width: 8.5in !important;
+    height: 11in !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    background: #fff;
+  }
+  body {
+    display: block !important;
+    font-size: 10pt;
+    line-height: 1.3;
+  }
+  body > .page-shell {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 0.35in 0.5in 0.32in;
+    gap: 0;
+  }
+  .page-content {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .page-footer {
+    flex: 0 0 auto;
+    margin-top: 0.14in;
+    padding-top: 0.12in;
+    border-top: 1px solid rgba(0,0,0,0.18);
+    font-size: 8pt;
+    line-height: 1.2;
+  }
+  .page-content footer,
+  .page-content .page-footer {
+    display: none !important;
+  }
+  .page-content .container,
+  .page-content .content,
+  .page-content .content-wrapper,
+  .page-content .main-content,
+  .page-content .main-wrapper,
+  .page-content .layout,
+  .page-content .grid-container,
+  .page-content .two-column,
+  .page-content .two-col,
+  .page-content .columns,
+  .page-content .left-panel,
+  .page-content .right-panel,
+  .page-content .sidebar,
+  .page-content .main-panel,
+  .page-content .page-wrapper {
+    min-height: 0 !important;
+    max-height: none !important;
+  }
+  .page-content .container,
+  .page-content .page-wrapper {
+    height: auto !important;
+  }
+  .page-content h1,
+  .page-content h2,
+  .page-content h3,
+  .page-content h4,
+  .page-content p,
+  .page-content ul,
+  .page-content ol,
+  .page-content table,
+  .page-content blockquote,
+  .page-content .card,
+  .page-content .callout,
+  .page-content .callout-box,
+  .page-content .section,
+  .page-content .section-box,
+  .page-content .timeline,
+  .page-content .timeline-container {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .page-content p,
+  .page-content ul,
+  .page-content ol,
+  .page-content table {
+    margin-bottom: 0.06in !important;
+  }
+  .page-content ul,
+  .page-content ol {
+    padding-left: 0.16in !important;
+  }
+  .page-content img,
+  .page-content svg,
+  .page-content canvas {
+    max-width: 100%;
+    max-height: 1.8in;
+  }
+  .page-content table {
+    width: 100%;
+  }
+</style>`;
+
+  const footerBlock = footerInner
+    ? `<footer class="page-footer">${footerInner}</footer>`
+    : '';
+
+  const safeHead = `${originalHead}\n${onePageCss}`.trim();
+  const safeBody = `
+<div class="page-shell">
+  <div class="page-content">
+    ${bodyWithoutFooter}
+  </div>
+  ${footerBlock}
+</div>`.trim();
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  ${safeHead}
+</head>
+<body>
+  ${safeBody}
+</body>
+</html>`;
+}
+
 async function getBestPractices(
   supabaseAdmin: any,
   assetType: string,
@@ -18,7 +224,6 @@ async function getBestPractices(
 ): Promise<{ best_practices: string; winning_patterns: any }> {
   const normalized = normalizeAssetType(assetType);
 
-  // Check cache
   const { data: cached } = await supabaseAdmin
     .from('asset_best_practices')
     .select('*')
@@ -31,25 +236,18 @@ async function getBestPractices(
     return { best_practices: cached.best_practices, winning_patterns: cached.winning_patterns };
   }
 
-  // Research best practices via AI
   let bestPracticesText = '';
   try {
     const researchResp = await aiFetchWithRetry(LOVABLE_API_KEY, {
       model: 'google/gemini-2.5-flash',
       messages: [
         { role: 'system', content: 'You are an expert consultant who researches best practices for professional documents and deliverables.' },
-        { role: 'user', content: `Research and provide comprehensive best practices for creating an excellent "${assetType}" document for a professional job context. Cover:
-1. Optimal structure and sections
-2. Content depth and specificity guidelines
-3. Visual design and formatting principles
-4. Common mistakes to avoid
-5. What makes a great version vs a mediocre one
-
-Be specific and actionable. Output as markdown.` },
+        { role: 'user', content: `Research and provide comprehensive best practices for creating an excellent "${assetType}" document for a professional job context. Cover:\n1. Optimal structure and sections\n2. Content depth and specificity guidelines\n3. Visual design and formatting principles\n4. Common mistakes to avoid\n5. What makes a great version vs a mediocre one\n\nBe specific and actionable. Output as markdown.` },
       ],
       temperature: 0.3,
       max_tokens: 3000,
     });
+
     if (researchResp.ok) {
       const researchData = await researchResp.json();
       bestPracticesText = researchData.choices?.[0]?.message?.content || '';
@@ -58,7 +256,6 @@ Be specific and actionable. Output as markdown.` },
     console.warn('Best practices research failed:', e);
   }
 
-  // Analyze downloaded assets for winning patterns
   let winningPatterns: any = {};
   try {
     const { data: signals } = await supabaseAdmin
@@ -69,7 +266,6 @@ Be specific and actionable. Output as markdown.` },
       .limit(10);
 
     if (signals && signals.length >= 5) {
-      // Fetch HTML from generated_assets for these applications
       const appIds = [...new Set(signals.map((s: any) => s.application_id))];
       const { data: assets } = await supabaseAdmin
         .from('generated_assets')
@@ -84,13 +280,14 @@ Be specific and actionable. Output as markdown.` },
         const patternResp = await aiFetchWithRetry(LOVABLE_API_KEY, {
           model: 'google/gemini-2.5-flash',
           messages: [
-            { role: 'system', content: 'Analyze HTML document samples and extract common structural/visual patterns. Return JSON only.' },
+            { role: 'system', content: 'Analyze HTML document samples and extract common structural and visual patterns. Return JSON only.' },
             { role: 'user', content: `These ${assets.length} "${assetType}" documents were downloaded by users (approval signal). Extract winning patterns:\n\n${samples}\n\nReturn JSON with: { "common_sections": [], "visual_patterns": [], "content_patterns": [], "layout_approach": "" }` },
           ],
           response_format: { type: 'json_object' },
           temperature: 0.2,
           max_tokens: 2000,
         });
+
         if (patternResp.ok) {
           const patternData = await patternResp.json();
           const content = patternData.choices?.[0]?.message?.content || '';
@@ -107,8 +304,7 @@ Be specific and actionable. Output as markdown.` },
     console.warn('Pattern extraction failed:', e);
   }
 
-  // Upsert cache
-  const sampleCount = (winningPatterns?.common_sections?.length || 0);
+  const sampleCount = winningPatterns?.common_sections?.length || 0;
   await supabaseAdmin.from('asset_best_practices').upsert({
     asset_type: normalized,
     best_practices: bestPracticesText,
@@ -141,25 +337,25 @@ Deno.serve(async (req) => {
     if (!assetName || !jobDescription) {
       return new Response(
         JSON.stringify({ error: 'assetName and jobDescription are required' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
-      return new Response(JSON.stringify({ error: 'AI not configured' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      return new Response(JSON.stringify({ error: 'AI not configured' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
-    // Initialize admin client for best practices lookup
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     );
 
-    // Fetch best practices + winning patterns
     const { best_practices, winning_patterns } = await getBestPractices(supabaseAdmin, assetName, LOVABLE_API_KEY);
 
-    // Fetch existing assets for this application to enforce variability (80%+ uniqueness)
     let existingPatternsSection = '';
     if (applicationId) {
       const { data: existingAssets } = await supabaseAdmin
@@ -172,16 +368,12 @@ Deno.serve(async (req) => {
 
       if (existingAssets && existingAssets.length > 0) {
         const patternSummaries = existingAssets.map((a: any) => {
-          // Extract structural fingerprint: tag hierarchy, CSS classes, layout containers
-          const stripped = (a.html || '')
-            .replace(/<script[\s\S]*?<\/script>/gi, '')
-            .replace(/<style[\s\S]*?<\/style>/gi, '')
+          const stripped = stripScriptsAndStyles(a.html)
             .replace(/>[^<]+</g, '><')
             .slice(0, 1500);
           return `- ${a.asset_name}: ${stripped.slice(0, 500)}`;
         }).join('\n');
 
-        // Detect content flow patterns and layout types from existing assets
         const flowSummaries = existingAssets.map((a: any) => {
           const html = a.html || '';
           const hasGrid = /display:\s*grid|grid-template/i.test(html);
@@ -191,9 +383,10 @@ Deno.serve(async (req) => {
           const hasChart = /chart|svg.*rect|canvas/i.test(html);
           const hasList = /<ul|<ol/i.test(html);
           const hasSidebar = /sidebar|aside|side-panel/i.test(html);
-          const layoutType = hasSidebar ? 'sidebar' : hasTwoCol ? 'two-column' : hasGrid ? 'grid' : 'single-column';
+          const layoutType = hasSidebar ? 'sidebar' : hasTwoCol ? 'two-column' : hasGrid ? 'grid' : hasFlex ? 'flex-layout' : 'single-column';
+
           const blocks: string[] = [];
-          if (/<h[12]/i.test(html)) blocks.push('header');
+          if (/<header|<h1|<h2/i.test(html)) blocks.push('header');
           if (/<p[>\s]/i.test(html)) blocks.push('paragraph');
           if (hasTable) blocks.push('table');
           if (hasList) blocks.push('bullet-list');
@@ -201,37 +394,14 @@ Deno.serve(async (req) => {
           if (/callout|highlight|alert|badge/i.test(html)) blocks.push('callout-box');
           if (/metric|kpi|score/i.test(html)) blocks.push('metrics');
           if (/timeline/i.test(html)) blocks.push('timeline');
-          return `- ${a.asset_name}: layout=${layoutType}, flow=${blocks.join(' → ')}`;
+
+          return `- ${a.asset_name}: layout=${layoutType}, flow=${blocks.join(' → ') || 'mixed'}`;
         }).join('\n');
 
-        existingPatternsSection = `\n\n## CRITICAL: Design & Style Variability Requirement (80%+ uniqueness)
-The following assets have ALREADY been generated for this application. Your output MUST be structurally AND stylistically DIFFERENT from all of them.
-
-### Layout Types Already Used (DO NOT repeat):
-${flowSummaries}
-
-### Rules:
-1. If existing assets use two-column layout, use single-column, sidebar, or centered layout instead
-2. If existing assets use table-heavy content, use cards, timelines, or infographic style instead
-3. Use a DIFFERENT content block sequence — if others go "header → paragraph → table → bullets", try "header → metrics grid → timeline → callout box"
-4. Each document should tell the candidate's story from a DIFFERENT angle (strategic leader, analytical problem-solver, cross-functional collaborator, innovation driver)
-5. Highlight DIFFERENT skills and competencies than other documents
-
-Choose a DIFFERENT dominant layout pattern. Examples:
-- Timeline/chronological flow
-- Scorecard/metric grid with KPI cards
-- Executive brief with sidebar navigation
-- Kanban/swimlane layout
-- Infographic with icons and visual hierarchy
-- Matrix/quadrant analysis
-- Dashboard with charts and data panels
-
-Existing asset structures to AVOID duplicating:
-${patternSummaries}`;
+        existingPatternsSection = `\n\n## CRITICAL: Design & Style Variability Requirement (80%+ uniqueness)\nThe following assets have ALREADY been generated for this application. Your output MUST be structurally AND stylistically DIFFERENT from all of them.\n\n### Layout Types Already Used (DO NOT repeat):\n${flowSummaries}\n\n### Rules:\n1. If existing assets use two-column layout, use single-column, sidebar, centered, or asymmetric layout instead\n2. If existing assets use table-heavy content, use cards, timelines, or infographic style instead\n3. Use a DIFFERENT content block sequence — if others go "header → paragraph → table → bullets", try "header → metrics grid → timeline → callout box"\n4. Each document should tell the candidate's story from a DIFFERENT angle (strategic leader, analytical problem-solver, cross-functional collaborator, innovation driver)\n5. Highlight DIFFERENT skills and competencies than other documents\n6. Avoid body-level height math or layouts that depend on absolute-positioned footers; content must reserve space naturally for the footer\n\nChoose a DIFFERENT dominant layout pattern. Examples:\n- Timeline/chronological flow\n- Scorecard/metric grid with KPI cards\n- Executive brief with sidebar navigation\n- Kanban/swimlane layout\n- Infographic with icons and visual hierarchy\n- Matrix/quadrant analysis\n- Dashboard with charts and data panels\n\nExisting asset structures to AVOID duplicating:\n${patternSummaries}`;
       }
     }
 
-    // Build best practices prompt section
     let bpSection = '';
     if (best_practices) {
       bpSection += `\n\n## Best Practices Research\n${best_practices}`;
@@ -240,17 +410,11 @@ ${patternSummaries}`;
       bpSection += `\n\n## Patterns from High-Quality Examples (user-approved downloads)\n${JSON.stringify(winning_patterns, null, 2)}`;
     }
 
-    // Build variability recommendations section
     let variabilitySection = '';
     if (variabilityRecommendations && Array.isArray(variabilityRecommendations) && variabilityRecommendations.length > 0) {
-      variabilitySection = `\n\n## Design Variability Recommendations (from prior analysis)
-Follow these specific recommendations to improve design diversity across this application's materials:
-${variabilityRecommendations.map((r: string, i: number) => `${i + 1}. ${r}`).join('\n')}
-
-Apply these recommendations directly to the layout, structure, and visual approach of this document.`;
+      variabilitySection = `\n\n## Design Variability Recommendations (from prior analysis)\nFollow these specific recommendations to improve design diversity across this application's materials:\n${variabilityRecommendations.map((r: string, i: number) => `${i + 1}. ${r}`).join('\n')}\n\nApply these recommendations directly to the layout, structure, and visual approach of this document.`;
     }
 
-    // Determine contextual date anchor
     const anchorDate = applicationCreatedAt ? new Date(applicationCreatedAt) : new Date();
     const anchorStr = anchorDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
@@ -265,17 +429,19 @@ DATE CONTEXT: The application date is ${anchorStr}. Use this as your temporal an
 
 OUTPUT: Return a single self-contained HTML document with embedded CSS. The document MUST:
 - Fit on EXACTLY ONE printed page (US Letter 8.5" x 11"). This is a HARD constraint — no exceptions.
-- DO NOT generate more content than fits on a single page. Prefer fewer, higher-impact sections over trying to cover everything.
-- Use compact but readable font sizes (9-10pt body, 12-13pt headings)
+- DO NOT generate more content than fits on a single page. If content risks overflow, condense aggressively, reduce bullet counts, shorten labels, and drop lower-priority details.
+- Reserve space for a footer when one is present. The footer must NEVER cover content.
+- Use compact but readable font sizes (8.5-9.5pt body, 11-13pt headings)
+- Use this EXACT structure to prevent footer overlap: <body><div class="page-wrapper"><div class="page-content">...main content...</div><footer>...footer...</footer></div></body>
 - Use this EXACT CSS layout pattern to prevent footer from covering content:
   @page { size: letter; margin: 0; }
   html, body { width: 8.5in; height: 11in; margin: 0; padding: 0; overflow: hidden; }
   .page-wrapper { width: 100%; height: 100%; display: flex; flex-direction: column; padding: 0.35in 0.5in; box-sizing: border-box; }
-  .page-content { flex: 1; overflow: hidden; }
+  .page-content { flex: 1; min-height: 0; overflow: hidden; }
   footer, .page-footer { flex-shrink: 0; padding-top: 0.15in; border-top: 1px solid #ccc; font-size: 8pt; }
-- Structure your HTML as: <body><div class="page-wrapper"><div class="page-content">...main content...</div><footer>...footer...</footer></div></body>
 - The footer MUST be inside the flex wrapper, NOT position:absolute. This ensures the main content area automatically shrinks to accommodate the footer.
-- The usable content area is approximately 9.8in tall × 7.5in wide (after padding and footer). Plan content to fill 90-95% of this.
+- Never put height: calc(...) on the main content container to guess footer space.
+- The usable content area is approximately 9.4in tall × 7.5in wide after padding and footer reserve. Plan content to fill 85-90% of this.
 - Keep to 3-5 sections maximum. Each section should be concise (2-4 bullet points or compact table rows).
 - Use multi-column layouts (CSS grid/flexbox) WITHIN .page-content to maximize horizontal space
 - Be professional, clean, and printable
@@ -301,31 +467,18 @@ ${bpSection}${existingPatternsSection}${variabilitySection}`;
     });
 
     if (!response.ok) {
-      if (response.status === 429) return new Response(JSON.stringify({ error: 'Rate limited' }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-      if (response.status === 402) return new Response(JSON.stringify({ error: 'AI credits exhausted' }), { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      if (response.status === 429) {
+        return new Response(JSON.stringify({ error: 'Rate limited' }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      if (response.status === 402) {
+        return new Response(JSON.stringify({ error: 'AI credits exhausted' }), { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
       const errText = await response.text();
       throw new Error(`AI request failed (${response.status}): ${errText.slice(0, 200)}`);
     }
 
     const data = await response.json();
-    let content = data.choices?.[0]?.message?.content || '';
-
-    // Extract HTML
-    content = content.replace(/^```html?\n?/i, '').replace(/\n?```$/i, '').trim();
-    const htmlStart = content.indexOf('<!');
-    if (htmlStart > 0) content = content.slice(htmlStart);
-    const htmlEnd = content.lastIndexOf('</html>');
-    if (htmlEnd !== -1) content = content.slice(0, htmlEnd + 7);
-
-    // Inject hard one-page constraint CSS to guarantee single-page output
-    const onePageCss = `<style>@page{size:letter;margin:0}html,body{width:8.5in;height:11in;margin:0;padding:0;overflow:hidden}.page-wrapper{width:100%;height:100%;display:flex;flex-direction:column;padding:0.35in 0.5in;box-sizing:border-box}.page-content{flex:1;overflow:hidden}footer,.page-footer{flex-shrink:0;padding-top:0.15in}body>*:not(.page-wrapper){padding:0.35in 0.5in;box-sizing:border-box;max-height:11in;overflow:hidden}</style>`;
-    if (content.includes('</head>')) {
-      content = content.replace('</head>', `${onePageCss}</head>`);
-    } else if (content.includes('<body')) {
-      content = content.replace('<body', `${onePageCss}<body`);
-    } else {
-      content = onePageCss + content;
-    }
+    const content = enforceOnePageLayout(data.choices?.[0]?.message?.content || '');
 
     return new Response(JSON.stringify({ success: true, html: content }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -333,7 +486,8 @@ ${bpSection}${existingPatternsSection}${variabilitySection}`;
   } catch (e) {
     console.error('Material generation error:', e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : 'Unknown error' }), {
-      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 });

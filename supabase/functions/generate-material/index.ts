@@ -318,7 +318,7 @@ ${bpSection}${existingPatternsSection}${variabilitySection}`;
     if (htmlEnd !== -1) content = content.slice(0, htmlEnd + 7);
 
     // Inject hard one-page constraint CSS to guarantee single-page output
-    const onePageCss = `<style>@page{size:letter;margin:0}html,body{width:8.5in;height:11in;max-height:11in;overflow:hidden;margin:0;padding:0.35in 0.5in;box-sizing:border-box;position:relative}</style>`;
+    const onePageCss = `<style>@page{size:letter;margin:0}html,body{width:8.5in;height:11in;margin:0;padding:0;overflow:hidden}.page-wrapper{width:100%;height:100%;display:flex;flex-direction:column;padding:0.35in 0.5in;box-sizing:border-box}.page-content{flex:1;overflow:hidden}footer,.page-footer{flex-shrink:0;padding-top:0.15in}body>*:not(.page-wrapper){padding:0.35in 0.5in;box-sizing:border-box;max-height:11in;overflow:hidden}</style>`;
     if (content.includes('</head>')) {
       content = content.replace('</head>', `${onePageCss}</head>`);
     } else if (content.includes('<body')) {

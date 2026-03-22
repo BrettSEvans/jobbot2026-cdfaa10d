@@ -108,6 +108,7 @@ function useAllAssets() {
         flat.push({
           applicationId: ga.application_id,
           assetType: "generated_asset",
+          filterType: `generated_asset::${ga.asset_name}`,
           assetId: ga.id,
           assetName: ga.asset_name,
           html: ga.html,

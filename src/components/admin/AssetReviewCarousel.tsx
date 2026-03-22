@@ -134,17 +134,6 @@ function reviewKey(a: FlatAsset) {
   return `${a.applicationId}::${a.assetType}::${a.assetId ?? "inline"}`;
 }
 
-/** Wrap plain-text cover letters in styled HTML */
-function wrapCoverLetter(text: string): string {
-  return `<!DOCTYPE html><html><head><style>
-    body { font-family: Georgia, 'Times New Roman', serif; font-size: 14px; line-height: 1.7;
-           color: #1a1a1a; background: #fff; max-width: 680px; margin: 32px auto; padding: 24px; }
-    p { margin-bottom: 1em; }
-  </style></head><body>${text
-    .split(/\n\n+/)
-    .map((p) => `<p>${p.replace(/\n/g, "<br/>")}</p>`)
-    .join("")}</body></html>`;
-}
 
 type ReviewFilter = "all" | "unreviewed" | "up" | "mid" | "down";
 

@@ -907,7 +907,7 @@ Prefer short, punchy phrases over elaborate explanations. White space is better 
 OUTPUT: Return a single self-contained HTML document with embedded CSS. The document MUST:
 - Fit on EXACTLY ONE printed page (US Letter 8.5" x 11"). This is a HARD constraint — no exceptions.
 - DO NOT generate more content than fits on a single page. When in doubt, write LESS. Shorter is always safer.
-- NEVER use more than 4 content sections (e.g., header + 3 body sections + footer). Fewer sections = cleaner document.
+- NEVER use more than 3 body sections (header + 3 body sections + footer). Fewer sections = cleaner document.
 - Reserve space for a footer when one is present. The footer must NEVER cover content.
 - Titles must have at minimum 0.1in of clear space above them.
 - Use compact but readable font sizes (9-10pt body, 11-13pt headings). NEVER use font sizes smaller than 9pt.

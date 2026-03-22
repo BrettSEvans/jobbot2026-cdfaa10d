@@ -500,6 +500,18 @@ export default function AssetReviewCarousel() {
               </Button>
               <Button
                 size="sm"
+                variant={pendingRating === "mid" ? "default" : "outline"}
+                className={cn(
+                  "gap-1",
+                  pendingRating === "mid" && "bg-amber-500 hover:bg-amber-600 text-white"
+                )}
+                onClick={() => handleRate("mid")}
+                disabled={saveMutation.isPending}
+              >
+                <Scale className="h-4 w-4" /> Mid
+              </Button>
+              <Button
+                size="sm"
                 variant={pendingRating === "down" ? "destructive" : "outline"}
                 className="gap-1"
                 onClick={() => handleRate("down")}

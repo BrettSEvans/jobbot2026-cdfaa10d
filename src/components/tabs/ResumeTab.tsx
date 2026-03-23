@@ -39,6 +39,8 @@ import { supabase } from "@/integrations/supabase/client";
 import type { JobApplication, UserResumePickerItem, FabricationChange, ToastFn } from "@/types/models";
 import type { ExtractedKeyword } from "@/lib/keywordMatcher";
 import type { ResumeVariant } from "@/hooks/useResumeEditor";
+import { buildFileName } from "@/lib/fileNaming";
+import type { UserProfileSnapshot } from "@/types/models";
 
 /** Fit-to-page preview for resume */
 function ResumePagePreview({ html }: { html: string }) {

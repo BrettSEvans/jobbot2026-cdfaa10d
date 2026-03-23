@@ -14,6 +14,7 @@ import {
 import CoverLetterRevisions from "@/components/CoverLetterRevisions";
 import InlineHtmlEditor from "@/components/InlineHtmlEditor";
 import { downloadTextAsDocx } from "@/lib/docxExport";
+import { buildFileName } from "@/lib/fileNaming";
 import type { JobApplication, UserProfileSnapshot, ChatMessage, ToastFn } from "@/types/models";
 
 /** Convert plain text to minimal HTML for the editor */

@@ -33,7 +33,7 @@ import { saveJobApplication } from "@/lib/api/jobApplication";
 import { generateOptimizedResume } from "@/lib/api/resumeGeneration";
 import { downloadHtmlAsDocx } from "@/lib/docxExport";
 import { supabase } from "@/integrations/supabase/client";
-import type { ExtractedKeyword } from "@/lib/keywordMatcher";
+import type { JobApplication, UserResumePickerItem, FabricationChange, ToastFn } from "@/types/models";
 
 /** Fit-to-page preview for resume */
 function ResumePagePreview({ html }: { html: string }) {

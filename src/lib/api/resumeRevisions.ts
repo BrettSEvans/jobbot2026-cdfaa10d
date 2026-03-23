@@ -26,11 +26,12 @@ export async function saveResumeRevision(applicationId: string, html: string, la
   return data;
 }
 
-export async function getResumeRevisions(applicationId: string) {
+export async function getResumeRevisions(applicationId: string, resumeType: string = 'ats') {
   const { data, error } = await supabase
     .from('resume_revisions')
     .select('*')
     .eq('application_id', applicationId)
+    .eq('resume_type', resumeType)
     .order('revision_number', { ascending: false });
 
   if (error) throw new Error(error.message);

@@ -36,7 +36,7 @@ export default function ResumeRevisions({
   const loadRevisions = async () => {
     setLoading(true);
     try {
-      const data = await getResumeRevisions(applicationId);
+      const data = await getResumeRevisions(applicationId, resumeType);
       setRevisions(data);
     } catch { /* silent */ } finally {
       setLoading(false);

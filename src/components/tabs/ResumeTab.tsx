@@ -268,6 +268,7 @@ function ResumeVariantContent({
         html={html}
         companyName={companyName}
         jobTitle={jobTitle}
+        userProfile={userProfile}
         isRegenerating={isRegenerating}
         onEdit={() => { setEditingResume(true); setPreviewResumeHtml(null); }}
         onRegenerate={() => openRegenDialog(variant)}

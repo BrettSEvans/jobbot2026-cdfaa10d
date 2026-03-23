@@ -122,7 +122,9 @@ const App = () => {
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <AuthenticatedApp />
+          <ErrorBoundary>
+            <AuthenticatedApp />
+          </ErrorBoundary>
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>

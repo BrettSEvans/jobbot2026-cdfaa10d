@@ -120,6 +120,7 @@ function ResumeVariantToolbar({
   html,
   companyName,
   jobTitle,
+  userProfile,
   isRegenerating,
   onEdit,
   onRegenerate,
@@ -130,6 +131,7 @@ function ResumeVariantToolbar({
   html: string;
   companyName: string;
   jobTitle: string;
+  userProfile: UserProfileSnapshot | null;
   isRegenerating: boolean;
   onEdit: () => void;
   onRegenerate: () => void;

@@ -20,6 +20,8 @@ import {
   Outdent,
   Palette,
   Highlighter,
+  ChevronsUpDown,
+  Rows3,
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -65,6 +67,23 @@ export default function InlineHtmlEditor({
   const [linkUrl, setLinkUrl] = useState("");
   const [linkText, setLinkText] = useState("");
   const [linkPopoverOpen, setLinkPopoverOpen] = useState(false);
+  const [lineSpacing, setLineSpacing] = useState("");
+  const [paraSpacing, setParaSpacing] = useState("");
+
+  const updateEditorSpacing = useCallback((ls: string, ps: string) => {
+    const doc = iframeRef.current?.contentDocument;
+    if (!doc) return;
+    let styleEl = doc.getElementById("editor-spacing") as HTMLStyleElement | null;
+    if (!styleEl) {
+      styleEl = doc.createElement("style");
+      styleEl.id = "editor-spacing";
+      doc.head.appendChild(styleEl);
+    }
+    let css = "";
+    if (ls) css += `body, p, li, div, span, td, th { line-height: ${ls} !important; }\n`;
+    if (ps) css += `p, li, div:not(body) { margin-bottom: ${ps} !important; }\n`;
+    styleEl.textContent = css;
+  }, []);
 
   const execCommand = useCallback((cmd: string, value?: string) => {
     const doc = iframeRef.current?.contentDocument;
@@ -251,6 +270,48 @@ export default function InlineHtmlEditor({
         <Button type="button" variant="ghost" size="icon" className="h-8 w-8" title="Outdent" onClick={() => execCommand("outdent")}>
           <Outdent className="h-4 w-4" />
         </Button>
+
+        <Separator orientation="vertical" className="h-6 mx-1" />
+
+        {/* Line Spacing */}
+        <div className="flex items-center gap-0.5" title="Line Spacing">
+          <ChevronsUpDown className="h-3.5 w-3.5 text-muted-foreground" />
+          <select
+            className="h-8 rounded-md border border-input bg-background px-1 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+            value={lineSpacing}
+            onChange={(e) => {
+              setLineSpacing(e.target.value);
+              updateEditorSpacing(e.target.value, paraSpacing);
+            }}
+          >
+            <option value="">Line</option>
+            <option value="1.0">1.0</option>
+            <option value="1.15">1.15</option>
+            <option value="1.2">1.2</option>
+            <option value="1.5">1.5</option>
+            <option value="2.0">2.0</option>
+          </select>
+        </div>
+
+        {/* Paragraph Spacing */}
+        <div className="flex items-center gap-0.5" title="Paragraph Spacing">
+          <Rows3 className="h-3.5 w-3.5 text-muted-foreground" />
+          <select
+            className="h-8 rounded-md border border-input bg-background px-1 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+            value={paraSpacing}
+            onChange={(e) => {
+              setParaSpacing(e.target.value);
+              updateEditorSpacing(lineSpacing, e.target.value);
+            }}
+          >
+            <option value="">Para</option>
+            <option value="0px">None</option>
+            <option value="4px">Tight</option>
+            <option value="8px">Normal</option>
+            <option value="12px">Relaxed</option>
+            <option value="16px">Wide</option>
+          </select>
+        </div>
 
         {/* Insert link popover */}
         <Popover open={linkPopoverOpen} onOpenChange={setLinkPopoverOpen}>

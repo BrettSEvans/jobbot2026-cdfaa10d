@@ -567,6 +567,7 @@ export type Database = {
           ats_scored_at: string | null
           branding: Json | null
           chat_history: Json | null
+          clarity_resume_html: string | null
           company_icon_url: string | null
           company_name: string | null
           company_url: string | null
@@ -608,6 +609,7 @@ export type Database = {
           ats_scored_at?: string | null
           branding?: Json | null
           chat_history?: Json | null
+          clarity_resume_html?: string | null
           company_icon_url?: string | null
           company_name?: string | null
           company_url?: string | null
@@ -649,6 +651,7 @@ export type Database = {
           ats_scored_at?: string | null
           branding?: Json | null
           chat_history?: Json | null
+          clarity_resume_html?: string | null
           company_icon_url?: string | null
           company_name?: string | null
           company_url?: string | null
@@ -1103,6 +1106,7 @@ export type Database = {
           html: string
           id: string
           label: string | null
+          resume_type: string
           revision_number: number
         }
         Insert: {
@@ -1111,6 +1115,7 @@ export type Database = {
           html: string
           id?: string
           label?: string | null
+          resume_type?: string
           revision_number?: number
         }
         Update: {
@@ -1119,6 +1124,7 @@ export type Database = {
           html?: string
           id?: string
           label?: string | null
+          resume_type?: string
           revision_number?: number
         }
         Relationships: [

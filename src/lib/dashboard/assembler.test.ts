@@ -30,11 +30,10 @@ describe("parseLlmJsonOutput", () => {
     expect(result).not.toBeNull();
   });
 
-  it("removes trailing commas", () => {
-    const raw = JSON.stringify(validData).replace(/"sections":\[/, '"sections":[').replace(/\],"agenticWorkforce"/, '],  "agenticWorkforce"');
-    // Insert trailing comma
-    const withComma = raw.replace(/"agenticWorkforce":\[\]/, '"agenticWorkforce":[],');
-    const result = parseLlmJsonOutput(withComma);
+  it("removes trailing commas before closing brackets", () => {
+    // Simple case: trailing comma before }
+    const raw = '{"meta":{"companyName":"Acme","jobTitle":"Eng","department":"X",},"branding":' + JSON.stringify(validData.branding) + ',"navigation":' + JSON.stringify(validData.navigation) + ',"sections":' + JSON.stringify(validData.sections) + ',"agenticWorkforce":[],"cfoScenarios":[]}';
+    const result = parseLlmJsonOutput(raw);
     expect(result).not.toBeNull();
   });
 

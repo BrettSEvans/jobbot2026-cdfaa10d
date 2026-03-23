@@ -49,6 +49,7 @@ import {
 import { backgroundGenerator } from "@/lib/backgroundGenerator";
 import { useActiveJobCount } from "@/hooks/useBackgroundJob";
 import { supabase } from "@/integrations/supabase/client";
+import type { JobApplicationListItem } from "@/types/models";
 
 type SortKey = "company_name" | "job_title" | "status" | "created_at" | "updated_at";
 type SortDir = "asc" | "desc";

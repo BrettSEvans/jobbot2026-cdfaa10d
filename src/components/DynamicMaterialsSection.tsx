@@ -29,6 +29,7 @@ import DesignVariabilityCard from "@/components/admin/DesignVariabilityCard";
 import { supabase } from "@/integrations/supabase/client";
 import { saveGeneratedAssetRevision } from "@/lib/api/generatedAssetRevisions";
 import { streamRefineMaterial } from "@/lib/api/jobApplication";
+import { buildFileName } from "@/lib/fileNaming";
 import type { DashboardData } from "@/lib/dashboard/schema";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";

@@ -151,8 +151,8 @@ export function CoverLetterTab({
               variant="outline"
               size="sm"
               onClick={() => {
-                const name = `cover-letter-${(companyName || "document").replace(/\s+/g, "-").toLowerCase()}-${(jobTitle || "").replace(/\s+/g, "-").toLowerCase()}`;
-                downloadTextAsDocx(previewCoverLetter || coverLetter, `${name}.docx`);
+                const name = buildFileName(userProfile?.first_name, userProfile?.last_name, "cover-letter", companyName, "docx");
+                downloadTextAsDocx(previewCoverLetter || coverLetter, name);
                 toast({ title: "Downloading", description: "Cover letter DOCX file is being prepared." });
               }}
             >

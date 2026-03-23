@@ -14,6 +14,7 @@ import {
 import CoverLetterRevisions from "@/components/CoverLetterRevisions";
 import InlineHtmlEditor from "@/components/InlineHtmlEditor";
 import { downloadTextAsDocx } from "@/lib/docxExport";
+import { buildFileName } from "@/lib/fileNaming";
 import type { JobApplication, UserProfileSnapshot, ChatMessage, ToastFn } from "@/types/models";
 
 /** Convert plain text to minimal HTML for the editor */
@@ -128,13 +129,11 @@ export function CoverLetterTab({
                   toast({ title: "Popup blocked", description: "Allow popups to download PDF, or use DOCX download instead.", variant: "destructive" });
                   return;
                 }
-                const fullName = userProfile
-                  ? [userProfile.first_name, userProfile.last_name].filter(Boolean).join(" ") || "Cover Letter"
-                  : "Cover Letter";
+                const pdfTitle = buildFileName(userProfile?.first_name, userProfile?.last_name, "cover-letter", companyName, "pdf");
                 const content = previewCoverLetter || coverLetter;
                 const htmlContent = isHtmlContent(content)
                   ? content
-                  : `<!DOCTYPE html><html><head><title>${fullName} - Cover Letter</title><style>
+                  : `<!DOCTYPE html><html><head><title>${pdfTitle}</title><style>
                     @page { size: letter; margin: 1in 1in 0.75in 1in; }
                     body { font-family: Georgia, 'Times New Roman', serif; font-size: 10.5pt; line-height: 1.6; color: #111; margin: 0; padding: 0; }
                     .content { white-space: pre-wrap; }
@@ -150,8 +149,8 @@ export function CoverLetterTab({
               variant="outline"
               size="sm"
               onClick={() => {
-                const name = `cover-letter-${(companyName || "document").replace(/\s+/g, "-").toLowerCase()}-${(jobTitle || "").replace(/\s+/g, "-").toLowerCase()}`;
-                downloadTextAsDocx(previewCoverLetter || coverLetter, `${name}.docx`);
+                const name = buildFileName(userProfile?.first_name, userProfile?.last_name, "cover-letter", companyName, "docx");
+                downloadTextAsDocx(previewCoverLetter || coverLetter, name);
                 toast({ title: "Downloading", description: "Cover letter DOCX file is being prepared." });
               }}
             >

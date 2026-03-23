@@ -39,6 +39,8 @@ import { supabase } from "@/integrations/supabase/client";
 import type { JobApplication, UserResumePickerItem, FabricationChange, ToastFn } from "@/types/models";
 import type { ExtractedKeyword } from "@/lib/keywordMatcher";
 import type { ResumeVariant } from "@/hooks/useResumeEditor";
+import { buildFileName } from "@/lib/fileNaming";
+import type { UserProfileSnapshot } from "@/types/models";
 
 /** Fit-to-page preview for resume */
 function ResumePagePreview({ html }: { html: string }) {
@@ -80,6 +82,7 @@ function ResumePagePreview({ html }: { html: string }) {
 interface ResumeTabProps {
   id: string;
   app: JobApplication;
+  userProfile: UserProfileSnapshot | null;
   setApp: (fn: (prev: JobApplication | null) => JobApplication | null) => void;
   jobDescription: string;
   companyName: string;
@@ -117,6 +120,7 @@ function ResumeVariantToolbar({
   html,
   companyName,
   jobTitle,
+  userProfile,
   isRegenerating,
   onEdit,
   onRegenerate,
@@ -127,6 +131,7 @@ function ResumeVariantToolbar({
   html: string;
   companyName: string;
   jobTitle: string;
+  userProfile: UserProfileSnapshot | null;
   isRegenerating: boolean;
   onEdit: () => void;
   onRegenerate: () => void;
@@ -168,8 +173,8 @@ function ResumeVariantToolbar({
         variant="outline"
         size="sm"
         onClick={() => {
-          const name = `${variant}-resume-${(companyName || "document").replace(/\s+/g, "-").toLowerCase()}-${(jobTitle || "").replace(/\s+/g, "-").toLowerCase()}`;
-          downloadHtmlAsDocx(html, `${name}.docx`);
+          const name = buildFileName(userProfile?.first_name, userProfile?.last_name, `${variant}-resume`, companyName, "docx");
+          downloadHtmlAsDocx(html, name);
           toast({ title: "Downloading", description: `${variantLabel} resume DOCX file is being prepared.` });
         }}
       >
@@ -199,6 +204,7 @@ function ResumeVariantContent({
   companyName,
   jobTitle,
   resumeText,
+  userProfile,
   isRegenerating,
   editingResume,
   setEditingResume,
@@ -222,6 +228,7 @@ function ResumeVariantContent({
   companyName: string;
   jobTitle: string;
   resumeText: string | null;
+  userProfile: UserProfileSnapshot | null;
   isRegenerating: boolean;
   editingResume: boolean;
   setEditingResume: (val: boolean) => void;
@@ -261,6 +268,7 @@ function ResumeVariantContent({
         html={html}
         companyName={companyName}
         jobTitle={jobTitle}
+        userProfile={userProfile}
         isRegenerating={isRegenerating}
         onEdit={() => { setEditingResume(true); setPreviewResumeHtml(null); }}
         onRegenerate={() => openRegenDialog(variant)}
@@ -349,6 +357,7 @@ function ResumeVariantContent({
 export function ResumeTab({
   id,
   app,
+  userProfile,
   setApp,
   jobDescription,
   companyName,
@@ -522,6 +531,7 @@ export function ResumeTab({
             companyName={companyName}
             jobTitle={jobTitle}
             resumeText={resumeText}
+            userProfile={userProfile}
             isRegenerating={isRegeneratingResume}
             editingResume={activeVariant === "ats" && editingResume}
             setEditingResume={setEditingResume}
@@ -552,6 +562,7 @@ export function ResumeTab({
             companyName={companyName}
             jobTitle={jobTitle}
             resumeText={resumeText}
+            userProfile={userProfile}
             isRegenerating={isRegeneratingResume}
             editingResume={activeVariant === "clarity" && editingResume}
             setEditingResume={setEditingResume}

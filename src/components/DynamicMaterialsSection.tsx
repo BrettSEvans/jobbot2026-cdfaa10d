@@ -29,6 +29,7 @@ import DesignVariabilityCard from "@/components/admin/DesignVariabilityCard";
 import { supabase } from "@/integrations/supabase/client";
 import { saveGeneratedAssetRevision } from "@/lib/api/generatedAssetRevisions";
 import { streamRefineMaterial } from "@/lib/api/jobApplication";
+import { buildFileName } from "@/lib/fileNaming";
 import type { DashboardData } from "@/lib/dashboard/schema";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
@@ -249,14 +250,15 @@ export default function DynamicMaterialsSection({
     },
   });
 
-  const { data: candidateName } = useQuery({
-    queryKey: ["candidate-name", user?.id],
+  const { data: candidateProfile } = useQuery({
+    queryKey: ["candidate-profile", user?.id],
     enabled: !!user,
     queryFn: async () => {
       const { data } = await supabase.from("profiles").select("first_name, middle_name, last_name").eq("id", user!.id).single();
-      return [data?.first_name, data?.middle_name, data?.last_name].filter(Boolean).join(" ") || "";
+      return data;
     },
   });
+  const candidateName = candidateProfile ? [candidateProfile.first_name, candidateProfile.middle_name, candidateProfile.last_name].filter(Boolean).join(" ") : "";
 
   const [generatedAssets, setGeneratedAssets] = useState<GeneratedAsset[]>([]);
   const [loadingAssets, setLoadingAssets] = useState(true);
@@ -602,7 +604,7 @@ export default function DynamicMaterialsSection({
                   <Button variant="outline" size="sm" onClick={handleDownloadZip}><FolderArchive className="mr-2 h-4 w-4" /> Download ZIP</Button>
                 ) : (
                   <Button variant="outline" size="sm" onClick={() => {
-                    downloadHtmlFile(dashboardHtml, `${(companyName || "dashboard").replace(/\s+/g, "-").toLowerCase()}-dashboard.html`);
+                    downloadHtmlFile(dashboardHtml, buildFileName(candidateProfile?.first_name, candidateProfile?.last_name, "dashboard", companyName, "html"));
                     recordDownloadSignal(applicationId, "dashboard", jobTitle);
                     toast({ title: "Downloaded" });
                   }}><Download className="mr-2 h-4 w-4" /> Download HTML</Button>
@@ -739,9 +741,8 @@ export default function DynamicMaterialsSection({
               )}
               {asset.html && (
                 <Button variant="outline" size="sm" onClick={async () => {
-                  const slug = (companyName || asset.asset_name).replace(/\s+/g, "-").toLowerCase();
-                  const assetSlug = asset.asset_name.replace(/\s+/g, "-").toLowerCase();
-                  downloadMaterialPdf(asset.html, `${slug}-${assetSlug}.pdf`);
+                  const pdfName = buildFileName(candidateProfile?.first_name, candidateProfile?.last_name, asset.asset_name, companyName, "pdf");
+                  downloadMaterialPdf(asset.html, pdfName);
                   recordDownloadSignal(applicationId, asset.asset_name, jobTitle);
                   await supabase.from("generated_assets").update({ downloaded_at: new Date().toISOString() }).eq("id", asset.id);
                   setGeneratedAssets(prev => prev.map(a => a.id === asset.id ? { ...a, downloaded_at: new Date().toISOString() } : a));
@@ -828,7 +829,7 @@ export default function DynamicMaterialsSection({
              <TabsContent key={`legacy-${legacy.field}`} value={`legacy-${legacy.field}`} className="space-y-4">
               <div className="flex flex-wrap gap-2">
                 <Button variant="outline" size="sm" onClick={() => {
-                  downloadMaterialPdf(legacy.html, `${(companyName || legacy.name).replace(/\s+/g, "-").toLowerCase()}-${legacy.name.replace(/\s+/g, "-").toLowerCase()}.pdf`);
+                  downloadMaterialPdf(legacy.html, buildFileName(candidateProfile?.first_name, candidateProfile?.last_name, legacy.name, companyName, "pdf"));
                   recordDownloadSignal(applicationId, legacy.name, jobTitle);
                   toast({ title: "Printing PDF" });
                 }}><Download className="mr-2 h-4 w-4" /> Download PDF</Button>

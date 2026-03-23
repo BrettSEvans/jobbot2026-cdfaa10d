@@ -248,6 +248,8 @@ body {
   background: var(--md-surface-container);
   border-radius: var(--radius-md);
   padding: 20px;
+  position: relative;
+  transition: opacity 0.3s, box-shadow 0.3s;
 }
 
 .chart-card h3 {
@@ -263,6 +265,43 @@ body {
   height: 380px;
   max-height: 380px;
 }
+
+/* Cross-chart filter badge */
+.chart-filter-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+  font-size: 11px;
+  font-weight: 500;
+  padding: 4px 10px 4px 12px;
+  border-radius: 16px;
+  margin-bottom: 8px;
+  animation: filterBadgeIn 0.2s ease-out;
+}
+
+.chart-filter-badge button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--md-on-primary-container);
+  font-size: 14px;
+  line-height: 1;
+  padding: 0 2px;
+  opacity: 0.7;
+  transition: opacity 0.15s;
+}
+
+.chart-filter-badge button:hover { opacity: 1; }
+
+@keyframes filterBadgeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.chart-card.filtered-dimmed { opacity: 0.35; pointer-events: none; }
+.chart-card.filtered-active { box-shadow: 0 0 0 2px var(--md-primary); }
 
 .chart-container canvas {
   width: 100% !important;

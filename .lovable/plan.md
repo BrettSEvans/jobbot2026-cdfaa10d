@@ -1,34 +1,54 @@
 
 
-## Reduce Clarity Resume Spacing + Add Line/Paragraph Spacing Controls to Editor
+## Add Pipeline Kanban Board to Applications Page
+
+The Applications page currently shows only a flat table. The database already has `pipeline_stage` and `pipeline_stage_history` columns/tables ready. Using the uploaded Stories KanbanBoard/KanbanColumn as the architectural pattern, I'll build a job application Pipeline board with drag-and-drop stage transitions.
 
 ### Changes
 
-#### 1. Tighten default spacing in Clarity resume generation
-**File:** `supabase/functions/generate-resume-clarity/index.ts`
-- Update the LAYOUT & FORMATTING prompt section to instruct tight inline styles:
-  - `line-height: 1.2` on body-level elements
-  - `margin: 0 0 4px 0` on all `<p>` and `<li>` elements
-  - `margin: 8px 0 4px 0` on `<h2>` section headings
-  - `padding-left: 18px; margin: 0` on `<ul>` elements
-- Change the page target from "one page equivalent (~600-800 words)" to "two pages max (~800-1200 words)"
-- Add explicit instruction: "Apply tight spacing inline styles to every element"
+#### 1. Create `src/components/PipelineBoard.tsx`
+Drag-and-drop Kanban board for job applications using `@dnd-kit/core` (already installed).
+- **Columns**: Bookmarked, Applied, Interviewing, Offer, Accepted, Withdrawn, Ghosted, Rejected
+- **Cards**: Company icon, company name, job title, days-in-stage badge (green < 5d, orange 5-10d, red > 10d), click to navigate to detail
+- **Drag-and-drop**: On drop, call `updatePipelineStage` to update `pipeline_stage` + `stage_changed_at` on `job_applications` and insert into `pipeline_stage_history`
+- **Drag overlay**: Simplified card preview while dragging
+- Pattern follows uploaded `KanbanBoard.tsx` structure (DndContext, sensors, DragOverlay)
 
-#### 2. Add Line Spacing & Paragraph Spacing controls to InlineHtmlEditor toolbar
-**File:** `src/components/InlineHtmlEditor.tsx`
-- Add a **Line Spacing** `<select>` dropdown (1.0, 1.15, 1.2, 1.5, 2.0) after the Indent/Outdent group
-  - On change: inject/update a `<style>` tag in the iframe's `<head>` setting `body { line-height: <value> !important; }`
-- Add a **Paragraph Spacing** `<select>` dropdown (None/0px, Tight/4px, Normal/8px, Relaxed/12px, Wide/16px)
-  - On change: inject/update a `<style>` tag setting `p, li, div { margin-bottom: <value> !important; }`
-- Both use the same pattern: find-or-create a `<style id="editor-spacing">` element in the iframe head and update its `textContent`
+#### 2. Create `src/components/PipelineColumn.tsx`
+Droppable column component following uploaded `KanbanColumn.tsx` pattern.
+- Uses `useDroppable` from dnd-kit
+- Uses `useDraggable` for each card
+- Color-coded top border per stage
+- Badge with card count
+- Each card shows: CompanyIcon, company/job title, days-in-stage indicator
 
-#### 3. Preserve cover letter editing (no regressions)
-- The `CoverLetterTab` already uses `InlineHtmlEditor` — these new controls will automatically be available there too
-- No changes needed to `CoverLetterTab.tsx`
+#### 3. Add `updatePipelineStage` to `src/lib/api/jobApplication.ts`
+```typescript
+export async function updatePipelineStage(id: string, newStage: string, oldStage?: string) {
+  const { data: { session } } = await supabase.auth.getSession();
+  // Update job_applications
+  await supabase.from('job_applications')
+    .update({ pipeline_stage: newStage, stage_changed_at: new Date().toISOString() })
+    .eq('id', id);
+  // Insert history record
+  if (session?.user?.id) {
+    await supabase.from('pipeline_stage_history')
+      .insert({ application_id: id, user_id: session.user.id, from_stage: oldStage, to_stage: newStage });
+  }
+}
+```
 
-### Files Modified
-| File | Change |
+#### 4. Update `src/pages/Applications.tsx`
+- Wrap existing content + new Pipeline board in a `Tabs` component with three tabs: **Applications**, **Pipeline**, **Trash**
+- Import `PipelineBoard` and render under the Pipeline tab
+- Pass `applications` list and `loadApplications` refetch callback
+- Existing table, preview, delete dialog all remain intact under the Applications tab
+
+### Files Modified/Created
+| File | Action |
 |------|--------|
-| `supabase/functions/generate-resume-clarity/index.ts` | Tighten spacing in prompt, target two pages |
-| `src/components/InlineHtmlEditor.tsx` | Add line-spacing and paragraph-spacing dropdowns |
+| `src/components/PipelineBoard.tsx` | Create — drag-and-drop Kanban board |
+| `src/components/PipelineColumn.tsx` | Create — droppable column + draggable cards |
+| `src/lib/api/jobApplication.ts` | Add `updatePipelineStage` function |
+| `src/pages/Applications.tsx` | Add Tabs wrapper with Applications + Pipeline + Trash tabs |
 

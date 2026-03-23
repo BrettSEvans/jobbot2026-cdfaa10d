@@ -741,9 +741,8 @@ export default function DynamicMaterialsSection({
               )}
               {asset.html && (
                 <Button variant="outline" size="sm" onClick={async () => {
-                  const slug = (companyName || asset.asset_name).replace(/\s+/g, "-").toLowerCase();
-                  const assetSlug = asset.asset_name.replace(/\s+/g, "-").toLowerCase();
-                  downloadMaterialPdf(asset.html, `${slug}-${assetSlug}.pdf`);
+                  const pdfName = buildFileName(candidateProfile?.first_name, candidateProfile?.last_name, asset.asset_name, companyName, "pdf");
+                  downloadMaterialPdf(asset.html, pdfName);
                   recordDownloadSignal(applicationId, asset.asset_name, jobTitle);
                   await supabase.from("generated_assets").update({ downloaded_at: new Date().toISOString() }).eq("id", asset.id);
                   setGeneratedAssets(prev => prev.map(a => a.id === asset.id ? { ...a, downloaded_at: new Date().toISOString() } : a));

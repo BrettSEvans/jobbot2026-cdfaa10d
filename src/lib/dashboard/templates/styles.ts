@@ -63,20 +63,23 @@ body {
 #sidebar-header {
   padding: 20px 16px;
   border-bottom: 1px solid var(--md-outline-variant);
+  background: var(--md-primary);
+  color: var(--md-on-primary);
 }
 
 #sidebar-header h2 {
   font-family: var(--font-heading);
   font-size: 18px;
   font-weight: 600;
-  color: var(--md-on-surface);
+  color: var(--md-on-primary);
   white-space: nowrap;
   overflow: hidden;
 }
 
 #sidebar-header p {
   font-size: 12px;
-  color: var(--md-outline);
+  color: var(--md-on-primary);
+  opacity: 0.85;
   margin-top: 4px;
   white-space: nowrap;
   overflow: hidden;

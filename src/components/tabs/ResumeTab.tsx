@@ -370,11 +370,12 @@ export function ResumeTab({
                 const { resume_html } = await generateOptimizedResume({
                   jobDescription, resumeText, missingKeywords, userPrompt, companyName, jobTitle,
                 });
-                await saveJobApplication({ id, job_url: app.job_url, resume_html } as any);
-                setApp((prev: any) => ({ ...prev, resume_html }));
+                await saveJobApplication({ id, job_url: app.job_url, resume_html });
+                setApp((prev) => prev ? { ...prev, resume_html } : prev);
                 toast({ title: "Resume optimized!", description: `${missingKeywords.length} keywords injected.` });
-              } catch (e: any) {
-                toast({ title: "Optimization failed", description: e.message, variant: "destructive" });
+              } catch (e: unknown) {
+                const message = e instanceof Error ? e.message : "Unknown error";
+                toast({ title: "Optimization failed", description: message, variant: "destructive" });
               }
             }}
           />

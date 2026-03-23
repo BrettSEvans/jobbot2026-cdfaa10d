@@ -87,7 +87,7 @@ export function useDashboardEditor({
           }
         },
       });
-      const savePayload: Record<string, any> = { dashboard_html: accumulated };
+      const savePayload: Record<string, unknown> = { dashboard_html: accumulated };
       const parsedForSave = parseLlmJsonOutput(accumulated) || null;
       if (parsedForSave) {
         const html = assembleDashboardHtml(parsedForSave);

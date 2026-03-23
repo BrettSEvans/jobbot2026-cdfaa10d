@@ -89,7 +89,7 @@ ABSOLUTE RULES:
 - NEVER invent skills, certifications, degrees, or job titles the candidate doesn't have
 - NEVER fabricate metrics or achievements
 - Preserve all dates, company names, and job titles exactly as provided
-- Keep to one page equivalent (~600-800 words)
+- Keep to two pages max (~800-1200 words)
 - Proofread meticulously to ensure zero spelling mistakes`;
 
     let jdContext = '';

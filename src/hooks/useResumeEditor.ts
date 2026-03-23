@@ -37,7 +37,7 @@ export function useResumeEditor({
   // Pre-select active resume when dialog opens
   useEffect(() => {
     if (regenDialogOpen && userResumes.length > 0) {
-      const active = userResumes.find((r: any) => r.is_active);
+      const active = userResumes.find((r) => r.is_active);
       setSelectedResumeId(active?.id || userResumes[0]?.id || "");
     }
   }, [regenDialogOpen, userResumes]);

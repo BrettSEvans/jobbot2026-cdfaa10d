@@ -4,6 +4,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { getJobApplications, deleteJobApplication } from "@/lib/api/jobApplication";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { PipelineBoard } from "@/components/PipelineBoard";
 import {
   Plus,
   FileText,

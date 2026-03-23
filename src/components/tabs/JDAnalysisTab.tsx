@@ -19,8 +19,8 @@ import type { JobApplication, ToastFn } from "@/types/models";
 
 interface JDAnalysisTabProps {
   id: string;
-  app: any;
-  setApp: (fn: any) => void;
+  app: JobApplication;
+  setApp: (fn: (prev: JobApplication | null) => JobApplication | null) => void;
   jobDescription: string;
   setJobDescription: (val: string) => void;
   editingJobDescription: boolean;
@@ -31,9 +31,9 @@ interface JDAnalysisTabProps {
   jobTitle: string;
   resumeText: string | null;
   saving: boolean;
-  saveField: (fields: Record<string, any>) => Promise<void>;
+  saveField: (fields: Record<string, unknown>) => Promise<void>;
   handleCopy: (text: string, label: string) => Promise<void>;
-  toast: (opts: any) => void;
+  toast: ToastFn;
 }
 
 export function JDAnalysisTab({

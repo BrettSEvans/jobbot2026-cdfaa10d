@@ -18,12 +18,23 @@ function getInitials(name: string): string {
     .slice(0, 2);
 }
 
+function extractRootDomain(hostname: string): string {
+  // Strip www and common subdomains, keep root domain
+  const parts = hostname.replace(/^www\./, "").split(".");
+  // For domains like get.chownow.com → chownow.com
+  if (parts.length > 2) {
+    return parts.slice(-2).join(".");
+  }
+  return parts.join(".");
+}
+
 function getClearbitUrl(companyUrl?: string | null, companyName?: string | null): string | null {
   // Try extracting domain from company URL
   if (companyUrl) {
     try {
       const url = new URL(companyUrl.startsWith("http") ? companyUrl : `https://${companyUrl}`);
-      return `https://logo.clearbit.com/${url.hostname}`;
+      const rootDomain = extractRootDomain(url.hostname);
+      return `https://logo.clearbit.com/${rootDomain}`;
     } catch {
       // fall through
     }
@@ -32,6 +43,7 @@ function getClearbitUrl(companyUrl?: string | null, companyName?: string | null)
   if (companyName) {
     const slug = companyName
       .toLowerCase()
+      .replace(/\s*\(.*?\)\s*/g, "") // strip parenthetical like "(Propeller Consulting)"
       .replace(/[^a-z0-9]/g, "")
       .trim();
     if (slug) return `https://logo.clearbit.com/${slug}.com`;

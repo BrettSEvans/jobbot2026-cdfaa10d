@@ -50,3 +50,12 @@ verify_jwt = false
 
 [functions.extract-resume-text]
 verify_jwt = false
+
+[functions.generate-raid-log]
+verify_jwt = false
+
+[functions.generate-roadmap]
+verify_jwt = false
+
+[functions.generate-architecture-diagram]
+verify_jwt = false

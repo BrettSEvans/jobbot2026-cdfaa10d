@@ -2,18 +2,19 @@ import { useState, useEffect, useCallback } from "react";
 import { saveJobApplication } from "@/lib/api/jobApplication";
 import { generateOptimizedResume } from "@/lib/api/resumeGeneration";
 import { supabase } from "@/integrations/supabase/client";
+import type { JobApplication, UserResume, ToastFn } from "@/types/models";
 
 interface UseResumeEditorOptions {
   id: string | undefined;
-  app: any;
-  setApp: (fn: any) => void;
+  app: JobApplication | null;
+  setApp: (fn: (prev: JobApplication | null) => JobApplication | null) => void;
   jobDescription: string;
   companyName: string;
   jobTitle: string;
-  userResumes: any[];
+  userResumes: UserResume[];
   resumeRevisionTrigger: number;
   setResumeRevisionTrigger: (fn: (t: number) => number) => void;
-  toast: (opts: any) => void;
+  toast: ToastFn;
 }
 
 export function useResumeEditor({

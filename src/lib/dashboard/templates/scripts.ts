@@ -383,45 +383,96 @@ export function getScriptsJs(): string {
   }
 
   // === CFO SCENARIOS ===
+  var CFO_CHART_TYPES = ['line', 'bar', 'doughnut', 'radar'];
+
   function renderCFOScenarios(scenarios, sectionEl) {
     if (!scenarios || !scenarios.length) return;
 
-    scenarios.forEach(function(scenario) {
+    scenarios.forEach(function(scenario, sIdx) {
       var card = el('div', { className: 'cfo-card' });
       card.appendChild(el('h3', {}, scenario.title));
       card.appendChild(el('p', { className: 'cfo-desc' }, scenario.description));
 
       var sliderValues = {};
-      var slidersDiv = el('div', {});
+      var controlsDiv = el('div', { className: 'cfo-controls' });
 
-      scenario.sliders.forEach(function(slider) {
+      scenario.sliders.forEach(function(slider, sliderIdx) {
         sliderValues[slider.id] = slider['default'];
 
-        var group = el('div', { className: 'slider-group' });
-        var labelDiv = el('div', { className: 'slider-label' });
-        labelDiv.appendChild(el('span', {}, slider.label));
-        var valueSpan = el('span', {}, slider['default'] + slider.unit);
-        labelDiv.appendChild(valueSpan);
-        group.appendChild(labelDiv);
+        // Alternate between slider, toggle, and segmented controls
+        var controlType = slider.controlType || (sliderIdx % 3 === 1 ? 'toggle' : (sliderIdx % 3 === 2 ? 'segmented' : 'slider'));
 
-        var input = document.createElement('input');
-        input.type = 'range';
-        input.min = slider.min;
-        input.max = slider.max;
-        input.step = slider.step;
-        input.value = slider['default'];
+        if (controlType === 'toggle' && slider.options && slider.options.length === 2) {
+          var group = el('div', { className: 'toggle-group' });
+          var labelSpan = el('span', { className: 'toggle-label' }, slider.label);
+          group.appendChild(labelSpan);
 
-        input.addEventListener('input', function() {
-          sliderValues[slider.id] = parseFloat(this.value);
-          valueSpan.textContent = this.value + slider.unit;
-          updateCFOChart(scenario, sliderValues, chartRef);
-        });
+          var toggleWrap = el('div', { className: 'toggle-wrap' });
+          slider.options.forEach(function(opt, oi) {
+            var btn = el('button', {
+              className: 'toggle-btn' + (oi === 0 ? ' active' : ''),
+              'data-value': String(opt.value)
+            }, opt.label);
+            btn.addEventListener('click', function() {
+              toggleWrap.querySelectorAll('.toggle-btn').forEach(function(b) { b.classList.remove('active'); });
+              this.classList.add('active');
+              sliderValues[slider.id] = parseFloat(this.getAttribute('data-value'));
+              updateCFOChart(scenario, sliderValues, chartRef);
+            });
+            toggleWrap.appendChild(btn);
+          });
+          group.appendChild(toggleWrap);
+          controlsDiv.appendChild(group);
+        } else if (controlType === 'segmented' && slider.options && slider.options.length >= 3) {
+          var group = el('div', { className: 'segmented-group' });
+          group.appendChild(el('span', { className: 'toggle-label' }, slider.label));
+          var segWrap = el('div', { className: 'segmented-wrap' });
+          slider.options.forEach(function(opt, oi) {
+            var btn = el('button', {
+              className: 'segmented-btn' + (oi === 0 ? ' active' : ''),
+              'data-value': String(opt.value)
+            }, opt.label);
+            btn.addEventListener('click', function() {
+              segWrap.querySelectorAll('.segmented-btn').forEach(function(b) { b.classList.remove('active'); });
+              this.classList.add('active');
+              sliderValues[slider.id] = parseFloat(this.getAttribute('data-value'));
+              updateCFOChart(scenario, sliderValues, chartRef);
+            });
+            segWrap.appendChild(btn);
+          });
+          group.appendChild(segWrap);
+          controlsDiv.appendChild(group);
+        } else {
+          var group = el('div', { className: 'slider-group' });
+          var labelDiv = el('div', { className: 'slider-label' });
+          labelDiv.appendChild(el('span', {}, slider.label));
+          var valueSpan = el('span', {}, slider['default'] + slider.unit);
+          labelDiv.appendChild(valueSpan);
+          group.appendChild(labelDiv);
 
-        group.appendChild(input);
-        slidersDiv.appendChild(group);
+          var input = document.createElement('input');
+          input.type = 'range';
+          input.min = slider.min;
+          input.max = slider.max;
+          input.step = slider.step;
+          input.value = slider['default'];
+
+          input.addEventListener('input', function() {
+            sliderValues[slider.id] = parseFloat(this.value);
+            valueSpan.textContent = this.value + slider.unit;
+            updateCFOChart(scenario, sliderValues, chartRef);
+          });
+
+          group.appendChild(input);
+          controlsDiv.appendChild(group);
+        }
       });
 
-      card.appendChild(slidersDiv);
+      card.appendChild(controlsDiv);
+
+      // Rotate chart types across scenarios for visual variety
+      var chartType = scenario.chartType || CFO_CHART_TYPES[sIdx % CFO_CHART_TYPES.length];
+      var isRadial = (chartType === 'doughnut' || chartType === 'radar');
 
       var chartDiv = el('div', { className: 'cfo-chart-container' });
       var canvas = el('canvas', { id: 'cfo-chart-' + scenario.id });
@@ -432,29 +483,71 @@ export function getScriptsJs(): string {
       var chartRef = { instance: null };
       if (typeof Chart !== 'undefined') {
         var primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--md-primary').trim() || '#6750A4';
+        var secondaryColor = getComputedStyle(document.documentElement).getPropertyValue('--md-secondary').trim() || '#625B71';
+
+        var cfoData = calculateCFO(scenario, sliderValues);
+        var datasetConfig;
+        if (chartType === 'doughnut') {
+          datasetConfig = {
+            label: scenario.metricLabel || 'Projected Revenue',
+            data: cfoData,
+            backgroundColor: cfoData.map(function(_, i) {
+              var hue = (i * 60 + 200) % 360;
+              return 'hsl(' + hue + ', 55%, 55%)';
+            }),
+            borderWidth: 2,
+            borderColor: '#fff'
+          };
+        } else if (chartType === 'radar') {
+          datasetConfig = {
+            label: scenario.metricLabel || 'Projected Revenue',
+            data: cfoData,
+            borderColor: primaryColor,
+            backgroundColor: primaryColor + '33',
+            pointBackgroundColor: primaryColor,
+            borderWidth: 2,
+            fill: true
+          };
+        } else if (chartType === 'bar') {
+          datasetConfig = {
+            label: scenario.metricLabel || 'Projected Revenue',
+            data: cfoData,
+            backgroundColor: primaryColor + '99',
+            borderColor: primaryColor,
+            borderWidth: 1,
+            borderRadius: 6
+          };
+        } else {
+          datasetConfig = {
+            label: scenario.metricLabel || 'Projected Revenue',
+            data: cfoData,
+            borderColor: primaryColor,
+            backgroundColor: primaryColor + '33',
+            fill: true,
+            tension: 0.3,
+            borderWidth: 2
+          };
+        }
+
+        var chartOpts = {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: true, position: 'bottom' } }
+        };
+        if (!isRadial) {
+          chartOpts.scales = {
+            y: { beginAtZero: false, grid: { color: 'rgba(0,0,0,0.06)' } },
+            x: { grid: { color: 'rgba(0,0,0,0.06)' } }
+          };
+        }
+
         chartRef.instance = new Chart(canvas.getContext('2d'), {
-          type: scenario.chartType || 'line',
+          type: chartType,
           data: {
             labels: scenario.quarters,
-            datasets: [{
-              label: 'Projected Revenue',
-              data: calculateCFO(scenario, sliderValues),
-              borderColor: primaryColor,
-              backgroundColor: primaryColor + '33',
-              fill: true,
-              tension: 0.3,
-              borderWidth: 2
-            }]
+            datasets: [datasetConfig]
           },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-              y: { beginAtZero: false, grid: { color: 'rgba(0,0,0,0.06)' } },
-              x: { grid: { color: 'rgba(0,0,0,0.06)' } }
-            },
-            plugins: { legend: { display: true, position: 'bottom' } }
-          }
+          options: chartOpts
         });
       }
     });

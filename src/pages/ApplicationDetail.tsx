@@ -119,7 +119,7 @@ const ApplicationDetail = () => {
 
           <TabsContent value="resume" className="space-y-4">
             <ResumeTab
-              id={id!} app={app} setApp={setApp}
+              id={id!} app={app} userProfile={userProfile} setApp={setApp}
               jobDescription={jobDescription} companyName={companyName} jobTitle={jobTitle}
               resumeText={resumeText} userResumes={userResumes}
               isBgGenerating={isBgGenerating} bgJob={bgJob}

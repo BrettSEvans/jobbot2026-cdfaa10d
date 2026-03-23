@@ -17,7 +17,7 @@ export function useApplicationDetail() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const [app, setApp] = useState<any>(null);
+  const [app, setApp] = useState<JobApplication | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 

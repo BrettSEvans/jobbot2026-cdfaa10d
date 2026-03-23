@@ -77,7 +77,7 @@ export function useApplicationDetail() {
   }, []);
 
   // User resumes for regeneration picker
-  const { data: userResumes = [] } = useQuery({
+  const { data: userResumes = [] } = useQuery<UserResumePickerItem[]>({
     queryKey: ["user_resumes_for_regen"],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -88,7 +88,7 @@ export function useApplicationDetail() {
         .eq("user_id", user.id)
         .order("uploaded_at", { ascending: false });
       if (error) throw error;
-      return data || [];
+      return (data || []) as UserResumePickerItem[];
     },
   });
 

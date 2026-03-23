@@ -82,6 +82,7 @@ function ResumePagePreview({ html }: { html: string }) {
 interface ResumeTabProps {
   id: string;
   app: JobApplication;
+  userProfile: UserProfileSnapshot | null;
   setApp: (fn: (prev: JobApplication | null) => JobApplication | null) => void;
   jobDescription: string;
   companyName: string;

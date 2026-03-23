@@ -223,6 +223,13 @@ const Applications = () => {
           </div>
         </div>
 
+        <Tabs defaultValue="applications" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="applications">Applications</TabsTrigger>
+            <TabsTrigger value="pipeline">Pipeline</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="applications">
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -253,7 +260,6 @@ const Applications = () => {
                     <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("status")}>
                       <div className="flex items-center">Status <SortIcon col="status" /></div>
                     </TableHead>
-                    {/* Story 5.2: Hide date columns on mobile */}
                     <TableHead className="cursor-pointer select-none hidden md:table-cell" onClick={() => toggleSort("created_at")}>
                       <div className="flex items-center">Created <SortIcon col="created_at" /></div>
                     </TableHead>
@@ -284,7 +290,6 @@ const Applications = () => {
                       <TableCell>
                         <ApplicationStatusCell appId={app.id} dbStatus={app.status} generationStatus={app.generation_status} generationError={app.generation_error} />
                       </TableCell>
-                      {/* Story 5.2 */}
                       <TableCell className="text-sm text-muted-foreground hidden md:table-cell">
                         {new Date(app.created_at).toLocaleDateString()}
                       </TableCell>
@@ -293,7 +298,6 @@ const Applications = () => {
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-1 justify-end" onClick={(e) => e.stopPropagation()}>
-                          {/* Story 3.1: Retry button for errored applications */}
                           {(app.status === "error" || app.generation_status === "error") && (
                             <TooltipProvider>
                               <Tooltip>
@@ -331,7 +335,6 @@ const Applications = () => {
                               </Button>
                             </>
                           )}
-                          {/* Story 3.2: Delete with confirmation */}
                           <Button
                             size="sm"
                             variant="ghost"
@@ -351,7 +354,6 @@ const Applications = () => {
               </Table>
             </div>
 
-            {/* Inline preview */}
             {previewApp?.dashboard_html && (
               <Card className="overflow-hidden">
                 <div className="p-2 bg-muted flex items-center justify-between">
@@ -372,7 +374,29 @@ const Applications = () => {
             )}
           </>
         )}
-      </div>
+          </TabsContent>
+
+          <TabsContent value="pipeline">
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : applications.length === 0 ? (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-medium mb-2">No applications yet</h3>
+                  <p className="text-muted-foreground mb-4">Create your first application to see the pipeline.</p>
+                  <Button onClick={() => navigate("/applications/new")}>
+                    <Plus className="mr-2 h-4 w-4" /> New Application
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <PipelineBoard applications={applications} onRefresh={loadApplications} />
+            )}
+          </TabsContent>
+        </Tabs>
 
       {/* Story 3.2: Delete confirmation dialog */}
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>

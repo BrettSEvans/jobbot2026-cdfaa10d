@@ -129,9 +129,7 @@ export function CoverLetterTab({
                   toast({ title: "Popup blocked", description: "Allow popups to download PDF, or use DOCX download instead.", variant: "destructive" });
                   return;
                 }
-                const fullName = userProfile
-                  ? [userProfile.first_name, userProfile.last_name].filter(Boolean).join(" ") || "Cover Letter"
-                  : "Cover Letter";
+                const pdfTitle = buildFileName(userProfile?.first_name, userProfile?.last_name, "cover-letter", companyName, "pdf");
                 const content = previewCoverLetter || coverLetter;
                 const htmlContent = isHtmlContent(content)
                   ? content

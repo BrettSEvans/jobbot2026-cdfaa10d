@@ -204,6 +204,7 @@ function ResumeVariantContent({
   companyName,
   jobTitle,
   resumeText,
+  userProfile,
   isRegenerating,
   editingResume,
   setEditingResume,
@@ -227,6 +228,7 @@ function ResumeVariantContent({
   companyName: string;
   jobTitle: string;
   resumeText: string | null;
+  userProfile: UserProfileSnapshot | null;
   isRegenerating: boolean;
   editingResume: boolean;
   setEditingResume: (val: boolean) => void;

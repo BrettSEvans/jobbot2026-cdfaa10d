@@ -250,14 +250,15 @@ export default function DynamicMaterialsSection({
     },
   });
 
-  const { data: candidateName } = useQuery({
-    queryKey: ["candidate-name", user?.id],
+  const { data: candidateProfile } = useQuery({
+    queryKey: ["candidate-profile", user?.id],
     enabled: !!user,
     queryFn: async () => {
       const { data } = await supabase.from("profiles").select("first_name, middle_name, last_name").eq("id", user!.id).single();
-      return [data?.first_name, data?.middle_name, data?.last_name].filter(Boolean).join(" ") || "";
+      return data;
     },
   });
+  const candidateName = candidateProfile ? [candidateProfile.first_name, candidateProfile.middle_name, candidateProfile.last_name].filter(Boolean).join(" ") : "";
 
   const [generatedAssets, setGeneratedAssets] = useState<GeneratedAsset[]>([]);
   const [loadingAssets, setLoadingAssets] = useState(true);

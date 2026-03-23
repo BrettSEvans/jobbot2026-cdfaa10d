@@ -120,7 +120,7 @@ export function JDAnalysisTab({
           <JDIntelligencePanel
             jobDescription={jobDescription}
             companyName={companyName}
-            jdIntelligence={app?.jd_intelligence}
+            jdIntelligence={app?.jd_intelligence as unknown as import("@/lib/api/jdIntelligence").JDIntelligence | undefined}
             onParsed={async (intelligence) => {
               try {
                 await saveJobApplication({ id, job_url: app.job_url, jd_intelligence: intelligence });

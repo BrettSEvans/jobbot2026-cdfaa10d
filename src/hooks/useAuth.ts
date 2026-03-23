@@ -17,7 +17,7 @@ export function useAuth() {
 
       // If the user was previously authenticated and the session dropped
       // (e.g. token expired during a long pipeline), try to refresh before logging out
-      if (!session && wasAuthenticated.current && event === "SIGNED_OUT") {
+      if (!session && wasAuthenticated.current && event === "SIGNED_OUT" && !intentionalSignOut.current) {
         // Attempt a silent refresh — if the refresh token is still valid this will restore the session
         const { data } = await supabase.auth.refreshSession();
         if (data.session) {
@@ -27,6 +27,7 @@ export function useAuth() {
         // Refresh truly failed — allow the logout to proceed
         wasAuthenticated.current = false;
       }
+      intentionalSignOut.current = false;
 
       setSession(session);
       setUser(session?.user ?? null);

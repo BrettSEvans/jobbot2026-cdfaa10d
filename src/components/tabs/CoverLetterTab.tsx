@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -5,16 +6,35 @@ import { Badge } from "@/components/ui/badge";
 import {
   Copy,
   Edit3,
-  Check,
-  X,
   Loader2,
   Sparkles,
   RefreshCw,
   Download,
 } from "lucide-react";
 import CoverLetterRevisions from "@/components/CoverLetterRevisions";
+import InlineHtmlEditor from "@/components/InlineHtmlEditor";
 import { downloadTextAsDocx } from "@/lib/docxExport";
 import type { JobApplication, UserProfileSnapshot, ChatMessage, ToastFn } from "@/types/models";
+
+/** Convert plain text to minimal HTML for the editor */
+function textToHtml(text: string): string {
+  const escaped = text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+  return `<!DOCTYPE html><html><head><style>body{font-family:Georgia,'Times New Roman',serif;font-size:11pt;line-height:1.6;color:#111;margin:1in;}</style></head><body><div style="white-space:pre-wrap">${escaped}</div></body></html>`;
+}
+
+/** Detect if content is HTML (vs plain text) */
+function isHtmlContent(content: string): boolean {
+  return /<[a-z][\s\S]*>/i.test(content);
+}
+
+/** Wrap plain text cover letter in an HTML shell for iframe preview */
+function previewHtml(content: string): string {
+  if (isHtmlContent(content)) return content;
+  return textToHtml(content);
+}
 
 interface CoverLetterTabProps {
   id: string;
@@ -73,6 +93,24 @@ export function CoverLetterTab({
   handleCopy,
   toast,
 }: CoverLetterTabProps) {
+
+  const displayContent = previewCoverLetter || coverLetter;
+
+  const handleEditorSave = useCallback(async (html: string) => {
+    setCoverLetter(html);
+    await saveField({ cover_letter: html });
+    setEditingCoverLetter(false);
+  }, [setCoverLetter, saveField, setEditingCoverLetter]);
+
+  const handleEditorCancel = useCallback(() => {
+    setCoverLetter(app.cover_letter || "");
+    setEditingCoverLetter(false);
+  }, [setCoverLetter, app.cover_letter, setEditingCoverLetter]);
+
+  const handleStartEdit = useCallback(() => {
+    setEditingCoverLetter(true);
+  }, [setEditingCoverLetter]);
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-2">
@@ -87,18 +125,20 @@ export function CoverLetterTab({
               onClick={() => {
                 const printWindow = window.open("", "_blank");
                 if (!printWindow) {
-                  // Fallback for popup blockers
                   toast({ title: "Popup blocked", description: "Allow popups to download PDF, or use DOCX download instead.", variant: "destructive" });
                   return;
                 }
                 const fullName = userProfile
                   ? [userProfile.first_name, userProfile.last_name].filter(Boolean).join(" ") || "Cover Letter"
                   : "Cover Letter";
-                const htmlContent = `<!DOCTYPE html><html><head><title>${fullName} - Cover Letter</title><style>
-                  @page { size: letter; margin: 1in 1in 0.75in 1in; }
-                  body { font-family: Georgia, 'Times New Roman', serif; font-size: 10.5pt; line-height: 1.6; color: #111; margin: 0; padding: 0; }
-                  .content { white-space: pre-wrap; }
-                </style></head><body><div class="content">${(previewCoverLetter || coverLetter).replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div></body></html>`;
+                const content = previewCoverLetter || coverLetter;
+                const htmlContent = isHtmlContent(content)
+                  ? content
+                  : `<!DOCTYPE html><html><head><title>${fullName} - Cover Letter</title><style>
+                    @page { size: letter; margin: 1in 1in 0.75in 1in; }
+                    body { font-family: Georgia, 'Times New Roman', serif; font-size: 10.5pt; line-height: 1.6; color: #111; margin: 0; padding: 0; }
+                    .content { white-space: pre-wrap; }
+                  </style></head><body><div class="content">${content.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div></body></html>`;
                 printWindow.document.write(htmlContent);
                 printWindow.document.close();
                 printWindow.onload = () => { printWindow.print(); };
@@ -119,9 +159,11 @@ export function CoverLetterTab({
             </Button>
           </>
         )}
-        <Button variant="outline" size="sm" onClick={() => setEditingCoverLetter(!editingCoverLetter)}>
-          <Edit3 className="mr-2 h-4 w-4" /> {editingCoverLetter ? "Cancel Edit" : "Edit"}
-        </Button>
+        {!editingCoverLetter && (
+          <Button variant="outline" size="sm" onClick={handleStartEdit} disabled={!coverLetter}>
+            <Edit3 className="mr-2 h-4 w-4" /> Edit
+          </Button>
+        )}
         <Button variant="outline" size="sm" onClick={handleRegenerateCoverLetter} disabled={isRegenerating}>
           {isRegenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
           Regenerate
@@ -175,57 +217,38 @@ export function CoverLetterTab({
         </div>
       )}
 
-      <Card>
-        <CardContent className="pt-6">
-          {editingCoverLetter ? (
-            <div className="space-y-3">
-              <div className="flex gap-1 border-b border-border pb-2 mb-2">
-                <Button variant="ghost" size="sm" className="h-7 px-2 text-xs font-bold" onClick={() => document.execCommand("bold")}>B</Button>
-                <Button variant="ghost" size="sm" className="h-7 px-2 text-xs italic" onClick={() => document.execCommand("italic")}>I</Button>
-                <Button variant="ghost" size="sm" className="h-7 px-2 text-xs underline" onClick={() => document.execCommand("underline")}>U</Button>
-              </div>
-              <div
-                contentEditable
-                suppressContentEditableWarning
-                ref={(el) => { if (el && !el.dataset.init) { el.textContent = coverLetter; el.dataset.init = "1"; } }}
-                className="min-h-[400px] p-4 text-sm leading-relaxed border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring whitespace-pre-wrap"
-                onBlur={(e) => setCoverLetter(e.currentTarget.innerText)}
+      {/* Editor or Preview */}
+      {editingCoverLetter ? (
+        <InlineHtmlEditor
+          html={isHtmlContent(coverLetter) ? coverLetter : textToHtml(coverLetter)}
+          onSave={handleEditorSave}
+          onCancel={handleEditorCancel}
+          height="60vh"
+        />
+      ) : displayContent ? (
+        <Card>
+          <CardContent className="p-0">
+            <div className="bg-white rounded-md overflow-hidden" style={{ height: "60vh" }}>
+              <iframe
+                srcDoc={previewHtml(displayContent)}
+                className="w-full h-full border-0"
+                title="Cover Letter Preview"
               />
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  onClick={() => {
-                    saveField({ cover_letter: coverLetter });
-                    setEditingCoverLetter(false);
-                  }}
-                  disabled={saving}
-                >
-                  <Check className="mr-2 h-4 w-4" /> Save
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => {
-                    setCoverLetter(app.cover_letter || "");
-                    setEditingCoverLetter(false);
-                  }}
-                >
-                  <X className="mr-2 h-4 w-4" /> Discard
-                </Button>
-              </div>
             </div>
-          ) : (previewCoverLetter || coverLetter) ? (
-            <div className="whitespace-pre-wrap text-sm leading-relaxed">{previewCoverLetter || coverLetter}</div>
-          ) : (
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardContent className="pt-6">
             <div className="text-center py-8">
               <p className="text-muted-foreground mb-4">No cover letter yet.</p>
               <Button onClick={handleRegenerateCoverLetter} disabled={isRegenerating}>
                 <Sparkles className="mr-2 h-4 w-4" /> Generate Cover Letter
               </Button>
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

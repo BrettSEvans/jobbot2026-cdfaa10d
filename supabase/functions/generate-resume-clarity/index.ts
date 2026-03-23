@@ -51,6 +51,12 @@ LAYOUT & FORMATTING:
 - Output as clean semantic HTML with inline styles only (no <style> blocks)
 - Use <h1> for candidate name, <h2> for section headings
 - Use <ul>/<li> for bullet points in experience
+- SPACING: Apply tight inline styles to every element for a compact layout:
+  - On <body>: style="line-height:1.2; margin:0; padding:0;"
+  - On every <p> and <li>: style="margin:0 0 4px 0; line-height:1.2;"
+  - On every <h2>: style="margin:8px 0 4px 0; line-height:1.3;"
+  - On every <ul>: style="margin:0; padding-left:18px;"
+  - On <h1>: style="margin:0 0 6px 0;"
 
 HEADER INFORMATION:
 - Include name, location, phone number, email address, LinkedIn URL, and any relevant portfolio links at the top

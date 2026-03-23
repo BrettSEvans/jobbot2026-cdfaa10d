@@ -193,6 +193,9 @@ export async function saveJobApplication(app: {
   generation_status?: string;
   generation_error?: string;
   research_reasoning?: string;
+  resume_html?: string;
+  source_resume_id?: string;
+  jd_intelligence?: any;
 }) {
   // Ensure user_id is set for RLS compliance
   const { data: { session } } = await supabase.auth.getSession();

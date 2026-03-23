@@ -15,11 +15,12 @@ import {
 import JDIntelligencePanel from "@/components/JDIntelligencePanel";
 import SummaryPreview from "@/components/SummaryPreview";
 import { saveJobApplication } from "@/lib/api/jobApplication";
+import type { JobApplication, ToastFn } from "@/types/models";
 
 interface JDAnalysisTabProps {
   id: string;
-  app: any;
-  setApp: (fn: any) => void;
+  app: JobApplication;
+  setApp: (fn: (prev: JobApplication | null) => JobApplication | null) => void;
   jobDescription: string;
   setJobDescription: (val: string) => void;
   editingJobDescription: boolean;
@@ -30,9 +31,9 @@ interface JDAnalysisTabProps {
   jobTitle: string;
   resumeText: string | null;
   saving: boolean;
-  saveField: (fields: Record<string, any>) => Promise<void>;
+  saveField: (fields: Record<string, unknown>) => Promise<void>;
   handleCopy: (text: string, label: string) => Promise<void>;
-  toast: (opts: any) => void;
+  toast: ToastFn;
 }
 
 export function JDAnalysisTab({
@@ -119,11 +120,11 @@ export function JDAnalysisTab({
           <JDIntelligencePanel
             jobDescription={jobDescription}
             companyName={companyName}
-            jdIntelligence={app?.jd_intelligence}
+            jdIntelligence={app?.jd_intelligence as unknown as import("@/lib/api/jdIntelligence").JDIntelligence | undefined}
             onParsed={async (intelligence) => {
               try {
-                await saveJobApplication({ id, job_url: app.job_url, jd_intelligence: intelligence } as any);
-                setApp((prev: any) => ({ ...prev, jd_intelligence: intelligence }));
+                await saveJobApplication({ id, job_url: app.job_url, jd_intelligence: intelligence });
+                setApp((prev) => prev ? { ...prev, jd_intelligence: intelligence as unknown as import("@/integrations/supabase/types").Json } : prev);
               } catch (e) {
                 console.warn("Failed to save JD intelligence:", e);
               }

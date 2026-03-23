@@ -33,6 +33,7 @@ import { saveJobApplication } from "@/lib/api/jobApplication";
 import { generateOptimizedResume } from "@/lib/api/resumeGeneration";
 import { downloadHtmlAsDocx } from "@/lib/docxExport";
 import { supabase } from "@/integrations/supabase/client";
+import type { JobApplication, UserResumePickerItem, FabricationChange, ToastFn } from "@/types/models";
 import type { ExtractedKeyword } from "@/lib/keywordMatcher";
 
 /** Fit-to-page preview for resume */
@@ -74,15 +75,15 @@ function ResumePagePreview({ html }: { html: string }) {
 
 interface ResumeTabProps {
   id: string;
-  app: any;
-  setApp: (fn: any) => void;
+  app: JobApplication;
+  setApp: (fn: (prev: JobApplication | null) => JobApplication | null) => void;
   jobDescription: string;
   companyName: string;
   jobTitle: string;
   resumeText: string | null;
-  userResumes: any[];
+  userResumes: UserResumePickerItem[];
   isBgGenerating: boolean;
-  bgJob: any;
+  bgJob: import("@/lib/backgroundGenerator").GenerationJob | undefined;
   previewResumeHtml: string | null;
   setPreviewResumeHtml: (val: string | null) => void;
   resumeRevisionTrigger: number;
@@ -97,10 +98,10 @@ interface ResumeTabProps {
   setEditingResume: (val: boolean) => void;
   handleRegenerateResume: () => Promise<void>;
   // Actions
-  saveField: (fields: Record<string, any>) => Promise<void>;
-  handleAcceptFabrication: (change: any) => void;
-  handleRevertFabrication: (change: any) => Promise<void>;
-  toast: (opts: any) => void;
+  saveField: (fields: Record<string, unknown>) => Promise<void>;
+  handleAcceptFabrication: (change: FabricationChange) => void;
+  handleRevertFabrication: (change: FabricationChange) => Promise<void>;
+  toast: ToastFn;
 }
 
 export function ResumeTab({
@@ -214,7 +215,7 @@ export function ResumeTab({
                       <SelectValue placeholder="Select a resume" />
                     </SelectTrigger>
                     <SelectContent>
-                      {userResumes.map((r: any) => (
+                      {userResumes.map((r) => (
                         <SelectItem key={r.id} value={r.id}>
                           {r.file_name}
                           {r.is_active ? " (Primary)" : ""}
@@ -223,7 +224,7 @@ export function ResumeTab({
                       ))}
                     </SelectContent>
                   </Select>
-                  {selectedResumeId && !userResumes.find((r: any) => r.id === selectedResumeId)?.resume_text && (
+                  {selectedResumeId && !userResumes.find((r) => r.id === selectedResumeId)?.resume_text && (
                     <p className="text-xs text-destructive">
                       This resume's text hasn't been extracted yet. Re-upload it from your Profile.
                     </p>
@@ -234,7 +235,7 @@ export function ResumeTab({
                 <Button variant="outline" onClick={() => setRegenDialogOpen(false)}>Cancel</Button>
                 <Button
                   onClick={handleRegenerateResume}
-                  disabled={!selectedResumeId || !userResumes.find((r: any) => r.id === selectedResumeId)?.resume_text}
+                  disabled={!selectedResumeId || !userResumes.find((r) => r.id === selectedResumeId)?.resume_text}
                 >
                   <RefreshCw className="mr-2 h-4 w-4" /> Regenerate
                 </Button>
@@ -259,8 +260,8 @@ export function ResumeTab({
                   });
                 } catch (_) {}
               }
-              await saveJobApplication({ id, job_url: app.job_url, resume_html: newHtml } as any);
-              setApp((prev: any) => ({ ...prev, resume_html: newHtml }));
+              await saveJobApplication({ id, job_url: app.job_url, resume_html: newHtml });
+              setApp((prev) => prev ? { ...prev, resume_html: newHtml } : prev);
               setEditingResume(false);
               setResumeRevisionTrigger((t) => t + 1);
               toast({ title: "Resume saved" });
@@ -303,17 +304,18 @@ export function ResumeTab({
                   companyName,
                   jobTitle,
                 });
-                await saveJobApplication({ id, job_url: app.job_url, resume_html } as any);
-                setApp((prev: any) => ({ ...prev, resume_html }));
+                await saveJobApplication({ id, job_url: app.job_url, resume_html });
+                setApp((prev) => prev ? { ...prev, resume_html } : prev);
                 toast({ title: "Resume optimized!", description: `${missingKeywords.length} keywords injected.` });
-              } catch (e: any) {
-                toast({ title: "Optimization failed", description: e.message, variant: "destructive" });
+              } catch (e: unknown) {
+                const message = e instanceof Error ? e.message : "Unknown error";
+                toast({ title: "Optimization failed", description: message, variant: "destructive" });
               }
             }}
             onApplyBulletFix={(original, replacement) => {
               const updatedHtml = app.resume_html.replace(original, replacement);
-              saveJobApplication({ id, job_url: app.job_url, resume_html: updatedHtml } as any)
-                .then(() => setApp((prev: any) => ({ ...prev, resume_html: updatedHtml })));
+              saveJobApplication({ id, job_url: app.job_url, resume_html: updatedHtml })
+                .then(() => setApp((prev) => prev ? { ...prev, resume_html: updatedHtml } : prev));
               toast({ title: "Bullet updated", description: `Replaced: "${original.slice(0, 40)}…"` });
             }}
             onAcceptFabrication={handleAcceptFabrication}
@@ -368,11 +370,12 @@ export function ResumeTab({
                 const { resume_html } = await generateOptimizedResume({
                   jobDescription, resumeText, missingKeywords, userPrompt, companyName, jobTitle,
                 });
-                await saveJobApplication({ id, job_url: app.job_url, resume_html } as any);
-                setApp((prev: any) => ({ ...prev, resume_html }));
+                await saveJobApplication({ id, job_url: app.job_url, resume_html });
+                setApp((prev) => prev ? { ...prev, resume_html } : prev);
                 toast({ title: "Resume optimized!", description: `${missingKeywords.length} keywords injected.` });
-              } catch (e: any) {
-                toast({ title: "Optimization failed", description: e.message, variant: "destructive" });
+              } catch (e: unknown) {
+                const message = e instanceof Error ? e.message : "Unknown error";
+                toast({ title: "Optimization failed", description: message, variant: "destructive" });
               }
             }}
           />

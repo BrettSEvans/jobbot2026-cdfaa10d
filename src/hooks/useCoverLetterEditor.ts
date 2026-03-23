@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { streamTailoredLetter } from "@/lib/api/coverLetter";
 import { streamRefineMaterial } from "@/lib/api/jobApplication";
 import { saveCoverLetterRevision } from "@/lib/api/coverLetterRevisions";
+import type { UserProfileSnapshot, ChatMessage, ToastFn } from "@/types/models";
 
 interface UseCoverLetterEditorOptions {
   id: string | undefined;
@@ -9,10 +10,10 @@ interface UseCoverLetterEditorOptions {
   setCoverLetter: (val: string) => void;
   coverLetterRevisionTrigger: number;
   setCoverLetterRevisionTrigger: (fn: (t: number) => number) => void;
-  userProfile: any;
+  userProfile: UserProfileSnapshot | null;
   jobDescription: string;
-  saveField: (fields: Record<string, any>) => Promise<void>;
-  toast: (opts: any) => void;
+  saveField: (fields: Record<string, unknown>) => Promise<void>;
+  toast: ToastFn;
 }
 
 export function useCoverLetterEditor({
@@ -29,7 +30,7 @@ export function useCoverLetterEditor({
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [clChatOpen, setClChatOpen] = useState(false);
   const [clChatInput, setClChatInput] = useState("");
-  const [clChatHistory, setClChatHistory] = useState<Array<{ role: string; content: string }>>([]);
+  const [clChatHistory, setClChatHistory] = useState<ChatMessage[]>([]);
   const [clRefining, setClRefining] = useState(false);
 
   const handleRegenerateCoverLetter = useCallback(async () => {
@@ -63,8 +64,9 @@ export function useCoverLetterEditor({
         await saveCoverLetterRevision(id!, accumulated, "Regenerated");
         setCoverLetterRevisionTrigger((t) => t + 1);
       } catch { /* non-critical */ }
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      toast({ title: "Error", description: message, variant: "destructive" });
     } finally {
       setIsRegenerating(false);
     }
@@ -104,9 +106,10 @@ export function useCoverLetterEditor({
         await saveField({ cover_letter: accumulated });
         setClChatHistory((prev) => [...prev, { role: "assistant", content: "✅ Changes applied" }]);
       }
-    } catch (err: any) {
-      toast({ title: "Refinement failed", description: err.message, variant: "destructive" });
-      setClChatHistory((prev) => [...prev, { role: "assistant", content: `❌ Error: ${err.message}` }]);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      toast({ title: "Refinement failed", description: message, variant: "destructive" });
+      setClChatHistory((prev) => [...prev, { role: "assistant", content: `❌ Error: ${message}` }]);
     } finally {
       setClRefining(false);
     }

@@ -49,6 +49,7 @@ import {
 import { backgroundGenerator } from "@/lib/backgroundGenerator";
 import { useActiveJobCount } from "@/hooks/useBackgroundJob";
 import { supabase } from "@/integrations/supabase/client";
+import type { JobApplicationListItem } from "@/types/models";
 
 type SortKey = "company_name" | "job_title" | "status" | "created_at" | "updated_at";
 type SortDir = "asc" | "desc";
@@ -56,7 +57,7 @@ type SortDir = "asc" | "desc";
 const Applications = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [applications, setApplications] = useState<any[]>([]);
+  const [applications, setApplications] = useState<JobApplicationListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [sortKey, setSortKey] = useState<SortKey>("created_at");
@@ -95,9 +96,10 @@ const Applications = () => {
   const loadApplications = async () => {
     try {
       const data = await getJobApplications();
-      setApplications(data);
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      setApplications(data as JobApplicationListItem[]);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      toast({ title: "Error", description: message, variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -110,8 +112,9 @@ const Applications = () => {
       await deleteJobApplication(deleteTarget.id);
       setApplications((prev) => prev.filter((a) => a.id !== deleteTarget.id));
       toast({ title: "Deleted", description: "Application removed." });
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      toast({ title: "Error", description: message, variant: "destructive" });
     } finally {
       setDeleteTarget(null);
     }
@@ -141,8 +144,9 @@ const Applications = () => {
       });
       toast({ title: "Retrying", description: "Generation restarted in background." });
       loadApplications();
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      toast({ title: "Error", description: message, variant: "destructive" });
     }
   };
 

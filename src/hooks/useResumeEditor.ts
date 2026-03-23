@@ -2,18 +2,19 @@ import { useState, useEffect, useCallback } from "react";
 import { saveJobApplication } from "@/lib/api/jobApplication";
 import { generateOptimizedResume } from "@/lib/api/resumeGeneration";
 import { supabase } from "@/integrations/supabase/client";
+import type { JobApplication, UserResumePickerItem, ToastFn } from "@/types/models";
 
 interface UseResumeEditorOptions {
   id: string | undefined;
-  app: any;
-  setApp: (fn: any) => void;
+  app: JobApplication | null;
+  setApp: (fn: (prev: JobApplication | null) => JobApplication | null) => void;
   jobDescription: string;
   companyName: string;
   jobTitle: string;
-  userResumes: any[];
+  userResumes: UserResumePickerItem[];
   resumeRevisionTrigger: number;
   setResumeRevisionTrigger: (fn: (t: number) => number) => void;
-  toast: (opts: any) => void;
+  toast: ToastFn;
 }
 
 export function useResumeEditor({
@@ -36,14 +37,14 @@ export function useResumeEditor({
   // Pre-select active resume when dialog opens
   useEffect(() => {
     if (regenDialogOpen && userResumes.length > 0) {
-      const active = userResumes.find((r: any) => r.is_active);
+      const active = userResumes.find((r) => r.is_active);
       setSelectedResumeId(active?.id || userResumes[0]?.id || "");
     }
   }, [regenDialogOpen, userResumes]);
 
   const handleRegenerateResume = useCallback(async () => {
     if (!selectedResumeId || !jobDescription.trim() || !id) return;
-    const selected = userResumes.find((r: any) => r.id === selectedResumeId);
+    const selected = userResumes.find((r) => r.id === selectedResumeId);
     if (!selected?.resume_text) {
       toast({ title: "No text available", description: "This resume hasn't been extracted yet. Please re-upload it.", variant: "destructive" });
       return;
@@ -70,12 +71,13 @@ export function useResumeEditor({
         jobTitle,
         sourceResumeId: selectedResumeId,
       });
-      await saveJobApplication({ id, job_url: app.job_url, resume_html, source_resume_id: selectedResumeId } as any);
-      setApp((prev: any) => ({ ...prev, resume_html, source_resume_id: selectedResumeId }));
+      await saveJobApplication({ id, job_url: app!.job_url, resume_html, source_resume_id: selectedResumeId });
+      setApp((prev) => prev ? { ...prev, resume_html, source_resume_id: selectedResumeId } : prev);
       toast({ title: "Resume regenerated!", description: `Using "${selected.file_name}" as baseline.` });
       setResumeRevisionTrigger((t) => t + 1);
-    } catch (e: any) {
-      toast({ title: "Regeneration failed", description: e.message, variant: "destructive" });
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Unknown error";
+      toast({ title: "Regeneration failed", description: message, variant: "destructive" });
     } finally {
       setIsRegeneratingResume(false);
     }

@@ -12,9 +12,10 @@ import {
   FileText,
   ChevronRight as ChevronRightIcon,
 } from "lucide-react";
+import type { JobApplication } from "@/types/models";
 
 interface DetailsTabProps {
-  app: any;
+  app: JobApplication;
   companyName: string;
   setCompanyName: (val: string) => void;
   jobTitle: string;
@@ -26,7 +27,7 @@ interface DetailsTabProps {
   editingMeta: boolean;
   setEditingMeta: (val: boolean) => void;
   saving: boolean;
-  saveField: (fields: Record<string, any>) => Promise<void>;
+  saveField: (fields: Record<string, unknown>) => Promise<void>;
 }
 
 export function DetailsTab({
@@ -140,12 +141,13 @@ export function DetailsTab({
           <TagSection label="Products" items={app.products as string[] | null} />
           <TagSection label="Competitors" items={app.competitors as string[] | null} />
           <TagSection label="Customers" items={app.customers as string[] | null} />
-          {app.branding && (
+          {app.branding && typeof app.branding === "object" && !Array.isArray(app.branding) && (
             <div>
               <span className="text-sm font-medium text-muted-foreground">Branding:</span>
               <div className="flex items-center gap-2 mt-1">
                 <Badge variant="secondary">✓ Captured</Badge>
-                {app.branding.colors && Object.entries(app.branding.colors).slice(0, 6).map(([key, val]) => (
+                {(app.branding as Record<string, unknown>).colors && typeof (app.branding as Record<string, unknown>).colors === "object" &&
+                  Object.entries((app.branding as Record<string, unknown>).colors as Record<string, string>).slice(0, 6).map(([key, val]) => (
                   <div
                     key={key}
                     className="h-5 w-5 rounded-full border"

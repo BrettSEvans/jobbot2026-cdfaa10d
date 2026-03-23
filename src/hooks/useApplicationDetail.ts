@@ -10,13 +10,14 @@ import type { DashboardData } from "@/lib/dashboard/schema";
 import { supabase } from "@/integrations/supabase/client";
 import { useBackgroundJob } from "@/hooks/useBackgroundJob";
 import { useQuery } from "@tanstack/react-query";
+import type { JobApplication, UserProfileSnapshot, UserResumePickerItem, ChatMessage, FabricationChange } from "@/types/models";
 
 export function useApplicationDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const [app, setApp] = useState<any>(null);
+  const [app, setApp] = useState<JobApplication | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -33,7 +34,7 @@ export function useApplicationDetail() {
   // Dashboard
   const [dashboardHtml, setDashboardHtml] = useState("");
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
-  const [chatHistory, setChatHistory] = useState<Array<{ role: string; content: string }>>([]);
+  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
 
   // Revision triggers
   const [revisionTrigger, setRevisionTrigger] = useState(0);
@@ -62,7 +63,7 @@ export function useApplicationDetail() {
 
   // User profile + resume text
   const [resumeText, setResumeText] = useState<string | null>(null);
-  const [userProfile, setUserProfile] = useState<any>(null);
+  const [userProfile, setUserProfile] = useState<UserProfileSnapshot | null>(null);
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user) {
@@ -76,7 +77,7 @@ export function useApplicationDetail() {
   }, []);
 
   // User resumes for regeneration picker
-  const { data: userResumes = [] } = useQuery({
+  const { data: userResumes = [] } = useQuery<UserResumePickerItem[]>({
     queryKey: ["user_resumes_for_regen"],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -87,7 +88,7 @@ export function useApplicationDetail() {
         .eq("user_id", user.id)
         .order("uploaded_at", { ascending: false });
       if (error) throw error;
-      return data || [];
+      return (data || []) as UserResumePickerItem[];
     },
   });
 
@@ -133,7 +134,7 @@ export function useApplicationDetail() {
 
   const loadApplication = async (appId: string) => {
     try {
-      const data = await getJobApplication(appId);
+      const data = await getJobApplication(appId) as JobApplication;
       setApp(data);
       if (!editingCoverLetter) {
         setCoverLetter(data.cover_letter || "");
@@ -159,23 +160,25 @@ export function useApplicationDetail() {
 
       setDashboardHtml(html);
       setDashboardData(parsedDashData);
-      setChatHistory(Array.isArray(data.chat_history) ? data.chat_history as Array<{ role: string; content: string }> : []);
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      setChatHistory(Array.isArray(data.chat_history) ? (data.chat_history as unknown as ChatMessage[]) : []);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      toast({ title: "Error", description: message, variant: "destructive" });
     } finally {
       setLoading(false);
     }
   };
 
-  const saveField = useCallback(async (fields: Record<string, any>) => {
+  const saveField = useCallback(async (fields: Record<string, unknown>) => {
     if (!id) return;
     setSaving(true);
     try {
-      const updated = await saveJobApplication({ id, job_url: app?.job_url, ...fields });
-      setApp(updated);
+      const updated = await saveJobApplication({ id, job_url: app?.job_url ?? "", ...fields });
+      setApp(updated as JobApplication);
       toast({ title: "Saved", description: "Changes saved." });
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      toast({ title: "Error", description: message, variant: "destructive" });
     } finally {
       setSaving(false);
     }
@@ -187,12 +190,12 @@ export function useApplicationDetail() {
   }, [toast]);
 
   // Fabrication handlers
-  const handleAcceptFabrication = useCallback((change: any) => {
+  const handleAcceptFabrication = useCallback((change: FabricationChange) => {
     const text = change?.tailored_text || change?.baseline_text || "change";
     toast({ title: "Accepted", description: `Kept: "${text.slice(0, 50)}…"` });
   }, [toast]);
 
-  const handleRevertFabrication = useCallback(async (change: any) => {
+  const handleRevertFabrication = useCallback(async (change: FabricationChange) => {
     if (!app?.resume_html || !id) return;
     const tailored = change?.tailored_text;
     const baseline = change?.baseline_text;
@@ -202,11 +205,12 @@ export function useApplicationDetail() {
     }
     const updatedHtml = app.resume_html.replace(tailored, baseline);
     try {
-      await saveJobApplication({ id, job_url: app.job_url, resume_html: updatedHtml } as any);
-      setApp((prev: any) => ({ ...prev, resume_html: updatedHtml }));
+      await saveJobApplication({ id, job_url: app.job_url, resume_html: updatedHtml });
+      setApp((prev) => prev ? { ...prev, resume_html: updatedHtml } : prev);
       toast({ title: "Reverted", description: `Restored baseline for: "${baseline.slice(0, 50)}…"` });
-    } catch (err: any) {
-      toast({ title: "Revert failed", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      toast({ title: "Revert failed", description: message, variant: "destructive" });
     }
   }, [app, id, toast]);
 

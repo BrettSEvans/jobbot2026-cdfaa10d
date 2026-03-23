@@ -8,10 +8,11 @@ import type { DashboardData } from "@/lib/dashboard/schema";
 import { backgroundGenerator } from "@/lib/backgroundGenerator";
 import { saveDashboardRevision } from "@/lib/api/dashboardRevisions";
 import JSZip from "jszip";
+import type { JobApplication, ChatMessage, ToastFn } from "@/types/models";
 
 interface UseDashboardEditorOptions {
   id: string | undefined;
-  app: any;
+  app: JobApplication | null;
   jobDescription: string;
   companyName: string;
   jobTitle: string;
@@ -19,12 +20,12 @@ interface UseDashboardEditorOptions {
   setDashboardHtml: (val: string) => void;
   dashboardData: DashboardData | null;
   setDashboardData: (val: DashboardData | null) => void;
-  chatHistory: Array<{ role: string; content: string }>;
-  setChatHistory: (val: any) => void;
+  chatHistory: ChatMessage[];
+  setChatHistory: (val: ChatMessage[] | ((prev: ChatMessage[]) => ChatMessage[])) => void;
   revisionTrigger: number;
   setRevisionTrigger: (fn: (t: number) => number) => void;
-  saveField: (fields: Record<string, any>) => Promise<void>;
-  toast: (opts: any) => void;
+  saveField: (fields: Record<string, unknown>) => Promise<void>;
+  toast: ToastFn;
 }
 
 export function useDashboardEditor({
@@ -62,9 +63,9 @@ export function useDashboardEditor({
         branding: app?.branding,
         companyName,
         jobTitle,
-        competitors: app?.competitors || [],
-        customers: app?.customers || [],
-        products: app?.products || [],
+        competitors: (app?.competitors as unknown as string[]) || [],
+        customers: (app?.customers as unknown as string[]) || [],
+        products: (app?.products as unknown as string[]) || [],
         onDelta: (text) => { accumulated += text; },
         onDone: () => {
           const parsed = parseLlmJsonOutput(accumulated);
@@ -86,7 +87,7 @@ export function useDashboardEditor({
           }
         },
       });
-      const savePayload: Record<string, any> = { dashboard_html: accumulated };
+      const savePayload: Record<string, unknown> = { dashboard_html: accumulated };
       const parsedForSave = parseLlmJsonOutput(accumulated) || null;
       if (parsedForSave) {
         const html = assembleDashboardHtml(parsedForSave);
@@ -103,8 +104,9 @@ export function useDashboardEditor({
         await saveDashboardRevision(id!, accumulated, "Regenerated");
         setRevisionTrigger((t) => t + 1);
       } catch { /* non-critical */ }
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      toast({ title: "Error", description: message, variant: "destructive" });
     } finally {
       setIsRegenerating(false);
     }
@@ -132,9 +134,10 @@ export function useDashboardEditor({
         setRevisionTrigger((t) => t + 1);
       } catch { /* non-critical */ }
       toast({ title: "Refining", description: "Dashboard refinement started. It will continue even if you navigate away." });
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
-      setChatHistory((prev: any) => [...prev, { role: "assistant", content: `❌ Error: ${err.message}` }]);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      toast({ title: "Error", description: message, variant: "destructive" });
+      setChatHistory((prev) => [...prev, { role: "assistant", content: `❌ Error: ${message}` }]);
     } finally {
       setIsRefining(false);
     }

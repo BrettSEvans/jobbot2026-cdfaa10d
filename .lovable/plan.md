@@ -1,20 +1,32 @@
-## Comprehensive Multi-Role Code Review — Implementation Status
 
-### ✅ Completed
 
-| Item | Change | File(s) |
-|------|--------|---------|
-| P0 Security — XSS | Replaced `dangerouslySetInnerHTML` with safe `ref`-based `textContent` assignment | `ApplicationDetail.tsx` line 1000 |
-| P0 Security — Column Projection | `getJobApplications()` now selects only list-view columns, not `SELECT *` | `jobApplication.ts` |
-| P0 Resilience — beforeunload | Added `beforeunload` warning when background jobs are active | `backgroundGenerator.ts` |
-| P2 Performance — Debounce | Background generator subscription in Applications list debounced to 2s | `Applications.tsx` |
-| P1 QA — Error Boundary | React Error Boundary wraps `AuthenticatedApp` with recovery UI | `ErrorBoundary.tsx`, `App.tsx` |
-| P1 QA — Test Suite | 26 unit tests across 4 files: assembler, keywordMatcher, fractionalIndex, atsFormatCheck | `src/lib/*.test.ts` |
+## Unify Cover Letter & Resume Editing with InlineHtmlEditor
 
-### 🔲 Deferred (Follow-Up)
+### Problem
+The cover letter editor uses a primitive `contentEditable` div with only B/I/U buttons, while the resume editor uses the full `InlineHtmlEditor` component with font selection, colors, alignment, lists, and more. The hyperlink insertion feature exists in `InlineHtmlEditor` but isn't available to cover letters.
 
-| Item | Reason |
-|------|--------|
-| ApplicationDetail.tsx decomposition (1,377 lines → hooks + tabs) | Large refactor requiring careful extraction — best as dedicated task |
-| Typed models (`src/types/models.ts`) | Depends on decomposition for full effect |
-| Component tests (Login, GenerationProgressBar, Applications) | Requires mocking supabase auth — separate effort |
+### Changes
+
+#### 1. Enhance InlineHtmlEditor with proper hyperlink UX
+**File:** `src/components/InlineHtmlEditor.tsx`
+- Replace the `window.prompt` for link insertion with a small inline popover/dialog that lets users enter URL and display text
+- Add an "Unlink" button to remove existing hyperlinks
+- These improvements benefit both resume and cover letter editing
+
+#### 2. Refactor CoverLetterTab to use InlineHtmlEditor
+**File:** `src/components/tabs/CoverLetterTab.tsx`
+- Remove the inline `contentEditable` div and B/I/U toolbar (lines 182-215)
+- When editing, render `<InlineHtmlEditor>` instead, converting the plain-text cover letter to simple HTML (`<div style="white-space:pre-wrap">...text...</div>`) on edit entry
+- On save, extract the text content back (or store as HTML — since cover letters are plain text, we'll wrap/unwrap cleanly)
+- This gives cover letters the full toolbar: font family, font size, bold/italic/underline, text color, highlight, lists, alignment, indent, links, undo/redo
+
+#### 3. Cover letter storage consideration
+- Cover letters are currently stored as plain text. To preserve rich formatting from InlineHtmlEditor, add a `cover_letter_html` field or repurpose `cover_letter` to store HTML when edited
+- Simpler approach: convert cover letter text to wrapped HTML on edit open, and on save store the HTML back to `cover_letter` field (the display already uses `white-space: pre-wrap`, so plain text still renders fine; HTML will render via iframe preview)
+- Update the display mode to use an iframe preview (like resumes) when the content contains HTML tags, otherwise render as plain text
+
+### Implementation Order
+1. Enhance `InlineHtmlEditor` link insertion UX
+2. Update `CoverLetterTab` to use `InlineHtmlEditor` for editing
+3. Adjust save/display logic for HTML cover letters
+

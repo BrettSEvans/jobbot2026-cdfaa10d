@@ -703,7 +703,8 @@ export default function DynamicMaterialsSection({
                           variabilityRecommendations: app?.design_variability?.recommendations || [],
                           applicationCreatedAt: app?.created_at,
                           branding: app?.branding,
-                          regenerationCount: regenCount,
+                           regenerationCount: regenCount,
+                           candidateName: candidateName || "",
                         }),
                       });
                       if (resp.ok) {

@@ -83,11 +83,13 @@ const Applications = () => {
     loadApplications();
   }, []);
 
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     const unsub = backgroundGenerator.subscribe(() => {
-      loadApplications();
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => loadApplications(), 2000);
     });
-    return () => { unsub(); };
+    return () => { unsub(); if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, []);
 
   const loadApplications = async () => {

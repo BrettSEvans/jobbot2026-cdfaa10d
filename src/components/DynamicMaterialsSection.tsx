@@ -829,7 +829,7 @@ export default function DynamicMaterialsSection({
              <TabsContent key={`legacy-${legacy.field}`} value={`legacy-${legacy.field}`} className="space-y-4">
               <div className="flex flex-wrap gap-2">
                 <Button variant="outline" size="sm" onClick={() => {
-                  downloadMaterialPdf(legacy.html, `${(companyName || legacy.name).replace(/\s+/g, "-").toLowerCase()}-${legacy.name.replace(/\s+/g, "-").toLowerCase()}.pdf`);
+                  downloadMaterialPdf(legacy.html, buildFileName(candidateProfile?.first_name, candidateProfile?.last_name, legacy.name, companyName, "pdf"));
                   recordDownloadSignal(applicationId, legacy.name, jobTitle);
                   toast({ title: "Printing PDF" });
                 }}><Download className="mr-2 h-4 w-4" /> Download PDF</Button>

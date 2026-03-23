@@ -100,9 +100,8 @@ body {
   font-weight: 500;
   cursor: pointer;
   transition: background 0.2s;
-  white-space: nowrap;
-  overflow: hidden;
   margin-bottom: 2px;
+  text-align: left;
 }
 
 .nav-link:hover { background: var(--md-surface-container-highest); }
@@ -116,6 +115,17 @@ body {
 .nav-link .material-icons-outlined {
   font-size: 20px;
   flex-shrink: 0;
+  width: 20px;
+  text-align: center;
+}
+
+.nav-link .nav-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
 }
 
 /* === MAIN WRAPPER === */

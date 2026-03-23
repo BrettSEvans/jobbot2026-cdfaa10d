@@ -169,15 +169,16 @@ export function useApplicationDetail() {
     }
   };
 
-  const saveField = useCallback(async (fields: Record<string, any>) => {
+  const saveField = useCallback(async (fields: Record<string, unknown>) => {
     if (!id) return;
     setSaving(true);
     try {
-      const updated = await saveJobApplication({ id, job_url: app?.job_url, ...fields });
-      setApp(updated);
+      const updated = await saveJobApplication({ id, job_url: app?.job_url ?? "", ...fields });
+      setApp(updated as JobApplication);
       toast({ title: "Saved", description: "Changes saved." });
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      toast({ title: "Error", description: message, variant: "destructive" });
     } finally {
       setSaving(false);
     }

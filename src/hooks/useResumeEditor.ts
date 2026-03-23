@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { saveJobApplication } from "@/lib/api/jobApplication";
 import { generateOptimizedResume } from "@/lib/api/resumeGeneration";
 import { supabase } from "@/integrations/supabase/client";
-import type { JobApplication, UserResume, ToastFn } from "@/types/models";
+import type { JobApplication, UserResumePickerItem, ToastFn } from "@/types/models";
 
 interface UseResumeEditorOptions {
   id: string | undefined;

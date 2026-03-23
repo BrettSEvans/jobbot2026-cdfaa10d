@@ -64,7 +64,7 @@ export function useCoverLetterEditor({
         await saveCoverLetterRevision(id!, accumulated, "Regenerated");
         setCoverLetterRevisionTrigger((t) => t + 1);
       } catch { /* non-critical */ }
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
       setIsRegenerating(false);

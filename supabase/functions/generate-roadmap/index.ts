@@ -64,7 +64,7 @@ Make the roadmap specific to the role responsibilities and company context descr
       model: 'google/gemini-2.5-flash',
       messages: [
         { role: 'system', content: systemPrompt },
-        { role: 'user', content: `Company: ${companyName || 'Unknown'}\nJob Title: ${jobTitle || 'Unknown'}\n\nJob Description:\n${(jobDescription || '').slice(0, 6000)}\n\nGenerate the 90-Day Roadmap HTML now.` },
+        { role: 'user', content: `Company: ${companyName || 'Unknown'}\nJob Title: ${jobTitle || 'Unknown'}\nCandidate: ${candidateName || 'Prepared by [Candidate]'}\n\nJob Description:\n${(jobDescription || '').slice(0, 6000)}\n\nGenerate the 90-Day Roadmap HTML now. Include the candidate's name in the header or footer.` },
       ],
       temperature: 0.3,
       max_tokens: 8000,

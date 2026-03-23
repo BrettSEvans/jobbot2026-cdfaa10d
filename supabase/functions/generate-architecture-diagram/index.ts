@@ -67,7 +67,7 @@ Make the diagram specific to the role responsibilities and technical environment
       model: 'google/gemini-2.5-flash',
       messages: [
         { role: 'system', content: systemPrompt },
-        { role: 'user', content: `Company: ${companyName || 'Unknown'}\nJob Title: ${jobTitle || 'Unknown'}\n\nJob Description:\n${(jobDescription || '').slice(0, 6000)}\n\nGenerate the architecture diagram HTML now.` },
+        { role: 'user', content: `Company: ${companyName || 'Unknown'}\nJob Title: ${jobTitle || 'Unknown'}\nCandidate: ${candidateName || 'Prepared by [Candidate]'}\n\nJob Description:\n${(jobDescription || '').slice(0, 6000)}\n\nGenerate the architecture diagram HTML now. Include the candidate's name in the header or footer.` },
       ],
       temperature: 0.3,
       max_tokens: 8000,

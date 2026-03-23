@@ -8,10 +8,11 @@ import type { DashboardData } from "@/lib/dashboard/schema";
 import { backgroundGenerator } from "@/lib/backgroundGenerator";
 import { saveDashboardRevision } from "@/lib/api/dashboardRevisions";
 import JSZip from "jszip";
+import type { JobApplication, ChatMessage, ToastFn } from "@/types/models";
 
 interface UseDashboardEditorOptions {
   id: string | undefined;
-  app: any;
+  app: JobApplication | null;
   jobDescription: string;
   companyName: string;
   jobTitle: string;
@@ -19,12 +20,12 @@ interface UseDashboardEditorOptions {
   setDashboardHtml: (val: string) => void;
   dashboardData: DashboardData | null;
   setDashboardData: (val: DashboardData | null) => void;
-  chatHistory: Array<{ role: string; content: string }>;
-  setChatHistory: (val: any) => void;
+  chatHistory: ChatMessage[];
+  setChatHistory: (val: ChatMessage[] | ((prev: ChatMessage[]) => ChatMessage[])) => void;
   revisionTrigger: number;
   setRevisionTrigger: (fn: (t: number) => number) => void;
-  saveField: (fields: Record<string, any>) => Promise<void>;
-  toast: (opts: any) => void;
+  saveField: (fields: Record<string, unknown>) => Promise<void>;
+  toast: ToastFn;
 }
 
 export function useDashboardEditor({

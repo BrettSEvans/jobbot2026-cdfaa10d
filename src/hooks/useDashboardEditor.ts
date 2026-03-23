@@ -104,8 +104,9 @@ export function useDashboardEditor({
         await saveDashboardRevision(id!, accumulated, "Regenerated");
         setRevisionTrigger((t) => t + 1);
       } catch { /* non-critical */ }
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      toast({ title: "Error", description: message, variant: "destructive" });
     } finally {
       setIsRegenerating(false);
     }

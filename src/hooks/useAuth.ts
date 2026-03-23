@@ -44,7 +44,10 @@ export function useAuth() {
     return () => subscription.unsubscribe();
   }, []);
 
+  const intentionalSignOut = useRef(false);
+
   const signOut = useCallback(async () => {
+    intentionalSignOut.current = true;
     wasAuthenticated.current = false;
     await supabase.auth.signOut();
   }, []);

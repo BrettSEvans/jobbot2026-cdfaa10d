@@ -249,6 +249,15 @@ export default function DynamicMaterialsSection({
     },
   });
 
+  const { data: candidateName } = useQuery({
+    queryKey: ["candidate-name", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await supabase.from("profiles").select("first_name, middle_name, last_name").eq("id", user!.id).single();
+      return [data?.first_name, data?.middle_name, data?.last_name].filter(Boolean).join(" ") || "";
+    },
+  });
+
   const [generatedAssets, setGeneratedAssets] = useState<GeneratedAsset[]>([]);
   const [loadingAssets, setLoadingAssets] = useState(true);
   const [assetRevisionTriggers, setAssetRevisionTriggers] = useState<Record<string, number>>({});
@@ -441,7 +450,8 @@ export default function DynamicMaterialsSection({
           variabilityRecommendations: app?.design_variability?.recommendations || [],
           applicationCreatedAt: app?.created_at,
           branding: app?.branding,
-          regenerationCount: 0,
+           regenerationCount: 0,
+           candidateName: candidateName || "",
         }),
       });
 
@@ -693,7 +703,8 @@ export default function DynamicMaterialsSection({
                           variabilityRecommendations: app?.design_variability?.recommendations || [],
                           applicationCreatedAt: app?.created_at,
                           branding: app?.branding,
-                          regenerationCount: regenCount,
+                           regenerationCount: regenCount,
+                           candidateName: candidateName || "",
                         }),
                       });
                       if (resp.ok) {

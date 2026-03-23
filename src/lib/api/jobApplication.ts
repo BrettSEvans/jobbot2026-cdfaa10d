@@ -194,6 +194,7 @@ export async function saveJobApplication(app: {
   generation_error?: string;
   research_reasoning?: string;
   resume_html?: string;
+  clarity_resume_html?: string;
   source_resume_id?: string;
   jd_intelligence?: any;
 }) {

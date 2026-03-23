@@ -1,8 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
 import { saveJobApplication } from "@/lib/api/jobApplication";
 import { generateOptimizedResume } from "@/lib/api/resumeGeneration";
+import { generateClarityResume } from "@/lib/api/resumeGenerationClarity";
 import { supabase } from "@/integrations/supabase/client";
 import type { JobApplication, UserResumePickerItem, ToastFn } from "@/types/models";
+
+export type ResumeVariant = "ats" | "clarity";
 
 interface UseResumeEditorOptions {
   id: string | undefined;
@@ -33,6 +36,8 @@ export function useResumeEditor({
   const [selectedResumeId, setSelectedResumeId] = useState<string>("");
   const [isRegeneratingResume, setIsRegeneratingResume] = useState(false);
   const [editingResume, setEditingResume] = useState(false);
+  const [activeVariant, setActiveVariant] = useState<ResumeVariant>("ats");
+  const [regenVariant, setRegenVariant] = useState<ResumeVariant>("ats");
 
   // Pre-select active resume when dialog opens
   useEffect(() => {
@@ -51,29 +56,54 @@ export function useResumeEditor({
     }
     setIsRegeneratingResume(true);
     setRegenDialogOpen(false);
+
+    const variant = regenVariant;
+    const htmlField = variant === "ats" ? "resume_html" : "clarity_resume_html";
+    const currentHtml = variant === "ats" ? app?.resume_html : (app as any)?.clarity_resume_html;
+
     try {
       // Save current resume as revision before regenerating
-      if (app?.resume_html) {
+      if (currentHtml) {
         try {
           await supabase.from("resume_revisions").insert({
             application_id: id,
-            html: app.resume_html,
-            label: "Before regeneration",
+            html: currentHtml,
+            label: `Before ${variant === "ats" ? "ATS Play" : "Clarity"} regeneration`,
+            resume_type: variant,
           });
         } catch { /* non-critical */ }
       }
 
-      const { resume_html } = await generateOptimizedResume({
-        jobDescription,
-        resumeText: selected.resume_text,
-        missingKeywords: [],
-        companyName,
-        jobTitle,
-        sourceResumeId: selectedResumeId,
-      });
-      await saveJobApplication({ id, job_url: app!.job_url, resume_html, source_resume_id: selectedResumeId });
-      setApp((prev) => prev ? { ...prev, resume_html, source_resume_id: selectedResumeId } : prev);
-      toast({ title: "Resume regenerated!", description: `Using "${selected.file_name}" as baseline.` });
+      let resume_html: string;
+      if (variant === "ats") {
+        const result = await generateOptimizedResume({
+          jobDescription,
+          resumeText: selected.resume_text,
+          missingKeywords: [],
+          companyName,
+          jobTitle,
+          sourceResumeId: selectedResumeId,
+        });
+        resume_html = result.resume_html;
+      } else {
+        const result = await generateClarityResume({
+          jobDescription,
+          resumeText: selected.resume_text,
+          companyName,
+          jobTitle,
+        });
+        resume_html = result.resume_html;
+      }
+
+      await saveJobApplication({
+        id,
+        job_url: app!.job_url,
+        [htmlField]: resume_html,
+        ...(variant === "ats" ? { source_resume_id: selectedResumeId } : {}),
+      } as any);
+
+      setApp((prev) => prev ? { ...prev, [htmlField]: resume_html, ...(variant === "ats" ? { source_resume_id: selectedResumeId } : {}) } : prev);
+      toast({ title: `${variant === "ats" ? "ATS Play" : "Clarity"} resume regenerated!`, description: `Using "${selected.file_name}" as baseline.` });
       setResumeRevisionTrigger((t) => t + 1);
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : "Unknown error";
@@ -81,7 +111,12 @@ export function useResumeEditor({
     } finally {
       setIsRegeneratingResume(false);
     }
-  }, [id, app, selectedResumeId, jobDescription, companyName, jobTitle, userResumes, setApp, toast, setResumeRevisionTrigger]);
+  }, [id, app, selectedResumeId, jobDescription, companyName, jobTitle, userResumes, setApp, toast, setResumeRevisionTrigger, regenVariant]);
+
+  const openRegenDialog = useCallback((variant: ResumeVariant) => {
+    setRegenVariant(variant);
+    setRegenDialogOpen(true);
+  }, []);
 
   return {
     regenDialogOpen,
@@ -92,5 +127,9 @@ export function useResumeEditor({
     editingResume,
     setEditingResume,
     handleRegenerateResume,
+    activeVariant,
+    setActiveVariant,
+    regenVariant,
+    openRegenDialog,
   };
 }

@@ -17,6 +17,7 @@ import { scrapeJob, streamTailoredLetter } from "@/lib/api/coverLetter";
 import { parseLlmJsonOutput, assembleDashboardHtml } from "@/lib/dashboard/assembler";
 import { parseJobDescription } from "@/lib/api/jdIntelligence";
 import { generateOptimizedResume } from "@/lib/api/resumeGeneration";
+import { generateClarityResume } from "@/lib/api/resumeGenerationClarity";
 import { supabase } from "@/integrations/supabase/client";
 import type { JDIntelligence } from "@/lib/api/jdIntelligence";
 
@@ -283,31 +284,43 @@ class BackgroundGenerationManager {
       }
 
       if (resumeText && markdown) {
-        try {
-          const result = await generateOptimizedResume({
+        // Generate both ATS Play and Clarity resumes in parallel
+        const [atsResult, clarityResult] = await Promise.allSettled([
+          generateOptimizedResume({
             jobDescription: markdown,
             resumeText,
             missingKeywords: [],
             companyName,
             jobTitle,
-          });
-          await saveJobApplication({
-            id: appId,
-            job_url: jobUrl,
-            resume_html: result.resume_html,
-            generation_status: "resume-complete",
-            status: "resume-complete",
-          } as any);
-        } catch (e) {
-          console.warn("Resume generation failed:", e);
-          // Still mark as resume-complete so user can proceed
-          await saveJobApplication({
-            id: appId,
-            job_url: jobUrl,
-            generation_status: "resume-complete",
-            status: "resume-complete",
-          } as any);
+          }),
+          generateClarityResume({
+            jobDescription: markdown,
+            resumeText,
+            companyName,
+            jobTitle,
+          }),
+        ]);
+
+        const savePayload: any = {
+          id: appId,
+          job_url: jobUrl,
+          generation_status: "resume-complete",
+          status: "resume-complete",
+        };
+
+        if (atsResult.status === "fulfilled") {
+          savePayload.resume_html = atsResult.value.resume_html;
+        } else {
+          console.warn("ATS resume generation failed:", atsResult.reason);
         }
+
+        if (clarityResult.status === "fulfilled") {
+          savePayload.clarity_resume_html = clarityResult.value.resume_html;
+        } else {
+          console.warn("Clarity resume generation failed:", clarityResult.reason);
+        }
+
+        await saveJobApplication(savePayload);
       } else {
         // No resume text available — skip resume generation
         await saveJobApplication({

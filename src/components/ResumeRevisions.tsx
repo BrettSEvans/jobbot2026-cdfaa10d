@@ -13,6 +13,7 @@ interface ResumeRevisionsProps {
   currentHtml: string;
   onPreviewRevision: (html: string | null) => void;
   refreshTrigger?: number;
+  resumeType?: string;
 }
 
 export default function ResumeRevisions({
@@ -20,6 +21,7 @@ export default function ResumeRevisions({
   currentHtml,
   onPreviewRevision,
   refreshTrigger,
+  resumeType = "ats",
 }: ResumeRevisionsProps) {
   const [revisions, setRevisions] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);

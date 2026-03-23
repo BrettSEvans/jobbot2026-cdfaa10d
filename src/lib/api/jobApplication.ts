@@ -251,6 +251,21 @@ export async function deleteJobApplication(id: string) {
   if (error) throw new Error(error.message);
 }
 
+// --- Update pipeline stage with history tracking ---
+export async function updatePipelineStage(id: string, newStage: string, oldStage?: string) {
+  const { data: { session } } = await supabase.auth.getSession();
+  const { error } = await supabase
+    .from('job_applications')
+    .update({ pipeline_stage: newStage, stage_changed_at: new Date().toISOString() })
+    .eq('id', id);
+  if (error) throw new Error(error.message);
+  if (session?.user?.id) {
+    await supabase
+      .from('pipeline_stage_history')
+      .insert({ application_id: id, user_id: session.user.id, from_stage: oldStage ?? null, to_stage: newStage });
+  }
+}
+
 // --- SSE Stream processor (shared) ---
 async function processSSEStream(
   body: ReadableStream<Uint8Array>,

@@ -44,7 +44,7 @@ export function useResumeEditor({
 
   const handleRegenerateResume = useCallback(async () => {
     if (!selectedResumeId || !jobDescription.trim() || !id) return;
-    const selected = userResumes.find((r: any) => r.id === selectedResumeId);
+    const selected = userResumes.find((r) => r.id === selectedResumeId);
     if (!selected?.resume_text) {
       toast({ title: "No text available", description: "This resume hasn't been extracted yet. Please re-upload it.", variant: "destructive" });
       return;

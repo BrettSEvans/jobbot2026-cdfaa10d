@@ -357,6 +357,7 @@ function ResumeVariantContent({
 export function ResumeTab({
   id,
   app,
+  userProfile,
   setApp,
   jobDescription,
   companyName,

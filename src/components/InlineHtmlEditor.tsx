@@ -67,6 +67,23 @@ export default function InlineHtmlEditor({
   const [linkUrl, setLinkUrl] = useState("");
   const [linkText, setLinkText] = useState("");
   const [linkPopoverOpen, setLinkPopoverOpen] = useState(false);
+  const [lineSpacing, setLineSpacing] = useState("");
+  const [paraSpacing, setParaSpacing] = useState("");
+
+  const updateEditorSpacing = useCallback((ls: string, ps: string) => {
+    const doc = iframeRef.current?.contentDocument;
+    if (!doc) return;
+    let styleEl = doc.getElementById("editor-spacing") as HTMLStyleElement | null;
+    if (!styleEl) {
+      styleEl = doc.createElement("style");
+      styleEl.id = "editor-spacing";
+      doc.head.appendChild(styleEl);
+    }
+    let css = "";
+    if (ls) css += `body, p, li, div, span, td, th { line-height: ${ls} !important; }\n`;
+    if (ps) css += `p, li, div:not(body) { margin-bottom: ${ps} !important; }\n`;
+    styleEl.textContent = css;
+  }, []);
 
   const execCommand = useCallback((cmd: string, value?: string) => {
     const doc = iframeRef.current?.contentDocument;

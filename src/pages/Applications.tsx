@@ -96,9 +96,10 @@ const Applications = () => {
   const loadApplications = async () => {
     try {
       const data = await getJobApplications();
-      setApplications(data);
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      setApplications(data as JobApplicationListItem[]);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      toast({ title: "Error", description: message, variant: "destructive" });
     } finally {
       setLoading(false);
     }

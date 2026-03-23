@@ -397,6 +397,7 @@ const Applications = () => {
             )}
           </TabsContent>
         </Tabs>
+      </div>
 
       {/* Story 3.2: Delete confirmation dialog */}
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>

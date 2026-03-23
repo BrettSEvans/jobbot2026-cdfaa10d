@@ -134,9 +134,10 @@ export function useDashboardEditor({
         setRevisionTrigger((t) => t + 1);
       } catch { /* non-critical */ }
       toast({ title: "Refining", description: "Dashboard refinement started. It will continue even if you navigate away." });
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
-      setChatHistory((prev: any) => [...prev, { role: "assistant", content: `❌ Error: ${err.message}` }]);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      toast({ title: "Error", description: message, variant: "destructive" });
+      setChatHistory((prev) => [...prev, { role: "assistant", content: `❌ Error: ${message}` }]);
     } finally {
       setIsRefining(false);
     }

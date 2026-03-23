@@ -190,12 +190,12 @@ export function useApplicationDetail() {
   }, [toast]);
 
   // Fabrication handlers
-  const handleAcceptFabrication = useCallback((change: any) => {
+  const handleAcceptFabrication = useCallback((change: FabricationChange) => {
     const text = change?.tailored_text || change?.baseline_text || "change";
     toast({ title: "Accepted", description: `Kept: "${text.slice(0, 50)}…"` });
   }, [toast]);
 
-  const handleRevertFabrication = useCallback(async (change: any) => {
+  const handleRevertFabrication = useCallback(async (change: FabricationChange) => {
     if (!app?.resume_html || !id) return;
     const tailored = change?.tailored_text;
     const baseline = change?.baseline_text;
@@ -205,11 +205,12 @@ export function useApplicationDetail() {
     }
     const updatedHtml = app.resume_html.replace(tailored, baseline);
     try {
-      await saveJobApplication({ id, job_url: app.job_url, resume_html: updatedHtml } as any);
-      setApp((prev: any) => ({ ...prev, resume_html: updatedHtml }));
+      await saveJobApplication({ id, job_url: app.job_url, resume_html: updatedHtml });
+      setApp((prev) => prev ? { ...prev, resume_html: updatedHtml } : prev);
       toast({ title: "Reverted", description: `Restored baseline for: "${baseline.slice(0, 50)}…"` });
-    } catch (err: any) {
-      toast({ title: "Revert failed", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      toast({ title: "Revert failed", description: message, variant: "destructive" });
     }
   }, [app, id, toast]);
 

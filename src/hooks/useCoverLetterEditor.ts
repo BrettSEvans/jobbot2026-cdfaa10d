@@ -106,9 +106,10 @@ export function useCoverLetterEditor({
         await saveField({ cover_letter: accumulated });
         setClChatHistory((prev) => [...prev, { role: "assistant", content: "✅ Changes applied" }]);
       }
-    } catch (err: any) {
-      toast({ title: "Refinement failed", description: err.message, variant: "destructive" });
-      setClChatHistory((prev) => [...prev, { role: "assistant", content: `❌ Error: ${err.message}` }]);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      toast({ title: "Refinement failed", description: message, variant: "destructive" });
+      setClChatHistory((prev) => [...prev, { role: "assistant", content: `❌ Error: ${message}` }]);
     } finally {
       setClRefining(false);
     }

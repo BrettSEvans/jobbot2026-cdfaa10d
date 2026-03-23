@@ -1000,9 +1000,9 @@ const ApplicationDetail = () => {
                     <div
                       contentEditable
                       suppressContentEditableWarning
+                      ref={(el) => { if (el && !el.dataset.init) { el.textContent = coverLetter; el.dataset.init = "1"; } }}
                       className="min-h-[400px] p-4 text-sm leading-relaxed border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring whitespace-pre-wrap"
                       onBlur={(e) => setCoverLetter(e.currentTarget.innerText)}
-                      dangerouslySetInnerHTML={{ __html: coverLetter.replace(/\n/g, "<br>") }}
                     />
                     <div className="flex gap-2">
                       <Button

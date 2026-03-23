@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
@@ -83,11 +83,13 @@ const Applications = () => {
     loadApplications();
   }, []);
 
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     const unsub = backgroundGenerator.subscribe(() => {
-      loadApplications();
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => loadApplications(), 2000);
     });
-    return () => { unsub(); };
+    return () => { unsub(); if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, []);
 
   const loadApplications = async () => {

@@ -46,6 +46,21 @@ type Listener = () => void;
 class BackgroundGenerationManager {
   private jobs: Map<string, GenerationJob> = new Map();
   private listeners: Set<Listener> = new Set();
+  private beforeUnloadHandler: ((e: BeforeUnloadEvent) => void) | null = null;
+
+  private updateBeforeUnload() {
+    const hasActive = this.getActiveCount() > 0;
+    if (hasActive && !this.beforeUnloadHandler) {
+      this.beforeUnloadHandler = (e: BeforeUnloadEvent) => {
+        e.preventDefault();
+        e.returnValue = "Generation in progress — are you sure you want to leave?";
+      };
+      window.addEventListener("beforeunload", this.beforeUnloadHandler);
+    } else if (!hasActive && this.beforeUnloadHandler) {
+      window.removeEventListener("beforeunload", this.beforeUnloadHandler);
+      this.beforeUnloadHandler = null;
+    }
+  }
 
   subscribe(listener: Listener) {
     this.listeners.add(listener);
@@ -54,6 +69,7 @@ class BackgroundGenerationManager {
 
   private notify() {
     this.listeners.forEach((l) => l());
+    this.updateBeforeUnload();
   }
 
   getJob(id: string): GenerationJob | undefined {

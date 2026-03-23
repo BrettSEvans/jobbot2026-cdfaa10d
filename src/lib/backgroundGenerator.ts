@@ -69,6 +69,7 @@ class BackgroundGenerationManager {
 
   private notify() {
     this.listeners.forEach((l) => l());
+    this.updateBeforeUnload();
   }
 
   getJob(id: string): GenerationJob | undefined {

@@ -10,7 +10,7 @@ import type { DashboardData } from "@/lib/dashboard/schema";
 import { supabase } from "@/integrations/supabase/client";
 import { useBackgroundJob } from "@/hooks/useBackgroundJob";
 import { useQuery } from "@tanstack/react-query";
-import type { JobApplication, UserProfileSnapshot, UserResume, ChatMessage, FabricationChange } from "@/types/models";
+import type { JobApplication, UserProfileSnapshot, UserResumePickerItem, ChatMessage, FabricationChange } from "@/types/models";
 
 export function useApplicationDetail() {
   const { id } = useParams<{ id: string }>();

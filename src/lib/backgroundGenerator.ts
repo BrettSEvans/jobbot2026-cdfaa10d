@@ -229,11 +229,24 @@ class BackgroundGenerationManager {
       // 5. Generate resume (foreground phase end)
       this.updateJob(appId, { status: "resume", progress: "Generating tailored resume..." });
       
-      // Fetch user's resume text — prefer active resume from user_resumes, fall back to profiles.resume_text
+      // Fetch user's resume text and full name
       let resumeText = "";
+      let candidateName = "";
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
+          // Fetch profile for name
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("first_name, middle_name, last_name, resume_text")
+            .eq("id", user.id)
+            .single();
+          
+          if (profile) {
+            candidateName = [profile.first_name, profile.middle_name, profile.last_name]
+              .filter(Boolean).join(" ");
+          }
+
           // Try user_resumes first (active resume with extracted text)
           const { data: activeResume } = await supabase
             .from("user_resumes")
@@ -246,11 +259,6 @@ class BackgroundGenerationManager {
             resumeText = activeResume.resume_text;
           } else {
             // Fallback to profiles.resume_text for backward compatibility
-            const { data: profile } = await supabase
-              .from("profiles")
-              .select("resume_text")
-              .eq("id", user.id)
-              .single();
             resumeText = profile?.resume_text || "";
           }
         }

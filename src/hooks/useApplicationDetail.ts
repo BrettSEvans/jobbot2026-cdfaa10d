@@ -63,7 +63,7 @@ export function useApplicationDetail() {
 
   // User profile + resume text
   const [resumeText, setResumeText] = useState<string | null>(null);
-  const [userProfile, setUserProfile] = useState<any>(null);
+  const [userProfile, setUserProfile] = useState<UserProfileSnapshot | null>(null);
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user) {

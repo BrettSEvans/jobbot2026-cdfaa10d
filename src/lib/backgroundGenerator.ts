@@ -388,6 +388,7 @@ class BackgroundGenerationManager {
                     applicationCreatedAt: new Date().toISOString(),
                     branding: brandingData,
                     regenerationCount: 0,
+                    candidateName,
                   }),
                 }
               );

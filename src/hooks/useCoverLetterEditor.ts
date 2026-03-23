@@ -65,7 +65,8 @@ export function useCoverLetterEditor({
         setCoverLetterRevisionTrigger((t) => t + 1);
       } catch { /* non-critical */ }
     } catch (err: unknown) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      const message = err instanceof Error ? err.message : "Unknown error";
+      toast({ title: "Error", description: message, variant: "destructive" });
     } finally {
       setIsRegenerating(false);
     }

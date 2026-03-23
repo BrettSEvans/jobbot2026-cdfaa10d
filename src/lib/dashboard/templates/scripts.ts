@@ -160,7 +160,7 @@ export function getScriptsJs(): string {
     nav.forEach(function(item) {
       var link = el('a', { className: 'nav-link', 'data-section': item.id, href: '#' },
         el('span', { className: 'material-icons-outlined' }, item.icon || 'dashboard'),
-        document.createTextNode(' ' + item.label)
+        el('span', { className: 'nav-label' }, item.label)
       );
       link.addEventListener('click', function(e) {
         e.preventDefault();

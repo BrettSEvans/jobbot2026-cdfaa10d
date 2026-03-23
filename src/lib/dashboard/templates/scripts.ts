@@ -746,7 +746,7 @@ export function getScriptsJs(): string {
       if (section.charts && section.charts.length) {
         var chartsGrid = el('div', { className: 'charts-grid' });
         section.charts.forEach(function(chartConfig) {
-          renderChart(chartsGrid, chartConfig);
+          renderChart(chartsGrid, chartConfig, section.id);
         });
         sectionEl.appendChild(chartsGrid);
       }

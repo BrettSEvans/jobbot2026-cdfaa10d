@@ -20,6 +20,8 @@ import {
   Outdent,
   Palette,
   Highlighter,
+  ChevronsUpDown,
+  Rows3,
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";

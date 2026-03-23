@@ -16,18 +16,47 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: 'AI not configured' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
+    const ONE_PAGE_RULES = `
+MANDATORY LAYOUT RULES — strictly follow every rule:
+1. The entire document MUST fit on a single US Letter page (8.5 × 11 in / 215.9 × 279.4 mm).
+2. Use this exact wrapper structure:
+   <div class="page-shell" style="width:8.5in; min-height:11in; max-height:11in; margin:0 auto; padding:0.4in; display:flex; flex-direction:column; overflow:hidden; box-sizing:border-box;">
+     <div class="page-content" style="flex:1; overflow:visible;">
+       <!-- ALL content here -->
+     </div>
+   </div>
+3. Add @page { size: letter portrait; margin: 0; } and @media print { body { -webkit-print-color-adjust: exact; } }
+4. NEVER use overflow:hidden on ANY text container or content div — only on page-shell.
+5. NEVER use position:absolute or position:fixed on content elements.
+6. NEVER set fixed height on content divs (no height:Npx on cards, sections, tables).
+7. NEVER use large decorative background shapes (triangles, circles, overlays) that cover content.
+8. Body must have margin:0; padding:0.`;
+
     const systemPrompt = `You are a solutions architect. Generate a professional architecture diagram as a self-contained HTML document for someone starting the described role.
+
+${ONE_PAGE_RULES}
+
+SVG ARROW/CONNECTOR RULES — critical:
+- Every arrow MUST connect to a card's EDGE (right-side for outgoing, left/top/bottom for incoming — whichever edge is geometrically closest).
+- Arrows MUST route AROUND cards. An arrow may NEVER pass through or overlap a card.
+- Use SVG <line>, <polyline>, or <path> elements with arrowhead markers. Calculate coordinates so lines touch card borders, not card centers.
+- If two cards are not adjacent, use an L-shaped or Z-shaped polyline that stays in the gutters between cards.
+
+LEGEND RULES:
+- Legend must be compact, inline (e.g., a small horizontal bar at the bottom), never floating or overlapping content.
 
 OUTPUT: Return a single self-contained HTML document with embedded CSS and SVG. The architecture diagram should:
 - Show the organizational/technical architecture relevant to the role
 - Include system components, data flows, integrations, and stakeholder relationships
-- Use SVG-based boxes, arrows, and labels (no external images)
-- Have a clean, professional layout suitable for executive presentations
-- Include a legend explaining the visual elements
+- Use SVG-based boxes with arrows following the connector rules above
+- Have a clean, professional layout suitable for executive presentations — fits ONE page
+- Include a compact inline legend explaining the visual elements
 - Title: "${companyName || 'Company'} — ${jobTitle || 'Role'} Architecture Overview"
 - Show the candidate's position within the org/system context
 - Include relevant technology stack, tools, and platforms mentioned in the JD
 - Use a modern color scheme with clear hierarchy
+- Maximum 6-8 component boxes to ensure readability on one page
+- No interactive elements, no scrolling, no multi-page content
 
 Products: ${(products || []).join(', ') || 'N/A'}
 Competitors: ${(competitors || []).join(', ') || 'N/A'}

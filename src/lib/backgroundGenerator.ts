@@ -17,6 +17,7 @@ import { scrapeJob, streamTailoredLetter } from "@/lib/api/coverLetter";
 import { parseLlmJsonOutput, assembleDashboardHtml } from "@/lib/dashboard/assembler";
 import { parseJobDescription } from "@/lib/api/jdIntelligence";
 import { generateOptimizedResume } from "@/lib/api/resumeGeneration";
+import { generateClarityResume } from "@/lib/api/resumeGenerationClarity";
 import { supabase } from "@/integrations/supabase/client";
 import type { JDIntelligence } from "@/lib/api/jdIntelligence";
 

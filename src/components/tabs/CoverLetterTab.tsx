@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import CoverLetterRevisions from "@/components/CoverLetterRevisions";
 import { downloadTextAsDocx } from "@/lib/docxExport";
+import type { JobApplication, UserProfileSnapshot, ChatMessage, ToastFn } from "@/types/models";
 
 interface CoverLetterTabProps {
   id: string;

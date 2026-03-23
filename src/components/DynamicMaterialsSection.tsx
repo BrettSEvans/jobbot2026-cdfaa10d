@@ -450,7 +450,8 @@ export default function DynamicMaterialsSection({
           variabilityRecommendations: app?.design_variability?.recommendations || [],
           applicationCreatedAt: app?.created_at,
           branding: app?.branding,
-          regenerationCount: 0,
+           regenerationCount: 0,
+           candidateName: candidateName || "",
         }),
       });
 

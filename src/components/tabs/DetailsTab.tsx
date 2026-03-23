@@ -12,6 +12,7 @@ import {
   FileText,
   ChevronRight as ChevronRightIcon,
 } from "lucide-react";
+import type { JobApplication } from "@/types/models";
 
 interface DetailsTabProps {
   app: any;

@@ -160,7 +160,7 @@ export function useApplicationDetail() {
 
       setDashboardHtml(html);
       setDashboardData(parsedDashData);
-      setChatHistory(Array.isArray(data.chat_history) ? data.chat_history as ChatMessage[] : []);
+      setChatHistory(Array.isArray(data.chat_history) ? (data.chat_history as unknown as ChatMessage[]) : []);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Unknown error";
       toast({ title: "Error", description: message, variant: "destructive" });

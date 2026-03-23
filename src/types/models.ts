@@ -42,6 +42,14 @@ export interface UserProfileSnapshot {
 
 export type UserResume = Tables<"user_resumes">;
 
+/** Partial resume used in picker dropdowns (from partial select). */
+export interface UserResumePickerItem {
+  id: string;
+  file_name: string;
+  is_active: boolean;
+  resume_text: string | null;
+}
+
 export type GeneratedAsset = Tables<"generated_assets">;
 
 // ── Re-export commonly paired schema types for convenience ──

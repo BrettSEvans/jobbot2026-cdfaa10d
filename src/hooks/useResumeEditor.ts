@@ -11,7 +11,7 @@ interface UseResumeEditorOptions {
   jobDescription: string;
   companyName: string;
   jobTitle: string;
-  userResumes: UserResume[];
+  userResumes: UserResumePickerItem[];
   resumeRevisionTrigger: number;
   setResumeRevisionTrigger: (fn: (t: number) => number) => void;
   toast: ToastFn;

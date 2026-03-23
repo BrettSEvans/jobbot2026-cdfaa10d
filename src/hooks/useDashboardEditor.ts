@@ -63,9 +63,9 @@ export function useDashboardEditor({
         branding: app?.branding,
         companyName,
         jobTitle,
-        competitors: app?.competitors || [],
-        customers: app?.customers || [],
-        products: app?.products || [],
+        competitors: (app?.competitors as unknown as string[]) || [],
+        customers: (app?.customers as unknown as string[]) || [],
+        products: (app?.products as unknown as string[]) || [],
         onDelta: (text) => { accumulated += text; },
         onDone: () => {
           const parsed = parseLlmJsonOutput(accumulated);

@@ -869,6 +869,7 @@ Deno.serve(async (req) => {
       applicationCreatedAt,
       branding,
       regenerationCount,
+      candidateName,
     } = await req.json();
 
     if (!assetName || !jobDescription) {

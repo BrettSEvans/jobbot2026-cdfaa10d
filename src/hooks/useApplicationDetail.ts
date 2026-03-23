@@ -34,7 +34,7 @@ export function useApplicationDetail() {
   // Dashboard
   const [dashboardHtml, setDashboardHtml] = useState("");
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
-  const [chatHistory, setChatHistory] = useState<Array<{ role: string; content: string }>>([]);
+  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
 
   // Revision triggers
   const [revisionTrigger, setRevisionTrigger] = useState(0);

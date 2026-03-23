@@ -29,13 +29,14 @@ describe("matchKeywords", () => {
 
   it("sorts missing by importance (critical first)", () => {
     const result = matchKeywords(
-      [kw("Go", "nice_to_have"), kw("Python", "critical"), kw("Rust", "preferred")],
-      ""
+      [kw("Terraform", "nice_to_have"), kw("Ansible", "critical"), kw("Puppet", "preferred")],
+      "I use Chef"
     );
-    // Critical should come before preferred and nice_to_have
-    const importanceOrder = result.missing.map((m) => m.importance);
-    expect(importanceOrder.indexOf("critical")).toBeLessThan(importanceOrder.indexOf("preferred"));
-    expect(importanceOrder.indexOf("preferred")).toBeLessThan(importanceOrder.indexOf("nice_to_have"));
+    // All 3 should be missing, sorted: critical → preferred → nice_to_have
+    expect(result.missing).toHaveLength(3);
+    expect(result.missing[0].importance).toBe("critical");
+    expect(result.missing[1].importance).toBe("preferred");
+    expect(result.missing[2].importance).toBe("nice_to_have");
   });
 
   it("generates suggestion for critical missing", () => {

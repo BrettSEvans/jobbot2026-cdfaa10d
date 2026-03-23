@@ -260,8 +260,8 @@ export function ResumeTab({
                   });
                 } catch (_) {}
               }
-              await saveJobApplication({ id, job_url: app.job_url, resume_html: newHtml } as any);
-              setApp((prev: any) => ({ ...prev, resume_html: newHtml }));
+              await saveJobApplication({ id, job_url: app.job_url, resume_html: newHtml });
+              setApp((prev) => prev ? { ...prev, resume_html: newHtml } : prev);
               setEditingResume(false);
               setResumeRevisionTrigger((t) => t + 1);
               toast({ title: "Resume saved" });

@@ -30,7 +30,7 @@ export function useCoverLetterEditor({
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [clChatOpen, setClChatOpen] = useState(false);
   const [clChatInput, setClChatInput] = useState("");
-  const [clChatHistory, setClChatHistory] = useState<Array<{ role: string; content: string }>>([]);
+  const [clChatHistory, setClChatHistory] = useState<ChatMessage[]>([]);
   const [clRefining, setClRefining] = useState(false);
 
   const handleRegenerateCoverLetter = useCallback(async () => {

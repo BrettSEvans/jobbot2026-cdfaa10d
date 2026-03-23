@@ -317,6 +317,19 @@ export function getScriptsJs(): string {
   }
 
   // === DRILL-DOWN ===
+  var MOCK_NOTES = [
+    'Trending above forecast — monitor for sustained momentum.',
+    'Review scheduled for next quarter. Stakeholder alignment in progress.',
+    'Key dependency on vendor timeline. Risk mitigation plan active.',
+    'Performance exceeds benchmark by 12%. Recommend expanding scope.',
+    'Under review — awaiting executive sign-off on budget allocation.',
+    'Strong quarter-over-quarter improvement. Team capacity at 85%.',
+    'Flagged for deep-dive in upcoming board presentation.',
+    'Cross-functional initiative — coordinating with 3 departments.',
+    'Pilot phase complete. Results support full rollout recommendation.',
+    'Budget reallocation pending. Impact analysis submitted to finance.'
+  ];
+
   function showDrillDown(title, fields) {
     var overlay = document.getElementById('drilldown-overlay');
     overlay.innerHTML = '';
@@ -335,6 +348,15 @@ export function getScriptsJs(): string {
       field.appendChild(el('span', { className: 'drilldown-value' }, f.value));
       body.appendChild(field);
     });
+
+    // Add mock notes section
+    var noteIdx = Math.abs(title.split('').reduce(function(a, c) { return a + c.charCodeAt(0); }, 0)) % MOCK_NOTES.length;
+    var notesSection = el('div', { className: 'drilldown-notes' });
+    notesSection.appendChild(el('h4', { className: 'drilldown-notes-title' }, 'Notes & Context'));
+    notesSection.appendChild(el('p', { className: 'drilldown-notes-text' }, MOCK_NOTES[noteIdx]));
+    notesSection.appendChild(el('p', { className: 'drilldown-notes-text' }, MOCK_NOTES[(noteIdx + 3) % MOCK_NOTES.length]));
+    body.appendChild(notesSection);
+
     modal.appendChild(body);
     overlay.appendChild(modal);
 

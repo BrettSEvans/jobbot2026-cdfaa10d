@@ -186,6 +186,9 @@ body {
   font-size: 28px;
   font-weight: 400;
   margin-bottom: 8px;
+  color: var(--md-primary);
+  border-left: 4px solid var(--md-primary);
+  padding-left: 12px;
 }
 
 .section-header p {
@@ -193,6 +196,7 @@ body {
   color: var(--md-outline);
   line-height: 1.5;
   max-width: 700px;
+  padding-left: 16px;
 }
 
 /* === METRICS === */

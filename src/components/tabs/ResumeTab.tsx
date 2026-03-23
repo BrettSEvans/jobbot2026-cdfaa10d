@@ -235,7 +235,7 @@ export function ResumeTab({
                 <Button variant="outline" onClick={() => setRegenDialogOpen(false)}>Cancel</Button>
                 <Button
                   onClick={handleRegenerateResume}
-                  disabled={!selectedResumeId || !userResumes.find((r: any) => r.id === selectedResumeId)?.resume_text}
+                  disabled={!selectedResumeId || !userResumes.find((r) => r.id === selectedResumeId)?.resume_text}
                 >
                   <RefreshCw className="mr-2 h-4 w-4" /> Regenerate
                 </Button>

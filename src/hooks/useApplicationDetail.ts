@@ -134,7 +134,7 @@ export function useApplicationDetail() {
 
   const loadApplication = async (appId: string) => {
     try {
-      const data = await getJobApplication(appId);
+      const data = await getJobApplication(appId) as JobApplication;
       setApp(data);
       if (!editingCoverLetter) {
         setCoverLetter(data.cover_letter || "");
@@ -160,9 +160,10 @@ export function useApplicationDetail() {
 
       setDashboardHtml(html);
       setDashboardData(parsedDashData);
-      setChatHistory(Array.isArray(data.chat_history) ? data.chat_history as Array<{ role: string; content: string }> : []);
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      setChatHistory(Array.isArray(data.chat_history) ? data.chat_history as ChatMessage[] : []);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      toast({ title: "Error", description: message, variant: "destructive" });
     } finally {
       setLoading(false);
     }

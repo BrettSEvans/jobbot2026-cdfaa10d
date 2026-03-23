@@ -215,7 +215,7 @@ export function ResumeTab({
                       <SelectValue placeholder="Select a resume" />
                     </SelectTrigger>
                     <SelectContent>
-                      {userResumes.map((r: any) => (
+                      {userResumes.map((r) => (
                         <SelectItem key={r.id} value={r.id}>
                           {r.file_name}
                           {r.is_active ? " (Primary)" : ""}

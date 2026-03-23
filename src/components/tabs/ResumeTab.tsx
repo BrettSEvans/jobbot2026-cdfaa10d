@@ -224,7 +224,7 @@ export function ResumeTab({
                       ))}
                     </SelectContent>
                   </Select>
-                  {selectedResumeId && !userResumes.find((r: any) => r.id === selectedResumeId)?.resume_text && (
+                  {selectedResumeId && !userResumes.find((r) => r.id === selectedResumeId)?.resume_text && (
                     <p className="text-xs text-destructive">
                       This resume's text hasn't been extracted yet. Re-upload it from your Profile.
                     </p>

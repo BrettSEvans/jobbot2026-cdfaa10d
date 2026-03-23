@@ -206,8 +206,92 @@ export function getScriptsJs(): string {
     container.appendChild(grid);
   }
 
+  // === CROSS-CHART FILTERING ===
+  var sectionCharts = {};
+
+  function addAlpha(color, alpha) {
+    if (!color) return color;
+    if (color.indexOf('rgba') === 0) return color.replace(/,[^,]+\\)$/, ', ' + alpha + ')');
+    if (color.indexOf('rgb(') === 0) return color.replace('rgb(', 'rgba(').replace(')', ', ' + alpha + ')');
+    if (color.indexOf('hsl(') === 0) return color.replace('hsl(', 'hsla(').replace(')', ', ' + alpha + ')');
+    if (color.indexOf('#') === 0) {
+      var hex = color.slice(1);
+      if (hex.length === 3) hex = hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2];
+      return 'rgba(' + parseInt(hex.slice(0,2),16) + ',' + parseInt(hex.slice(2,4),16) + ',' + parseInt(hex.slice(4,6),16) + ',' + alpha + ')';
+    }
+    return color;
+  }
+
+  function applyCrossFilter(sectionId, label, sourceChartId) {
+    var charts = sectionCharts[sectionId];
+    if (!charts) return;
+    charts.forEach(function(entry) {
+      var badge = entry.card.querySelector('.chart-filter-badge');
+      if (badge) badge.remove();
+      entry.card.classList.remove('filtered-dimmed', 'filtered-active');
+
+      if (entry.id === sourceChartId) {
+        entry.card.classList.add('filtered-active');
+        var srcBadge = el('div', { className: 'chart-filter-badge' });
+        srcBadge.appendChild(document.createTextNode('Filtering by: ' + label));
+        var clearBtn = el('button', { onclick: function(e) { e.stopPropagation(); clearCrossFilter(sectionId); } }, '\\u00D7');
+        srcBadge.appendChild(clearBtn);
+        var h3s = entry.card.querySelector('h3');
+        if (h3s) h3s.after(srcBadge); else entry.card.prepend(srcBadge);
+        return;
+      }
+
+      var labels = entry.originalData.labels;
+      var matchIdx = -1;
+      for (var i = 0; i < labels.length; i++) { if (labels[i] === label) { matchIdx = i; break; } }
+
+      if (matchIdx === -1) { entry.card.classList.add('filtered-dimmed'); return; }
+
+      var inst = entry.instance;
+      if (!inst) return;
+
+      // Add badge to companion
+      var compBadge = el('div', { className: 'chart-filter-badge' });
+      compBadge.appendChild(document.createTextNode('Filtered: ' + label));
+      var clrBtn = el('button', { onclick: function(e) { e.stopPropagation(); clearCrossFilter(sectionId); } }, '\\u00D7');
+      compBadge.appendChild(clrBtn);
+      var h3c = entry.card.querySelector('h3');
+      if (h3c) h3c.after(compBadge); else entry.card.prepend(compBadge);
+
+      // Dim non-matching segments
+      inst.data.datasets.forEach(function(ds, dsIdx) {
+        var origDs = entry.originalData.datasets[dsIdx];
+        if (!origDs) return;
+        if (Array.isArray(origDs.backgroundColor)) {
+          ds.backgroundColor = origDs.backgroundColor.map(function(c, i) { return i === matchIdx ? c : addAlpha(c, 0.12); });
+        } else if (typeof origDs.backgroundColor === 'string') {
+          ds.backgroundColor = labels.map(function(_, i) { return i === matchIdx ? origDs.backgroundColor : addAlpha(origDs.backgroundColor, 0.12); });
+        }
+      });
+      inst.update('none');
+    });
+  }
+
+  function clearCrossFilter(sectionId) {
+    var charts = sectionCharts[sectionId];
+    if (!charts) return;
+    charts.forEach(function(entry) {
+      var badge = entry.card.querySelector('.chart-filter-badge');
+      if (badge) badge.remove();
+      entry.card.classList.remove('filtered-dimmed', 'filtered-active');
+      var inst = entry.instance;
+      if (!inst) return;
+      inst.data.datasets.forEach(function(ds, dsIdx) {
+        var origDs = entry.originalData.datasets[dsIdx];
+        if (!origDs) return;
+        if (origDs.backgroundColor) ds.backgroundColor = JSON.parse(JSON.stringify(origDs.backgroundColor));
+      });
+      inst.update('none');
+    });
+  }
+
   // === RENDER CHART ===
-  function renderChart(container, config) {
+  function renderChart(container, config, sectionId) {
     var card = el('div', { className: 'chart-card' });
     card.appendChild(el('h3', {}, config.title));
     var chartDiv = el('div', { className: 'chart-container' });
@@ -229,17 +313,9 @@ export function getScriptsJs(): string {
       scales: {}
     };
 
-    if (type === 'horizontalBar') {
-      type = 'bar';
-      opts.indexAxis = 'y';
-    } else if (config.indexAxis) {
-      opts.indexAxis = config.indexAxis;
-    }
-
-    if (type === 'area') {
-      type = 'line';
-      config.data.datasets.forEach(function(ds) { ds.fill = true; });
-    }
+    if (type === 'horizontalBar') { type = 'bar'; opts.indexAxis = 'y'; }
+    else if (config.indexAxis) { opts.indexAxis = config.indexAxis; }
+    if (type === 'area') { type = 'line'; config.data.datasets.forEach(function(ds) { ds.fill = true; }); }
 
     if (type === 'bar' || type === 'line') {
       opts.scales = {
@@ -260,7 +336,13 @@ export function getScriptsJs(): string {
       options: opts
     });
 
-    // Drill-down on chart click
+    var originalData = JSON.parse(JSON.stringify(config.data));
+
+    if (sectionId) {
+      if (!sectionCharts[sectionId]) sectionCharts[sectionId] = [];
+      sectionCharts[sectionId].push({ id: config.id, config: config, instance: chartInstance, card: card, originalData: originalData });
+    }
+
     canvas.onclick = function(evt) {
       var points = chartInstance.getElementsAtEventForMode(evt, 'nearest', { intersect: true }, true);
       if (points.length) {
@@ -269,6 +351,11 @@ export function getScriptsJs(): string {
         var label = config.data.labels[idx];
         var value = config.data.datasets[dsIdx].data[idx];
         var dsLabel = config.data.datasets[dsIdx].label;
+
+        if (sectionId && sectionCharts[sectionId] && sectionCharts[sectionId].length > 1) {
+          applyCrossFilter(sectionId, label, config.id);
+        }
+
         showDrillDown(config.title + ' \\u2014 ' + label, [
           { label: 'Category', value: String(label) },
           { label: 'Dataset', value: dsLabel },

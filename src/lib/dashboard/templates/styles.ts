@@ -168,6 +168,7 @@ body {
   font-size: 22px;
   font-weight: 400;
   flex: 1;
+  color: var(--md-primary);
 }
 
 #main-content {

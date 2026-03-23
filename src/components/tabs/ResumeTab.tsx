@@ -530,6 +530,7 @@ export function ResumeTab({
             companyName={companyName}
             jobTitle={jobTitle}
             resumeText={resumeText}
+            userProfile={userProfile}
             isRegenerating={isRegeneratingResume}
             editingResume={activeVariant === "ats" && editingResume}
             setEditingResume={setEditingResume}

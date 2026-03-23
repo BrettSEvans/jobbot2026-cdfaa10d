@@ -173,8 +173,8 @@ function ResumeVariantToolbar({
         variant="outline"
         size="sm"
         onClick={() => {
-          const name = `${variant}-resume-${(companyName || "document").replace(/\s+/g, "-").toLowerCase()}-${(jobTitle || "").replace(/\s+/g, "-").toLowerCase()}`;
-          downloadHtmlAsDocx(html, `${name}.docx`);
+          const name = buildFileName(userProfile?.first_name, userProfile?.last_name, `${variant}-resume`, companyName, "docx");
+          downloadHtmlAsDocx(html, name);
           toast({ title: "Downloading", description: `${variantLabel} resume DOCX file is being prepared.` });
         }}
       >

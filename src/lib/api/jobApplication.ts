@@ -223,7 +223,7 @@ export async function saveJobApplication(app: {
 export async function getJobApplications() {
   const { data, error } = await supabase
     .from('job_applications')
-    .select('*')
+    .select('id, company_name, job_title, job_url, company_url, company_icon_url, status, generation_status, generation_error, pipeline_stage, stage_changed_at, ats_score, ats_scored_at, created_at, updated_at')
     .order('created_at', { ascending: false });
   if (error) throw new Error(error.message);
   return data;

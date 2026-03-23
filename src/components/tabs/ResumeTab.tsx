@@ -314,8 +314,8 @@ export function ResumeTab({
             }}
             onApplyBulletFix={(original, replacement) => {
               const updatedHtml = app.resume_html.replace(original, replacement);
-              saveJobApplication({ id, job_url: app.job_url, resume_html: updatedHtml } as any)
-                .then(() => setApp((prev: any) => ({ ...prev, resume_html: updatedHtml })));
+              saveJobApplication({ id, job_url: app.job_url, resume_html: updatedHtml })
+                .then(() => setApp((prev) => prev ? { ...prev, resume_html: updatedHtml } : prev));
               toast({ title: "Bullet updated", description: `Replaced: "${original.slice(0, 40)}…"` });
             }}
             onAcceptFabrication={handleAcceptFabrication}

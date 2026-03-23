@@ -1130,6 +1130,7 @@ OUTPUT: Return a single self-contained HTML document with embedded CSS. The docu
 - Use generous spacing between sections (margin-bottom: 0.15in minimum).
 - Be professional, clean, and printable
 - Include a header with the company name, job title, and document title
+- Include the candidate's name ("${candidateName || 'Prepared by [Candidate]'}") in the header or footer
 - Specific to the role and company context — not generic
 
 ## Optional: ONE Simple Data Element

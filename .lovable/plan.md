@@ -1,32 +1,51 @@
 
 
-## Unify Cover Letter & Resume Editing with InlineHtmlEditor
+## Standardize Download Filenames to `firstname.lastname_doctype_companyname`
 
 ### Problem
-The cover letter editor uses a primitive `contentEditable` div with only B/I/U buttons, while the resume editor uses the full `InlineHtmlEditor` component with font selection, colors, alignment, lists, and more. The hyperlink insertion feature exists in `InlineHtmlEditor` but isn't available to cover letters.
+Downloads currently use inconsistent naming like `ats-resume-companyname-jobtitle.docx` or `companyname-assetslug.pdf`. The user wants a unified convention: `firstname.lastname_doctype_companyname`.
 
-### Changes
+### Approach
+Create a shared utility function for filename generation, then update all download call sites across three files.
 
-#### 1. Enhance InlineHtmlEditor with proper hyperlink UX
-**File:** `src/components/InlineHtmlEditor.tsx`
-- Replace the `window.prompt` for link insertion with a small inline popover/dialog that lets users enter URL and display text
-- Add an "Unlink" button to remove existing hyperlinks
-- These improvements benefit both resume and cover letter editing
+### 1. Create filename utility — `src/lib/fileNaming.ts`
+```typescript
+export function buildFileName(
+  firstName: string | null,
+  lastName: string | null,
+  docType: string,
+  companyName: string | null,
+  extension: string
+): string {
+  const name = [firstName, lastName].filter(Boolean).join(".").toLowerCase() || "document";
+  const doc = docType.replace(/\s+/g, "-").toLowerCase();
+  const company = (companyName || "company").replace(/\s+/g, "-").toLowerCase();
+  return `${name}_${doc}_${company}.${extension}`;
+}
+// Example: "john.smith_ats-resume_acme-corp.docx"
+```
 
-#### 2. Refactor CoverLetterTab to use InlineHtmlEditor
-**File:** `src/components/tabs/CoverLetterTab.tsx`
-- Remove the inline `contentEditable` div and B/I/U toolbar (lines 182-215)
-- When editing, render `<InlineHtmlEditor>` instead, converting the plain-text cover letter to simple HTML (`<div style="white-space:pre-wrap">...text...</div>`) on edit entry
-- On save, extract the text content back (or store as HTML — since cover letters are plain text, we'll wrap/unwrap cleanly)
-- This gives cover letters the full toolbar: font family, font size, bold/italic/underline, text color, highlight, lists, alignment, indent, links, undo/redo
+### 2. Update ResumeTab — pass `userProfile` prop
+- Add `userProfile` to `ResumeTabProps` (already available in `useApplicationDetail`)
+- Update DOCX download filename: `buildFileName(first, last, `${variant}-resume`, companyName, "docx")`
+- Update PDF print title similarly (PDF names are browser-controlled via print dialog, but we can set the document title)
 
-#### 3. Cover letter storage consideration
-- Cover letters are currently stored as plain text. To preserve rich formatting from InlineHtmlEditor, add a `cover_letter_html` field or repurpose `cover_letter` to store HTML when edited
-- Simpler approach: convert cover letter text to wrapped HTML on edit open, and on save store the HTML back to `cover_letter` field (the display already uses `white-space: pre-wrap`, so plain text still renders fine; HTML will render via iframe preview)
-- Update the display mode to use an iframe preview (like resumes) when the content contains HTML tags, otherwise render as plain text
+### 3. Update CoverLetterTab — already has `userProfile`
+- Update DOCX download: `buildFileName(first, last, "cover-letter", companyName, "docx")`
+- Update PDF `<title>` tag to use same convention
 
-### Implementation Order
-1. Enhance `InlineHtmlEditor` link insertion UX
-2. Update `CoverLetterTab` to use `InlineHtmlEditor` for editing
-3. Adjust save/display logic for HTML cover letters
+### 4. Update DynamicMaterialsSection — already has `candidateName`
+- Parse `candidateName` into first/last, or query `first_name`/`last_name` separately
+- Update `downloadMaterialPdf` call: `buildFileName(first, last, assetName, companyName, "pdf")`
+- Update `downloadHtmlFile` for dashboard: `buildFileName(first, last, "dashboard", companyName, "html")`
+- Update legacy asset downloads similarly
+
+### Files Modified
+| File | Change |
+|------|--------|
+| `src/lib/fileNaming.ts` | New — shared naming utility |
+| `src/components/tabs/ResumeTab.tsx` | Add `userProfile` prop, use `buildFileName` for DOCX/PDF |
+| `src/components/tabs/CoverLetterTab.tsx` | Use `buildFileName` for DOCX/PDF |
+| `src/components/DynamicMaterialsSection.tsx` | Use `buildFileName` for all material downloads |
+| `src/pages/ApplicationDetail.tsx` | Pass `userProfile` to `ResumeTab` |
 

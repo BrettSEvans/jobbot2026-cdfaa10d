@@ -15,6 +15,7 @@ import {
 import JDIntelligencePanel from "@/components/JDIntelligencePanel";
 import SummaryPreview from "@/components/SummaryPreview";
 import { saveJobApplication } from "@/lib/api/jobApplication";
+import type { JobApplication, ToastFn } from "@/types/models";
 
 interface JDAnalysisTabProps {
   id: string;

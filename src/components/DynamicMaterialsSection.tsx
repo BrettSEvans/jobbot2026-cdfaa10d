@@ -604,7 +604,7 @@ export default function DynamicMaterialsSection({
                   <Button variant="outline" size="sm" onClick={handleDownloadZip}><FolderArchive className="mr-2 h-4 w-4" /> Download ZIP</Button>
                 ) : (
                   <Button variant="outline" size="sm" onClick={() => {
-                    downloadHtmlFile(dashboardHtml, `${(companyName || "dashboard").replace(/\s+/g, "-").toLowerCase()}-dashboard.html`);
+                    downloadHtmlFile(dashboardHtml, buildFileName(candidateProfile?.first_name, candidateProfile?.last_name, "dashboard", companyName, "html"));
                     recordDownloadSignal(applicationId, "dashboard", jobTitle);
                     toast({ title: "Downloaded" });
                   }}><Download className="mr-2 h-4 w-4" /> Download HTML</Button>

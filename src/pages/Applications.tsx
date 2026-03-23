@@ -144,8 +144,9 @@ const Applications = () => {
       });
       toast({ title: "Retrying", description: "Generation restarted in background." });
       loadApplications();
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      toast({ title: "Error", description: message, variant: "destructive" });
     }
   };
 

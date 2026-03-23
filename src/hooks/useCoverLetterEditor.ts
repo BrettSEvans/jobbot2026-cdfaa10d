@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { streamTailoredLetter } from "@/lib/api/coverLetter";
 import { streamRefineMaterial } from "@/lib/api/jobApplication";
 import { saveCoverLetterRevision } from "@/lib/api/coverLetterRevisions";
+import type { UserProfileSnapshot, ChatMessage, ToastFn } from "@/types/models";
 
 interface UseCoverLetterEditorOptions {
   id: string | undefined;
@@ -9,10 +10,10 @@ interface UseCoverLetterEditorOptions {
   setCoverLetter: (val: string) => void;
   coverLetterRevisionTrigger: number;
   setCoverLetterRevisionTrigger: (fn: (t: number) => number) => void;
-  userProfile: any;
+  userProfile: UserProfileSnapshot | null;
   jobDescription: string;
-  saveField: (fields: Record<string, any>) => Promise<void>;
-  toast: (opts: any) => void;
+  saveField: (fields: Record<string, unknown>) => Promise<void>;
+  toast: ToastFn;
 }
 
 export function useCoverLetterEditor({

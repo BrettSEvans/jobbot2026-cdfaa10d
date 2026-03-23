@@ -112,8 +112,9 @@ const Applications = () => {
       await deleteJobApplication(deleteTarget.id);
       setApplications((prev) => prev.filter((a) => a.id !== deleteTarget.id));
       toast({ title: "Deleted", description: "Application removed." });
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      toast({ title: "Error", description: message, variant: "destructive" });
     } finally {
       setDeleteTarget(null);
     }

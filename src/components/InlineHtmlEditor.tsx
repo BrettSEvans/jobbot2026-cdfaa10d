@@ -15,12 +15,16 @@ import {
   AlignRight,
   AlignJustify,
   Link,
+  Unlink,
   Indent,
   Outdent,
   Palette,
   Highlighter,
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface InlineHtmlEditorProps {
   html: string;
@@ -58,6 +62,9 @@ export default function InlineHtmlEditor({
 }: InlineHtmlEditorProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [saving, setSaving] = useState(false);
+  const [linkUrl, setLinkUrl] = useState("");
+  const [linkText, setLinkText] = useState("");
+  const [linkPopoverOpen, setLinkPopoverOpen] = useState(false);
 
   const execCommand = useCallback((cmd: string, value?: string) => {
     const doc = iframeRef.current?.contentDocument;
@@ -91,11 +98,53 @@ export default function InlineHtmlEditor({
     doc.head.appendChild(style);
   }, []);
 
+  const handleOpenLinkPopover = useCallback(() => {
+    // Grab selected text to pre-fill display text
+    const doc = iframeRef.current?.contentDocument;
+    const sel = doc?.getSelection();
+    const selectedText = sel?.toString() || "";
+    setLinkText(selectedText);
+    setLinkUrl("https://");
+    setLinkPopoverOpen(true);
+  }, []);
+
   const handleInsertLink = useCallback(() => {
-    const url = window.prompt("Enter URL:");
-    if (url) {
-      execCommand("createLink", url);
+    const doc = iframeRef.current?.contentDocument;
+    if (!doc || !linkUrl.trim()) return;
+
+    const win = iframeRef.current?.contentWindow;
+    if (!win) return;
+    win.focus();
+
+    const sel = doc.getSelection();
+    if (sel && sel.rangeCount > 0) {
+      const selectedText = sel.toString();
+      if (selectedText) {
+        // Selection exists — wrap it with a link
+        doc.execCommand("createLink", false, linkUrl.trim());
+      } else if (linkText.trim()) {
+        // No selection but display text provided — insert new linked text
+        const a = doc.createElement("a");
+        a.href = linkUrl.trim();
+        a.textContent = linkText.trim();
+        const range = sel.getRangeAt(0);
+        range.deleteContents();
+        range.insertNode(a);
+        // Move cursor after the link
+        range.setStartAfter(a);
+        range.collapse(true);
+        sel.removeAllRanges();
+        sel.addRange(range);
+      }
     }
+
+    setLinkPopoverOpen(false);
+    setLinkUrl("");
+    setLinkText("");
+  }, [linkUrl, linkText]);
+
+  const handleUnlink = useCallback(() => {
+    execCommand("unlink");
   }, [execCommand]);
 
   return (
@@ -203,9 +252,49 @@ export default function InlineHtmlEditor({
           <Outdent className="h-4 w-4" />
         </Button>
 
-        {/* Insert link */}
-        <Button type="button" variant="ghost" size="icon" className="h-8 w-8" title="Insert Link" onClick={handleInsertLink}>
-          <Link className="h-4 w-4" />
+        {/* Insert link popover */}
+        <Popover open={linkPopoverOpen} onOpenChange={setLinkPopoverOpen}>
+          <PopoverTrigger asChild>
+            <Button type="button" variant="ghost" size="icon" className="h-8 w-8" title="Insert Link" onClick={handleOpenLinkPopover}>
+              <Link className="h-4 w-4" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-80 space-y-3" side="bottom" align="start"
+            onOpenAutoFocus={(e) => e.preventDefault()}
+          >
+            <p className="text-sm font-medium">Insert Hyperlink</p>
+            <div className="space-y-2">
+              <div>
+                <Label htmlFor="link-url" className="text-xs">URL</Label>
+                <Input
+                  id="link-url"
+                  placeholder="https://example.com"
+                  value={linkUrl}
+                  onChange={(e) => setLinkUrl(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleInsertLink(); } }}
+                />
+              </div>
+              <div>
+                <Label htmlFor="link-text" className="text-xs">Display text (optional)</Label>
+                <Input
+                  id="link-text"
+                  placeholder="Click here"
+                  value={linkText}
+                  onChange={(e) => setLinkText(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleInsertLink(); } }}
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="ghost" size="sm" onClick={() => setLinkPopoverOpen(false)}>Cancel</Button>
+              <Button size="sm" onClick={handleInsertLink} disabled={!linkUrl.trim()}>Insert</Button>
+            </div>
+          </PopoverContent>
+        </Popover>
+
+        {/* Unlink */}
+        <Button type="button" variant="ghost" size="icon" className="h-8 w-8" title="Remove Link" onClick={handleUnlink}>
+          <Unlink className="h-4 w-4" />
         </Button>
 
         <Separator orientation="vertical" className="h-6 mx-1" />
@@ -236,7 +325,7 @@ export default function InlineHtmlEditor({
           ref={iframeRef}
           srcDoc={html}
           className="w-full h-full border-0"
-          title="Resume Editor"
+          title="Document Editor"
           onLoad={handleLoad}
         />
       </div>

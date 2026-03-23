@@ -18,7 +18,7 @@ import type { JobApplication, UserProfileSnapshot, ChatMessage, ToastFn } from "
 
 interface CoverLetterTabProps {
   id: string;
-  app: any;
+  app: JobApplication;
   coverLetter: string;
   setCoverLetter: (val: string) => void;
   editingCoverLetter: boolean;
@@ -26,7 +26,7 @@ interface CoverLetterTabProps {
   saving: boolean;
   companyName: string;
   jobTitle: string;
-  userProfile: any;
+  userProfile: UserProfileSnapshot | null;
   previewCoverLetter: string | null;
   setPreviewCoverLetter: (val: string | null) => void;
   coverLetterRevisionTrigger: number;
@@ -36,14 +36,14 @@ interface CoverLetterTabProps {
   setClChatOpen: (val: boolean) => void;
   clChatInput: string;
   setClChatInput: (val: string) => void;
-  clChatHistory: Array<{ role: string; content: string }>;
+  clChatHistory: ChatMessage[];
   clRefining: boolean;
   handleRegenerateCoverLetter: () => Promise<void>;
   handleCoverLetterVibeEdit: () => Promise<void>;
   // Actions
-  saveField: (fields: Record<string, any>) => Promise<void>;
+  saveField: (fields: Record<string, unknown>) => Promise<void>;
   handleCopy: (text: string, label: string) => Promise<void>;
-  toast: (opts: any) => void;
+  toast: ToastFn;
 }
 
 export function CoverLetterTab({

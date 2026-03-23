@@ -74,15 +74,15 @@ function ResumePagePreview({ html }: { html: string }) {
 
 interface ResumeTabProps {
   id: string;
-  app: any;
-  setApp: (fn: any) => void;
+  app: JobApplication;
+  setApp: (fn: (prev: JobApplication | null) => JobApplication | null) => void;
   jobDescription: string;
   companyName: string;
   jobTitle: string;
   resumeText: string | null;
-  userResumes: any[];
+  userResumes: UserResumePickerItem[];
   isBgGenerating: boolean;
-  bgJob: any;
+  bgJob: import("@/lib/backgroundGenerator").GenerationJob | undefined;
   previewResumeHtml: string | null;
   setPreviewResumeHtml: (val: string | null) => void;
   resumeRevisionTrigger: number;
@@ -97,10 +97,10 @@ interface ResumeTabProps {
   setEditingResume: (val: boolean) => void;
   handleRegenerateResume: () => Promise<void>;
   // Actions
-  saveField: (fields: Record<string, any>) => Promise<void>;
-  handleAcceptFabrication: (change: any) => void;
-  handleRevertFabrication: (change: any) => Promise<void>;
-  toast: (opts: any) => void;
+  saveField: (fields: Record<string, unknown>) => Promise<void>;
+  handleAcceptFabrication: (change: FabricationChange) => void;
+  handleRevertFabrication: (change: FabricationChange) => Promise<void>;
+  toast: ToastFn;
 }
 
 export function ResumeTab({

@@ -15,7 +15,7 @@ import {
 import type { JobApplication } from "@/types/models";
 
 interface DetailsTabProps {
-  app: any;
+  app: JobApplication;
   companyName: string;
   setCompanyName: (val: string) => void;
   jobTitle: string;
@@ -27,7 +27,7 @@ interface DetailsTabProps {
   editingMeta: boolean;
   setEditingMeta: (val: boolean) => void;
   saving: boolean;
-  saveField: (fields: Record<string, any>) => Promise<void>;
+  saveField: (fields: Record<string, unknown>) => Promise<void>;
 }
 
 export function DetailsTab({

@@ -123,8 +123,8 @@ export function JDAnalysisTab({
             jdIntelligence={app?.jd_intelligence}
             onParsed={async (intelligence) => {
               try {
-                await saveJobApplication({ id, job_url: app.job_url, jd_intelligence: intelligence } as any);
-                setApp((prev: any) => ({ ...prev, jd_intelligence: intelligence }));
+                await saveJobApplication({ id, job_url: app.job_url, jd_intelligence: intelligence });
+                setApp((prev) => prev ? { ...prev, jd_intelligence: intelligence as unknown as import("@/integrations/supabase/types").Json } : prev);
               } catch (e) {
                 console.warn("Failed to save JD intelligence:", e);
               }

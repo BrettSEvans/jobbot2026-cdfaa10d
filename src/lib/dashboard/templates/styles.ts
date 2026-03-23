@@ -511,6 +511,77 @@ input[type="range"]::-webkit-slider-thumb {
   margin-top: 16px;
 }
 
+/* === CFO TOGGLE & SEGMENTED CONTROLS === */
+.cfo-controls { margin-bottom: 16px; }
+
+.toggle-group, .segmented-group {
+  margin-bottom: 16px;
+}
+
+.toggle-label {
+  display: block;
+  font-size: 13px;
+  margin-bottom: 6px;
+  color: var(--md-on-surface);
+}
+
+.toggle-wrap, .segmented-wrap {
+  display: flex;
+  gap: 0;
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+}
+
+.toggle-btn, .segmented-btn {
+  flex: 1;
+  padding: 8px 16px;
+  border: none;
+  background: var(--md-surface);
+  color: var(--md-on-surface);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.toggle-btn:not(:last-child), .segmented-btn:not(:last-child) {
+  border-right: 1px solid var(--md-outline-variant);
+}
+
+.toggle-btn.active, .segmented-btn.active {
+  background: var(--md-primary);
+  color: var(--md-on-primary);
+}
+
+.toggle-btn:hover:not(.active), .segmented-btn:hover:not(.active) {
+  background: var(--md-surface-container-high);
+}
+
+/* === DRILL-DOWN NOTES === */
+.drilldown-notes {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--md-outline-variant);
+}
+
+.drilldown-notes-title {
+  font-family: var(--font-heading);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--md-primary);
+  margin-bottom: 8px;
+}
+
+.drilldown-notes-text {
+  font-size: 13px;
+  color: var(--md-outline);
+  line-height: 1.6;
+  margin-bottom: 6px;
+  padding-left: 12px;
+  border-left: 2px solid var(--md-outline-variant);
+}
+
 /* === TOAST === */
 #toast-container {
   position: fixed;

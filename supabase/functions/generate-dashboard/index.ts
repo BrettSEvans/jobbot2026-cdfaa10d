@@ -183,7 +183,7 @@ serve(async (req) => {
       );
     }
 
-    const systemPrompt = buildSystemPrompt(branding, competitors, customers, products, department || 'GTM', companyName || 'Unknown', jobTitle || 'Unknown', researchedSections);
+    const systemPrompt = buildSystemPrompt(branding, competitors, customers, products, department || 'General', companyName || 'Unknown', jobTitle || 'Unknown', researchedSections);
 
     const templateContext = templateHtml ? `\n\nREFERENCE TEMPLATE (use as structural guide for section layout, chart types, and data patterns — but generate NEW data for the new company): Provided separately.` : '';
 
@@ -199,7 +199,7 @@ serve(async (req) => {
           { role: 'system', content: systemPrompt },
           {
             role: 'user',
-            content: `Generate the dashboard JSON for:\n\nCompany: ${companyName || 'Unknown'}\nRole: ${jobTitle || 'Unknown'}\nDepartment: ${department || 'GTM / Sales / Marketing'}\n\nJob Description:\n${jobDescription}${templateContext}`
+            content: `Generate the dashboard JSON for:\n\nCompany: ${companyName || 'Unknown'}\nRole: ${jobTitle || 'Unknown'}\nDepartment: ${department || 'Not specified'}\n\nJob Description:\n${jobDescription}${templateContext}`
           },
         ],
         stream: true,

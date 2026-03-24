@@ -209,6 +209,11 @@ class BackgroundGenerationManager {
         }
       }
 
+      // 3c. Override department with authoritative JD intelligence
+      if (jdIntelligence?.department) {
+        department = jdIntelligence.department;
+      }
+
       // 4. Research
       this.updateJob(appId, { status: "research", progress: `Researching ${companyName || 'company'}...` });
       await saveJobApplication({ id: appId, job_url: jobUrl, generation_status: "research" } as any);

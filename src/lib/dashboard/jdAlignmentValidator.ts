@@ -205,7 +205,20 @@ export function validateDashboardAlignment(
     });
   }
 
-  // 5. Calculate overall score
+  // 5. Department mismatch check
+  if (jdIntelligence.department) {
+    const dashDept = normalize(data.meta.department || "");
+    const jdDept = normalize(jdIntelligence.department);
+    if (dashDept && !textContainsKeyword(dashDept, jdDept) && !textContainsKeyword(jdDept, dashDept)) {
+      gaps.push({
+        type: "structural",
+        severity: "warning",
+        message: `Dashboard department "${data.meta.department}" doesn't match JD department "${jdIntelligence.department}"`,
+      });
+    }
+  }
+
+  // 6. Calculate overall score
   const structuralScore = (hasAgenticWorkforce ? 15 : 0) + (hasCfoView ? 15 : 0) + Math.min(sectionCount / 6, 1) * 10;
   const keywordScore = (keywordCoverage / 100) * 30;
   const requirementScore = (requirementCoverage / 100) * 30;

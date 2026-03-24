@@ -226,7 +226,7 @@ const Applications = () => {
         <Tabs defaultValue="applications" className="space-y-4">
           <TabsList>
             <TabsTrigger value="applications">Applications</TabsTrigger>
-            <TabsTrigger value="pipeline">Pipeline</TabsTrigger>
+            <TabsTrigger value="pipeline" data-tour="pipeline-tab">Pipeline</TabsTrigger>
           </TabsList>
 
           <TabsContent value="applications">

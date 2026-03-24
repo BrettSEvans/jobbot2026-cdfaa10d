@@ -1,54 +1,65 @@
 
 
-## Add Pipeline Kanban Board to Applications Page
+## Fix Department Detection & Validation
 
-The Applications page currently shows only a flat table. The database already has `pipeline_stage` and `pipeline_stage_history` columns/tables ready. Using the uploaded Stories KanbanBoard/KanbanColumn as the architectural pattern, I'll build a job application Pipeline board with drag-and-drop stage transitions.
+### Problem
+1. `department` comes from `analyze-company` edge function, which is biased toward "Sales, Marketing, GTM" examples
+2. `jdIntelligence.department` (from `parse-job-description`) is a more authoritative source but is **never used** for dashboard generation
+3. The `generate-dashboard` edge function has hardcoded fallbacks: `department || 'GTM'` and `department || 'GTM / Sales / Marketing'`
+4. The validator doesn't check for department mismatch
 
 ### Changes
 
-#### 1. Create `src/components/PipelineBoard.tsx`
-Drag-and-drop Kanban board for job applications using `@dnd-kit/core` (already installed).
-- **Columns**: Bookmarked, Applied, Interviewing, Offer, Accepted, Withdrawn, Ghosted, Rejected
-- **Cards**: Company icon, company name, job title, days-in-stage badge (green < 5d, orange 5-10d, red > 10d), click to navigate to detail
-- **Drag-and-drop**: On drop, call `updatePipelineStage` to update `pipeline_stage` + `stage_changed_at` on `job_applications` and insert into `pipeline_stage_history`
-- **Drag overlay**: Simplified card preview while dragging
-- Pattern follows uploaded `KanbanBoard.tsx` structure (DndContext, sensors, DragOverlay)
+**1. `src/lib/backgroundGenerator.ts` — Prefer JD intelligence department**
 
-#### 2. Create `src/components/PipelineColumn.tsx`
-Droppable column component following uploaded `KanbanColumn.tsx` pattern.
-- Uses `useDroppable` from dnd-kit
-- Uses `useDraggable` for each card
-- Color-coded top border per stage
-- Badge with card count
-- Each card shows: CompanyIcon, company/job title, days-in-stage indicator
+After JD intelligence is parsed (line ~209), override the `department` variable with `jdIntelligence.department` when available:
 
-#### 3. Add `updatePipelineStage` to `src/lib/api/jobApplication.ts`
 ```typescript
-export async function updatePipelineStage(id: string, newStage: string, oldStage?: string) {
-  const { data: { session } } = await supabase.auth.getSession();
-  // Update job_applications
-  await supabase.from('job_applications')
-    .update({ pipeline_stage: newStage, stage_changed_at: new Date().toISOString() })
-    .eq('id', id);
-  // Insert history record
-  if (session?.user?.id) {
-    await supabase.from('pipeline_stage_history')
-      .insert({ application_id: id, user_id: session.user.id, from_stage: oldStage, to_stage: newStage });
+// After jdIntelligence is parsed:
+if (jdIntelligence?.department) {
+  department = jdIntelligence.department;
+}
+```
+
+This ensures the more structured, authoritative JD parse takes precedence over the company analyzer's guess.
+
+**2. `supabase/functions/generate-dashboard/index.ts` — Remove GTM fallbacks**
+
+- Line 186: Change `department || 'GTM'` → `department || 'General'`
+- Line 202: Change `department || 'GTM / Sales / Marketing'` → `department || 'Not specified'`
+
+These neutral fallbacks prevent the LLM from being biased toward sales/marketing when the department is unknown.
+
+**3. `src/lib/dashboard/jdAlignmentValidator.ts` — Add department mismatch check**
+
+Add a validation step that compares `data.meta.department` against `jdIntelligence.department` and `jdIntelligence.job_function`. If neither matches, flag a warning gap:
+
+```typescript
+// Department mismatch check
+if (jdIntelligence.department) {
+  const dashDept = normalize(data.meta.department || "");
+  const jdDept = normalize(jdIntelligence.department);
+  if (dashDept && !textContainsKeyword(dashDept, jdDept) && !textContainsKeyword(jdDept, dashDept)) {
+    gaps.push({
+      type: "structural",
+      severity: "warning",
+      message: `Dashboard department "${data.meta.department}" doesn't match JD department "${jdIntelligence.department}"`,
+    });
   }
 }
 ```
 
-#### 4. Update `src/pages/Applications.tsx`
-- Wrap existing content + new Pipeline board in a `Tabs` component with three tabs: **Applications**, **Pipeline**, **Trash**
-- Import `PipelineBoard` and render under the Pipeline tab
-- Pass `applications` list and `loadApplications` refetch callback
-- Existing table, preview, delete dialog all remain intact under the Applications tab
+**4. `supabase/functions/analyze-company/index.ts` — Broaden department examples**
 
-### Files Modified/Created
-| File | Action |
-|------|--------|
-| `src/components/PipelineBoard.tsx` | Create — drag-and-drop Kanban board |
-| `src/components/PipelineColumn.tsx` | Create — droppable column + draggable cards |
-| `src/lib/api/jobApplication.ts` | Add `updatePipelineStage` function |
-| `src/pages/Applications.tsx` | Add Tabs wrapper with Applications + Pipeline + Trash tabs |
+Update the prompt example from `"Sales, Marketing, GTM, Operations, etc."` to `"e.g. Engineering, Product, Finance, HR, Sales, Marketing, Operations, Legal, etc."` to reduce bias.
+
+### Summary of flow after fix
+
+```text
+analyze-company → department (initial guess)
+parse-job-description → jdIntelligence.department (authoritative)
+                         ↓ overrides department if present
+generate-dashboard ← uses JD-derived department (neutral fallback if missing)
+jdAlignmentValidator ← checks dashboard meta.department matches JD department
+```
 

@@ -55,6 +55,8 @@ export function JDAnalysisTab({
   saveField,
   handleCopy,
   toast,
+  jobUrl,
+  setJobUrl,
 }: JDAnalysisTabProps) {
   return (
     <div className="space-y-4">

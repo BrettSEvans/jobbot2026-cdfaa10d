@@ -153,6 +153,7 @@ ${sectionInstructions}
 - All text must be specific to ${companyName || 'the company'} and the ${jobTitle || 'role'}
 - Branding colors derived from provided branding data using Material You tonal palette principles
 - Chart datasets: use contextual colors derived from branding, not random colors
+- CONTRAST REQUIREMENT: The "outline" color is used for secondary text (labels, descriptions). It MUST have at least 4.5:1 contrast ratio against the "surface" background. Use a dark value like #49454F or darker — never lighter than #5F5F6F. Avoid light greys (#79747E or lighter) for any text on light backgrounds.
 - Table generateRows fields: use company-specific options (competitor names, product names, region names from context)
 ${brandingContext}
 ${competitorContext}

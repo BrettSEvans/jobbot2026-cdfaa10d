@@ -159,8 +159,18 @@ class BackgroundGenerationManager {
       if (!useManualInput && jobUrl) {
         this.updateJob(appId, { status: "reviewing-job", progress: "Reviewing job posting..." });
         await saveJobApplication({ id: appId, job_url: jobUrl, generation_status: "reviewing-job" } as any);
-        const result = await scrapeJob(jobUrl);
-        markdown = result.markdown;
+        try {
+          const result = await scrapeJob(jobUrl);
+          markdown = result.markdown;
+        } catch (scrapeErr: any) {
+          if (scrapeErr?.blocked || scrapeErr?.message === 'BLOCKED_SITE') {
+            const hostname = (() => { try { return new URL(jobUrl).hostname; } catch { return jobUrl; } })();
+            this.updateJob(appId, { status: "error", progress: `This site (${hostname}) blocks automated scraping. Please use "Paste text instead" to manually enter the job description.` });
+            await saveJobApplication({ id: appId, job_url: jobUrl, generation_status: "error", generation_error: `Blocked site: ${hostname}. Use manual paste.` } as any);
+            return;
+          }
+          throw scrapeErr;
+        }
       }
       this.updateJob(appId, { status: "reviewing-job", progress: "Job description ready" });
 

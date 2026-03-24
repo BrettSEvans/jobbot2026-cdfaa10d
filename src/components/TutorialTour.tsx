@@ -12,33 +12,58 @@ interface TourStep {
 const TOUR_STEPS: TourStep[] = [
   {
     target: '[href="/"], [data-tour="applications"]',
-    title: "Applications",
-    content: "This is your main hub. All your job applications live here. Click any row to see its details.",
+    title: "Applications Hub",
+    content: "This is your main hub. All your job applications live here — click any row to see its details, or use the Pipeline tab for a Kanban board view.",
   },
   {
     target: '[data-tour="new-app"], a[href="/applications/new"]',
     title: "Create an Application",
-    content: "Click here to create a new application. Just paste a job listing URL and we'll handle the rest.",
+    content: "Click here to create a new application. Paste a job URL or enter a job description manually. Use Batch Mode to submit up to 5 at once.",
   },
   {
     target: '[role="tablist"]',
     title: "Application Tabs",
-    content: "Each application has five tabs: Resume (with keyword analysis, diff viewer, ATS check, bullet coach), Cover Letter, JD Analysis, Dashboard, and Details.",
+    content: "Each application has tabs: Resume (with keyword analysis, diff viewer, ATS check, bullet coach), Cover Letter, JD Analysis, Materials (RAID logs, roadmaps, etc.), and Details.",
   },
   {
     target: '[value="resume"]',
     title: "Resume Tab",
-    content: "Your AI-optimized resume lives here. Use Keyword Gap Analysis to inject missing keywords, view diffs, check ATS compliance, and improve bullets.",
+    content: "Your AI-optimized resume lives here. Use Keyword Gap Analysis to inject missing keywords, view diffs, check ATS compliance, improve bullets, and review Resume Health.",
+  },
+  {
+    target: '[value="cover-letter"]',
+    title: "Cover Letter Tab",
+    content: "AI-generated cover letter tailored to the job description. Edit directly, regenerate with custom instructions, or browse revision history.",
   },
   {
     target: '[value="jd-analysis"]',
-    title: "JD Analysis",
-    content: "Deep analysis of the job description — structured intelligence, requirement categories, and a tailored summary preview.",
+    title: "JD Analysis Tab",
+    content: "Deep analysis of the job description — structured intelligence, requirement categories, red flags, job health score, and a tailored summary preview. You can also edit the job URL here.",
+  },
+  {
+    target: '[value="materials"]',
+    title: "Materials Tab",
+    content: "Additional AI-generated deliverables: RAID logs, roadmaps, architecture diagrams, and more. Materials are suggested based on the role type.",
+  },
+  {
+    target: '[value="dashboard"]',
+    title: "Dashboard Tab",
+    content: "A branded research dashboard with company analysis and competitive landscape. Refine it with AI chat and download as HTML or ZIP.",
+  },
+  {
+    target: '[value="details"]',
+    title: "Details Tab",
+    content: "Edit application metadata — company name, job title, URLs, and pipeline stage. Also shows research results like competitors and products.",
   },
   {
     target: '[data-tour="prev-next"], [title="Next application"]',
     title: "Quick Navigation",
     content: "Use the prev/next arrows to navigate between applications without going back to the list.",
+  },
+  {
+    target: '[data-tour="pipeline-tab"], [value="pipeline"]',
+    title: "Pipeline Board",
+    content: "Drag-and-drop Kanban board to track applications by stage. Select multiple cards with checkboxes for bulk stage updates.",
   },
   {
     target: '[data-tour="templates"]',
@@ -48,12 +73,17 @@ const TOUR_STEPS: TourStep[] = [
   {
     target: '[data-tour="profile"]',
     title: "Your Profile",
-    content: "Set up your resume text, master cover letter, skills, and preferences here. This data personalizes all your generated materials.",
+    content: "Set up your resume text, master cover letter, skills, and preferences. Upload multiple resumes and set one as active for each role type.",
   },
   {
     target: '[data-tour="ai-chat"]',
     title: "AI Chat",
-    content: "Need help? Click AI Chat to get guidance or ask questions about your applications.",
+    content: "Need help? Click AI Chat to get guidance, interview prep tips, or ask questions about your applications.",
+  },
+  {
+    target: '[aria-label="Help"]',
+    title: "Help & Docs",
+    content: "Click the Help button anytime to search all topics. It automatically highlights topics relevant to your current page.",
   },
 ];
 

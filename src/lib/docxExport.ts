@@ -181,7 +181,7 @@ export async function downloadHtmlAsDocx(html: string, fileName: string) {
           basedOn: "Normal",
           next: "Normal",
           quickFormat: true,
-          run: { size: 24, bold: true, font: "Calibri" },
+          run: { size: 24, bold: true, font: "Roboto" },
           paragraph: { spacing: { before: 200, after: 100 } },
         },
       ],

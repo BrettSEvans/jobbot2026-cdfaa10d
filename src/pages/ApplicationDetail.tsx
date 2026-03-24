@@ -18,7 +18,7 @@ const ApplicationDetail = () => {
     id, navigate, toast, app, setApp, loading, saving, isValidUuid,
     coverLetter, setCoverLetter, editingCoverLetter, setEditingCoverLetter,
     jobDescription, setJobDescription, editingJobDescription, setEditingJobDescription,
-    companyUrl, setCompanyUrl, companyName, setCompanyName, jobTitle, setJobTitle,
+    companyUrl, setCompanyUrl, jobUrl, setJobUrl, companyName, setCompanyName, jobTitle, setJobTitle,
     editingMeta, setEditingMeta,
     dashboardHtml, setDashboardHtml, dashboardData, setDashboardData,
     chatHistory, setChatHistory,

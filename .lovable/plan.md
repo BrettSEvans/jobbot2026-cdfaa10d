@@ -1,65 +1,61 @@
 
 
-## Fix Department Detection & Validation
+## Bug Analysis: Dashboard Still Defaulting to GTM
 
-### Problem
-1. `department` comes from `analyze-company` edge function, which is biased toward "Sales, Marketing, GTM" examples
-2. `jdIntelligence.department` (from `parse-job-description`) is a more authoritative source but is **never used** for dashboard generation
-3. The `generate-dashboard` edge function has hardcoded fallbacks: `department || 'GTM'` and `department || 'GTM / Sales / Marketing'`
-4. The validator doesn't check for department mismatch
+### Root Cause
 
-### Changes
+There are **two bugs** working together:
 
-**1. `src/lib/backgroundGenerator.ts` — Prefer JD intelligence department**
+**Bug 1: The LLM returns raw HTML instead of JSON.** The system prompt says "OUTPUT: ONLY valid JSON" but the LLM (Gemini 2.5 Pro) is generating a complete HTML page with embedded `__DASHBOARD_DATA__` JSON. The `parseLlmJsonOutput()` call fails, and the code falls through to the raw HTML fallback path (lines 536-544).
 
-After JD intelligence is parsed (line ~209), override the `department` variable with `jdIntelligence.department` when available:
+**Bug 2: The JD alignment validator only runs on the JSON path.** The validation (lines 510-535) is inside the `if (parsed)` block. When the LLM returns HTML instead of JSON, the `else` branch (line 536) saves the raw HTML **without any validation at all** — no department check, no keyword coverage, nothing. The dashboard goes straight to the database with whatever department the LLM hallucinated.
 
-```typescript
-// After jdIntelligence is parsed:
-if (jdIntelligence?.department) {
-  department = jdIntelligence.department;
-}
-```
+In this case: the correct department "Customer Success / Delivery" was sent to the edge function, but the LLM embedded `"department":"GTM / Sales / Marketing"` in its HTML output, and no validator caught it because the validator was bypassed entirely.
 
-This ensures the more structured, authoritative JD parse takes precedence over the company analyzer's guess.
+### Fix Plan
 
-**2. `supabase/functions/generate-dashboard/index.ts` — Remove GTM fallbacks**
+**1. `src/lib/backgroundGenerator.ts` — Run validation on raw HTML fallback path**
 
-- Line 186: Change `department || 'GTM'` → `department || 'General'`
-- Line 202: Change `department || 'GTM / Sales / Marketing'` → `department || 'Not specified'`
-
-These neutral fallbacks prevent the LLM from being biased toward sales/marketing when the department is unknown.
-
-**3. `src/lib/dashboard/jdAlignmentValidator.ts` — Add department mismatch check**
-
-Add a validation step that compares `data.meta.department` against `jdIntelligence.department` and `jdIntelligence.job_function`. If neither matches, flag a warning gap:
+In the `else` branch (line 536), extract the embedded `__DASHBOARD_DATA__` JSON from the raw HTML and run the validator against it:
 
 ```typescript
-// Department mismatch check
-if (jdIntelligence.department) {
-  const dashDept = normalize(data.meta.department || "");
-  const jdDept = normalize(jdIntelligence.department);
-  if (dashDept && !textContainsKeyword(dashDept, jdDept) && !textContainsKeyword(jdDept, dashDept)) {
-    gaps.push({
-      type: "structural",
-      severity: "warning",
-      message: `Dashboard department "${data.meta.department}" doesn't match JD department "${jdIntelligence.department}"`,
-    });
+} else {
+  console.warn("Failed to parse dashboard JSON, falling back to raw HTML");
+  dashboardHtml = dashboardRaw;
+  // ... existing HTML trimming ...
+
+  // Extract embedded JSON from __DASHBOARD_DATA__ for validation
+  const dataMatch = dashboardHtml.match(/window\.__DASHBOARD_DATA__\s*=\s*({[\s\S]*?});?\s*<\/script>/);
+  if (dataMatch) {
+    try {
+      const embeddedData = JSON.parse(dataMatch[1]);
+      // Fix department mismatch in embedded data
+      if (department && embeddedData?.meta) {
+        embeddedData.meta.department = department;
+        // Replace in HTML too
+        dashboardHtml = dashboardHtml.replace(dataMatch[0], 
+          `window.__DASHBOARD_DATA__=${JSON.stringify(embeddedData)};</script>`);
+      }
+      dashboardData = embeddedData;
+      // Run validation on extracted data
+      const alignmentReport = validateDashboardAlignment(embeddedData, jdIntelligence);
+      // ... store alignment report same as JSON path ...
+    } catch { /* extraction failed, save as-is */ }
   }
 }
 ```
 
-**4. `supabase/functions/analyze-company/index.ts` — Broaden department examples**
+This ensures:
+- The department is **corrected** in the HTML output to match the JD intelligence
+- The validator runs even when the LLM returns raw HTML
+- `dashboard_data` is populated so future refinements have structured data
 
-Update the prompt example from `"Sales, Marketing, GTM, Operations, etc."` to `"e.g. Engineering, Product, Finance, HR, Sales, Marketing, Operations, Legal, etc."` to reduce bias.
+**2. `supabase/functions/generate-dashboard/index.ts` — Strengthen JSON-only instruction**
 
-### Summary of flow after fix
+Add a stronger instruction to the system prompt to reduce the frequency of HTML output:
+- Add: `"CRITICAL: Return ONLY the raw JSON object. Do NOT wrap it in HTML, script tags, or markdown fences. Do NOT generate a full HTML page."`
 
-```text
-analyze-company → department (initial guess)
-parse-job-description → jdIntelligence.department (authoritative)
-                         ↓ overrides department if present
-generate-dashboard ← uses JD-derived department (neutral fallback if missing)
-jdAlignmentValidator ← checks dashboard meta.department matches JD department
-```
+### Files to Change
+- `src/lib/backgroundGenerator.ts` — Add embedded JSON extraction + validation in fallback path
+- `supabase/functions/generate-dashboard/index.ts` — Strengthen JSON-only prompt instruction
 

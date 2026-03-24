@@ -155,12 +155,13 @@ function ResumeVariantToolbar({
             document.body.removeChild(iframe);
             return;
           }
-          const printStyles = `<style>@page{size:letter;margin:0}@media print{html{margin:0;padding:0}body{margin:0;padding:0.5in;-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style>`;
-          // Strip title to suppress browser header/footer metadata in print
-          const htmlClean = html.replace(/<title>[^<]*<\/title>/i, '<title></title>');
+          const printStyles = `<style>@page{size:letter;margin:0}@media print{html{margin:0 !important;padding:0 !important}body{margin:0 !important;padding:0.5in !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style>`;
+          const sourceDoc = new DOMParser().parseFromString(html, "text/html");
+          const printDocument = `<!DOCTYPE html><html><head><meta charset="utf-8" /><title></title>${printStyles}${sourceDoc.head?.innerHTML || ""}</head><body>${sourceDoc.body?.innerHTML || html}</body></html>`;
           doc.open();
-          doc.write(htmlClean.replace("</head>", printStyles + "</head>"));
+          doc.write(printDocument);
           doc.close();
+          doc.title = "";
           const triggerPrint = () => {
             try { iframe.contentWindow?.print(); } catch (_) {}
             setTimeout(() => { if (iframe.parentNode) document.body.removeChild(iframe); }, 1000);

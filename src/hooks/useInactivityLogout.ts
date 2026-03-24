@@ -2,8 +2,8 @@ import { useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-const TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
-const WARNING_MS = 25 * 60 * 1000; // 25 minutes
+const TIMEOUT_MS = 8 * 60 * 60 * 1000; // 8 hours
+const WARNING_MS = 7 * 60 * 60 * 1000 + 55 * 60 * 1000; // 7 hours 55 minutes
 
 export function useInactivityLogout() {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);

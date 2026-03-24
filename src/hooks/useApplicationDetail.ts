@@ -142,6 +142,7 @@ export function useApplicationDetail() {
       }
       setJobDescription(data.job_description_markdown || "");
       setCompanyUrl(data.company_url || "");
+      setJobUrl(data.job_url || "");
       setCompanyName(data.company_name || "");
       setJobTitle(data.job_title || "");
 

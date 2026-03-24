@@ -47,7 +47,7 @@ SECTION REQUIREMENTS:
 
   return `You are a business intelligence data architect. Generate a structured JSON object for a dashboard.
 
-OUTPUT: ONLY valid JSON. No markdown fences, no explanation. Start with { and end with }.
+CRITICAL: Return ONLY the raw JSON object. Do NOT wrap it in HTML, script tags, or markdown fences. Do NOT generate a full HTML page. Start with { and end with }. No other output.
 
 JSON SCHEMA (follow EXACTLY):
 {

@@ -27,6 +27,7 @@ export function useApplicationDetail() {
   const [jobDescription, setJobDescription] = useState("");
   const [editingJobDescription, setEditingJobDescription] = useState(false);
   const [companyUrl, setCompanyUrl] = useState("");
+  const [jobUrl, setJobUrl] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [jobTitle, setJobTitle] = useState("");
   const [editingMeta, setEditingMeta] = useState(false);

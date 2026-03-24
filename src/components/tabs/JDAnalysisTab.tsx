@@ -34,6 +34,8 @@ interface JDAnalysisTabProps {
   saveField: (fields: Record<string, unknown>) => Promise<void>;
   handleCopy: (text: string, label: string) => Promise<void>;
   toast: ToastFn;
+  jobUrl: string;
+  setJobUrl: (val: string) => void;
 }
 
 export function JDAnalysisTab({

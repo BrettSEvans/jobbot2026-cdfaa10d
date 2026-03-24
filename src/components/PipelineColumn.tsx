@@ -1,4 +1,5 @@
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { CompanyIcon } from "@/components/CompanyIcon";
 import { useDroppable, useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
@@ -23,7 +24,10 @@ function DaysInStageBadge({ stageChangedAt }: { stageChangedAt: string | null })
   return <span className={`text-[10px] font-mono ${color}`}>{days}d</span>;
 }
 
-function DraggableCard({ app, onClick }: { app: JobApplicationListItem; onClick: (app: JobApplicationListItem) => void }) {
+function DraggableCard({ app, onClick, selected, onToggleSelect }: {
+  app: JobApplicationListItem; onClick: (app: JobApplicationListItem) => void;
+  selected?: boolean; onToggleSelect?: (id: string) => void;
+}) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: app.id });
   const style = { transform: CSS.Translate.toString(transform), opacity: isDragging ? 0.3 : 1 };
 
@@ -33,10 +37,18 @@ function DraggableCard({ app, onClick }: { app: JobApplicationListItem; onClick:
       style={style}
       {...listeners}
       {...attributes}
-      className="rounded-md border border-border bg-card p-3 cursor-grab hover:border-primary/40 shadow-sm hover:shadow-md transition-shadow duration-150 active:cursor-grabbing touch-none"
+      className={`rounded-md border border-border bg-card p-3 cursor-grab hover:border-primary/40 shadow-sm hover:shadow-md transition-shadow duration-150 active:cursor-grabbing touch-none group ${selected ? "ring-1 ring-primary/50 bg-primary/5" : ""}`}
       onClick={() => { if (!isDragging) onClick(app); }}
     >
       <div className="flex items-start gap-2">
+        {onToggleSelect && (
+          <Checkbox
+            checked={selected}
+            onCheckedChange={() => onToggleSelect(app.id)}
+            onClick={(e) => e.stopPropagation()}
+            className="mt-0.5 opacity-0 group-hover:opacity-100 data-[state=checked]:opacity-100 transition-opacity"
+          />
+        )}
         <CompanyIcon companyName={app.company_name} companyUrl={app.company_url} iconUrl={app.company_icon_url} />
         <div className="flex-1 min-w-0">
           <span className="text-xs font-medium text-foreground leading-snug block truncate">{app.company_name || "Unknown"}</span>
@@ -56,9 +68,11 @@ interface PipelineColumnProps {
   label: string;
   apps: JobApplicationListItem[];
   onAppClick: (app: JobApplicationListItem) => void;
+  selectedIds?: Set<string>;
+  onToggleSelect?: (id: string) => void;
 }
 
-export function PipelineColumn({ stage, label, apps, onAppClick }: PipelineColumnProps) {
+export function PipelineColumn({ stage, label, apps, onAppClick, selectedIds, onToggleSelect }: PipelineColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id: stage });
 
   return (
@@ -72,7 +86,8 @@ export function PipelineColumn({ stage, label, apps, onAppClick }: PipelineColum
       </div>
       <div className="flex-1 p-2 space-y-2 overflow-y-auto max-h-[calc(100vh-260px)]">
         {apps.map((app) => (
-          <DraggableCard key={app.id} app={app} onClick={onAppClick} />
+          <DraggableCard key={app.id} app={app} onClick={onAppClick}
+            selected={selectedIds?.has(app.id)} onToggleSelect={onToggleSelect} />
         ))}
       </div>
     </div>

@@ -76,19 +76,36 @@ export function KanbanBoard({ stories, epics, sprintOrder, onStoryClick, selecte
     if (!story) return;
     const isColumn = STATUSES.includes(overId as StoryStatus);
     const newStatus = isColumn ? (overId as StoryStatus) : (filtered.find((s) => s.id === overId)?.status ?? story.status);
-    const columnStories = filtered.filter((s) => s.status === newStatus && s.id !== storyId).sort((a, b) => (a.lexical_order ?? "a0").localeCompare(b.lexical_order ?? "a0"));
 
-    let newOrder: string;
+    // Determine which stories to move: all selected (if dragged card is selected), or just the dragged card
+    const idsToMove = selectedIds && selectedIds.size > 1 && selectedIds.has(storyId)
+      ? Array.from(selectedIds)
+      : [storyId];
+
+    const excludeSet = new Set(idsToMove);
+    const columnStories = filtered.filter((s) => s.status === newStatus && !excludeSet.has(s.id)).sort((a, b) => (a.lexical_order ?? "a0").localeCompare(b.lexical_order ?? "a0"));
+
+    let baseOrder: string;
     if (isColumn || columnStories.length === 0) {
-      newOrder = midpoint(columnStories[columnStories.length - 1]?.lexical_order ?? "", "");
+      baseOrder = columnStories[columnStories.length - 1]?.lexical_order ?? "";
     } else {
       const overIndex = columnStories.findIndex((s) => s.id === overId);
-      if (overIndex <= 0) newOrder = midpoint("", columnStories[0]?.lexical_order ?? "");
-      else newOrder = midpoint(columnStories[overIndex - 1]?.lexical_order ?? "", columnStories[overIndex]?.lexical_order ?? "");
+      if (overIndex <= 0) baseOrder = "";
+      else baseOrder = columnStories[overIndex - 1]?.lexical_order ?? "";
     }
-    if (story.status === newStatus && story.lexical_order === newOrder) return;
-    updateStory.mutate({ id: storyId, status: newStatus, lexical_order: newOrder, _oldStory: story } as any);
-  }, [filtered, updateStory]);
+
+    // Assign sequential lexical orders for all moved stories
+    let prevOrder = baseOrder;
+    for (const id of idsToMove) {
+      const s = filtered.find((st) => st.id === id);
+      if (!s) continue;
+      const newOrder = midpoint(prevOrder, "");
+      if (s.status !== newStatus || s.lexical_order !== newOrder) {
+        updateStory.mutate({ id, status: newStatus, lexical_order: newOrder, _oldStory: s } as any);
+      }
+      prevOrder = newOrder;
+    }
+  }, [filtered, updateStory, selectedIds]);
 
   const groups = useMemo(() => {
     if (groupBy === "none") return [{ key: "all", label: "All", stories: filtered }];

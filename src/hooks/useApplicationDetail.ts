@@ -236,6 +236,8 @@ export function useApplicationDetail() {
     setEditingJobDescription,
     companyUrl,
     setCompanyUrl,
+    jobUrl,
+    setJobUrl,
     companyName,
     setCompanyName,
     jobTitle,

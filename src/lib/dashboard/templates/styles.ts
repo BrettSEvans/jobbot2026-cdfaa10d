@@ -15,7 +15,7 @@ export function getStylesCss(): string {
   --md-surface: #FEF7FF;
   --md-on-surface: #1D1B20;
   --md-surface-variant: #E7E0EC;
-  --md-outline: #79747E;
+  --md-outline: #49454F;
   --md-outline-variant: #CAC4D0;
   --md-error: #B3261E;
   --md-surface-container: #F3EDF7;

@@ -15,6 +15,7 @@ import {
 } from "@/lib/api/jobApplication";
 import { scrapeJob, streamTailoredLetter } from "@/lib/api/coverLetter";
 import { parseLlmJsonOutput, assembleDashboardHtml } from "@/lib/dashboard/assembler";
+import { validateDashboardAlignment } from "@/lib/dashboard/jdAlignmentValidator";
 import { parseJobDescription } from "@/lib/api/jdIntelligence";
 import { generateOptimizedResume } from "@/lib/api/resumeGeneration";
 import { generateClarityResume } from "@/lib/api/resumeGenerationClarity";
@@ -500,6 +501,33 @@ class BackgroundGenerationManager {
         if (parsed) {
           dashboardData = parsed;
           dashboardHtml = assembleDashboardHtml(parsed);
+
+          // Post-generation JD alignment validation
+          const alignmentReport = validateDashboardAlignment(parsed, jdIntelligence);
+          console.log(
+            `[DashboardValidation] Score: ${alignmentReport.score}/100 | Keywords: ${alignmentReport.keywordCoverage}% | Requirements: ${alignmentReport.requirementCoverage}% | Agentic: ${alignmentReport.hasAgenticWorkforce} | CFO: ${alignmentReport.hasCfoView}`
+          );
+          if (alignmentReport.gaps.length > 0) {
+            console.warn(
+              "[DashboardValidation] Gaps found:",
+              alignmentReport.gaps.map((g) => `[${g.severity}] ${g.message}`)
+            );
+          }
+
+          // Store alignment report alongside dashboard data
+          if (dashboardData) {
+            dashboardData._alignmentReport = {
+              score: alignmentReport.score,
+              keywordCoverage: alignmentReport.keywordCoverage,
+              requirementCoverage: alignmentReport.requirementCoverage,
+              hasAgenticWorkforce: alignmentReport.hasAgenticWorkforce,
+              hasCfoView: alignmentReport.hasCfoView,
+              gapCount: alignmentReport.gaps.length,
+              criticalGaps: alignmentReport.gaps
+                .filter((g) => g.severity === "critical")
+                .map((g) => g.message),
+            };
+          }
         } else {
           console.warn("Failed to parse dashboard JSON, falling back to raw HTML");
           dashboardHtml = dashboardRaw;

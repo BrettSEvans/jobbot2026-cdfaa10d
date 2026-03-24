@@ -23,7 +23,7 @@ function textToHtml(text: string): string {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
-  return `<!DOCTYPE html><html><head><style>body{font-family:Georgia,'Times New Roman',serif;font-size:11pt;line-height:1.6;color:#111;margin:1in;}</style></head><body><div style="white-space:pre-wrap">${escaped}</div></body></html>`;
+  return `<!DOCTYPE html><html><head><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap"><style>body{font-family:Roboto,Arial,sans-serif;font-size:11pt;line-height:1.6;color:#111;margin:1in;}</style></head><body><div style="white-space:pre-wrap">${escaped}</div></body></html>`;
 }
 
 /** Detect if content is HTML (vs plain text) */

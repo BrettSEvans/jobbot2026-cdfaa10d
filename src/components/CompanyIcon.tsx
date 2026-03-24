@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface CompanyIconProps {
@@ -19,39 +19,50 @@ function getInitials(name: string): string {
 }
 
 function extractRootDomain(hostname: string): string {
-  // Strip www and common subdomains, keep root domain
   const parts = hostname.replace(/^www\./, "").split(".");
-  // For domains like get.chownow.com → chownow.com
-  if (parts.length > 2) {
-    return parts.slice(-2).join(".");
-  }
+  if (parts.length > 2) return parts.slice(-2).join(".");
   return parts.join(".");
 }
 
-function getClearbitUrl(companyUrl?: string | null, companyName?: string | null): string | null {
-  // Try extracting domain from company URL
-  if (companyUrl) {
-    try {
-      const url = new URL(companyUrl.startsWith("http") ? companyUrl : `https://${companyUrl}`);
-      const rootDomain = extractRootDomain(url.hostname);
-      return `https://logo.clearbit.com/${rootDomain}`;
-    } catch {
-      // fall through
-    }
+function getDomainFromUrl(companyUrl?: string | null): string | null {
+  if (!companyUrl) return null;
+  try {
+    const url = new URL(companyUrl.startsWith("http") ? companyUrl : `https://${companyUrl}`);
+    return extractRootDomain(url.hostname);
+  } catch {
+    return null;
   }
-  // Try guessing domain from company name
-  if (companyName) {
-    const slug = companyName
-      .toLowerCase()
-      .replace(/\s*\(.*?\)\s*/g, "") // strip parenthetical like "(Propeller Consulting)"
-      .replace(/[^a-z0-9]/g, "")
-      .trim();
-    if (slug) return `https://logo.clearbit.com/${slug}.com`;
-  }
-  return null;
 }
 
-// Generate a deterministic HSL color from a string
+function getSlugFromName(companyName?: string | null): string | null {
+  if (!companyName) return null;
+  const slug = companyName
+    .toLowerCase()
+    .replace(/\s*\(.*?\)\s*/g, "")
+    .replace(/[^a-z0-9]/g, "")
+    .trim();
+  return slug || null;
+}
+
+/** Build an ordered list of logo URLs to try */
+function buildFallbackUrls(companyUrl?: string | null, companyName?: string | null): string[] {
+  const urls: string[] = [];
+  const domain = getDomainFromUrl(companyUrl);
+  const slug = getSlugFromName(companyName);
+  const guessDomain = slug ? `${slug}.com` : null;
+
+  // Tier 1: Clearbit from actual domain
+  if (domain) urls.push(`https://logo.clearbit.com/${domain}`);
+  // Tier 2: Google favicon service from actual domain (high-res)
+  if (domain) urls.push(`https://www.google.com/s2/favicons?domain=${domain}&sz=64`);
+  // Tier 3: Clearbit from guessed domain (company name → .com)
+  if (guessDomain && guessDomain !== domain) urls.push(`https://logo.clearbit.com/${guessDomain}`);
+  // Tier 4: Google favicon from guessed domain
+  if (guessDomain && guessDomain !== domain) urls.push(`https://www.google.com/s2/favicons?domain=${guessDomain}&sz=64`);
+
+  return urls;
+}
+
 function stringToColor(str: string): string {
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
@@ -62,16 +73,35 @@ function stringToColor(str: string): string {
 }
 
 export function CompanyIcon({ companyName, companyUrl, iconUrl, size = "sm" }: CompanyIconProps) {
-  const [imgFailed, setImgFailed] = useState(false);
+  const [failedIndex, setFailedIndex] = useState(-1);
 
   const name = companyName || "?";
   const initials = getInitials(name);
   const bgColor = stringToColor(name);
 
-  // Priority: saved icon URL → Clearbit → fallback
-  const imageUrl = !imgFailed
-    ? iconUrl || getClearbitUrl(companyUrl, companyName)
-    : null;
+  const fallbackUrls = useMemo(
+    () => buildFallbackUrls(companyUrl, companyName),
+    [companyUrl, companyName]
+  );
+
+  // If we have a saved iconUrl use it first (failedIndex starts at -1)
+  // On failure, walk through fallbackUrls
+  let imageUrl: string | null = null;
+  if (failedIndex === -1) {
+    imageUrl = iconUrl || fallbackUrls[0] || null;
+  } else {
+    // Determine which fallback index to try
+    const startIdx = iconUrl ? failedIndex : failedIndex;
+    // If iconUrl was the first attempt (failedIndex=0 means iconUrl or fallback[0] failed)
+    const nextIdx = iconUrl ? failedIndex : failedIndex + 1;
+    if (nextIdx < fallbackUrls.length) {
+      imageUrl = fallbackUrls[nextIdx];
+    }
+  }
+
+  const handleError = () => {
+    setFailedIndex((prev) => prev + 1);
+  };
 
   const dim = size === "sm" ? "h-7 w-7 text-[10px]" : "h-9 w-9 text-xs";
 
@@ -81,7 +111,7 @@ export function CompanyIcon({ companyName, companyUrl, iconUrl, size = "sm" }: C
         <AvatarImage
           src={imageUrl}
           alt={name}
-          onError={() => setImgFailed(true)}
+          onError={handleError}
           className="rounded-md object-contain p-0.5"
         />
       )}

@@ -162,7 +162,7 @@ export async function downloadHtmlAsDocx(html: string, fileName: string) {
     styles: {
       default: {
         document: {
-          run: { font: "Calibri", size: 22 }, // 11pt
+          run: { font: "Roboto", size: 22 }, // 11pt
         },
       },
       paragraphStyles: [

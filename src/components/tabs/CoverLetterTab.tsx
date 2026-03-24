@@ -135,7 +135,7 @@ export function CoverLetterTab({
                   ? content
                   : `<!DOCTYPE html><html><head><title>${pdfTitle}</title><style>
                     @page { size: letter; margin: 0; }
-                    body { font-family: Georgia, 'Times New Roman', serif; font-size: 10.5pt; line-height: 1.6; color: #111; margin: 0; padding: 1in 1in 0.75in 1in; }
+                    body { font-family: Roboto, Arial, sans-serif; font-size: 10.5pt; line-height: 1.6; color: #111; margin: 0; padding: 1in 1in 0.75in 1in; }
                     .content { white-space: pre-wrap; }
                   </style></head><body><div class="content">${content.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div></body></html>`;
                 printWindow.document.write(htmlContent);

@@ -36,14 +36,22 @@ interface InlineHtmlEditorProps {
 }
 
 const FONTS = [
+  "Roboto",
   "Arial",
+  "Calibri",
   "Times New Roman",
   "Georgia",
-  "Courier New",
+  "Helvetica",
   "Verdana",
   "Tahoma",
   "Trebuchet MS",
   "Garamond",
+  "Cambria",
+  "Courier New",
+  "Lato",
+  "Open Sans",
+  "Source Sans Pro",
+  "Nunito",
 ];
 
 const FONT_SIZES = [

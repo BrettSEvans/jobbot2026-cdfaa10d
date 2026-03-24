@@ -542,6 +542,53 @@ class BackgroundGenerationManager {
           if (htmlStart > 0) dashboardHtml = dashboardHtml.slice(htmlStart);
           const htmlEnd = dashboardHtml.lastIndexOf("</html>");
           if (htmlEnd !== -1) dashboardHtml = dashboardHtml.slice(0, htmlEnd + 7);
+
+          // Extract embedded __DASHBOARD_DATA__ JSON from raw HTML for validation & department fix
+          const dataMatch = dashboardHtml.match(/window\.__DASHBOARD_DATA__\s*=\s*({[\s\S]*?});?\s*<\/script>/);
+          if (dataMatch) {
+            try {
+              const embeddedData = JSON.parse(dataMatch[1]);
+
+              // Fix department mismatch in embedded data
+              if (department && embeddedData?.meta) {
+                embeddedData.meta.department = department;
+                dashboardHtml = dashboardHtml.replace(
+                  dataMatch[0],
+                  `window.__DASHBOARD_DATA__=${JSON.stringify(embeddedData)};</script>`
+                );
+              }
+
+              dashboardData = embeddedData;
+
+              // Run validation on extracted data (same as JSON path)
+              const alignmentReport = validateDashboardAlignment(embeddedData, jdIntelligence);
+              console.log(
+                `[DashboardValidation:HTMLFallback] Score: ${alignmentReport.score}/100 | Keywords: ${alignmentReport.keywordCoverage}% | Requirements: ${alignmentReport.requirementCoverage}% | Agentic: ${alignmentReport.hasAgenticWorkforce} | CFO: ${alignmentReport.hasCfoView}`
+              );
+              if (alignmentReport.gaps.length > 0) {
+                console.warn(
+                  "[DashboardValidation:HTMLFallback] Gaps found:",
+                  alignmentReport.gaps.map((g) => `[${g.severity}] ${g.message}`)
+                );
+              }
+
+              if (dashboardData) {
+                dashboardData._alignmentReport = {
+                  score: alignmentReport.score,
+                  keywordCoverage: alignmentReport.keywordCoverage,
+                  requirementCoverage: alignmentReport.requirementCoverage,
+                  hasAgenticWorkforce: alignmentReport.hasAgenticWorkforce,
+                  hasCfoView: alignmentReport.hasCfoView,
+                  gapCount: alignmentReport.gaps.length,
+                  criticalGaps: alignmentReport.gaps
+                    .filter((g) => g.severity === "critical")
+                    .map((g) => g.message),
+                };
+              }
+            } catch (extractErr) {
+              console.warn("Failed to extract embedded dashboard data from HTML:", extractErr);
+            }
+          }
         }
 
         await saveJobApplication({

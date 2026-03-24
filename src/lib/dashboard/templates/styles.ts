@@ -351,7 +351,8 @@ th {
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  color: var(--md-outline);
+  color: var(--md-on-surface);
+  opacity: 0.8;
   border-bottom: 2px solid var(--md-outline-variant);
   white-space: nowrap;
 }

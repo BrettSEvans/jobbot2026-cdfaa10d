@@ -16,6 +16,11 @@ export async function scrapeJob(url: string): Promise<{ markdown: string; title:
   });
 
   if (error) throw new Error(error.message);
+  if (data?.blocked) {
+    const err = new Error('BLOCKED_SITE');
+    (err as any).blocked = true;
+    throw err;
+  }
   if (!data?.success) throw new Error(data?.error || 'Failed to scrape job');
   return { markdown: data.markdown, title: data.title };
 }

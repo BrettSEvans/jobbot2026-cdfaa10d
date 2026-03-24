@@ -50,9 +50,11 @@ Deno.serve(async (req) => {
 
     if (!response.ok) {
       console.error('Firecrawl error:', data);
+      const errMsg = data.error || 'Failed to scrape';
+      const isBlocked = typeof errMsg === 'string' && errMsg.includes('do not support this site');
       return new Response(
-        JSON.stringify({ success: false, error: data.error || 'Failed to scrape' }),
-        { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ success: false, error: isBlocked ? 'BLOCKED_SITE' : errMsg, blocked: isBlocked }),
+        { status: isBlocked ? 403 : response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 

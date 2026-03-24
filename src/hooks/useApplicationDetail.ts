@@ -27,6 +27,7 @@ export function useApplicationDetail() {
   const [jobDescription, setJobDescription] = useState("");
   const [editingJobDescription, setEditingJobDescription] = useState(false);
   const [companyUrl, setCompanyUrl] = useState("");
+  const [jobUrl, setJobUrl] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [jobTitle, setJobTitle] = useState("");
   const [editingMeta, setEditingMeta] = useState(false);
@@ -141,6 +142,7 @@ export function useApplicationDetail() {
       }
       setJobDescription(data.job_description_markdown || "");
       setCompanyUrl(data.company_url || "");
+      setJobUrl(data.job_url || "");
       setCompanyName(data.company_name || "");
       setJobTitle(data.job_title || "");
 
@@ -234,6 +236,8 @@ export function useApplicationDetail() {
     setEditingJobDescription,
     companyUrl,
     setCompanyUrl,
+    jobUrl,
+    setJobUrl,
     companyName,
     setCompanyName,
     jobTitle,

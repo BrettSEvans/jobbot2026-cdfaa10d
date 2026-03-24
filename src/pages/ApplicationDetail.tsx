@@ -18,7 +18,7 @@ const ApplicationDetail = () => {
     id, navigate, toast, app, setApp, loading, saving, isValidUuid,
     coverLetter, setCoverLetter, editingCoverLetter, setEditingCoverLetter,
     jobDescription, setJobDescription, editingJobDescription, setEditingJobDescription,
-    companyUrl, setCompanyUrl, companyName, setCompanyName, jobTitle, setJobTitle,
+    companyUrl, setCompanyUrl, jobUrl, setJobUrl, companyName, setCompanyName, jobTitle, setJobTitle,
     editingMeta, setEditingMeta,
     dashboardHtml, setDashboardHtml, dashboardData, setDashboardData,
     chatHistory, setChatHistory,
@@ -152,10 +152,11 @@ const ApplicationDetail = () => {
               id={id!} app={app} setApp={setApp}
               jobDescription={jobDescription} setJobDescription={setJobDescription}
               editingJobDescription={editingJobDescription} setEditingJobDescription={setEditingJobDescription}
-              companyUrl={companyUrl} setCompanyUrl={setCompanyUrl}
-              companyName={companyName} jobTitle={jobTitle}
-              resumeText={resumeText} saving={saving}
-              saveField={saveField} handleCopy={handleCopy} toast={toast}
+               companyUrl={companyUrl} setCompanyUrl={setCompanyUrl}
+               companyName={companyName} jobTitle={jobTitle}
+               resumeText={resumeText} saving={saving}
+               saveField={saveField} handleCopy={handleCopy} toast={toast}
+               jobUrl={jobUrl} setJobUrl={setJobUrl}
             />
           </TabsContent>
 

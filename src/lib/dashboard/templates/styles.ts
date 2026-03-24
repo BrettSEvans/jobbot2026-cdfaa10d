@@ -234,7 +234,7 @@ body {
 .metric-change { font-size: 13px; font-weight: 500; }
 .metric-change.up { color: #1B5E20; }
 .metric-change.down { color: var(--md-error); }
-.metric-change.neutral { color: var(--md-outline); }
+.metric-change.neutral { color: var(--md-on-surface); opacity: 0.7; }
 
 /* === CHARTS === */
 .charts-grid {

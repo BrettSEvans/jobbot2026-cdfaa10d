@@ -107,7 +107,7 @@ export function checkAtsFormatCompliance(html: string): FormatComplianceResult {
       if (clean) fonts.add(clean);
     });
   }
-  const safeFonts = new Set(["arial", "helvetica", "times new roman", "times", "georgia", "verdana", "calibri", "cambria", "garamond", "sans-serif", "serif", "monospace", "courier", "courier new", "trebuchet ms", "tahoma"]);
+  const safeFonts = new Set(["arial", "helvetica", "times new roman", "times", "georgia", "verdana", "calibri", "cambria", "garamond", "sans-serif", "serif", "monospace", "courier", "courier new", "trebuchet ms", "tahoma", "roboto", "lato", "open sans", "source sans pro", "nunito"]);
   const unsafeFonts = [...fonts].filter((f) => !safeFonts.has(f));
   checks.push({
     name: "ATS-safe fonts",

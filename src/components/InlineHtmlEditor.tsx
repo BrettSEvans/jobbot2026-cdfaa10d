@@ -36,14 +36,22 @@ interface InlineHtmlEditorProps {
 }
 
 const FONTS = [
+  "Roboto",
   "Arial",
+  "Calibri",
   "Times New Roman",
   "Georgia",
-  "Courier New",
+  "Helvetica",
   "Verdana",
   "Tahoma",
   "Trebuchet MS",
   "Garamond",
+  "Cambria",
+  "Courier New",
+  "Lato",
+  "Open Sans",
+  "Source Sans Pro",
+  "Nunito",
 ];
 
 const FONT_SIZES = [
@@ -109,6 +117,11 @@ export default function InlineHtmlEditor({
     const doc = iframeRef.current?.contentDocument;
     if (!doc) return;
     doc.designMode = "on";
+    // Load Google Fonts for editor
+    const fontLink = doc.createElement("link");
+    fontLink.rel = "stylesheet";
+    fontLink.href = "https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Nunito:wght@400;700&family=Open+Sans:wght@400;700&family=Roboto:wght@400;700&family=Source+Sans+Pro:wght@400;700&display=swap";
+    doc.head.appendChild(fontLink);
     const style = doc.createElement("style");
     style.textContent = `
       body { outline: none; cursor: text; }

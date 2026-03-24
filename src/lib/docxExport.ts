@@ -162,7 +162,7 @@ export async function downloadHtmlAsDocx(html: string, fileName: string) {
     styles: {
       default: {
         document: {
-          run: { font: "Calibri", size: 22 }, // 11pt
+          run: { font: "Roboto", size: 22 }, // 11pt
         },
       },
       paragraphStyles: [
@@ -172,7 +172,7 @@ export async function downloadHtmlAsDocx(html: string, fileName: string) {
           basedOn: "Normal",
           next: "Normal",
           quickFormat: true,
-          run: { size: 28, bold: true, font: "Calibri" },
+          run: { size: 28, bold: true, font: "Roboto" },
           paragraph: { spacing: { before: 240, after: 120 } },
         },
         {
@@ -181,7 +181,7 @@ export async function downloadHtmlAsDocx(html: string, fileName: string) {
           basedOn: "Normal",
           next: "Normal",
           quickFormat: true,
-          run: { size: 24, bold: true, font: "Calibri" },
+          run: { size: 24, bold: true, font: "Roboto" },
           paragraph: { spacing: { before: 200, after: 100 } },
         },
       ],

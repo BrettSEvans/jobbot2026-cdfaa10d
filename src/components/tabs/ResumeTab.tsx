@@ -159,7 +159,7 @@ function ResumeVariantToolbar({
           // Strip title to suppress browser header/footer metadata in print
           const htmlClean = html.replace(/<title>[^<]*<\/title>/i, '<title></title>');
           doc.open();
-          doc.write(html.replace("</head>", printStyles + "</head>"));
+          doc.write(htmlClean.replace("</head>", printStyles + "</head>"));
           doc.close();
           const triggerPrint = () => {
             try { iframe.contentWindow?.print(); } catch (_) {}

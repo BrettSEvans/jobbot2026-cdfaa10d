@@ -155,7 +155,7 @@ function ResumeVariantToolbar({
             document.body.removeChild(iframe);
             return;
           }
-          const printStyles = `<style>@page{size:letter;margin:0.5in}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style>`;
+          const printStyles = `<style>@page{size:letter;margin:0}@media print{body{margin:0;padding:0.5in;-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style>`;
           doc.open();
           doc.write(html.replace("</head>", printStyles + "</head>"));
           doc.close();

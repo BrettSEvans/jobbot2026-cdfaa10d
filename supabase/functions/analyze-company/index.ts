@@ -31,7 +31,7 @@ serve(async (req) => {
 1. The company's main products/services
 2. Key competitors in their space
 3. Target customer segments
-4. The department this role belongs to (Sales, Marketing, GTM, Operations, etc.)
+4. The department this role belongs to (e.g. Engineering, Product, Finance, HR, Sales, Marketing, Operations, Legal, Data, Design, etc.)
 5. The company name if not provided
 
 Return ONLY valid JSON with this structure:

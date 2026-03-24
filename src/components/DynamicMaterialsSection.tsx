@@ -152,8 +152,8 @@ function FitPagePreview({ html, title }: { html: string; title: string }) {
 function downloadMaterialPdf(html: string, _filename: string) {
   const printCss = `
     <style>
+      @page { size: letter; margin: 0; }
       @media print {
-        @page { size: letter; margin: 0; }
         body { margin: 0; padding: 0.5in; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       }
     </style>

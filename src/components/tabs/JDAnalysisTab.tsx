@@ -74,12 +74,22 @@ export function JDAnalysisTab({
             <CollapsibleContent className="mt-3 space-y-3">
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-muted-foreground">Job URL / Pasted Text</label>
-                <Input
-                  value={app?.job_url || ""}
-                  readOnly
-                  className="text-sm bg-muted/40"
-                  placeholder="No job URL"
-                />
+                <div className="flex gap-2">
+                  <Input
+                    value={jobUrl}
+                    onChange={(e) => setJobUrl(e.target.value)}
+                    className="text-sm"
+                    placeholder="https://jobs.example.com/..."
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={saving}
+                    onClick={() => saveField({ job_url: jobUrl })}
+                  >
+                    <Check className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
               </div>
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-muted-foreground">Company URL</label>

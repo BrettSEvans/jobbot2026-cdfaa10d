@@ -155,7 +155,9 @@ function ResumeVariantToolbar({
             document.body.removeChild(iframe);
             return;
           }
-          const printStyles = `<style>@page{size:letter;margin:0}@media print{body{margin:0;padding:0.5in;-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style>`;
+          const printStyles = `<style>@page{size:letter;margin:0}@media print{html{margin:0;padding:0}body{margin:0;padding:0.5in;-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style>`;
+          // Strip title to suppress browser header/footer metadata in print
+          const htmlClean = html.replace(/<title>[^<]*<\/title>/i, '<title></title>');
           doc.open();
           doc.write(html.replace("</head>", printStyles + "</head>"));
           doc.close();

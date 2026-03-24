@@ -15,6 +15,7 @@ import {
 } from "@/lib/api/jobApplication";
 import { scrapeJob, streamTailoredLetter } from "@/lib/api/coverLetter";
 import { parseLlmJsonOutput, assembleDashboardHtml } from "@/lib/dashboard/assembler";
+import { validateDashboardAlignment } from "@/lib/dashboard/jdAlignmentValidator";
 import { parseJobDescription } from "@/lib/api/jdIntelligence";
 import { generateOptimizedResume } from "@/lib/api/resumeGeneration";
 import { generateClarityResume } from "@/lib/api/resumeGenerationClarity";

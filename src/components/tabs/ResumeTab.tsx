@@ -292,6 +292,8 @@ function ResumeVariantContent({
         variant={variant}
         variantLabel={variantLabel}
         html={html}
+        displayHtml={previewHtml || html}
+        isOlderVersion={!!previewHtml}
         companyName={companyName}
         jobTitle={jobTitle}
         userProfile={userProfile}

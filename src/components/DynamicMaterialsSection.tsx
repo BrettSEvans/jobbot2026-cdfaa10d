@@ -612,18 +612,18 @@ export default function DynamicMaterialsSection({
             </Button>
             {dashboardHtml && (
               <>
-                <Button variant="outline" size="sm" onClick={() => { navigator.clipboard.writeText(dashboardHtml); toast({ title: "Copied!", description: "Dashboard HTML copied." }); }}>
+                <Button variant="outline" size="sm" onClick={() => { navigator.clipboard.writeText(previewHtml || dashboardHtml); toast({ title: "Copied!", description: "Dashboard HTML copied." }); }}>
                   <Copy className="mr-2 h-4 w-4" /> Copy HTML
                 </Button>
-                <SaveAsTemplate dashboardHtml={dashboardHtml} applicationId={applicationId} defaultLabel={`${companyName} ${jobTitle} Dashboard`.trim()} defaultJobFunction={jobTitle} defaultDepartment="" />
+                <SaveAsTemplate dashboardHtml={previewHtml || dashboardHtml} applicationId={applicationId} defaultLabel={`${companyName} ${jobTitle} Dashboard`.trim()} defaultJobFunction={jobTitle} defaultDepartment="" />
                 {dashboardData ? (
-                  <Button variant="outline" size="sm" onClick={handleDownloadZip}><FolderArchive className="mr-2 h-4 w-4" /> Download ZIP</Button>
+                  <Button variant="outline" size="sm" onClick={() => guardedDownload(!!previewHtml, handleDownloadZip)}><FolderArchive className="mr-2 h-4 w-4" /> Download ZIP</Button>
                 ) : (
-                  <Button variant="outline" size="sm" onClick={() => {
-                    downloadHtmlFile(dashboardHtml, buildFileName(candidateProfile?.first_name, candidateProfile?.last_name, "dashboard", companyName, "html"));
+                  <Button variant="outline" size="sm" onClick={() => guardedDownload(!!previewHtml, () => {
+                    downloadHtmlFile(previewHtml || dashboardHtml, buildFileName(candidateProfile?.first_name, candidateProfile?.last_name, "dashboard", companyName, "html"));
                     recordDownloadSignal(applicationId, "dashboard", jobTitle);
                     toast({ title: "Downloaded" });
-                  }}><Download className="mr-2 h-4 w-4" /> Download HTML</Button>
+                  })}><Download className="mr-2 h-4 w-4" /> Download HTML</Button>
                 )}
               </>
             )}
@@ -756,13 +756,17 @@ export default function DynamicMaterialsSection({
                 <Badge variant="secondary" className="text-xs">🔒 Downloaded — locked</Badge>
               )}
               {asset.html && (
-                <Button variant="outline" size="sm" onClick={async () => {
-                  const pdfName = buildFileName(candidateProfile?.first_name, candidateProfile?.last_name, asset.asset_name, companyName, "pdf");
-                  downloadMaterialPdf(asset.html, pdfName);
-                  recordDownloadSignal(applicationId, asset.asset_name, jobTitle);
-                  await supabase.from("generated_assets").update({ downloaded_at: new Date().toISOString() }).eq("id", asset.id);
-                  setGeneratedAssets(prev => prev.map(a => a.id === asset.id ? { ...a, downloaded_at: new Date().toISOString() } : a));
-                  toast({ title: "Printing PDF" });
+                <Button variant="outline" size="sm" onClick={() => {
+                  const viewedHtml = assetPreviewHtml[asset.id] || asset.html;
+                  const isOlder = !!assetPreviewHtml[asset.id];
+                  guardedDownload(isOlder, async () => {
+                    const pdfName = buildFileName(candidateProfile?.first_name, candidateProfile?.last_name, asset.asset_name, companyName, "pdf");
+                    downloadMaterialPdf(viewedHtml, pdfName);
+                    recordDownloadSignal(applicationId, asset.asset_name, jobTitle);
+                    await supabase.from("generated_assets").update({ downloaded_at: new Date().toISOString() }).eq("id", asset.id);
+                    setGeneratedAssets(prev => prev.map(a => a.id === asset.id ? { ...a, downloaded_at: new Date().toISOString() } : a));
+                    toast({ title: "Printing PDF" });
+                  });
                 }}><Download className="mr-2 h-4 w-4" /> Download PDF</Button>
               )}
             </div>

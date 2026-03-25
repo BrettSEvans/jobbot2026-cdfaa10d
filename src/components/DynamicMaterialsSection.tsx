@@ -262,6 +262,7 @@ export default function DynamicMaterialsSection({
   const candidateName = candidateProfile ? [candidateProfile.first_name, candidateProfile.middle_name, candidateProfile.last_name].filter(Boolean).join(" ") : "";
 
   const [generatedAssets, setGeneratedAssets] = useState<GeneratedAsset[]>([]);
+  const [showDashboardWelcome, setShowDashboardWelcome] = useState(() => !localStorage.getItem("dashboard-welcome-dismissed"));
   const [loadingAssets, setLoadingAssets] = useState(true);
   const [assetRevisionTriggers, setAssetRevisionTriggers] = useState<Record<string, number>>({});
   const [assetPreviewHtml, setAssetPreviewHtml] = useState<Record<string, string | null>>({});

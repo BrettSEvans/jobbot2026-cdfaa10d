@@ -41,6 +41,9 @@ export type GenerationJob = {
   status: GenerationJobStatus;
   progress: string;
   error?: string;
+  companyName?: string;
+  currentAsset?: string;
+  generatingAssets?: string[];
 };
 
 type Listener = () => void;
@@ -241,6 +244,9 @@ class BackgroundGenerationManager {
 
       let companyName = analysisResult?.companyName || "";
       let jobTitle = analysisResult?.jobTitle || "";
+
+      // Update job with company name for toast display
+      this.updateJob(appId, { companyName });
       let department = analysisResult?.department || "";
       let competitors: string[] = analysisResult?.competitors || [];
       let customers: string[] = analysisResult?.customers || [];
@@ -318,8 +324,19 @@ class BackgroundGenerationManager {
         } as any);
       }
 
+      // Build list of assets that will be generated in background
+      const upcomingAssets: string[] = ["Cover Letter"];
+      const recommendedAssetNames = (jdIntelligence?.recommended_assets || []).map((a: any) => a.name);
+      upcomingAssets.push(...recommendedAssetNames);
+      upcomingAssets.push("Dashboard");
+
       // Signal foreground completion — user navigates to detail page now
-      this.updateJob(appId, { status: "resume-complete", progress: "Resume ready! Generating remaining assets..." });
+      this.updateJob(appId, {
+        status: "resume-complete",
+        progress: "Resume ready! Generating remaining assets...",
+        generatingAssets: upcomingAssets,
+        currentAsset: "Cover Letter",
+      });
 
       // ========== PHASE 4: Background (research + cover letter + materials + dashboard) ==========
 
@@ -342,7 +359,7 @@ class BackgroundGenerationManager {
       }
 
       // 4b. Generate cover letter
-      this.updateJob(appId, { status: "cover-letter", progress: "Generating cover letter..." });
+      this.updateJob(appId, { status: "cover-letter", progress: "Generating cover letter...", currentAsset: "Cover Letter" });
       let coverLetter = "";
       try {
         await streamTailoredLetter({
@@ -381,6 +398,7 @@ class BackgroundGenerationManager {
           this.updateJob(appId, {
             status: "generating-materials",
             progress: `Generating ${asset.name} (${i + 1}/${recommendedAssets.length})...`,
+            currentAsset: asset.name,
           });
 
           try {

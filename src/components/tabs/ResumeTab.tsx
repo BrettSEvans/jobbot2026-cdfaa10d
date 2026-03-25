@@ -118,6 +118,8 @@ function ResumeVariantToolbar({
   variant,
   variantLabel,
   html,
+  displayHtml,
+  isOlderVersion,
   companyName,
   jobTitle,
   userProfile,
@@ -129,6 +131,8 @@ function ResumeVariantToolbar({
   variant: ResumeVariant;
   variantLabel: string;
   html: string;
+  displayHtml: string;
+  isOlderVersion: boolean;
   companyName: string;
   jobTitle: string;
   userProfile: UserProfileSnapshot | null;
@@ -137,61 +141,79 @@ function ResumeVariantToolbar({
   onRegenerate: () => void;
   toast: ToastFn;
 }) {
+  const [versionAlert, setVersionAlert] = useState<(() => void) | null>(null);
+
+  const guardedDownload = (action: () => void) => {
+    if (isOlderVersion) {
+      setVersionAlert(() => action);
+    } else {
+      action();
+    }
+  };
+
   return (
-    <div className="flex flex-wrap gap-2">
-      <Button variant="outline" size="sm" onClick={onEdit}>
-        <Edit3 className="mr-2 h-4 w-4" /> Edit
-      </Button>
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => {
-          const iframe = document.createElement("iframe");
-          iframe.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:none;";
-          document.body.appendChild(iframe);
-          const doc = iframe.contentDocument || iframe.contentWindow?.document;
-          if (!doc) {
-            toast({ title: "Error", description: "Could not open print frame.", variant: "destructive" });
-            document.body.removeChild(iframe);
-            return;
-          }
-          const printStyles = `<style>@page{size:letter;margin:0}@media print{html{margin:0 !important;padding:0 !important}body{margin:0 !important;padding:0.5in !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style>`;
-          const sourceDoc = new DOMParser().parseFromString(html, "text/html");
-          const printDocument = `<!DOCTYPE html><html><head><meta charset="utf-8" /><title></title>${printStyles}${sourceDoc.head?.innerHTML || ""}</head><body>${sourceDoc.body?.innerHTML || html}</body></html>`;
-          doc.open();
-          doc.write(printDocument);
-          doc.close();
-          doc.title = "";
-          const triggerPrint = () => {
-            try { iframe.contentWindow?.print(); } catch (_) {}
-            setTimeout(() => { if (iframe.parentNode) document.body.removeChild(iframe); }, 1000);
-          };
-          iframe.onload = () => setTimeout(triggerPrint, 400);
-          setTimeout(triggerPrint, 1500);
-        }}
-      >
-        <FileDown className="mr-2 h-4 w-4" /> Download PDF
-      </Button>
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => {
-          const name = buildFileName(userProfile?.first_name, userProfile?.last_name, `${variant}-resume`, companyName, "docx");
-          downloadHtmlAsDocx(html, name);
-          toast({ title: "Downloading", description: `${variantLabel} resume DOCX file is being prepared.` });
-        }}
-      >
-        <Download className="mr-2 h-4 w-4" /> Download DOCX
-      </Button>
-      <Button variant="outline" size="sm" disabled={isRegenerating} onClick={onRegenerate}>
-        {isRegenerating ? (
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-        ) : (
-          <RefreshCw className="mr-2 h-4 w-4" />
-        )}
-        {isRegenerating ? "Regenerating…" : "Regenerate"}
-      </Button>
-    </div>
+    <>
+      <VersionDownloadAlert
+        open={!!versionAlert}
+        onOpenChange={(open) => { if (!open) setVersionAlert(null); }}
+        onConfirm={() => { versionAlert?.(); setVersionAlert(null); }}
+        versionLabel={isOlderVersion ? "an older revision" : undefined}
+      />
+      <div className="flex flex-wrap gap-2">
+        <Button variant="outline" size="sm" onClick={onEdit}>
+          <Edit3 className="mr-2 h-4 w-4" /> Edit
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => guardedDownload(() => {
+            const iframe = document.createElement("iframe");
+            iframe.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:none;";
+            document.body.appendChild(iframe);
+            const doc = iframe.contentDocument || iframe.contentWindow?.document;
+            if (!doc) {
+              toast({ title: "Error", description: "Could not open print frame.", variant: "destructive" });
+              document.body.removeChild(iframe);
+              return;
+            }
+            const printStyles = `<style>@page{size:letter;margin:0}@media print{html{margin:0 !important;padding:0 !important}body{margin:0 !important;padding:0.5in !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style>`;
+            const sourceDoc = new DOMParser().parseFromString(displayHtml, "text/html");
+            const printDocument = `<!DOCTYPE html><html><head><meta charset="utf-8" /><title></title>${printStyles}${sourceDoc.head?.innerHTML || ""}</head><body>${sourceDoc.body?.innerHTML || displayHtml}</body></html>`;
+            doc.open();
+            doc.write(printDocument);
+            doc.close();
+            doc.title = "";
+            const triggerPrint = () => {
+              try { iframe.contentWindow?.print(); } catch (_) {}
+              setTimeout(() => { if (iframe.parentNode) document.body.removeChild(iframe); }, 1000);
+            };
+            iframe.onload = () => setTimeout(triggerPrint, 400);
+            setTimeout(triggerPrint, 1500);
+          })}
+        >
+          <FileDown className="mr-2 h-4 w-4" /> Download PDF
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => guardedDownload(() => {
+            const name = buildFileName(userProfile?.first_name, userProfile?.last_name, `${variant}-resume`, companyName, "docx");
+            downloadHtmlAsDocx(displayHtml, name);
+            toast({ title: "Downloading", description: `${variantLabel} resume DOCX file is being prepared.` });
+          })}
+        >
+          <Download className="mr-2 h-4 w-4" /> Download DOCX
+        </Button>
+        <Button variant="outline" size="sm" disabled={isRegenerating} onClick={onRegenerate}>
+          {isRegenerating ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <RefreshCw className="mr-2 h-4 w-4" />
+          )}
+          {isRegenerating ? "Regenerating…" : "Regenerate"}
+        </Button>
+      </div>
+    </>
   );
 }
 

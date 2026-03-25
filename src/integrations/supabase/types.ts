@@ -735,6 +735,7 @@ export type Database = {
           id: string
           key_skills: string[] | null
           last_name: string | null
+          last_sign_in_at: string | null
           linkedin_url: string | null
           master_cover_letter: string | null
           middle_name: string | null
@@ -757,6 +758,7 @@ export type Database = {
           id: string
           key_skills?: string[] | null
           last_name?: string | null
+          last_sign_in_at?: string | null
           linkedin_url?: string | null
           master_cover_letter?: string | null
           middle_name?: string | null
@@ -779,6 +781,7 @@ export type Database = {
           id?: string
           key_skills?: string[] | null
           last_name?: string | null
+          last_sign_in_at?: string | null
           linkedin_url?: string | null
           master_cover_letter?: string | null
           middle_name?: string | null

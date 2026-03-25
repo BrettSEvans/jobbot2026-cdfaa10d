@@ -125,23 +125,29 @@ export function CoverLetterTab({
 
   return (
     <div className="space-y-4">
+      <VersionDownloadAlert
+        open={!!versionAlert}
+        onOpenChange={(open) => { if (!open) setVersionAlert(null); }}
+        onConfirm={() => { versionAlert?.(); setVersionAlert(null); }}
+        versionLabel={isOlderVersion ? "an older revision" : undefined}
+      />
       <div className="flex flex-wrap gap-2">
         {coverLetter && (
           <>
-            <Button variant="outline" size="sm" onClick={() => handleCopy(coverLetter, "Cover letter")}>
+            <Button variant="outline" size="sm" onClick={() => handleCopy(displayContent, "Cover letter")}>
               <Copy className="mr-2 h-4 w-4" /> Copy
             </Button>
             <Button
               variant="outline"
               size="sm"
-              onClick={() => {
+              onClick={() => guardedDownload(() => {
                 const printWindow = window.open("", "_blank");
                 if (!printWindow) {
                   toast({ title: "Popup blocked", description: "Allow popups to download PDF, or use DOCX download instead.", variant: "destructive" });
                   return;
                 }
                 const pdfTitle = buildFileName(userProfile?.first_name, userProfile?.last_name, "cover-letter", companyName, "pdf");
-                const content = previewCoverLetter || coverLetter;
+                const content = displayContent;
                 const htmlContent = isHtmlContent(content)
                   ? content
                   : `<!DOCTYPE html><html><head><title>${pdfTitle}</title><style>
@@ -152,18 +158,18 @@ export function CoverLetterTab({
                 printWindow.document.write(htmlContent);
                 printWindow.document.close();
                 printWindow.onload = () => { printWindow.print(); };
-              }}
+              })}
             >
               <Download className="mr-2 h-4 w-4" /> Download PDF
             </Button>
             <Button
               variant="outline"
               size="sm"
-              onClick={() => {
+              onClick={() => guardedDownload(() => {
                 const name = buildFileName(userProfile?.first_name, userProfile?.last_name, "cover-letter", companyName, "docx");
-                downloadTextAsDocx(previewCoverLetter || coverLetter, name);
+                downloadTextAsDocx(displayContent, name);
                 toast({ title: "Downloading", description: "Cover letter DOCX file is being prepared." });
-              }}
+              })}
             >
               <Download className="mr-2 h-4 w-4" /> Download DOCX
             </Button>

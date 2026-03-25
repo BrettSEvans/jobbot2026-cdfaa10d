@@ -37,7 +37,7 @@ function useProfileCheck(userId: string | undefined) {
     queryFn: async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("approval_status, onboarding_completed_at")
+        .select("onboarding_completed_at")
         .eq("id", userId!)
         .single();
       return data;
@@ -67,18 +67,6 @@ function AuthenticatedApp() {
     );
   }
 
-  // Check approval status
-  if (profile?.approval_status === "pending") {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background px-4 text-center">
-        <div className="max-w-md space-y-4">
-          <h1 className="text-xl font-heading font-bold text-foreground">Account Pending Approval</h1>
-          <p className="text-muted-foreground text-sm">Your account is awaiting admin approval. You'll be notified once approved.</p>
-          <button onClick={signOut} className="text-sm text-primary hover:underline">Sign out</button>
-        </div>
-      </div>
-    );
-  }
 
   // Check onboarding
   if (!profile?.onboarding_completed_at) {

@@ -37,7 +37,11 @@ export function useAuth() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      if (session?.user) wasAuthenticated.current = true;
+      if (session?.user) {
+        wasAuthenticated.current = true;
+        // Track last sign-in
+        supabase.from("profiles").update({ last_sign_in_at: new Date().toISOString() }).eq("id", session.user.id).then(() => {});
+      }
       initialized.current = true;
       setLoading(false);
     });

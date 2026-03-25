@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,6 +15,7 @@ import CoverLetterRevisions from "@/components/CoverLetterRevisions";
 import InlineHtmlEditor from "@/components/InlineHtmlEditor";
 import { downloadTextAsDocx } from "@/lib/docxExport";
 import { buildFileName } from "@/lib/fileNaming";
+import VersionDownloadAlert from "@/components/VersionDownloadAlert";
 import type { JobApplication, UserProfileSnapshot, ChatMessage, ToastFn } from "@/types/models";
 
 /** Convert plain text to minimal HTML for the editor */

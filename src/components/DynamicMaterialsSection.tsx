@@ -544,8 +544,22 @@ export default function DynamicMaterialsSection({
     }
   };
 
+  const guardedDownload = (isOlder: boolean, action: () => void) => {
+    if (isOlder) {
+      setVersionAlertAction(() => action);
+    } else {
+      action();
+    }
+  };
+
   return (
     <>
+      <VersionDownloadAlert
+        open={!!versionAlertAction}
+        onOpenChange={(open) => { if (!open) setVersionAlertAction(null); }}
+        onConfirm={() => { versionAlertAction?.(); setVersionAlertAction(null); }}
+        versionLabel="an older revision"
+      />
       <Tabs defaultValue="dashboard" className="space-y-4">
         <TabsList className="w-full justify-start flex-wrap">
           {allMaterialTabs.map((tab) => {

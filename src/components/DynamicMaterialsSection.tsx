@@ -265,6 +265,7 @@ export default function DynamicMaterialsSection({
   const [loadingAssets, setLoadingAssets] = useState(true);
   const [assetRevisionTriggers, setAssetRevisionTriggers] = useState<Record<string, number>>({});
   const [assetPreviewHtml, setAssetPreviewHtml] = useState<Record<string, string | null>>({});
+  const [versionAlertAction, setVersionAlertAction] = useState<(() => void) | null>(null);
 
   // Change Asset state
   const [swapDialogOpen, setSwapDialogOpen] = useState(false);

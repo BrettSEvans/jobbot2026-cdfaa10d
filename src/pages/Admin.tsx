@@ -1,15 +1,12 @@
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Navigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { toast } from "sonner";
-import { CheckCircle, XCircle, Clock, Users, Shield, Images } from "lucide-react";
+import { Users, Shield, Images } from "lucide-react";
 import AssetReviewCarousel from "@/components/admin/AssetReviewCarousel";
 import { format } from "date-fns";
 
@@ -27,144 +24,115 @@ function useAdminRole() {
         .eq("user_id", user!.id)
         .eq("role", "admin")
         .maybeSingle();
-
-      if (error) {
-        console.error("Admin role check failed:", error.message);
-        return false;
-      }
-
+      if (error) return false;
       return !!data;
     },
   });
-
-  return {
-    ...query,
-    authLoading: loading,
-    hasUser: !!user,
-  };
+  return { ...query, authLoading: loading, hasUser: !!user };
 }
 
-function useApprovalQueue() {
+interface UserWithStats {
+  id: string;
+  display_name: string | null;
+  email: string | null;
+  created_at: string;
+  last_sign_in_at: string | null;
+  application_count: number;
+}
+
+function useUserList() {
   return useQuery({
-    queryKey: ["admin_approval_queue"],
-    staleTime: 10_000,
+    queryKey: ["admin_user_list"],
+    staleTime: 15_000,
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Fetch all approved profiles
+      const { data: profiles, error } = await supabase
         .from("profiles")
-        .select("id, display_name, email, created_at, approval_status, referral_source")
-        .in("approval_status", ["pending", "approved", "rejected"])
+        .select("id, display_name, email, created_at, last_sign_in_at")
+        .eq("approval_status", "approved")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data ?? [];
+
+      // Count applications per user
+      const { data: counts, error: countErr } = await supabase
+        .from("job_applications")
+        .select("user_id")
+        .is("deleted_at", null);
+      if (countErr) throw countErr;
+
+      const countMap: Record<string, number> = {};
+      (counts ?? []).forEach((row) => {
+        if (row.user_id) countMap[row.user_id] = (countMap[row.user_id] || 0) + 1;
+      });
+
+      return (profiles ?? []).map((p) => ({
+        ...p,
+        application_count: countMap[p.id] || 0,
+      })) as UserWithStats[];
     },
   });
 }
 
-function ApprovalQueue() {
-  const { data: profiles, isLoading } = useApprovalQueue();
-  const qc = useQueryClient();
-  const [filter, setFilter] = useState<"pending" | "all">("pending");
+function UserList() {
+  const { data: users, isLoading } = useUserList();
 
-  const updateApproval = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const { error } = await supabase
-        .from("profiles")
-        .update({ approval_status: status })
-        .eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: (_, vars) => {
-      toast.success(`User ${vars.status === "approved" ? "approved" : "rejected"} successfully`);
-      qc.invalidateQueries({ queryKey: ["admin_approval_queue"] });
-    },
-    onError: (err: any) => toast.error(err.message),
-  });
+  if (isLoading)
+    return (
+      <div className="space-y-3">
+        {[1, 2, 3].map((i) => (
+          <Skeleton key={i} className="h-16 w-full" />
+        ))}
+      </div>
+    );
 
-  if (isLoading) return <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-20 w-full" />)}</div>;
-
-  const filtered = filter === "pending"
-    ? (profiles ?? []).filter((p) => p.approval_status === "pending")
-    : (profiles ?? []);
-
-  const pendingCount = (profiles ?? []).filter((p) => p.approval_status === "pending").length;
+  if (!users?.length)
+    return (
+      <Card>
+        <CardContent className="py-8 text-center text-muted-foreground">
+          <p>No users found.</p>
+        </CardContent>
+      </Card>
+    );
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-3">
-        <Button variant={filter === "pending" ? "default" : "outline"} size="sm" onClick={() => setFilter("pending")}>
-          Pending ({pendingCount})
-        </Button>
-        <Button variant={filter === "all" ? "default" : "outline"} size="sm" onClick={() => setFilter("all")}>
-          All Users
-        </Button>
-      </div>
-
-      {filtered.length === 0 && (
-        <Card>
-          <CardContent className="py-8 text-center text-muted-foreground">
-            <CheckCircle className="h-8 w-8 mx-auto mb-2 text-green-500" />
-            <p>No pending approvals!</p>
-          </CardContent>
-        </Card>
-      )}
-
-      <div className="space-y-2">
-        {filtered.map((profile) => {
-          const referral = profile.referral_source as Record<string, string> | null;
-          return (
-            <Card key={profile.id}>
-              <CardContent className="py-4 flex items-center justify-between gap-4">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-medium text-foreground truncate">
-                      {profile.display_name || profile.email || "Unknown"}
-                    </span>
-                    <Badge
-                      variant={
-                        profile.approval_status === "approved" ? "default" :
-                        profile.approval_status === "rejected" ? "destructive" : "secondary"
-                      }
-                      className="text-[10px]"
-                    >
-                      {profile.approval_status}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
-                    {profile.email && <span>{profile.email}</span>}
-                    <span>Signed up {format(new Date(profile.created_at), "MMM d, yyyy")}</span>
-                    {referral?.utm_campaign && (
-                      <Badge variant="outline" className="text-[10px]">
-                        Campaign: {referral.utm_campaign}
-                      </Badge>
-                    )}
-                  </div>
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b text-left text-muted-foreground">
+            <th className="py-2 pr-4 font-medium">User</th>
+            <th className="py-2 pr-4 font-medium">Signed Up</th>
+            <th className="py-2 pr-4 font-medium text-center">Applications</th>
+            <th className="py-2 font-medium">Last Login</th>
+          </tr>
+        </thead>
+        <tbody>
+          {users.map((u) => (
+            <tr key={u.id} className="border-b border-border/50 last:border-0">
+              <td className="py-3 pr-4">
+                <div className="font-medium text-foreground truncate max-w-[200px]">
+                  {u.display_name || u.email || "Unknown"}
                 </div>
-                {profile.approval_status === "pending" && (
-                  <div className="flex items-center gap-2 shrink-0">
-                    <Button
-                      size="sm"
-                      onClick={() => updateApproval.mutate({ id: profile.id, status: "approved" })}
-                      disabled={updateApproval.isPending}
-                      className="gap-1"
-                    >
-                      <CheckCircle className="h-3.5 w-3.5" /> Approve
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => updateApproval.mutate({ id: profile.id, status: "rejected" })}
-                      disabled={updateApproval.isPending}
-                      className="gap-1"
-                    >
-                      <XCircle className="h-3.5 w-3.5" /> Reject
-                    </Button>
-                  </div>
+                {u.display_name && u.email && (
+                  <div className="text-xs text-muted-foreground truncate max-w-[200px]">{u.email}</div>
                 )}
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+              </td>
+              <td className="py-3 pr-4 text-muted-foreground whitespace-nowrap">
+                {format(new Date(u.created_at), "MMM d, yyyy")}
+              </td>
+              <td className="py-3 pr-4 text-center">
+                <Badge variant={u.application_count > 0 ? "default" : "secondary"} className="text-xs">
+                  {u.application_count}
+                </Badge>
+              </td>
+              <td className="py-3 text-muted-foreground whitespace-nowrap">
+                {u.last_sign_in_at
+                  ? format(new Date(u.last_sign_in_at), "MMM d, yyyy h:mm a")
+                  : "Never"}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
@@ -187,24 +155,24 @@ export default function Admin() {
         <h1 className="text-2xl font-heading font-bold text-foreground">Admin Panel</h1>
       </div>
 
-      <Tabs defaultValue="approvals" className="space-y-4">
+      <Tabs defaultValue="users" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="approvals" className="gap-1.5">
-            <Users className="h-3.5 w-3.5" /> Approvals
+          <TabsTrigger value="users" className="gap-1.5">
+            <Users className="h-3.5 w-3.5" /> Users
           </TabsTrigger>
           <TabsTrigger value="asset-review" className="gap-1.5">
             <Images className="h-3.5 w-3.5" /> Asset Review
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="approvals">
+        <TabsContent value="users">
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">User Approval Queue</CardTitle>
-              <CardDescription>Review and approve new user registrations</CardDescription>
+              <CardTitle className="text-lg">All Users</CardTitle>
+              <CardDescription>Registered users with activity stats</CardDescription>
             </CardHeader>
             <CardContent>
-              <ApprovalQueue />
+              <UserList />
             </CardContent>
           </Card>
         </TabsContent>

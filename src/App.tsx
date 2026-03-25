@@ -37,7 +37,7 @@ function useProfileCheck(userId: string | undefined) {
     queryFn: async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("approval_status, onboarding_completed_at")
+        .select("onboarding_completed_at")
         .eq("id", userId!)
         .single();
       return data;

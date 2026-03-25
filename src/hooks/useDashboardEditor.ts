@@ -128,6 +128,15 @@ export function useDashboardEditor({
         userMessage: msg,
         chatHistory: newHistory,
         jobUrl: app.job_url,
+        onComplete: (newHtml, newData, updatedChatHistory) => {
+          setDashboardHtml(newHtml);
+          if (newData) setDashboardData(newData);
+          setChatHistory(updatedChatHistory as ChatMessage[]);
+          // Save a post-refinement revision
+          saveDashboardRevision(id!, newHtml, `After: ${msg.slice(0, 50)}`).then(() => {
+            setRevisionTrigger((t) => t + 1);
+          }).catch(() => { /* non-critical */ });
+        },
       });
       try {
         await saveDashboardRevision(id!, dashboardHtml, `Before: ${msg.slice(0, 50)}`);

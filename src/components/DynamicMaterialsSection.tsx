@@ -605,7 +605,7 @@ export default function DynamicMaterialsSection({
         <TabsContent value="dashboard" className="space-y-4">
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" onClick={() => setChatOpen(!chatOpen)}>
-              <Edit3 className="mr-2 h-4 w-4" /> {chatOpen ? "Hide Chat" : "Refine with AI"}
+              <Edit3 className="mr-2 h-4 w-4" /> {chatOpen ? "Hide Chat" : "Vibe Edit"}
             </Button>
             <Button variant="outline" size="sm" onClick={handleRegenerateDashboard} disabled={isRegenerating}>
               {isRegenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}

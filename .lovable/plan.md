@@ -1,61 +1,41 @@
 
 
-## Bug Analysis: Dashboard Still Defaulting to GTM
+## Plan: Rename "Refine with AI" to "Vibe Edit" and Fix Iterative Editing
 
-### Root Cause
+### Problem 1: Label Rename
+One dashboard button still says "Refine with AI" instead of "Vibe Edit". Help drawer also references old name.
 
-There are **two bugs** working together:
+### Problem 2: Iterative Vibe Edit Uses Stale Content
+The dashboard vibe edit runs refinement in the background (`backgroundGenerator.startRefinement`). After it completes, the result is saved to the DB but the local React state (`dashboardHtml`) is **not** updated. When the user sends a second vibe edit before the 10-second polling refreshes, it edits the **original** dashboard, not the refined one.
 
-**Bug 1: The LLM returns raw HTML instead of JSON.** The system prompt says "OUTPUT: ONLY valid JSON" but the LLM (Gemini 2.5 Pro) is generating a complete HTML page with embedded `__DASHBOARD_DATA__` JSON. The `parseLlmJsonOutput()` call fails, and the code falls through to the raw HTML fallback path (lines 536-544).
+### Changes
 
-**Bug 2: The JD alignment validator only runs on the JSON path.** The validation (lines 510-535) is inside the `if (parsed)` block. When the LLM returns HTML instead of JSON, the `else` branch (line 536) saves the raw HTML **without any validation at all** — no department check, no keyword coverage, nothing. The dashboard goes straight to the database with whatever department the LLM hallucinated.
+**1. `src/components/DynamicMaterialsSection.tsx`** (line 608)
+- Change `"Refine with AI"` to `"Vibe Edit"` on the dashboard button
 
-In this case: the correct department "Customer Success / Delivery" was sent to the edge function, but the LLM embedded `"department":"GTM / Sales / Marketing"` in its HTML output, and no validator caught it because the validator was bypassed entirely.
+**2. `src/components/HelpDrawer.tsx`**
+- Update help text references from "Refine with AI" to "Vibe Edit"
 
-### Fix Plan
+**3. `src/hooks/useDashboardEditor.ts` — Fix iterative dashboard editing**
+- After calling `backgroundGenerator.startRefinement`, subscribe to job completion and update local `dashboardHtml` and `dashboardData` state from the DB when the refinement finishes
+- This ensures the next vibe edit operates on the latest refined version
 
-**1. `src/lib/backgroundGenerator.ts` — Run validation on raw HTML fallback path**
+**4. `src/lib/backgroundGenerator.ts` — Add completion callback support**
+- Add an `onComplete` callback option to `startRefinement` that fires with the new HTML/data after `runRefinement` saves to DB
+- Alternatively, expose a `subscribe(appId, callback)` method so `useDashboardEditor` can listen for completion
 
-In the `else` branch (line 536), extract the embedded `__DASHBOARD_DATA__` JSON from the raw HTML and run the validator against it:
+**5. `src/components/DynamicMaterialsSection.tsx` — Fix asset vibe edit iteration**
+- The `handleAssetVibeEdit` function receives `asset.html` from the render closure. After a successful edit, it updates `generatedAssets` state (line 529), so subsequent edits should use the updated HTML. However, the function is called with `asset.html` from the `.map()` render — need to verify the closure captures the latest state. If stale, switch to reading from a ref or the state directly by asset ID.
 
-```typescript
-} else {
-  console.warn("Failed to parse dashboard JSON, falling back to raw HTML");
-  dashboardHtml = dashboardRaw;
-  // ... existing HTML trimming ...
+### Technical Approach
+The simplest fix for the dashboard: add a completion callback to `startRefinement` that returns the final HTML and dashboard data. In `useDashboardEditor.handleSendChat`, use this callback to update `dashboardHtml`, `dashboardData`, and `chatHistory` state immediately upon completion, rather than waiting for the 10-second poll.
 
-  // Extract embedded JSON from __DASHBOARD_DATA__ for validation
-  const dataMatch = dashboardHtml.match(/window\.__DASHBOARD_DATA__\s*=\s*({[\s\S]*?});?\s*<\/script>/);
-  if (dataMatch) {
-    try {
-      const embeddedData = JSON.parse(dataMatch[1]);
-      // Fix department mismatch in embedded data
-      if (department && embeddedData?.meta) {
-        embeddedData.meta.department = department;
-        // Replace in HTML too
-        dashboardHtml = dashboardHtml.replace(dataMatch[0], 
-          `window.__DASHBOARD_DATA__=${JSON.stringify(embeddedData)};</script>`);
-      }
-      dashboardData = embeddedData;
-      // Run validation on extracted data
-      const alignmentReport = validateDashboardAlignment(embeddedData, jdIntelligence);
-      // ... store alignment report same as JSON path ...
-    } catch { /* extraction failed, save as-is */ }
-  }
-}
+```text
+User clicks "Vibe Edit" → handleSendChat
+  ├─ Saves pre-edit revision
+  ├─ Calls startRefinement(currentHtml, ..., onComplete)
+  │     └─ Background: stream → parse → save to DB → onComplete(newHtml, newData)
+  └─ onComplete updates React state (dashboardHtml, dashboardData, chatHistory)
+       └─ Next vibe edit uses updated state ✓
 ```
-
-This ensures:
-- The department is **corrected** in the HTML output to match the JD intelligence
-- The validator runs even when the LLM returns raw HTML
-- `dashboard_data` is populated so future refinements have structured data
-
-**2. `supabase/functions/generate-dashboard/index.ts` — Strengthen JSON-only instruction**
-
-Add a stronger instruction to the system prompt to reduce the frequency of HTML output:
-- Add: `"CRITICAL: Return ONLY the raw JSON object. Do NOT wrap it in HTML, script tags, or markdown fences. Do NOT generate a full HTML page."`
-
-### Files to Change
-- `src/lib/backgroundGenerator.ts` — Add embedded JSON extraction + validation in fallback path
-- `supabase/functions/generate-dashboard/index.ts` — Strengthen JSON-only prompt instruction
 

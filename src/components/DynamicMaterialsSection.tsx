@@ -560,14 +560,14 @@ export default function DynamicMaterialsSection({
                   </span>
                 )}
                 {('asset' in tab && tab.asset?.generation_status === 'generating') && (
-                  <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                  <Loader2 className="h-3 w-3 animate-spin text-yellow-500" />
                 )}
               </TabsTrigger>
             );
           })}
           {isBgGenerating && generatedAssets.length === 0 && legacyAssets.length === 0 && (
             <TabsTrigger value="_loading" disabled className="flex items-center gap-1.5 opacity-50">
-              <Loader2 className="h-3 w-3 animate-spin" /> Generating...
+              <Loader2 className="h-3 w-3 animate-spin text-yellow-500" /> Generating...
             </TabsTrigger>
           )}
         </TabsList>

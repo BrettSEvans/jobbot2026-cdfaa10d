@@ -659,8 +659,24 @@ export default function DynamicMaterialsSection({
 
           {dashboardHtml ? (
             <Card className="overflow-hidden">
-              <div className="w-full" style={{ height: "70vh" }}>
+              <div className="w-full relative" style={{ height: "70vh" }}>
                 <iframe ref={iframeRef} srcDoc={previewHtml || dashboardHtml} className="w-full h-full border-0" sandbox="allow-scripts" title="Dashboard Preview" />
+                {showDashboardWelcome && (
+                  <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/50 backdrop-blur-sm cursor-pointer" onClick={() => { setShowDashboardWelcome(false); localStorage.setItem("dashboard-welcome-dismissed", "1"); }}>
+                    <div className="bg-background border rounded-xl shadow-2xl p-8 max-w-md text-center space-y-4 animate-in fade-in zoom-in-95 duration-300" onClick={(e) => e.stopPropagation()}>
+                      <div className="mx-auto w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Sparkles className="h-7 w-7 text-primary" />
+                      </div>
+                      <h3 className="text-xl font-semibold tracking-tight">Your dashboard is interactive!</h3>
+                      <p className="text-muted-foreground text-sm leading-relaxed">
+                        Click on charts to drill down, toggle sidebar sections, hover for tooltips, and use the scenario sliders to explore different projections.
+                      </p>
+                      <Button onClick={() => { setShowDashboardWelcome(false); localStorage.setItem("dashboard-welcome-dismissed", "1"); }} className="w-full">
+                        Got it — let me explore!
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             </Card>
           ) : isBgGenerating ? (

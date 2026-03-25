@@ -322,7 +322,7 @@ const HELP_TOPICS: HelpTopic[] = [
     summary: "A branded, interactive research dashboard with company analysis, market intelligence, and competitive landscape.",
     steps: [
       "Navigate to the Dashboard tab on any application",
-      'Use "Refine with AI" to chat and request changes',
+      'Use "Vibe Edit" to chat and request changes',
       "Download as ZIP for separate HTML/CSS/JS files, or as single HTML",
       'Click "Save as Template" to reuse the layout for future applications',
     ],
@@ -461,10 +461,10 @@ const HELP_TOPICS: HelpTopic[] = [
   },
   {
     id: "vibe-edit",
-    title: "Vibe Edit (Refine with AI)",
+    title: "Vibe Edit",
     summary: "Refine any generated document by describing changes in natural language — like chatting with an AI editor.",
     steps: [
-      'Click "Refine with AI" on the Dashboard tab or use inline editing on materials',
+      'Click "Vibe Edit" on the Dashboard tab or use inline editing on materials',
       "Type your refinement instructions in the text field",
       "Submit — the AI applies your changes while preserving formatting",
       "Review the result; repeat for further refinements",

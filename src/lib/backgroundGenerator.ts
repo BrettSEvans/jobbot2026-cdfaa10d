@@ -645,6 +645,7 @@ class BackgroundGenerationManager {
     userMessage,
     chatHistory,
     jobUrl,
+    onComplete,
   }: {
     applicationId: string;
     currentHtml: string;
@@ -652,6 +653,7 @@ class BackgroundGenerationManager {
     userMessage: string;
     chatHistory: Array<{ role: string; content: string }>;
     jobUrl: string;
+    onComplete?: (newHtml: string, newData: any | null, updatedChatHistory: Array<{ role: string; content: string }>) => void;
   }): Promise<void> {
     const job: GenerationJob = {
       applicationId,
@@ -661,7 +663,7 @@ class BackgroundGenerationManager {
     this.jobs.set(applicationId, job);
     this.notify();
 
-    this.runRefinement(applicationId, currentHtml, currentDashboardData, userMessage, chatHistory, jobUrl);
+    this.runRefinement(applicationId, currentHtml, currentDashboardData, userMessage, chatHistory, jobUrl, onComplete);
   }
 
   private async runRefinement(
@@ -671,11 +673,13 @@ class BackgroundGenerationManager {
     userMessage: string,
     chatHistory: Array<{ role: string; content: string }>,
     jobUrl: string,
+    onComplete?: (newHtml: string, newData: any | null, updatedChatHistory: Array<{ role: string; content: string }>) => void,
   ) {
     try {
       const { streamDashboardRefinement } = await import("@/lib/api/jobApplication");
 
       let accumulated = "";
+      let parsedData: any = null;
       await streamDashboardRefinement({
         currentHtml,
         currentDashboardData,
@@ -685,6 +689,7 @@ class BackgroundGenerationManager {
         onDone: () => {
           const parsed = parseLlmJsonOutput(accumulated);
           if (parsed) {
+            parsedData = parsed;
             accumulated = assembleDashboardHtml(parsed);
           } else {
             let clean = accumulated;
@@ -700,14 +705,27 @@ class BackgroundGenerationManager {
       });
 
       const updatedHistory = [...chatHistory, { role: "assistant", content: "✅ Dashboard updated!" }];
-      await saveJobApplication({
+      const savePayload: Record<string, unknown> = {
         id: appId,
         job_url: jobUrl,
         dashboard_html: accumulated,
         chat_history: updatedHistory,
-      } as any);
+      };
+      if (parsedData) {
+        savePayload.dashboard_data = parsedData;
+      }
+      await saveJobApplication(savePayload as any);
 
       this.updateJob(appId, { status: "complete", progress: "Refinement complete!" });
+
+      // Notify caller so React state is updated immediately
+      if (onComplete) {
+        try {
+          onComplete(accumulated, parsedData, updatedHistory);
+        } catch (cbErr) {
+          console.warn("onComplete callback error:", cbErr);
+        }
+      }
     } catch (err: any) {
       console.error("Background refinement error:", err);
       this.updateJob(appId, { status: "error", progress: "Refinement failed", error: err.message });

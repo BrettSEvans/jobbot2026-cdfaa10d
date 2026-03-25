@@ -498,6 +498,7 @@ class BackgroundGenerationManager {
       }
 
       // 4d. Generate dashboard (uses research data)
+      this.updateJob(appId, { status: "dashboard", progress: "Generating dashboard...", currentAsset: "Dashboard" });
       let dashboardRaw = "";
       try {
         await streamDashboardGeneration({

@@ -97,6 +97,16 @@ export function CoverLetterTab({
 }: CoverLetterTabProps) {
 
   const displayContent = previewCoverLetter || coverLetter;
+  const isOlderVersion = !!previewCoverLetter;
+  const [versionAlert, setVersionAlert] = useState<(() => void) | null>(null);
+
+  const guardedDownload = useCallback((action: () => void) => {
+    if (isOlderVersion) {
+      setVersionAlert(() => action);
+    } else {
+      action();
+    }
+  }, [isOlderVersion]);
 
   const handleEditorSave = useCallback(async (html: string) => {
     setCoverLetter(html);

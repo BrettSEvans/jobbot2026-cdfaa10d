@@ -154,7 +154,7 @@ class BackgroundGenerationManager {
     useManualInput?: boolean
   ) {
     try {
-      // 1. Scrape / review job
+      // ========== PHASE 1: Scrape job (sequential — everything else depends on markdown) ==========
       let markdown = manualDescription || "";
       if (!useManualInput && jobUrl) {
         this.updateJob(appId, { status: "reviewing-job", progress: "Reviewing job posting..." });
@@ -174,74 +174,84 @@ class BackgroundGenerationManager {
       }
       this.updateJob(appId, { status: "reviewing-job", progress: "Job description ready" });
 
-      // 2. Scrape company branding
-      let brandingData: any = null;
-      let companyMarkdown = "";
-      if (companyUrl?.trim()) {
-        this.updateJob(appId, { status: "branding", progress: "Scraping company branding..." });
-        try {
-          const result = await scrapeCompanyBranding(companyUrl);
-          brandingData = result.branding;
-          companyMarkdown = result.markdown;
-        } catch (e) {
-          console.warn("Branding scrape failed:", e);
-        }
-      }
-
-      // 3. Analyze company
-      this.updateJob(appId, { status: "analyzing", progress: "Analyzing company & market..." });
+      // ========== PHASE 2: Run branding, analysis, JD parse, and profile fetch ALL IN PARALLEL ==========
+      this.updateJob(appId, { status: "analyzing", progress: "Analyzing job & company..." });
       await saveJobApplication({ id: appId, job_url: jobUrl, generation_status: "analyzing" } as any);
-      let companyName = "", jobTitle = "", department = "";
-      let competitors: string[] = [], customers: string[] = [], products: string[] = [];
-      try {
-        const analysis = await analyzeCompany({
-          companyMarkdown,
-          jobDescription: markdown,
-        });
-        companyName = analysis.companyName || "";
-        jobTitle = analysis.jobTitle || "";
-        department = analysis.department || "";
-        competitors = analysis.competitors || [];
-        customers = analysis.customers || [];
-        products = analysis.products || [];
-      } catch (e) {
-        console.warn("Analysis failed:", e);
-      }
 
-      // 3b. Parse JD intelligence (parallel-safe, non-blocking)
-      let jdIntelligence: JDIntelligence | null = null;
-      if (markdown && markdown.length >= 50) {
-        this.updateJob(appId, { progress: "Parsing JD intelligence..." });
+      // Launch all independent tasks concurrently
+      const brandingPromise = (companyUrl?.trim())
+        ? scrapeCompanyBranding(companyUrl).catch((e) => { console.warn("Branding scrape failed:", e); return null; })
+        : Promise.resolve(null);
+
+      const analysisPromise = analyzeCompany({
+        companyMarkdown: "", // branding markdown not available yet in parallel mode
+        jobDescription: markdown,
+      }).catch((e) => { console.warn("Analysis failed:", e); return null; });
+
+      const jdIntelligencePromise = (markdown && markdown.length >= 50)
+        ? parseJobDescription({ jobDescriptionMarkdown: markdown, companyName: "" }).catch((e) => { console.warn("JD intelligence parse failed:", e); return null; })
+        : Promise.resolve(null);
+
+      const profilePromise = (async () => {
+        let resumeText = "";
+        let candidateName = "";
         try {
-          jdIntelligence = await parseJobDescription({ jobDescriptionMarkdown: markdown, companyName });
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            const { data: profile } = await supabase
+              .from("profiles")
+              .select("first_name, middle_name, last_name, resume_text")
+              .eq("id", user.id)
+              .single();
+            if (profile) {
+              candidateName = [profile.first_name, profile.middle_name, profile.last_name]
+                .filter(Boolean).join(" ");
+            }
+            const { data: activeResume } = await supabase
+              .from("user_resumes")
+              .select("resume_text")
+              .eq("user_id", user.id)
+              .eq("is_active", true)
+              .single();
+            if (activeResume?.resume_text) {
+              resumeText = activeResume.resume_text;
+            } else {
+              resumeText = profile?.resume_text || "";
+            }
+          }
         } catch (e) {
-          console.warn("JD intelligence parse failed:", e);
+          console.warn("Failed to fetch user resume text:", e);
         }
+        return { resumeText, candidateName };
+      })();
+
+      // Await all parallel tasks
+      const [brandingResult, analysisResult, jdIntelligence, profileResult] = await Promise.all([
+        brandingPromise,
+        analysisPromise,
+        jdIntelligencePromise,
+        profilePromise,
+      ]);
+
+      // Extract results
+      let brandingData: any = null;
+      if (brandingResult) {
+        brandingData = brandingResult.branding;
       }
 
-      // 3c. Override department with authoritative JD intelligence
+      let companyName = analysisResult?.companyName || "";
+      let jobTitle = analysisResult?.jobTitle || "";
+      let department = analysisResult?.department || "";
+      let competitors: string[] = analysisResult?.competitors || [];
+      let customers: string[] = analysisResult?.customers || [];
+      let products: string[] = analysisResult?.products || [];
+
+      // Override department with authoritative JD intelligence
       if (jdIntelligence?.department) {
         department = jdIntelligence.department;
       }
 
-      // 4. Research
-      this.updateJob(appId, { status: "research", progress: `Researching ${companyName || 'company'}...` });
-      await saveJobApplication({ id: appId, job_url: jobUrl, generation_status: "research" } as any);
-      let researchedSections: any[] | undefined;
-      try {
-        const { researchCompany } = await import("@/lib/api/researchCompany");
-        const research = await researchCompany({
-          jobUrl: jobUrl || undefined,
-          companyUrl: companyUrl || undefined,
-          jobTitle,
-          companyName,
-          department,
-          jobDescription: markdown,
-        });
-        researchedSections = research.sections;
-      } catch (e) {
-        console.warn("Research failed:", e);
-      }
+      const { resumeText, candidateName } = profileResult;
 
       // Save intermediate results
       await saveJobApplication({
@@ -259,48 +269,10 @@ class BackgroundGenerationManager {
         generation_status: "resume",
       } as any);
 
-      // 5. Generate resume (foreground phase end)
+      // ========== PHASE 3: Generate resume (foreground phase end) ==========
       this.updateJob(appId, { status: "resume", progress: "Generating tailored resume..." });
-      
-      // Fetch user's resume text and full name
-      let resumeText = "";
-      let candidateName = "";
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          // Fetch profile for name
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("first_name, middle_name, last_name, resume_text")
-            .eq("id", user.id)
-            .single();
-          
-          if (profile) {
-            candidateName = [profile.first_name, profile.middle_name, profile.last_name]
-              .filter(Boolean).join(" ");
-          }
-
-          // Try user_resumes first (active resume with extracted text)
-          const { data: activeResume } = await supabase
-            .from("user_resumes")
-            .select("resume_text")
-            .eq("user_id", user.id)
-            .eq("is_active", true)
-            .single();
-          
-          if (activeResume?.resume_text) {
-            resumeText = activeResume.resume_text;
-          } else {
-            // Fallback to profiles.resume_text for backward compatibility
-            resumeText = profile?.resume_text || "";
-          }
-        }
-      } catch (e) {
-        console.warn("Failed to fetch user resume text:", e);
-      }
 
       if (resumeText && markdown) {
-        // Generate both ATS Play and Clarity resumes in parallel
         const [atsResult, clarityResult] = await Promise.allSettled([
           generateOptimizedResume({
             jobDescription: markdown,
@@ -338,7 +310,6 @@ class BackgroundGenerationManager {
 
         await saveJobApplication(savePayload);
       } else {
-        // No resume text available — skip resume generation
         await saveJobApplication({
           id: appId,
           job_url: jobUrl,
@@ -350,9 +321,27 @@ class BackgroundGenerationManager {
       // Signal foreground completion — user navigates to detail page now
       this.updateJob(appId, { status: "resume-complete", progress: "Resume ready! Generating remaining assets..." });
 
-      // ========== Phase 2: Background (cover letter + dashboard) ==========
+      // ========== PHASE 4: Background (research + cover letter + materials + dashboard) ==========
 
-      // 6. Generate cover letter
+      // 4a. Research company (deferred from foreground — only feeds dashboard)
+      let researchedSections: any[] | undefined;
+      try {
+        this.updateJob(appId, { progress: "Researching company..." });
+        const { researchCompany } = await import("@/lib/api/researchCompany");
+        const research = await researchCompany({
+          jobUrl: jobUrl || undefined,
+          companyUrl: companyUrl || undefined,
+          jobTitle,
+          companyName,
+          department,
+          jobDescription: markdown,
+        });
+        researchedSections = research.sections;
+      } catch (e) {
+        console.warn("Research failed:", e);
+      }
+
+      // 4b. Generate cover letter
       this.updateJob(appId, { status: "cover-letter", progress: "Generating cover letter..." });
       let coverLetter = "";
       try {
@@ -371,12 +360,11 @@ class BackgroundGenerationManager {
         console.warn("Cover letter generation failed:", e);
       }
 
-      // 7. Generate dynamic materials from JD-recommended assets
+      // 4c. Generate dynamic materials from JD-recommended assets
       const recommendedAssets = jdIntelligence?.recommended_assets || [];
       if (recommendedAssets.length > 0) {
         this.updateJob(appId, { status: "generating-materials", progress: `Generating materials (0/${recommendedAssets.length})...` });
 
-        // Save proposed assets
         for (const asset of recommendedAssets) {
           try {
             await supabase.from("proposed_assets").upsert({
@@ -388,7 +376,6 @@ class BackgroundGenerationManager {
           } catch { /* non-critical */ }
         }
 
-        // Generate each material with staggered starts
         for (let i = 0; i < recommendedAssets.length; i++) {
           const asset = recommendedAssets[i];
           this.updateJob(appId, {
@@ -397,7 +384,6 @@ class BackgroundGenerationManager {
           });
 
           try {
-            // Create placeholder in generated_assets
             const { data: assetRow } = await supabase.from("generated_assets").insert({
               application_id: appId,
               asset_name: asset.name,
@@ -405,9 +391,8 @@ class BackgroundGenerationManager {
               generation_status: "generating",
             }).select().single();
 
-            // Add timeout to prevent hanging on slow/unresponsive edge functions
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 120_000); // 2 min timeout
+            const timeoutId = setTimeout(() => controller.abort(), 120_000);
 
             try {
               const resp = await fetch(
@@ -420,7 +405,7 @@ class BackgroundGenerationManager {
                     'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
                     'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
                   },
-                    body: JSON.stringify({
+                  body: JSON.stringify({
                     assetName: asset.name,
                     assetDescription: asset.brief_description,
                     jobDescription: markdown,
@@ -467,7 +452,6 @@ class BackgroundGenerationManager {
             console.warn(`Material generation failed for ${asset.name}:`, e);
           }
 
-          // Stagger to avoid rate limits
           if (i < recommendedAssets.length - 1) {
             await new Promise(r => setTimeout(r, 3000));
           }
@@ -494,6 +478,8 @@ class BackgroundGenerationManager {
           console.warn("Design variability scoring failed:", e);
         }
       }
+
+      // 4d. Generate dashboard (uses research data)
       let dashboardRaw = "";
       try {
         await streamDashboardGeneration({
@@ -517,7 +503,6 @@ class BackgroundGenerationManager {
           dashboardData = parsed;
           dashboardHtml = assembleDashboardHtml(parsed);
 
-          // Post-generation JD alignment validation
           const alignmentReport = validateDashboardAlignment(parsed, jdIntelligence);
           console.log(
             `[DashboardValidation] Score: ${alignmentReport.score}/100 | Keywords: ${alignmentReport.keywordCoverage}% | Requirements: ${alignmentReport.requirementCoverage}% | Agentic: ${alignmentReport.hasAgenticWorkforce} | CFO: ${alignmentReport.hasCfoView}`
@@ -529,7 +514,6 @@ class BackgroundGenerationManager {
             );
           }
 
-          // Store alignment report alongside dashboard data
           if (dashboardData) {
             dashboardData._alignmentReport = {
               score: alignmentReport.score,
@@ -553,13 +537,11 @@ class BackgroundGenerationManager {
           const htmlEnd = dashboardHtml.lastIndexOf("</html>");
           if (htmlEnd !== -1) dashboardHtml = dashboardHtml.slice(0, htmlEnd + 7);
 
-          // Extract embedded __DASHBOARD_DATA__ JSON from raw HTML for validation & department fix
           const dataMatch = dashboardHtml.match(/window\.__DASHBOARD_DATA__\s*=\s*({[\s\S]*?});?\s*<\/script>/);
           if (dataMatch) {
             try {
               const embeddedData = JSON.parse(dataMatch[1]);
 
-              // Fix department mismatch in embedded data
               if (department && embeddedData?.meta) {
                 embeddedData.meta.department = department;
                 dashboardHtml = dashboardHtml.replace(
@@ -570,7 +552,6 @@ class BackgroundGenerationManager {
 
               dashboardData = embeddedData;
 
-              // Run validation on extracted data (same as JSON path)
               const alignmentReport = validateDashboardAlignment(embeddedData, jdIntelligence);
               console.log(
                 `[DashboardValidation:HTMLFallback] Score: ${alignmentReport.score}/100 | Keywords: ${alignmentReport.keywordCoverage}% | Requirements: ${alignmentReport.requirementCoverage}% | Agentic: ${alignmentReport.hasAgenticWorkforce} | CFO: ${alignmentReport.hasCfoView}`
@@ -611,7 +592,6 @@ class BackgroundGenerationManager {
         } as any);
       } catch (e) {
         console.warn("Dashboard generation failed:", e);
-        // Still mark complete even if dashboard fails
         await saveJobApplication({
           id: appId,
           job_url: jobUrl,

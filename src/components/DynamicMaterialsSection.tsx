@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef, useCallback, RefObject } from "react";
+import DashboardCustomizationDialog from "@/components/DashboardCustomizationDialog";
+import { backgroundGenerator } from "@/lib/backgroundGenerator";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -263,6 +265,7 @@ export default function DynamicMaterialsSection({
 
   const [generatedAssets, setGeneratedAssets] = useState<GeneratedAsset[]>([]);
   const [showDashboardWelcome, setShowDashboardWelcome] = useState(() => !localStorage.getItem("dashboard-welcome-dismissed"));
+  const [showDashboardConfig, setShowDashboardConfig] = useState(false);
   const [loadingAssets, setLoadingAssets] = useState(true);
   const [assetRevisionTriggers, setAssetRevisionTriggers] = useState<Record<string, number>>({});
   const [assetPreviewHtml, setAssetPreviewHtml] = useState<Record<string, string | null>>({});
@@ -301,6 +304,13 @@ export default function DynamicMaterialsSection({
     const interval = setInterval(fetchAssets, 8000);
     return () => clearInterval(interval);
   }, [applicationId]);
+
+  // Auto-open dashboard customization dialog when pipeline is awaiting config
+  useEffect(() => {
+    if (bgJob?.status === "awaiting-dashboard-config" && bgJob.researchedSections?.length) {
+      setShowDashboardConfig(true);
+    }
+  }, [bgJob?.status]);
 
   // Also check legacy columns for backward compat
   const legacyAssets: { name: string; html: string; field: string }[] = [];
@@ -555,6 +565,29 @@ export default function DynamicMaterialsSection({
 
   return (
     <>
+      {/* Dashboard Customization Dialog */}
+      {bgJob?.status === "awaiting-dashboard-config" && (
+        <DashboardCustomizationDialog
+          open={showDashboardConfig}
+          onOpenChange={setShowDashboardConfig}
+          researchedSections={bgJob.researchedSections || []}
+          researchedCfoScenarios={bgJob.researchedCfoScenarios || []}
+          scrapedBranding={bgJob.scrapedBranding}
+          onConfirm={(choices) => {
+            setShowDashboardConfig(false);
+            backgroundGenerator.resumeDashboardGeneration(applicationId, choices);
+          }}
+          onSkip={() => {
+            setShowDashboardConfig(false);
+            backgroundGenerator.resumeDashboardGeneration(applicationId, {
+              selectedSections: bgJob.researchedSections?.slice(0, 7),
+              selectedCfoScenarios: (bgJob.researchedCfoScenarios || [])
+                .sort((a: any, b: any) => (a.relevanceRank || 99) - (b.relevanceRank || 99))
+                .slice(0, 3),
+            });
+          }}
+        />
+      )}
       <VersionDownloadAlert
         open={!!versionAlertAction}
         onOpenChange={(open) => { if (!open) setVersionAlertAction(null); }}

@@ -167,7 +167,7 @@ serve(async (req) => {
   }
 
   try {
-    const { jobDescription, branding, companyName, jobTitle, competitors, customers, products, department, templateHtml, researchedSections } = await req.json();
+    const { jobDescription, branding, companyName, jobTitle, competitors, customers, products, department, templateHtml, researchedSections, selectedCfoScenarios, userColors } = await req.json();
 
     if (!jobDescription) {
       return new Response(
@@ -184,7 +184,17 @@ serve(async (req) => {
       );
     }
 
-    const systemPrompt = buildSystemPrompt(branding, competitors, customers, products, department || 'General', companyName || 'Unknown', jobTitle || 'Unknown', researchedSections);
+    // Apply user color overrides to branding if provided
+    const effectiveBranding = userColors
+      ? { ...branding, colors: { ...(branding?.colors || {}), primary: userColors.primary, secondary: userColors.secondary }, userColors }
+      : branding;
+
+    const systemPrompt = buildSystemPrompt(effectiveBranding, competitors, customers, products, department || 'General', companyName || 'Unknown', jobTitle || 'Unknown', researchedSections);
+
+    // Add CFO scenario instructions if user selected specific ones
+    const cfoContext = selectedCfoScenarios?.length
+      ? `\n\nUSER-SELECTED CFO SCENARIOS (use these exact scenarios, fill in realistic data, ALL charts must use $ currency labels on Y-axis):\n${JSON.stringify(selectedCfoScenarios, null, 2)}`
+      : '\n\nAll CFO scenario charts must use $ currency labels on Y-axis values.';
 
     const templateContext = templateHtml ? `\n\nREFERENCE TEMPLATE (use as structural guide for section layout, chart types, and data patterns — but generate NEW data for the new company): Provided separately.` : '';
 
@@ -200,7 +210,7 @@ serve(async (req) => {
           { role: 'system', content: systemPrompt },
           {
             role: 'user',
-            content: `Generate the dashboard JSON for:\n\nCompany: ${companyName || 'Unknown'}\nRole: ${jobTitle || 'Unknown'}\nDepartment: ${department || 'Not specified'}\n\nJob Description:\n${jobDescription}${templateContext}`
+            content: `Generate the dashboard JSON for:\n\nCompany: ${companyName || 'Unknown'}\nRole: ${jobTitle || 'Unknown'}\nDepartment: ${department || 'Not specified'}\n\nJob Description:\n${jobDescription}${templateContext}${cfoContext}`
           },
         ],
         stream: true,

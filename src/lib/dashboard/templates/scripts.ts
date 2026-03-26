@@ -645,7 +645,20 @@ export function getScriptsJs(): string {
         };
         if (!isRadial) {
           chartOpts.scales = {
-            y: { beginAtZero: false, grid: { color: 'rgba(0,0,0,0.06)' } },
+            y: {
+              beginAtZero: false,
+              grid: { color: 'rgba(0,0,0,0.06)' },
+              ticks: {
+                callback: function(value) {
+                  if (scenario.currencyFormat !== false) {
+                    if (Math.abs(value) >= 1000000) return '$' + (value / 1000000).toFixed(1) + 'M';
+                    if (Math.abs(value) >= 1000) return '$' + (value / 1000).toFixed(0) + 'K';
+                    return '$' + value;
+                  }
+                  return value;
+                }
+              }
+            },
             x: { grid: { color: 'rgba(0,0,0,0.06)' } }
           };
         }

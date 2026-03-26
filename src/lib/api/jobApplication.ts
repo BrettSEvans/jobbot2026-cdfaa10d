@@ -69,6 +69,8 @@ export async function streamDashboardGeneration({
   department,
   templateHtml,
   researchedSections,
+  selectedCfoScenarios,
+  userColors,
   onDelta,
   onDone,
 }: {
@@ -82,6 +84,8 @@ export async function streamDashboardGeneration({
   department?: string;
   templateHtml?: string;
   researchedSections?: any[];
+  selectedCfoScenarios?: any[];
+  userColors?: { primary: string; secondary: string };
   onDelta: (text: string) => void;
   onDone: () => void;
 }) {
@@ -91,7 +95,7 @@ export async function streamDashboardGeneration({
     {
       method: 'POST',
       headers,
-      body: JSON.stringify({ jobDescription, branding, companyName, jobTitle, competitors, customers, products, department, templateHtml, researchedSections }),
+      body: JSON.stringify({ jobDescription, branding, companyName, jobTitle, competitors, customers, products, department, templateHtml, researchedSections, selectedCfoScenarios, userColors }),
     }
   );
 

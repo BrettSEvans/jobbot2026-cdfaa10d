@@ -103,13 +103,19 @@ export function useTourState() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("tour") === "1" && !completed) {
-      // Clean the URL param
       params.delete("tour");
       const clean = params.toString();
       window.history.replaceState({}, "", window.location.pathname + (clean ? `?${clean}` : ""));
       setActive(true);
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Listen for custom start-tour event (e.g. from HelpDrawer)
+  useEffect(() => {
+    const handler = () => setActive(true);
+    window.addEventListener("resuvibe:start-tour", handler);
+    return () => window.removeEventListener("resuvibe:start-tour", handler);
+  }, []);
 
   return { active, completed, start, complete };
 }

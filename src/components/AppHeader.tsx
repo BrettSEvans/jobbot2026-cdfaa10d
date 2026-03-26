@@ -4,6 +4,11 @@ import { Sparkles, Sun, Moon, Shield, LogOut, Menu, User } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel,
+  AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
+  AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import BrandLogo from "@/components/BrandLogo";
 import { useTheme } from "@/hooks/useTheme";
@@ -122,15 +127,28 @@ export default function AppHeader({ onAiChatToggle, aiChatOpen }: AppHeaderProps
           >
             <Sparkles className="h-4 w-4" />
           </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={signOut}
-            aria-label="Sign out"
-            className="h-9 w-9 text-muted-foreground hover:text-destructive hidden md:flex"
-          >
-            <LogOut className="h-4 w-4" />
-          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Sign out"
+                className="h-9 w-9 text-muted-foreground hover:text-destructive hidden md:flex"
+              >
+                <LogOut className="h-4 w-4" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Sign out?</AlertDialogTitle>
+                <AlertDialogDescription>Are you sure you want to sign out of your account?</AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={signOut}>Sign Out</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
 
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
             <SheetTrigger asChild>
@@ -164,9 +182,23 @@ export default function AppHeader({ onAiChatToggle, aiChatOpen }: AppHeaderProps
                   ))}
                 </nav>
                 <div className="p-4 border-t border-border">
-                  <Button variant="outline" size="sm" className="w-full gap-2 text-destructive" onClick={() => { signOut(); setMobileOpen(false); }}>
-                    <LogOut className="h-4 w-4" /> Sign Out
-                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="outline" size="sm" className="w-full gap-2 text-destructive">
+                        <LogOut className="h-4 w-4" /> Sign Out
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Sign out?</AlertDialogTitle>
+                        <AlertDialogDescription>Are you sure you want to sign out of your account?</AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => { signOut(); setMobileOpen(false); }}>Sign Out</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
               </div>
             </SheetContent>

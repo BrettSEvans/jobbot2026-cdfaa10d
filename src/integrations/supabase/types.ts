@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_links: {
+        Row: {
+          created_at: string
+          id: string
+          linked_user_id: string
+          primary_user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          linked_user_id: string
+          primary_user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          linked_user_id?: string
+          primary_user_id?: string
+        }
+        Relationships: []
+      }
       admin_audit_log: {
         Row: {
           action: string
@@ -1643,6 +1664,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_linked_or_self: { Args: { _owner_id: string }; Returns: boolean }
       owns_application: { Args: { _application_id: string }; Returns: boolean }
       set_active_resume: { Args: { p_resume_id: string }; Returns: undefined }
     }

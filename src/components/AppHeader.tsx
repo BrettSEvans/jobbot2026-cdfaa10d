@@ -95,6 +95,17 @@ export default function AppHeader({ onAiChatToggle, aiChatOpen }: AppHeaderProps
         </div>
 
         <div className="flex items-center gap-2">
+          {/* User avatar */}
+          {user && (
+            <Avatar className="h-7 w-7 shrink-0">
+              {(user.user_metadata?.avatar_url || user.user_metadata?.picture) && (
+                <AvatarImage src={user.user_metadata?.avatar_url || user.user_metadata?.picture} alt="Avatar" />
+              )}
+              <AvatarFallback className="bg-primary/20 text-primary text-[10px]">
+                {user.email?.charAt(0).toUpperCase() ?? "?"}
+              </AvatarFallback>
+            </Avatar>
+          )}
           <ThemeToggle />
           <Button
             variant={aiChatOpen ? "default" : "outline"}

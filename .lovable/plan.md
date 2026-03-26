@@ -1,54 +1,95 @@
 
 
-## Plan: Rename "Refine with AI" to "Vibe Edit" and Fix Dashboard Iterative Editing
+## Plan: Human-in-the-Loop Dashboard Generation
 
-### Summary
+### Overview
 
-Two changes: (1) rename the last "Refine with AI" label and update help text, (2) fix the dashboard vibe edit so sequential edits build on each other instead of restarting from the original.
+Insert three user decision points into the dashboard generation pipeline. The pipeline currently runs fully automated in the background. We'll pause it at three points to collect user preferences before continuing, resulting in more personalized dashboards.
 
-The cover letter and generated asset vibe edits already work iteratively (they stream directly into React state and block concurrent edits). Only the dashboard vibe edit is broken because it delegates to a background process that saves to DB but never updates the local React state.
+### Architecture
 
----
+The pipeline currently flows: Scrape → Analyze → Resume → Cover Letter → Materials → Dashboard (all automated). We'll split the dashboard phase into sub-steps with user prompts:
+
+```text
+... Materials complete ...
+  │
+  ├─ 1. Research Agent runs (enhanced: also generates CFO scenarios)
+  │
+  ├─ PAUSE → Show "Dashboard Customization" dialog
+  │    ├─ Step A: Pick 2 brand colors (from scraped branding + color pickers)
+  │    ├─ Step B: Select sections (10+ options from research, app recommends count)
+  │    └─ Step C: Select CFO scenarios (7 ranked options, app pre-selects top 3)
+  │
+  ├─ User clicks "Generate Dashboard" →
+  │    └─ Pipeline resumes with user's choices injected into the generation prompt
+  │
+  └─ Dashboard renders
+```
 
 ### Changes
 
-**1. `src/components/DynamicMaterialsSection.tsx`** (line 608)
-- Change `"Refine with AI"` to `"Vibe Edit"` on the dashboard chat toggle button
+**1. New component: `src/components/DashboardCustomizationDialog.tsx`**
+- Multi-step modal dialog (3 tabs/steps or a single scrollable form)
+- **Step A — Brand Colors**: Two color pickers initialized from scraped branding `primary`/`secondary` colors. User can adjust. Shows a small live preview swatch of header + sidebar using chosen colors.
+- **Step B — Sections**: Displays all researched sections (10+) as checkboxes with icon, label, and description. Header says "Select X–Y sections for your dashboard" (recommendation based on research count). Pre-checks the top ones.
+- **Step C — CFO Scenarios**: Displays 7 AI-ranked scenarios as a ranked list with radio/checkbox selection (pick 3). Each shows title, description, and a "relevance" badge. Pre-selects top 3.
+- Emits `onConfirm({ colors, selectedSections, selectedScenarios })`.
 
-**2. `src/components/HelpDrawer.tsx`**
-- Line 325: `"Refine with AI"` → `"Vibe Edit"`
-- Line 464: `"Vibe Edit (Refine with AI)"` → `"Vibe Edit"`
-- Line 467: `"Refine with AI"` → `"Vibe Edit"`
+**2. Enhanced research agent: `supabase/functions/research-company/index.ts`**
+- Expand the system prompt to also generate 7 CFO scenario specifications (not just sections)
+- Each CFO scenario spec includes: id, title, description, type, relevance ranking (1-7), slider definitions with `controlType` (slider/toggle/segmented variety), baseline values, and `currencyFormat: true`
+- Output schema adds `cfoScenarios` array alongside `sections`
+- Return 10+ section options (increase from current 5-7 to "8-12")
 
-**3. `src/lib/backgroundGenerator.ts` — Add `onComplete` callback to `startRefinement`**
-- Add optional `onComplete` callback parameter to `startRefinement` and pass it through to `runRefinement`
-- In `runRefinement`, after saving to DB successfully, call `onComplete(newHtml, parsedData, updatedChatHistory)` so the caller can update React state immediately
-- This ensures the next vibe edit reads the latest HTML/data from state, not the stale pre-edit version
+**3. Update `src/lib/api/researchCompany.ts`**
+- Add `ResearchedCFOScenario` interface to the types
+- Include `cfoScenarios` in `ResearchResult`
 
-**4. `src/hooks/useDashboardEditor.ts` — Use `onComplete` to sync state**
-- In `handleSendChat`, pass an `onComplete` callback to `startRefinement` that:
-  - Calls `setDashboardHtml(newHtml)` with the refined HTML
-  - Calls `setDashboardData(newData)` if structured data was parsed
-  - Appends the assistant "updated" message to `chatHistory`
-  - Saves a post-refinement revision and bumps the revision trigger
-- This closes the loop: sequential vibe edits now always operate on the latest refined version
+**4. Update `src/lib/backgroundGenerator.ts`**
+- After research completes and before dashboard generation, set a new status: `"awaiting-dashboard-config"`
+- Store research results (sections + CFO scenarios) on the job object so the UI can read them
+- Add a new method `resumeDashboardGeneration(appId, userChoices)` that the dialog calls after user confirms
+- This method continues the pipeline from where it paused, passing user-selected sections, colors, and CFO scenarios to `streamDashboardGeneration`
 
-### Technical Detail
+**5. Update `GenerationJob` type**
+- Add optional fields: `researchedSections`, `researchedCfoScenarios`, `scrapedBranding` to carry data for the dialog
+- Add status `"awaiting-dashboard-config"` to `GenerationJobStatus`
 
-```text
-Before (broken):
-  Edit 1 → startRefinement(html_v1) → saves html_v2 to DB
-  Edit 2 → startRefinement(html_v1) → saves html_v2' to DB  ← uses stale v1!
+**6. Wire dialog into `src/components/DynamicMaterialsSection.tsx` (or `ApplicationDetail.tsx`)**
+- When the background job status is `"awaiting-dashboard-config"`, auto-open the `DashboardCustomizationDialog`
+- Pass researched sections, CFO scenarios, and scraped branding colors as props
+- On confirm, call `backgroundGenerator.resumeDashboardGeneration(appId, choices)`
 
-After (fixed):
-  Edit 1 → startRefinement(html_v1, onComplete) → saves html_v2 → onComplete(html_v2)
-           → setDashboardHtml(html_v2)
-  Edit 2 → startRefinement(html_v2, onComplete) → saves html_v3 → onComplete(html_v3)  ✓
-```
+**7. Update `supabase/functions/generate-dashboard/index.ts`**
+- Accept `userColors` (primary, secondary) in the request body and use them as the seed for the Material You tonal palette instead of deriving from branding
+- Accept `selectedCfoScenarios` (pre-built scenario specs from research) and inject them into the prompt so the LLM fills in data but follows the user's chosen scenarios
+- Add instruction for `$` currency labels on CFO chart Y-axes
 
-### Files to Change
-- `src/components/DynamicMaterialsSection.tsx` — 1 label rename
-- `src/components/HelpDrawer.tsx` — 3 text updates
-- `src/lib/backgroundGenerator.ts` — add `onComplete` callback plumbing
-- `src/hooks/useDashboardEditor.ts` — wire `onComplete` to update React state
+**8. Update CFO chart rendering in `src/lib/dashboard/templates/scripts.ts`**
+- Add `$` currency formatting to Y-axis tick callbacks (e.g., `$1.2M`, `$500K`)
+- Ensure `controlType` field is respected from the scenario data (already partially implemented — verify toggle/segmented/slider variety comes from data, not just index-based alternation)
+
+**9. Update `src/lib/dashboard/schema.ts`**
+- Add `controlType?: "slider" | "toggle" | "segmented"` to `SliderConfig`
+- Add `options?: Array<{ label: string; value: number }>` to `SliderConfig`
+- Add `currencyFormat?: boolean` to `CFOScenario`
+
+### User Experience Flow
+
+1. User submits a job application → resume/cover letter/materials generate as before
+2. When dashboard phase begins, research agent runs (enhanced with CFO scenarios)
+3. A dialog appears: "Customize Your Dashboard"
+4. User picks colors, sections, and CFO scenarios across three clear steps
+5. User clicks "Generate Dashboard" → dialog closes, dashboard generates with their choices
+6. If user dismisses without choosing, defaults are used (top sections, top 3 scenarios, scraped colors)
+
+### Files to Create/Modify
+- **Create**: `src/components/DashboardCustomizationDialog.tsx`
+- **Modify**: `supabase/functions/research-company/index.ts` (add CFO scenario research)
+- **Modify**: `src/lib/api/researchCompany.ts` (add CFO types)
+- **Modify**: `src/lib/backgroundGenerator.ts` (pause/resume + carry research data)
+- **Modify**: `src/lib/dashboard/schema.ts` (SliderConfig enhancements)
+- **Modify**: `src/lib/dashboard/templates/scripts.ts` ($ formatting on CFO charts)
+- **Modify**: `supabase/functions/generate-dashboard/index.ts` (accept user choices)
+- **Modify**: `src/components/DynamicMaterialsSection.tsx` or `src/pages/ApplicationDetail.tsx` (show dialog)
 

@@ -5,7 +5,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Input } from "@/components/ui/input";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
-import { HelpCircle, Search, Lightbulb, ListChecks, Link2 } from "lucide-react";
+import { HelpCircle, Search, Lightbulb, ListChecks, Link2, Play } from "lucide-react";
 
 interface HelpTopic {
   id: string;
@@ -626,7 +626,7 @@ export function HelpDrawer() {
               }}
               className="flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
             >
-              <Sparkles className="h-3.5 w-3.5" />
+              <Play className="h-3.5 w-3.5" />
               Take the Tour!
             </button>
             <p className="text-xs text-muted-foreground">

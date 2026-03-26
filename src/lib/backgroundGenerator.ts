@@ -572,6 +572,160 @@ class BackgroundGenerationManager {
   }
 
   /**
+   * Resume dashboard generation after user has made customization choices.
+   */
+  async resumeDashboardGeneration(
+    appId: string,
+    userChoices: {
+      colors?: { primary: string; secondary: string };
+      selectedSections?: any[];
+      selectedCfoScenarios?: any[];
+    }
+  ) {
+    const job = this.jobs.get(appId);
+    if (!job?._pipelineState) {
+      console.warn("No pipeline state found for", appId);
+      return;
+    }
+
+    const {
+      jobUrl,
+      markdown,
+      brandingData,
+      companyName,
+      jobTitle,
+      department,
+      competitors,
+      customers,
+      products,
+      jdIntelligence,
+    } = job._pipelineState;
+
+    // Apply user color choices to branding
+    let effectiveBranding = brandingData;
+    if (userChoices.colors) {
+      effectiveBranding = {
+        ...brandingData,
+        userColors: userChoices.colors,
+      };
+    }
+
+    const effectiveSections = userChoices.selectedSections || job.researchedSections?.slice(0, 7);
+    const effectiveCfoScenarios = userChoices.selectedCfoScenarios ||
+      job.researchedCfoScenarios
+        ?.sort((a: any, b: any) => (a.relevanceRank || 99) - (b.relevanceRank || 99))
+        .slice(0, 3);
+
+    // Clear dialog data from job
+    this.updateJob(appId, {
+      status: "dashboard",
+      progress: "Generating dashboard...",
+      currentAsset: "Dashboard",
+      researchedSections: undefined,
+      researchedCfoScenarios: undefined,
+      scrapedBranding: undefined,
+      _pipelineState: undefined,
+    });
+
+    let dashboardRaw = "";
+    try {
+      await streamDashboardGeneration({
+        jobDescription: markdown,
+        branding: effectiveBranding,
+        companyName,
+        jobTitle,
+        competitors,
+        customers,
+        products,
+        department,
+        researchedSections: effectiveSections,
+        selectedCfoScenarios: effectiveCfoScenarios,
+        userColors: userChoices.colors,
+        onDelta: (text) => { dashboardRaw += text; },
+        onDone: () => {},
+      });
+
+      let dashboardHtml = "";
+      let dashboardData: any = null;
+      const parsed = parseLlmJsonOutput(dashboardRaw);
+      if (parsed) {
+        dashboardData = parsed;
+        dashboardHtml = assembleDashboardHtml(parsed);
+
+        const alignmentReport = validateDashboardAlignment(parsed, jdIntelligence);
+        console.log(
+          `[DashboardValidation] Score: ${alignmentReport.score}/100 | Keywords: ${alignmentReport.keywordCoverage}% | Requirements: ${alignmentReport.requirementCoverage}% | Agentic: ${alignmentReport.hasAgenticWorkforce} | CFO: ${alignmentReport.hasCfoView}`
+        );
+        if (alignmentReport.gaps.length > 0) {
+          console.warn(
+            "[DashboardValidation] Gaps found:",
+            alignmentReport.gaps.map((g) => `[${g.severity}] ${g.message}`)
+          );
+        }
+
+        if (dashboardData) {
+          dashboardData._alignmentReport = {
+            score: alignmentReport.score,
+            keywordCoverage: alignmentReport.keywordCoverage,
+            requirementCoverage: alignmentReport.requirementCoverage,
+            hasAgenticWorkforce: alignmentReport.hasAgenticWorkforce,
+            hasCfoView: alignmentReport.hasCfoView,
+            gapCount: alignmentReport.gaps.length,
+            criticalGaps: alignmentReport.gaps
+              .filter((g) => g.severity === "critical")
+              .map((g) => g.message),
+          };
+        }
+      } else {
+        console.warn("Failed to parse dashboard JSON, falling back to raw HTML");
+        dashboardHtml = dashboardRaw;
+        const htmlStart = dashboardHtml.indexOf("<!DOCTYPE html>") !== -1
+          ? dashboardHtml.indexOf("<!DOCTYPE html>")
+          : dashboardHtml.indexOf("<!doctype html>");
+        if (htmlStart > 0) dashboardHtml = dashboardHtml.slice(htmlStart);
+        const htmlEnd = dashboardHtml.lastIndexOf("</html>");
+        if (htmlEnd !== -1) dashboardHtml = dashboardHtml.slice(0, htmlEnd + 7);
+
+        const dataMatch = dashboardHtml.match(/window\.__DASHBOARD_DATA__\s*=\s*({[\s\S]*?});?\s*<\/script>/);
+        if (dataMatch) {
+          try {
+            const embeddedData = JSON.parse(dataMatch[1]);
+            if (department && embeddedData?.meta) {
+              embeddedData.meta.department = department;
+              dashboardHtml = dashboardHtml.replace(
+                dataMatch[0],
+                `window.__DASHBOARD_DATA__=${JSON.stringify(embeddedData)};</script>`
+              );
+            }
+            dashboardData = embeddedData;
+          } catch (extractErr) {
+            console.warn("Failed to extract embedded dashboard data from HTML:", extractErr);
+          }
+        }
+      }
+
+      await saveJobApplication({
+        id: appId,
+        job_url: jobUrl,
+        dashboard_html: dashboardHtml,
+        dashboard_data: dashboardData,
+        status: "complete",
+        generation_status: "complete",
+      } as any);
+    } catch (e) {
+      console.warn("Dashboard generation failed:", e);
+      await saveJobApplication({
+        id: appId,
+        job_url: jobUrl,
+        status: "complete",
+        generation_status: "complete",
+      } as any);
+    }
+
+    this.updateJob(appId, { status: "complete", progress: "Done!" });
+  }
+
+  /**
    * Start a dashboard refinement in the background.
    */
   async startRefinement({

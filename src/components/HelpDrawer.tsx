@@ -618,6 +618,17 @@ export function HelpDrawer() {
                 className="pl-8 h-8 text-sm"
               />
             </div>
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                window.dispatchEvent(new CustomEvent("resuvibe:start-tour"));
+              }}
+              className="flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              Take the Tour!
+            </button>
             <p className="text-xs text-muted-foreground">
               {filteredTopics.length} topic{filteredTopics.length !== 1 ? "s" : ""}
               {contextualTopics.length > 0 && !search && ` · ${contextualTopics.length} relevant to this page`}

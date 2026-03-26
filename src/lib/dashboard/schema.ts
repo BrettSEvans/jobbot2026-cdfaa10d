@@ -134,6 +134,7 @@ export interface CFOScenario {
   baseline: Record<string, number>;
   quarters: string[];
   chartType?: "line" | "bar";
+  currencyFormat?: boolean;
 }
 
 export interface SliderConfig {
@@ -144,4 +145,6 @@ export interface SliderConfig {
   step: number;
   default: number;
   unit: string;
+  controlType?: "slider" | "toggle" | "segmented";
+  options?: Array<{ label: string; value: number }>;
 }

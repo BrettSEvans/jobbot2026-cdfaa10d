@@ -1,6 +1,7 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { useState } from "react";
-import { Sparkles, Sun, Moon, Shield, LogOut, Menu, X, User } from "lucide-react";
+import { Sparkles, Sun, Moon, Shield, LogOut, Menu, User } from "lucide-react";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";

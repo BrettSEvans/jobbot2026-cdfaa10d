@@ -519,129 +519,43 @@ class BackgroundGenerationManager {
         }
       }
 
-      // 4d. Generate dashboard (uses research data)
-      this.updateJob(appId, { status: "dashboard", progress: "Generating dashboard...", currentAsset: "Dashboard" });
-      let dashboardRaw = "";
-      try {
-        await streamDashboardGeneration({
-          jobDescription: markdown,
-          branding: brandingData,
+      // 4d. PAUSE for dashboard customization — store research data on job
+      this.updateJob(appId, {
+        status: "awaiting-dashboard-config",
+        progress: "Customize your dashboard",
+        currentAsset: "Dashboard",
+        researchedSections,
+        researchedCfoScenarios,
+        scrapedBranding: brandingData,
+        _pipelineState: {
+          jobUrl,
+          companyUrl,
+          markdown,
+          brandingData,
           companyName,
           jobTitle,
+          department,
           competitors,
           customers,
           products,
-          department,
-          researchedSections,
-          onDelta: (text) => { dashboardRaw += text; },
-          onDone: () => {},
-        });
+          jdIntelligence,
+          candidateName,
+        },
+      });
 
-        let dashboardHtml = "";
-        let dashboardData: any = null;
-        const parsed = parseLlmJsonOutput(dashboardRaw);
-        if (parsed) {
-          dashboardData = parsed;
-          dashboardHtml = assembleDashboardHtml(parsed);
-
-          const alignmentReport = validateDashboardAlignment(parsed, jdIntelligence);
-          console.log(
-            `[DashboardValidation] Score: ${alignmentReport.score}/100 | Keywords: ${alignmentReport.keywordCoverage}% | Requirements: ${alignmentReport.requirementCoverage}% | Agentic: ${alignmentReport.hasAgenticWorkforce} | CFO: ${alignmentReport.hasCfoView}`
-          );
-          if (alignmentReport.gaps.length > 0) {
-            console.warn(
-              "[DashboardValidation] Gaps found:",
-              alignmentReport.gaps.map((g) => `[${g.severity}] ${g.message}`)
-            );
-          }
-
-          if (dashboardData) {
-            dashboardData._alignmentReport = {
-              score: alignmentReport.score,
-              keywordCoverage: alignmentReport.keywordCoverage,
-              requirementCoverage: alignmentReport.requirementCoverage,
-              hasAgenticWorkforce: alignmentReport.hasAgenticWorkforce,
-              hasCfoView: alignmentReport.hasCfoView,
-              gapCount: alignmentReport.gaps.length,
-              criticalGaps: alignmentReport.gaps
-                .filter((g) => g.severity === "critical")
-                .map((g) => g.message),
-            };
-          }
-        } else {
-          console.warn("Failed to parse dashboard JSON, falling back to raw HTML");
-          dashboardHtml = dashboardRaw;
-          const htmlStart = dashboardHtml.indexOf("<!DOCTYPE html>") !== -1
-            ? dashboardHtml.indexOf("<!DOCTYPE html>")
-            : dashboardHtml.indexOf("<!doctype html>");
-          if (htmlStart > 0) dashboardHtml = dashboardHtml.slice(htmlStart);
-          const htmlEnd = dashboardHtml.lastIndexOf("</html>");
-          if (htmlEnd !== -1) dashboardHtml = dashboardHtml.slice(0, htmlEnd + 7);
-
-          const dataMatch = dashboardHtml.match(/window\.__DASHBOARD_DATA__\s*=\s*({[\s\S]*?});?\s*<\/script>/);
-          if (dataMatch) {
-            try {
-              const embeddedData = JSON.parse(dataMatch[1]);
-
-              if (department && embeddedData?.meta) {
-                embeddedData.meta.department = department;
-                dashboardHtml = dashboardHtml.replace(
-                  dataMatch[0],
-                  `window.__DASHBOARD_DATA__=${JSON.stringify(embeddedData)};</script>`
-                );
-              }
-
-              dashboardData = embeddedData;
-
-              const alignmentReport = validateDashboardAlignment(embeddedData, jdIntelligence);
-              console.log(
-                `[DashboardValidation:HTMLFallback] Score: ${alignmentReport.score}/100 | Keywords: ${alignmentReport.keywordCoverage}% | Requirements: ${alignmentReport.requirementCoverage}% | Agentic: ${alignmentReport.hasAgenticWorkforce} | CFO: ${alignmentReport.hasCfoView}`
-              );
-              if (alignmentReport.gaps.length > 0) {
-                console.warn(
-                  "[DashboardValidation:HTMLFallback] Gaps found:",
-                  alignmentReport.gaps.map((g) => `[${g.severity}] ${g.message}`)
-                );
-              }
-
-              if (dashboardData) {
-                dashboardData._alignmentReport = {
-                  score: alignmentReport.score,
-                  keywordCoverage: alignmentReport.keywordCoverage,
-                  requirementCoverage: alignmentReport.requirementCoverage,
-                  hasAgenticWorkforce: alignmentReport.hasAgenticWorkforce,
-                  hasCfoView: alignmentReport.hasCfoView,
-                  gapCount: alignmentReport.gaps.length,
-                  criticalGaps: alignmentReport.gaps
-                    .filter((g) => g.severity === "critical")
-                    .map((g) => g.message),
-                };
-              }
-            } catch (extractErr) {
-              console.warn("Failed to extract embedded dashboard data from HTML:", extractErr);
-            }
-          }
+      // Auto-resume with defaults after 5 minutes if user doesn't interact
+      setTimeout(() => {
+        const currentJob = this.jobs.get(appId);
+        if (currentJob?.status === "awaiting-dashboard-config") {
+          console.log("[Pipeline] Auto-resuming dashboard generation with defaults for", appId);
+          this.resumeDashboardGeneration(appId, {
+            selectedSections: researchedSections?.slice(0, 7),
+            selectedCfoScenarios: researchedCfoScenarios
+              ?.sort((a: any, b: any) => (a.relevanceRank || 99) - (b.relevanceRank || 99))
+              .slice(0, 3),
+          });
         }
-
-        await saveJobApplication({
-          id: appId,
-          job_url: jobUrl,
-          dashboard_html: dashboardHtml,
-          dashboard_data: dashboardData,
-          status: "complete",
-          generation_status: "complete",
-        } as any);
-      } catch (e) {
-        console.warn("Dashboard generation failed:", e);
-        await saveJobApplication({
-          id: appId,
-          job_url: jobUrl,
-          status: "complete",
-          generation_status: "complete",
-        } as any);
-      }
-
-      this.updateJob(appId, { status: "complete", progress: "Done!" });
+      }, 300_000);
     } catch (err: any) {
       console.error("Background generation error:", err);
       this.updateJob(appId, { status: "error", progress: "Failed", error: err.message });

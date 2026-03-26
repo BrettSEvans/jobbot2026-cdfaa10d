@@ -5,7 +5,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
+import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { useInactivityLogout } from "@/hooks/useInactivityLogout";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -67,8 +67,6 @@ function AuthenticatedApp() {
     );
   }
 
-
-  // Check onboarding
   if (!profile?.onboarding_completed_at) {
     return (
       <Routes>
@@ -111,7 +109,9 @@ const App = () => {
         <Sonner />
         <BrowserRouter>
           <ErrorBoundary>
-            <AuthenticatedApp />
+            <AuthProvider>
+              <AuthenticatedApp />
+            </AuthProvider>
           </ErrorBoundary>
         </BrowserRouter>
       </TooltipProvider>

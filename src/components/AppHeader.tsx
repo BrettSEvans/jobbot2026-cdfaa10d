@@ -103,21 +103,22 @@ export default function AppHeader({ onAiChatToggle, aiChatOpen }: AppHeaderProps
           )}
           <ThemeToggle />
           <Button
-            variant={aiChatOpen ? "default" : "outline"}
             size="sm"
             onClick={onAiChatToggle}
-            className="gap-2 hidden sm:flex"
+            className={cn(
+              "gap-2 hidden sm:flex bg-primary text-white dark:text-black border-none hover:bg-primary/90",
+              aiChatOpen && "ring-2 ring-primary/50"
+            )}
             data-tour="ai-chat"
           >
             <Sparkles className="h-4 w-4" />
             <span>AI Chat</span>
           </Button>
           <Button
-            variant="ghost"
             size="icon"
             onClick={onAiChatToggle}
             aria-label="AI Chat"
-            className="h-9 w-9 sm:hidden"
+            className="h-9 w-9 sm:hidden bg-primary text-white dark:text-black border-none hover:bg-primary/90"
           >
             <Sparkles className="h-4 w-4" />
           </Button>

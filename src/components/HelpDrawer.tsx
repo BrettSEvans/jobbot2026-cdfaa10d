@@ -597,13 +597,12 @@ export function HelpDrawer() {
     <>
       {/* Floating Help button */}
       <Button
-        variant="outline"
         size="icon"
         onClick={() => { setOpen(true); setSearch(""); }}
-        className="fixed bottom-4 left-4 z-50 h-10 w-10 rounded-full shadow-lg bg-background border-border hover:bg-primary/10"
+        className="fixed bottom-4 left-4 z-50 h-10 w-10 rounded-full shadow-lg bg-primary text-white dark:text-black border-none hover:bg-primary/90"
         aria-label="Help"
       >
-        <HelpCircle className="h-5 w-5 text-primary" />
+        <HelpCircle className="h-5 w-5" />
       </Button>
 
       <Sheet open={open} onOpenChange={setOpen}>

@@ -32,6 +32,7 @@ export type GenerationJobStatus =
   | "resume-complete"
   | "cover-letter"
   | "generating-materials"
+  | "awaiting-dashboard-config"
   | "dashboard"
   | "complete"
   | "error";
@@ -44,6 +45,25 @@ export type GenerationJob = {
   companyName?: string;
   currentAsset?: string;
   generatingAssets?: string[];
+  // Data for dashboard customization dialog
+  researchedSections?: any[];
+  researchedCfoScenarios?: any[];
+  scrapedBranding?: any;
+  // Internal pipeline state for resume after user config
+  _pipelineState?: {
+    jobUrl: string;
+    companyUrl?: string;
+    markdown: string;
+    brandingData: any;
+    companyName: string;
+    jobTitle: string;
+    department: string;
+    competitors: string[];
+    customers: string[];
+    products: string[];
+    jdIntelligence: any;
+    candidateName: string;
+  };
 };
 
 type Listener = () => void;

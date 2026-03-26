@@ -99,6 +99,18 @@ export function useTourState() {
     localStorage.setItem(TOUR_STORAGE_KEY, "true");
   }, []);
 
+  // Auto-launch for new users arriving from onboarding
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("tour") === "1" && !completed) {
+      // Clean the URL param
+      params.delete("tour");
+      const clean = params.toString();
+      window.history.replaceState({}, "", window.location.pathname + (clean ? `?${clean}` : ""));
+      setActive(true);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   return { active, completed, start, complete };
 }
 

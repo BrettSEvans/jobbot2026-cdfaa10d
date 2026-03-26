@@ -1,11 +1,12 @@
 import { useEffect, useRef, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
 const TIMEOUT_MS = 8 * 60 * 60 * 1000; // 8 hours
 const WARNING_MS = 7 * 60 * 60 * 1000 + 55 * 60 * 1000; // 7 hours 55 minutes
 
 export function useInactivityLogout() {
+  const { signOut } = useAuth();
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const warningRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const warningShown = useRef(false);
@@ -28,9 +29,9 @@ export function useInactivityLogout() {
 
     timerRef.current = setTimeout(async () => {
       toast.info("Signed out due to inactivity");
-      await supabase.auth.signOut();
+      await signOut();
     }, TIMEOUT_MS);
-  }, [clearTimers]);
+  }, [clearTimers, signOut]);
 
   useEffect(() => {
     const events = ["mousedown", "mousemove", "keydown", "touchstart", "scroll"];

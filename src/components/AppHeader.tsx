@@ -16,24 +16,6 @@ interface AppHeaderProps {
   aiChatOpen: boolean;
 }
 
-function useIsAdmin() {
-  const { user } = useAuth();
-  return useQuery({
-    queryKey: ["is_admin", user?.id],
-    enabled: !!user,
-    staleTime: 60_000,
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user!.id)
-        .eq("role", "admin")
-        .maybeSingle();
-      return !!data;
-    },
-  });
-}
-
 function ThemeToggle() {
   const { theme, toggle } = useTheme();
   return (
@@ -47,10 +29,24 @@ export default function AppHeader({ onAiChatToggle, aiChatOpen }: AppHeaderProps
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const { signOut, user } = useAuth();
-  const { data: isAdmin } = useIsAdmin();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  // Story 2.3: Only show Stories link to admins
+  // Admin check using the shared user from useAuth — no nested useAuth call
+  const { data: isAdmin } = useQuery({
+    queryKey: ["is_admin", user?.id],
+    enabled: !!user,
+    staleTime: 60_000,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user!.id)
+        .eq("role", "admin")
+        .maybeSingle();
+      return !!data;
+    },
+  });
+
   const links = [
     { to: "/", label: "Applications", icon: null, match: (p: string) => p === "/" || p === "/applications", tourId: "applications" },
     { to: "/templates", label: "Templates", icon: null, match: (p: string) => p === "/templates", tourId: "templates" },
@@ -95,7 +91,6 @@ export default function AppHeader({ onAiChatToggle, aiChatOpen }: AppHeaderProps
         </div>
 
         <div className="flex items-center gap-2">
-          {/* User avatar */}
           {user && (
             <Avatar className="h-7 w-7 shrink-0">
               {(user.user_metadata?.avatar_url || user.user_metadata?.picture) && (

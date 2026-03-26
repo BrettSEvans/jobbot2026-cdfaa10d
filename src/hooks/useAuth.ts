@@ -1,46 +1,51 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { createContext, useContext, useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
+import React from "react";
 
-export function useAuth() {
+interface AuthContextValue {
+  user: User | null;
+  session: Session | null;
+  loading: boolean;
+  signOut: () => Promise<void>;
+}
+
+const AuthContext = createContext<AuthContextValue | null>(null);
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const initialized = useRef(false);
-  const wasAuthenticated = useRef(false);
+  const intentionalSignOut = useRef(false);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session?.user) {
-        wasAuthenticated.current = true;
+    // Single auth listener for the entire app
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      // If we intentionally signed out, never attempt recovery
+      if (intentionalSignOut.current) {
+        setSession(null);
+        setUser(null);
+        setLoading(false);
+        return;
       }
 
-      // If the user was previously authenticated and the session dropped
-      // (e.g. token expired during a long pipeline), try to refresh before logging out
-      if (!session && wasAuthenticated.current && event === "SIGNED_OUT" && !intentionalSignOut.current) {
-        // Attempt a silent refresh — if the refresh token is still valid this will restore the session
-        const { data } = await supabase.auth.refreshSession();
-        if (data.session) {
-          // Refresh succeeded — don't log the user out
-          return;
-        }
-        // Refresh truly failed — allow the logout to proceed
-        wasAuthenticated.current = false;
-      }
-      intentionalSignOut.current = false;
-
-      setSession(session);
-      setUser(session?.user ?? null);
+      setSession(newSession);
+      setUser(newSession?.user ?? null);
       if (initialized.current) setLoading(false);
     });
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        wasAuthenticated.current = true;
-        // Track last sign-in
-        supabase.from("profiles").update({ last_sign_in_at: new Date().toISOString() }).eq("id", session.user.id).then(() => {});
+    // Bootstrap: get existing session
+    supabase.auth.getSession().then(({ data: { session: existingSession } }) => {
+      setSession(existingSession);
+      setUser(existingSession?.user ?? null);
+      if (existingSession?.user) {
+        // Track last sign-in (fire and forget)
+        supabase
+          .from("profiles")
+          .update({ last_sign_in_at: new Date().toISOString() })
+          .eq("id", existingSession.user.id)
+          .then(() => {});
       }
       initialized.current = true;
       setLoading(false);
@@ -49,13 +54,28 @@ export function useAuth() {
     return () => subscription.unsubscribe();
   }, []);
 
-  const intentionalSignOut = useRef(false);
-
   const signOut = useCallback(async () => {
+    // Mark intentional so the listener above never recovers
     intentionalSignOut.current = true;
-    wasAuthenticated.current = false;
+    // Immediately clear state for responsive UI
+    setUser(null);
+    setSession(null);
     await supabase.auth.signOut();
+    // Reset flag after sign-out completes so a fresh login works
+    intentionalSignOut.current = false;
   }, []);
 
-  return { user, session, loading, signOut };
+  return React.createElement(
+    AuthContext.Provider,
+    { value: { user, session, loading, signOut } },
+    children
+  );
+}
+
+export function useAuth(): AuthContextValue {
+  const ctx = useContext(AuthContext);
+  if (!ctx) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return ctx;
 }

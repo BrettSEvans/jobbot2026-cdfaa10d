@@ -10,27 +10,6 @@ import { Users, Shield, Images } from "lucide-react";
 import AssetReviewCarousel from "@/components/admin/AssetReviewCarousel";
 import { format } from "date-fns";
 
-function useAdminRole() {
-  const { user, loading } = useAuth();
-  const query = useQuery({
-    queryKey: ["user_role_admin", user?.id],
-    enabled: !!user && !loading,
-    staleTime: 60_000,
-    retry: 2,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user!.id)
-        .eq("role", "admin")
-        .maybeSingle();
-      if (error) return false;
-      return !!data;
-    },
-  });
-  return { ...query, authLoading: loading, hasUser: !!user };
-}
-
 interface UserWithStats {
   id: string;
   display_name: string | null;
@@ -45,7 +24,6 @@ function useUserList() {
     queryKey: ["admin_user_list"],
     staleTime: 15_000,
     queryFn: async () => {
-      // Fetch all approved profiles
       const { data: profiles, error } = await supabase
         .from("profiles")
         .select("id, display_name, email, created_at, last_sign_in_at")
@@ -53,7 +31,6 @@ function useUserList() {
         .order("created_at", { ascending: false });
       if (error) throw error;
 
-      // Count applications per user
       const { data: counts, error: countErr } = await supabase
         .from("job_applications")
         .select("user_id")
@@ -138,13 +115,31 @@ function UserList() {
 }
 
 export default function Admin() {
-  const { data: isAdmin, isLoading, authLoading, hasUser } = useAdminRole();
+  const { user, loading } = useAuth();
 
-  if (authLoading || (hasUser && (isLoading || typeof isAdmin === "undefined"))) {
+  // Single admin role check using shared user
+  const { data: isAdmin, isLoading: roleLoading } = useQuery({
+    queryKey: ["user_role_admin", user?.id],
+    enabled: !!user && !loading,
+    staleTime: 60_000,
+    retry: 2,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user!.id)
+        .eq("role", "admin")
+        .maybeSingle();
+      if (error) return false;
+      return !!data;
+    },
+  });
+
+  if (loading || (user && (roleLoading || typeof isAdmin === "undefined"))) {
     return <div className="flex items-center justify-center h-[60vh]"><Skeleton className="w-48 h-8" /></div>;
   }
 
-  if (!hasUser || isAdmin === false) {
+  if (!user || isAdmin === false) {
     return <Navigate to="/" replace />;
   }
 

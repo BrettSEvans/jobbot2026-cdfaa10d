@@ -362,6 +362,7 @@ class BackgroundGenerationManager {
 
       // 4a. Research company (deferred from foreground — only feeds dashboard)
       let researchedSections: any[] | undefined;
+      let researchedCfoScenarios: any[] | undefined;
       try {
         this.updateJob(appId, { progress: "Researching company..." });
         const { researchCompany } = await import("@/lib/api/researchCompany");
@@ -374,6 +375,7 @@ class BackgroundGenerationManager {
           jobDescription: markdown,
         });
         researchedSections = research.sections;
+        researchedCfoScenarios = research.cfoScenarios;
       } catch (e) {
         console.warn("Research failed:", e);
       }

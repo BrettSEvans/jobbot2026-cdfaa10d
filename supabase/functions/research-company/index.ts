@@ -6,7 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
-const SYSTEM_PROMPT = `You are a senior business analyst and dashboard architect. Given a company name, company URL, job title, department, and job description, determine the 5-7 most strategically important dashboard sections for someone in this role at this company.
+const SYSTEM_PROMPT = `You are a senior business analyst and dashboard architect. Given a company name, company URL, job title, department, and job description, determine the 8-12 most strategically important dashboard sections for someone in this role at this company. Also generate 7 CFO what-if scenarios ranked by relevance.
 
 For each section, specify:
 - "id": a unique kebab-case identifier (e.g. "pipeline-health", "revenue-analytics")
@@ -32,18 +32,46 @@ For each section, specify:
     - "min"/"max": for numeric types
     - "maxDays": for date types
 
-Think deeply about what THIS specific role at THIS specific company would need to see daily:
+For each CFO scenario, specify:
+- "id": unique kebab-case identifier
+- "title": scenario title (e.g. "Premium Tier Pricing Strategy")
+- "description": 2-3 sentences explaining what this scenario models and why it matters
+- "type": one of "pricing", "headcount", "expansion"
+- "relevanceRank": integer 1-7 (1 = most relevant to this role/company)
+- "currencyFormat": true (all CFO charts should display $ labels)
+- "sliders": array of 2-4 control definitions, each with:
+  - "id": unique slider id
+  - "label": control label
+  - "min": minimum value
+  - "max": maximum value
+  - "step": step increment
+  - "default": default value
+  - "unit": display unit (e.g. "%", "people", "$K")
+  - "controlType": one of "slider", "toggle", "segmented" — VARY these across scenarios for visual diversity
+  - "options": for toggle (exactly 2 options) or segmented (3-5 options), array of { "label": "Display Label", "value": numericValue }
+- "baseline": object with baseline numeric values (e.g. { "revenue": 10000000, "volume": 5000 })
+- "quarters": array of quarter labels (e.g. ["Q1 2026", "Q2 2026", "Q3 2026", "Q4 2026"])
+- "chartType": one of "line", "bar", "doughnut", "radar"
+
+Think deeply about what THIS specific role at THIS specific company would need:
 - A Sales AE at Stripe needs pipeline and payment volume data
 - A Marketing Manager at HubSpot needs campaign performance and lead scoring
 - A Data Engineer at Snowflake needs query performance and compute utilization
 - A Product Manager at Figma needs feature adoption and user engagement
 
-Make sections highly specific to the company's industry, products, and the role's responsibilities. Use the company's actual product names, competitor names, and market segments when possible.
+Make sections AND CFO scenarios highly specific to the company's industry, products, and the role's responsibilities. Use the company's actual product names, competitor names, and market segments when possible.
+
+For CFO scenarios, think about what financial levers a CFO at THIS company would care about:
+- SaaS companies: pricing tiers, seat expansion, churn impact, usage-based pricing
+- Manufacturing: raw material costs, labor scaling, production capacity
+- Fintech: transaction volume, risk reserves, regulatory capital
+- Healthcare: patient volume, reimbursement rates, staffing ratios
 
 Output ONLY valid JSON matching this schema:
 {
   "sections": [...],
-  "reasoning": "2-3 sentence explanation of why you chose these sections for this role at this company."
+  "cfoScenarios": [...],
+  "reasoning": "2-3 sentence explanation of why you chose these sections and scenarios for this role at this company."
 }
 
 Do NOT include markdown fences. Start with { and end with }.`;
@@ -71,7 +99,7 @@ serve(async (req) => {
       );
     }
 
-    const userPrompt = `Research and determine the optimal dashboard sections for:
+    const userPrompt = `Research and determine the optimal dashboard sections and CFO scenarios for:
 
 Company: ${companyName || 'Unknown'}
 Company URL: ${companyUrl || 'N/A'}
@@ -148,6 +176,7 @@ ${jobDescription || 'No description provided.'}`;
     return new Response(JSON.stringify({
       success: true,
       sections: parsed.sections,
+      cfoScenarios: parsed.cfoScenarios || [],
       reasoning: parsed.reasoning || '',
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

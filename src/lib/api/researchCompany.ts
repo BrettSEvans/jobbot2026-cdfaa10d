@@ -24,9 +24,33 @@ export interface ResearchedSection {
   }>;
 }
 
+export interface ResearchedCFOScenario {
+  id: string;
+  title: string;
+  description: string;
+  type: 'pricing' | 'headcount' | 'expansion';
+  relevanceRank: number;
+  currencyFormat: boolean;
+  sliders: Array<{
+    id: string;
+    label: string;
+    min: number;
+    max: number;
+    step: number;
+    default: number;
+    unit: string;
+    controlType: 'slider' | 'toggle' | 'segmented';
+    options?: Array<{ label: string; value: number }>;
+  }>;
+  baseline: Record<string, number>;
+  quarters: string[];
+  chartType?: 'line' | 'bar' | 'doughnut' | 'radar';
+}
+
 export interface ResearchResult {
   success: boolean;
   sections: ResearchedSection[];
+  cfoScenarios: ResearchedCFOScenario[];
   reasoning: string;
   error?: string;
 }
@@ -46,5 +70,10 @@ export async function researchCompany(params: {
   if (error) throw new Error(error.message);
   if (data?.error) throw new Error(data.error);
 
-  return data as ResearchResult;
+  return {
+    success: data.success ?? true,
+    sections: data.sections || [],
+    cfoScenarios: data.cfoScenarios || [],
+    reasoning: data.reasoning || '',
+  };
 }

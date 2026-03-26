@@ -69,6 +69,8 @@ export async function streamDashboardGeneration({
   department,
   templateHtml,
   researchedSections,
+  selectedCfoScenarios,
+  userColors,
   onDelta,
   onDone,
 }: {

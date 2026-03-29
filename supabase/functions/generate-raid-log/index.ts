@@ -1,3 +1,4 @@
+import { errorResponse } from "../_shared/errorResponse.ts";
 import { aiFetchWithRetry } from "../_shared/aiRetry.ts";
 
 const corsHeaders = {
@@ -91,7 +92,7 @@ Products context: ${(products || []).join(', ') || 'N/A'}`;
     });
   } catch (e) {
     console.error('RAID log generation error:', e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : 'Unknown error' }), {
+    return new Response(JSON.stringify({ success: false, error: 'An internal error occurred' }), {
       status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }

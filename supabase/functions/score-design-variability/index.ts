@@ -1,3 +1,4 @@
+import { errorResponse } from "../_shared/errorResponse.ts";
 import { aiFetchWithRetry } from "../_shared/aiRetry.ts";
 
 const corsHeaders = {
@@ -113,7 +114,7 @@ Return ONLY valid JSON matching this schema:
     });
   } catch (e) {
     console.error('Variability scoring error:', e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : 'Unknown error' }), {
+    return new Response(JSON.stringify({ success: false, error: 'An internal error occurred' }), {
       status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }

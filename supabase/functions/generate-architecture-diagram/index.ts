@@ -1,3 +1,4 @@
+import { errorResponse } from "../_shared/errorResponse.ts";
 import { aiFetchWithRetry } from "../_shared/aiRetry.ts";
 
 const corsHeaders = {
@@ -94,7 +95,7 @@ Make the diagram specific to the role responsibilities and technical environment
     });
   } catch (e) {
     console.error('Architecture diagram generation error:', e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : 'Unknown error' }), {
+    return new Response(JSON.stringify({ success: false, error: 'An internal error occurred' }), {
       status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }

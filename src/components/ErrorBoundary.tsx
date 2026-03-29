@@ -41,11 +41,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
             <p className="text-muted-foreground text-sm">
               An unexpected error occurred. You can try again or reload the page.
             </p>
-            {this.state.error && (
-              <pre className="text-xs text-destructive bg-destructive/10 p-3 rounded-md overflow-auto max-h-32 text-left">
-                {this.state.error.message}
-              </pre>
-            )}
+
             <div className="flex gap-2 justify-center">
               <Button variant="outline" onClick={this.handleReset}>Try Again</Button>
               <Button onClick={this.handleReload}>Reload Page</Button>

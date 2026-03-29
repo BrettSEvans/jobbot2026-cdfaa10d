@@ -1,3 +1,4 @@
+import { errorResponse } from "../_shared/errorResponse.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { aiFetchWithRetry } from "../_shared/aiRetry.ts";
 
@@ -165,7 +166,7 @@ Keep the entire rubric under 250 words. Be specific to "${asset_type}" but stay 
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (e) {
     console.error('Research error:', e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : 'Unknown error' }), {
+    return new Response(JSON.stringify({ success: false, error: 'An internal error occurred' }), {
       status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }

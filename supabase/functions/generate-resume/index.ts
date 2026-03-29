@@ -1,3 +1,4 @@
+import { errorResponse } from "../_shared/errorResponse.ts";
 import { aiFetchWithRetry } from "../_shared/aiRetry.ts";
 
 const corsHeaders = {
@@ -154,7 +155,7 @@ Generate the optimized resume HTML now. Return ONLY the HTML content, no markdow
   } catch (e) {
     console.error('Resume generation error:', e);
     return new Response(
-      JSON.stringify({ success: false, error: e instanceof Error ? e.message : 'Unknown error' }),
+      JSON.stringify({ success: false, error: 'An internal error occurred' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

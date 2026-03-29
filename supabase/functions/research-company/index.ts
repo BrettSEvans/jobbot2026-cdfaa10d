@@ -1,3 +1,4 @@
+import { errorResponse } from "../_shared/errorResponse.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { aiFetchWithRetry } from "../_shared/aiRetry.ts";
 
@@ -184,7 +185,7 @@ ${jobDescription || 'No description provided.'}`;
   } catch (e) {
     console.error('Research error:', e);
     return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : 'Unknown error' }),
+      JSON.stringify({ success: false, error: 'An internal error occurred' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

@@ -1,3 +1,4 @@
+import { errorResponse } from "../_shared/errorResponse.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { aiFetchWithRetry } from "../_shared/aiRetry.ts";
 
@@ -115,7 +116,7 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
+    return new Response(JSON.stringify({ success: false, error: 'An internal error occurred' }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

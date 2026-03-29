@@ -1,3 +1,4 @@
+import { errorResponse } from "../_shared/errorResponse.ts";
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
@@ -68,7 +69,7 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('Scrape error:', error);
     return new Response(
-      JSON.stringify({ success: false, error: error instanceof Error ? error.message : 'Failed to scrape' }),
+      JSON.stringify({ success: false, error: 'An internal error occurred' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

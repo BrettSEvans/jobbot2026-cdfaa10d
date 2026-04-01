@@ -953,6 +953,14 @@ export function getScriptsJs(): string {
 
     var thead = el('thead', {});
     var headerRow = el('tr', {});
+
+    // Create table entry early so column filters can reference it
+    var tableEntry = {
+      tbody: null, columns: config.columns, title: config.title,
+      countEl: countEl, sectionId: sectionId || null,
+      originalRows: rows, columnFilters: {}, card: card
+    };
+
     config.columns.forEach(function(col, colIdx) {
       var th = el('th', {});
       th.appendChild(document.createTextNode(col.label + ' '));
@@ -961,7 +969,7 @@ export function getScriptsJs(): string {
       filterBtn.innerHTML = '&#9662;';
       filterBtn.addEventListener('click', function(e) {
         e.stopPropagation();
-        toggleColumnFilter(card, tbody, config.columns, colIdx, th);
+        toggleColumnFilter(tableEntry, colIdx, th);
       });
       th.appendChild(filterBtn);
       headerRow.appendChild(th);
@@ -992,26 +1000,22 @@ export function getScriptsJs(): string {
     card.appendChild(scroll);
     container.appendChild(card);
 
-    // Register table for global filtering
-    sectionTables.push({ tbody: tbody, columns: config.columns, title: config.title, countEl: countEl, sectionId: sectionId || null });
+    tableEntry.tbody = tbody;
+    sectionTables.push(tableEntry);
   }
 
-  // === PER-COLUMN TABLE FILTER ===
-  var activeColumnFilters = {};
-
-  function toggleColumnFilter(card, tbody, columns, colIdx, thEl) {
-    // Close any existing dropdown
-    var existing = card.querySelector('.col-filter-dropdown');
+  // === PER-COLUMN TABLE FILTER (scoped per table) ===
+  function toggleColumnFilter(tableEntry, colIdx, thEl) {
+    // Close any existing dropdown in this table
+    var existing = tableEntry.card.querySelector('.col-filter-dropdown');
     if (existing) { existing.remove(); return; }
 
-    // Gather unique values for this column
+    // Gather unique values from ORIGINAL rows for this column
+    var colKey = tableEntry.columns[colIdx].key;
     var uniqueVals = {};
-    tbody.querySelectorAll('tr').forEach(function(row) {
-      var cells = row.querySelectorAll('td');
-      if (cells[colIdx]) {
-        var v = cells[colIdx].textContent.trim();
-        if (v) uniqueVals[v] = true;
-      }
+    tableEntry.originalRows.forEach(function(row) {
+      var v = String(row[colKey] != null ? row[colKey] : '').trim();
+      if (v) uniqueVals[v] = true;
     });
     var values = Object.keys(uniqueVals).sort();
 
@@ -1019,8 +1023,8 @@ export function getScriptsJs(): string {
     // "All" option
     var allBtn = el('button', { className: 'col-filter-option active' }, '(All)');
     allBtn.addEventListener('click', function() {
-      delete activeColumnFilters[colIdx];
-      applyColumnFilters(tbody, columns);
+      delete tableEntry.columnFilters[colIdx];
+      applyColumnFilters(tableEntry);
       dropdown.remove();
     });
     dropdown.appendChild(allBtn);
@@ -1028,8 +1032,8 @@ export function getScriptsJs(): string {
     values.forEach(function(val) {
       var btn = el('button', { className: 'col-filter-option' }, val);
       btn.addEventListener('click', function() {
-        activeColumnFilters[colIdx] = val;
-        applyColumnFilters(tbody, columns);
+        tableEntry.columnFilters[colIdx] = val;
+        applyColumnFilters(tableEntry);
         dropdown.remove();
       });
       dropdown.appendChild(btn);
@@ -1046,18 +1050,19 @@ export function getScriptsJs(): string {
     }, 0);
   }
 
-  function applyColumnFilters(tbody, columns) {
-    tbody.querySelectorAll('tr').forEach(function(row) {
+  function applyColumnFilters(tableEntry) {
+    tableEntry.tbody.querySelectorAll('tr').forEach(function(row) {
       var cells = row.querySelectorAll('td');
       var visible = true;
-      for (var ci in activeColumnFilters) {
-        if (activeColumnFilters.hasOwnProperty(ci)) {
+      for (var ci in tableEntry.columnFilters) {
+        if (tableEntry.columnFilters.hasOwnProperty(ci)) {
           var cellVal = cells[ci] ? cells[ci].textContent.trim() : '';
-          if (cellVal !== activeColumnFilters[ci]) { visible = false; break; }
+          if (cellVal !== tableEntry.columnFilters[ci]) { visible = false; break; }
         }
       }
       row.style.display = visible ? '' : 'none';
     });
+    updateTableCount(tableEntry);
   }
 
   // === DRILL-DOWN ===

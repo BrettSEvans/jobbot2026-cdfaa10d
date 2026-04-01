@@ -211,6 +211,7 @@ ${sectionInstructions}
 - WATERFALL DATA FORMAT: For waterfall charts, provide a single dataset with incremental values (positive and negative). The rendering engine calculates floating bars automatically.
 - FUNNEL DATA FORMAT: For funnel charts, provide descending values in a single dataset. Labels are the funnel stages.
 - GANTT DATA FORMAT: For gantt charts, use multiple datasets (phases/workstreams) with stacked horizontal bars. Labels are task names.
+- FILTER-DATA ALIGNMENT: Every globalFilter option value MUST appear verbatim in the corresponding table generateRows field options. For example, if region filter has ["US","CA","UK","EU"], then every table with a region field must use options: ["US","CA","UK","EU"]. Chart labels for that dimension must also use these exact values. This is CRITICAL for filtering to work.
 ${brandingContext}
 ${competitorContext}
 ${customerContext}

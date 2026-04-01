@@ -537,7 +537,7 @@ export function getScriptsJs(): string {
   }
 
   // === HEATMAP RENDERER (pure HTML/CSS) ===
-  function renderHeatmap(container, config) {
+  function renderHeatmap(container, config, sectionId) {
     var card = el('div', { className: 'chart-card heatmap-card' });
     card.appendChild(el('h3', {}, config.title));
 
@@ -545,7 +545,6 @@ export function getScriptsJs(): string {
     var datasets = config.data.datasets || [];
     var primary = getComputedStyle(document.documentElement).getPropertyValue('--md-primary').trim() || '#6750A4';
 
-    // Build grid: rows = datasets, cols = labels
     var allValues = [];
     datasets.forEach(function(ds) { (ds.data || []).forEach(function(v) { if (typeof v === 'number') allValues.push(v); }); });
     var minVal = Math.min.apply(null, allValues);
@@ -553,18 +552,17 @@ export function getScriptsJs(): string {
     var range = maxVal - minVal || 1;
 
     var grid = el('div', { className: 'heatmap-grid' });
-    // Header row
     var headerRow = el('div', { className: 'heatmap-row heatmap-header' });
     headerRow.appendChild(el('div', { className: 'heatmap-cell heatmap-label' }, ''));
     labels.forEach(function(lbl) { headerRow.appendChild(el('div', { className: 'heatmap-cell heatmap-col-label' }, lbl)); });
     grid.appendChild(headerRow);
 
     datasets.forEach(function(ds) {
-      var row = el('div', { className: 'heatmap-row' });
+      var row = el('div', { className: 'heatmap-row', 'data-label': ds.label });
       row.appendChild(el('div', { className: 'heatmap-cell heatmap-label' }, ds.label));
       (ds.data || []).forEach(function(val, i) {
         var intensity = typeof val === 'number' ? (val - minVal) / range : 0;
-        var cell = el('div', { className: 'heatmap-cell heatmap-value' });
+        var cell = el('div', { className: 'heatmap-cell heatmap-value', 'data-col-label': labels[i] || '' });
         cell.style.backgroundColor = addAlpha(primary, 0.1 + intensity * 0.8);
         cell.style.color = intensity > 0.5 ? '#fff' : 'inherit';
         cell.textContent = typeof val === 'number' ? val.toLocaleString() : String(val);
@@ -576,7 +574,6 @@ export function getScriptsJs(): string {
 
     card.appendChild(grid);
 
-    // Legend
     var legend = el('div', { className: 'heatmap-legend' });
     legend.appendChild(el('span', {}, 'Low'));
     for (var i = 0; i <= 4; i++) {
@@ -587,6 +584,24 @@ export function getScriptsJs(): string {
     legend.appendChild(el('span', {}, 'High'));
     card.appendChild(legend);
     container.appendChild(card);
+
+    // Register for global filtering
+    if (sectionId) {
+      if (!sectionCharts[sectionId]) sectionCharts[sectionId] = [];
+      var allLabels = labels.concat(datasets.map(function(ds) { return ds.label; }));
+      sectionCharts[sectionId].push({
+        id: config.id, config: config, instance: null, card: card,
+        originalData: config.data, labels: allLabels,
+        applyFilter: function(activeValues) {
+          var dataRows = grid.querySelectorAll('.heatmap-row:not(.heatmap-header)');
+          dataRows.forEach(function(row) {
+            var rowLabel = row.getAttribute('data-label') || '';
+            var matches = activeValues.some(function(v) { return matchesAnyFilter(rowLabel, [v]); });
+            if (matches) { row.classList.remove('gf-dimmed'); } else { row.classList.add('gf-dimmed'); }
+          });
+        }
+      });
+    }
   }
 
   // === FUNNEL RENDERER (pure CSS) ===

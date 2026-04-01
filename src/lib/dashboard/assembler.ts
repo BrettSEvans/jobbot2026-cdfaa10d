@@ -49,7 +49,7 @@ export function getDashboardZipFiles(
 export function parseLlmJsonOutput(raw: string): DashboardData | null {
   let clean = raw.trim();
   // Strip markdown code fences
-  clean = clean.replace(/^```(?:json)?\s*\n?/i, "").replace(/\n?```\s*$/i, "").trim();
+  clean = clean.replace(/^```(?:json|html)?\s*\n?/i, "").replace(/\n?```\s*$/i, "").trim();
   // Find first { and last }
   const firstBrace = clean.indexOf("{");
   const lastBrace = clean.lastIndexOf("}");
@@ -71,8 +71,6 @@ export function parseLlmJsonOutput(raw: string): DashboardData | null {
   clean = clean.replace(/,\s*([}\]])/g, '$1');
   // Fix unquoted keys (common LLM mistake)
   clean = clean.replace(/([{,]\s*)([a-zA-Z_]\w*)\s*:/g, '$1"$2":');
-  // Remove duplicate double-quotes from the above fix on already-quoted keys
-  clean = clean.replace(/""/g, '"');
   
   // Attempt 1: direct parse
   const attempt1 = tryParseJson(clean);
@@ -90,6 +88,21 @@ export function parseLlmJsonOutput(raw: string): DashboardData | null {
 
   console.error("[DashboardParser] JSON.parse failed after repair attempts | JSON length:", clean.length, "| Last 50 chars:", clean.slice(-50));
   return null;
+}
+
+export function extractHtmlDocument(raw: string): string | null {
+  let clean = raw.trim();
+  clean = clean.replace(/^```(?:html|json)?\s*\n?/i, "").replace(/\n?```\s*$/i, "").trim();
+
+  const doctypeMatch = clean.match(/<!doctype\s+html[\s\S]*?<\/html>/i);
+  if (doctypeMatch) return doctypeMatch[0].trim();
+
+  const htmlStart = clean.search(/<html[\s>]/i);
+  if (htmlStart === -1) return null;
+  const htmlEnd = clean.toLowerCase().lastIndexOf("</html>");
+  if (htmlEnd === -1) return null;
+
+  return clean.slice(htmlStart, htmlEnd + 7).trim();
 }
 
 function tryParseJson(json: string): DashboardData | null {

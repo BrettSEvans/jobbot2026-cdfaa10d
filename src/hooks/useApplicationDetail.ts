@@ -5,7 +5,7 @@ import {
   getJobApplication,
   saveJobApplication,
 } from "@/lib/api/jobApplication";
-import { parseLlmJsonOutput, assembleDashboardHtml } from "@/lib/dashboard/assembler";
+import { parseLlmJsonOutput, assembleDashboardHtml, extractHtmlDocument } from "@/lib/dashboard/assembler";
 import type { DashboardData } from "@/lib/dashboard/schema";
 import { supabase } from "@/integrations/supabase/client";
 import { useBackgroundJob } from "@/hooks/useBackgroundJob";
@@ -157,6 +157,9 @@ export function useApplicationDetail() {
           try {
             await saveJobApplication({ id: appId, job_url: data.job_url, dashboard_html: html, dashboard_data: parsed });
           } catch { /* non-critical */ }
+        } else {
+          const extractedHtml = extractHtmlDocument(html);
+          html = extractedHtml || "";
         }
       }
 

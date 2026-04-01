@@ -3,7 +3,7 @@ import {
   streamDashboardGeneration,
   saveJobApplication,
 } from "@/lib/api/jobApplication";
-import { parseLlmJsonOutput, assembleDashboardHtml, getDashboardZipFiles } from "@/lib/dashboard/assembler";
+import { parseLlmJsonOutput, assembleDashboardHtml, extractHtmlDocument, getDashboardZipFiles } from "@/lib/dashboard/assembler";
 import type { DashboardData } from "@/lib/dashboard/schema";
 import { backgroundGenerator } from "@/lib/backgroundGenerator";
 import { saveDashboardRevision } from "@/lib/api/dashboardRevisions";
@@ -75,30 +75,21 @@ export function useDashboardEditor({
             setDashboardData(parsed);
             accumulated = html;
           } else {
-            // Check if it's actual HTML (not raw JSON/code)
-            const looksLikeHtml = /<!doctype\s+html>/i.test(accumulated) || /<html[\s>]/i.test(accumulated);
-            if (looksLikeHtml) {
-              let clean = accumulated;
-              const htmlStart = clean.indexOf("<!DOCTYPE html>");
-              const htmlStartAlt = clean.indexOf("<!doctype html>");
-              const start = htmlStart !== -1 ? htmlStart : htmlStartAlt;
-              if (start > 0) clean = clean.slice(start);
-              const htmlEnd = clean.lastIndexOf("</html>");
-              if (htmlEnd !== -1) clean = clean.slice(0, htmlEnd + 7);
-              // Strip markdown fences wrapping HTML
-              clean = clean.replace(/^```(?:html)?\s*\n?/i, "").replace(/\n?```\s*$/i, "").trim();
+            const clean = extractHtmlDocument(accumulated);
+            if (clean) {
               setDashboardHtml(clean);
               accumulated = clean;
             } else {
               // Raw JSON/text that couldn't be parsed — show error, not code
               console.error("[Dashboard] LLM output could not be parsed as JSON or HTML. Length:", accumulated.length);
               setDashboardHtml("");
+              accumulated = "";
               toast({ title: "Dashboard generation failed", description: "The AI response could not be parsed. Please try regenerating.", variant: "destructive" });
             }
           }
         },
       });
-      const savePayload: Record<string, unknown> = { dashboard_html: accumulated };
+      const savePayload: Record<string, unknown> = {};
       const parsedForSave = parseLlmJsonOutput(accumulated) || null;
       if (parsedForSave) {
         const html = assembleDashboardHtml(parsedForSave);
@@ -107,17 +98,29 @@ export function useDashboardEditor({
         savePayload.dashboard_html = html;
         savePayload.dashboard_data = parsedForSave;
         accumulated = html;
-      } else if (dashboardData) {
+      } else {
+        const extractedHtml = extractHtmlDocument(accumulated);
+        if (extractedHtml) {
+          savePayload.dashboard_html = extractedHtml;
+          accumulated = extractedHtml;
+        }
+      }
+
+      if (!savePayload.dashboard_html && dashboardData && dashboardHtml) {
+        savePayload.dashboard_html = dashboardHtml;
         savePayload.dashboard_data = dashboardData;
+        accumulated = dashboardHtml;
       }
       // Only save if we have valid content
-      if (accumulated) {
+      if (typeof savePayload.dashboard_html === "string" && savePayload.dashboard_html.trim()) {
         await saveField(savePayload);
       }
-      try {
-        await saveDashboardRevision(id!, accumulated, "Regenerated");
-        setRevisionTrigger((t) => t + 1);
-      } catch { /* non-critical */ }
+      if (accumulated.trim()) {
+        try {
+          await saveDashboardRevision(id!, accumulated, "Regenerated");
+          setRevisionTrigger((t) => t + 1);
+        } catch { /* non-critical */ }
+      }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Unknown error";
       toast({ title: "Error", description: message, variant: "destructive" });

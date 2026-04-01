@@ -609,7 +609,8 @@ export function getScriptsJs(): string {
 
     var card = el('div', { className: 'chart-card' });
     card.appendChild(el('h3', {}, config.title));
-    var chartDiv = el('div', { className: 'chart-container' });
+    var radarClass = (type === 'radar') ? ' chart-radar' : '';
+    var chartDiv = el('div', { className: 'chart-container' + radarClass });
     var canvas = el('canvas', { id: 'chart-' + config.id });
     chartDiv.appendChild(canvas);
     card.appendChild(chartDiv);

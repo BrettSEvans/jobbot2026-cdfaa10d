@@ -68,6 +68,7 @@ export function useDashboardEditor({
         products: (app?.products as unknown as string[]) || [],
         onDelta: (text) => { accumulated += text; },
         onDone: () => {
+          // Server now returns validated JSON — try parsing the accumulated payload directly
           const parsed = parseLlmJsonOutput(accumulated);
           if (parsed) {
             const html = assembleDashboardHtml(parsed);
@@ -75,13 +76,13 @@ export function useDashboardEditor({
             setDashboardData(parsed);
             accumulated = html;
           } else {
+            // Fallback: try extracting raw HTML (legacy/edge case)
             const clean = extractHtmlDocument(accumulated);
             if (clean) {
               setDashboardHtml(clean);
               accumulated = clean;
             } else {
-              // Raw JSON/text that couldn't be parsed — show error, not code
-              console.error("[Dashboard] LLM output could not be parsed as JSON or HTML. Length:", accumulated.length);
+              console.error("[Dashboard] Output could not be parsed. Length:", accumulated.length);
               setDashboardHtml("");
               accumulated = "";
               toast({ title: "Dashboard generation failed", description: "The AI response could not be parsed. Please try regenerating.", variant: "destructive" });
@@ -89,29 +90,22 @@ export function useDashboardEditor({
           }
         },
       });
+      // Build save payload from current state (server already validated)
       const savePayload: Record<string, unknown> = {};
-      const parsedForSave = parseLlmJsonOutput(accumulated) || null;
-      if (parsedForSave) {
-        const html = assembleDashboardHtml(parsedForSave);
-        setDashboardHtml(html);
-        setDashboardData(parsedForSave);
-        savePayload.dashboard_html = html;
-        savePayload.dashboard_data = parsedForSave;
-        accumulated = html;
-      } else {
-        const extractedHtml = extractHtmlDocument(accumulated);
-        if (extractedHtml) {
-          savePayload.dashboard_html = extractedHtml;
-          accumulated = extractedHtml;
-        }
-      }
-
-      if (!savePayload.dashboard_html && dashboardData && dashboardHtml) {
+      if (dashboardData) {
         savePayload.dashboard_html = dashboardHtml;
         savePayload.dashboard_data = dashboardData;
-        accumulated = dashboardHtml;
+      } else if (accumulated.trim()) {
+        // Try one more client-side parse as defense-in-depth
+        const parsedForSave = parseLlmJsonOutput(accumulated);
+        if (parsedForSave) {
+          const html = assembleDashboardHtml(parsedForSave);
+          setDashboardHtml(html);
+          setDashboardData(parsedForSave);
+          savePayload.dashboard_html = html;
+          savePayload.dashboard_data = parsedForSave;
+        }
       }
-      // Only save if we have valid content
       if (typeof savePayload.dashboard_html === "string" && savePayload.dashboard_html.trim()) {
         await saveField(savePayload);
       }

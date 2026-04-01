@@ -99,11 +99,29 @@ export async function streamDashboardGeneration({
     }
   );
 
-  if (!resp.ok || !resp.body) {
+  if (!resp.ok) {
     const errData = await resp.json().catch(() => ({}));
     throw new Error(errData.error || `Request failed (${resp.status})`);
   }
 
+  const contentType = resp.headers.get('Content-Type') || '';
+
+  // Server-side validated JSON response (new buffered mode)
+  if (contentType.includes('application/json')) {
+    const result = await resp.json();
+    if (!result.success) {
+      throw new Error(result.error || 'Dashboard generation failed');
+    }
+    // Deliver the full validated payload as a single delta
+    onDelta(JSON.stringify(result.data));
+    onDone();
+    return;
+  }
+
+  // Legacy SSE streaming fallback
+  if (!resp.body) {
+    throw new Error('No response body');
+  }
   await processSSEStream(resp.body, onDelta, onDone);
 }
 

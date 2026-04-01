@@ -1325,7 +1325,7 @@ export function getScriptsJs(): string {
       sectionEl.appendChild(chartsGrid);
     }
     if (section.tables && section.tables.length) {
-      section.tables.forEach(function(t) { renderTable(sectionEl, t); });
+      section.tables.forEach(function(t) { renderTable(sectionEl, t, section.id); });
     }
   }
 

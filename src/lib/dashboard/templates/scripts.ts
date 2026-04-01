@@ -756,18 +756,29 @@ export function getScriptsJs(): string {
   }
 
   // === RENDER TABLE ===
-  function renderTable(container, config) {
+  function renderTable(container, config, sectionId) {
     var rows = config.rows || (config.generateRows ? generateTableRows(config.generateRows) : []);
     var card = el('div', { className: 'table-card' });
-    card.appendChild(el('h3', {}, config.title + ' (' + rows.length + ' records)'));
+    var countEl = el('h3', {}, config.title + ' (' + rows.length + ' records)');
+    card.appendChild(countEl);
 
     var scroll = el('div', { className: 'table-scroll' });
     var table = el('table', {});
 
     var thead = el('thead', {});
     var headerRow = el('tr', {});
-    config.columns.forEach(function(col) {
-      headerRow.appendChild(el('th', {}, col.label));
+    config.columns.forEach(function(col, colIdx) {
+      var th = el('th', {});
+      th.appendChild(document.createTextNode(col.label + ' '));
+      // Per-column filter icon
+      var filterBtn = el('button', { className: 'th-filter-btn', title: 'Filter ' + col.label });
+      filterBtn.innerHTML = '&#9662;';
+      filterBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        toggleColumnFilter(card, tbody, config.columns, colIdx, th);
+      });
+      th.appendChild(filterBtn);
+      headerRow.appendChild(th);
     });
     thead.appendChild(headerRow);
     table.appendChild(thead);
@@ -775,9 +786,13 @@ export function getScriptsJs(): string {
     var tbody = el('tbody', {});
     rows.forEach(function(row, idx) {
       var tr = el('tr', {});
+      var labelParts = [];
       config.columns.forEach(function(col) {
-        tr.appendChild(el('td', {}, String(row[col.key] != null ? row[col.key] : '')));
+        var val = String(row[col.key] != null ? row[col.key] : '');
+        tr.appendChild(el('td', {}, val));
+        labelParts.push(val);
       });
+      tr.setAttribute('data-labels', labelParts.join('|'));
       tr.onclick = function() {
         var fields = config.columns.map(function(col) {
           return { label: col.label, value: String(row[col.key] != null ? row[col.key] : '') };
@@ -790,6 +805,73 @@ export function getScriptsJs(): string {
     scroll.appendChild(table);
     card.appendChild(scroll);
     container.appendChild(card);
+
+    // Register table for global filtering
+    sectionTables.push({ tbody: tbody, columns: config.columns, title: config.title, countEl: countEl, sectionId: sectionId || null });
+  }
+
+  // === PER-COLUMN TABLE FILTER ===
+  var activeColumnFilters = {};
+
+  function toggleColumnFilter(card, tbody, columns, colIdx, thEl) {
+    // Close any existing dropdown
+    var existing = card.querySelector('.col-filter-dropdown');
+    if (existing) { existing.remove(); return; }
+
+    // Gather unique values for this column
+    var uniqueVals = {};
+    tbody.querySelectorAll('tr').forEach(function(row) {
+      var cells = row.querySelectorAll('td');
+      if (cells[colIdx]) {
+        var v = cells[colIdx].textContent.trim();
+        if (v) uniqueVals[v] = true;
+      }
+    });
+    var values = Object.keys(uniqueVals).sort();
+
+    var dropdown = el('div', { className: 'col-filter-dropdown' });
+    // "All" option
+    var allBtn = el('button', { className: 'col-filter-option active' }, '(All)');
+    allBtn.addEventListener('click', function() {
+      delete activeColumnFilters[colIdx];
+      applyColumnFilters(tbody, columns);
+      dropdown.remove();
+    });
+    dropdown.appendChild(allBtn);
+
+    values.forEach(function(val) {
+      var btn = el('button', { className: 'col-filter-option' }, val);
+      btn.addEventListener('click', function() {
+        activeColumnFilters[colIdx] = val;
+        applyColumnFilters(tbody, columns);
+        dropdown.remove();
+      });
+      dropdown.appendChild(btn);
+    });
+
+    thEl.style.position = 'relative';
+    thEl.appendChild(dropdown);
+
+    // Close on outside click
+    setTimeout(function() {
+      document.addEventListener('click', function closeDD(e) {
+        if (!dropdown.contains(e.target)) { dropdown.remove(); document.removeEventListener('click', closeDD); }
+      });
+    }, 0);
+  }
+
+  function applyColumnFilters(tbody, columns) {
+    tbody.querySelectorAll('tr').forEach(function(row) {
+      var cells = row.querySelectorAll('td');
+      var visible = true;
+      for (var ci in activeColumnFilters) {
+        if (activeColumnFilters.hasOwnProperty(ci)) {
+          var cellVal = cells[ci] ? cells[ci].textContent.trim() : '';
+          if (cellVal !== activeColumnFilters[ci]) { visible = false; break; }
+        }
+      }
+      row.style.display = visible ? '' : 'none';
+    });
   }
 
   // === DRILL-DOWN ===

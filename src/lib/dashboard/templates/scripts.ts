@@ -1386,7 +1386,7 @@ export function getScriptsJs(): string {
       sectionEl.appendChild(extra);
     }
     if (section.tables && section.tables.length > 1) {
-      for (var i = 1; i < section.tables.length; i++) { renderTable(sectionEl, section.tables[i]); }
+      for (var i = 1; i < section.tables.length; i++) { renderTable(sectionEl, section.tables[i], section.id); }
     }
   }
 

@@ -964,6 +964,60 @@ input[type="range"]::-webkit-slider-thumb {
   opacity: 1;
 }
 
+/* === PER-COLUMN TABLE FILTER === */
+.th-filter-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--md-outline);
+  font-size: 10px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  vertical-align: middle;
+  opacity: 0.5;
+  transition: opacity 0.15s;
+}
+th:hover .th-filter-btn { opacity: 1; }
+.th-filter-btn:hover { background: var(--md-surface-container-high); opacity: 1; }
+
+.col-filter-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  min-width: 160px;
+  max-height: 220px;
+  overflow-y: auto;
+  background: var(--md-surface);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  z-index: 100;
+  padding: 4px;
+}
+
+.col-filter-option {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  background: none;
+  text-align: left;
+  font-size: 13px;
+  cursor: pointer;
+  border-radius: 4px;
+  color: var(--md-on-surface);
+  white-space: nowrap;
+}
+.col-filter-option:hover { background: var(--md-surface-container-high); }
+.col-filter-option.active { color: var(--md-primary); font-weight: 600; }
+
+/* === GLOBAL FILTER DIMMING FOR CUSTOM CHARTS === */
+.funnel-bar.gf-dimmed { opacity: 0.2; }
+.heatmap-row.gf-dimmed { opacity: 0.2; }
+.chart-card.filtered-dimmed-global { opacity: 0.35; pointer-events: none; }
+
+tbody tr { transition: opacity 0.15s; }
+
 /* === RESPONSIVE === */
 @media (max-width: 768px) {
   #sidebar {

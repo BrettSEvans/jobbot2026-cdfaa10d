@@ -64,18 +64,28 @@ function repairTruncatedJson(s: string): string {
 /** Full parse pipeline: extract → sanitize → repair → parse */
 function parseAiJson(raw: string): any | null {
   const extracted = extractJsonString(raw);
-  const sanitized = sanitizeJsonString(extracted);
 
-  // First attempt
-  try { return JSON.parse(sanitized); } catch (_) { /* continue */ }
+  // 1) Try raw extracted JSON first (AI usually outputs valid JSON)
+  try { return JSON.parse(extracted); } catch (_) { /* continue */ }
 
-  // Second attempt with repair
-  const repaired = repairTruncatedJson(sanitized);
+  // 2) Try with trailing-comma and Date() fixes only (safe transforms)
+  const lightSanitized = extracted
+    .replace(/new\s+Date\([^)]*\)/g, '"2026-01-01"')
+    .replace(/,(\s*[}\]])/g, '$1');
+  try { return JSON.parse(lightSanitized); } catch (_) { /* continue */ }
+
+  // 3) Try repairing truncated JSON
+  const repaired = repairTruncatedJson(lightSanitized);
   try { return JSON.parse(repaired); } catch (_) { /* continue */ }
 
-  // Third attempt: strip control chars
+  // 4) Strip control chars
   const cleaned = repaired.replace(/[\x00-\x1F\x7F]/g, (c) => c === '\n' || c === '\r' || c === '\t' ? c : '');
-  try { return JSON.parse(cleaned); } catch (_) { return null; }
+  try { return JSON.parse(cleaned); } catch (_) { /* continue */ }
+
+  // 5) Last resort: aggressive sanitization (unquoted keys)
+  const fullSanitized = sanitizeJsonString(extracted);
+  const fullRepaired = repairTruncatedJson(fullSanitized);
+  try { return JSON.parse(fullRepaired); } catch (_) { return null; }
 }
 
 /** Validate the dashboard schema and auto-repair common issues */

@@ -679,18 +679,19 @@ export function getScriptsJs(): string {
       colors.push(val >= 0 ? primary : errorColor);
     });
 
-    new Chart(canvas.getContext('2d'), {
+    var wfChartData = {
+      labels: labels,
+      datasets: [{
+        label: (config.data.datasets[0] || {}).label || 'Value',
+        data: floatingData,
+        backgroundColor: colors,
+        borderRadius: 4,
+        borderSkipped: false
+      }]
+    };
+    var wfInstance = new Chart(canvas.getContext('2d'), {
       type: 'bar',
-      data: {
-        labels: labels,
-        datasets: [{
-          label: (config.data.datasets[0] || {}).label || 'Value',
-          data: floatingData,
-          backgroundColor: colors,
-          borderRadius: 4,
-          borderSkipped: false
-        }]
-      },
+      data: JSON.parse(JSON.stringify(wfChartData)),
       options: {
         responsive: true,
         maintainAspectRatio: false,
@@ -701,6 +702,11 @@ export function getScriptsJs(): string {
         }
       }
     });
+    // Register for global filtering
+    if (sectionId) {
+      if (!sectionCharts[sectionId]) sectionCharts[sectionId] = [];
+      sectionCharts[sectionId].push({ id: config.id, config: config, instance: wfInstance, card: card, originalData: wfChartData });
+    }
   }
 
   // === GANTT RENDERER (horizontal stacked bars) ===

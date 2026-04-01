@@ -266,6 +266,13 @@ body {
   max-height: 380px;
 }
 
+/* Radar / spider charts need more room for axis labels */
+.chart-container.chart-radar {
+  min-height: 400px;
+  height: 420px;
+  max-height: 480px;
+}
+
 /* Cross-chart filter badge */
 .chart-filter-badge {
   display: inline-flex;

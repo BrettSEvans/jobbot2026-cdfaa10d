@@ -815,17 +815,23 @@ export function getScriptsJs(): string {
       sectionCharts[sectionId].push({
         id: config.id, config: config, instance: null, card: card,
         originalData: config.data, labels: labels,
-        applyFilter: function(activeValues) {
+        applyFilter: function(activeFilters) {
+          var activeValues = activeFilters.map(function(f) { return f.value; });
           var steps = funnel.querySelectorAll('.funnel-step');
+          var anyMatch = false;
           steps.forEach(function(step) {
             var lbl = step.getAttribute('data-label') || '';
-            var matches = activeValues.some(function(v) { return matchesAnyFilter(lbl, [v]); });
-            var bar = step.querySelector('.funnel-bar');
-            if (bar) {
-              if (matches || !activeValues.length) { bar.classList.remove('gf-dimmed'); }
-              else { bar.classList.add('gf-dimmed'); }
-            }
+            var matches = activeValues.some(function(v) { return valueMatchesFilter(lbl, v); });
+            step.style.display = matches ? '' : 'none';
+            if (matches) anyMatch = true;
           });
+          // If no matches, show all (filter not applicable)
+          if (!anyMatch) {
+            steps.forEach(function(step) { step.style.display = ''; });
+          }
+        },
+        resetFilter: function() {
+          funnel.querySelectorAll('.funnel-step').forEach(function(s) { s.style.display = ''; });
         }
       });
     }

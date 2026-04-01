@@ -69,17 +69,66 @@ export function parseLlmJsonOutput(raw: string): DashboardData | null {
   clean = clean.replace(/new\s+Date\s*\(\s*\)/g, '"2025-01-01"');
   // Remove trailing commas before } or ]
   clean = clean.replace(/,\s*([}\]])/g, '$1');
+  // Fix unquoted keys (common LLM mistake)
+  clean = clean.replace(/([{,]\s*)([a-zA-Z_]\w*)\s*:/g, '$1"$2":');
+  // Remove duplicate double-quotes from the above fix on already-quoted keys
+  clean = clean.replace(/""/g, '"');
   
+  // Attempt 1: direct parse
+  const attempt1 = tryParseJson(clean);
+  if (attempt1) return attempt1;
+
+  // Attempt 2: try to close truncated JSON by adding missing brackets
+  const repaired = repairTruncatedJson(clean);
+  if (repaired !== clean) {
+    const attempt2 = tryParseJson(repaired);
+    if (attempt2) {
+      console.warn("[DashboardParser] Parsed after repairing truncated JSON");
+      return attempt2;
+    }
+  }
+
+  console.error("[DashboardParser] JSON.parse failed after repair attempts | JSON length:", clean.length, "| Last 50 chars:", clean.slice(-50));
+  return null;
+}
+
+function tryParseJson(json: string): DashboardData | null {
   try {
-    const parsed = JSON.parse(clean) as DashboardData;
-    // Validate minimum required fields
+    const parsed = JSON.parse(json) as DashboardData;
     if (!parsed.meta || !parsed.branding || !parsed.navigation || !parsed.sections) {
       console.error("[DashboardParser] JSON parsed but missing required fields:", Object.keys(parsed));
       return null;
     }
     return parsed;
-  } catch (e) {
-    console.error("[DashboardParser] JSON.parse failed:", (e as Error).message, "| JSON length:", clean.length, "| Last 50 chars:", clean.slice(-50));
+  } catch {
     return null;
   }
+}
+
+function repairTruncatedJson(json: string): string {
+  // Count unmatched brackets and braces, then close them
+  let braces = 0;
+  let brackets = 0;
+  let inString = false;
+  let escaped = false;
+  for (let i = 0; i < json.length; i++) {
+    const ch = json[i];
+    if (escaped) { escaped = false; continue; }
+    if (ch === '\\') { escaped = true; continue; }
+    if (ch === '"') { inString = !inString; continue; }
+    if (inString) continue;
+    if (ch === '{') braces++;
+    else if (ch === '}') braces--;
+    else if (ch === '[') brackets++;
+    else if (ch === ']') brackets--;
+  }
+  // If we're inside a string, close it
+  let result = json;
+  if (inString) result += '"';
+  // Remove trailing comma
+  result = result.replace(/,\s*$/, '');
+  // Close brackets and braces
+  while (brackets > 0) { result += ']'; brackets--; }
+  while (braces > 0) { result += '}'; braces--; }
+  return result;
 }

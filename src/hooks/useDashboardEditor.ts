@@ -88,7 +88,7 @@ export function useDashboardEditor({
           }
         },
       });
-      const savePayload: Record<string, unknown> = { dashboard_html: accumulated };
+      const savePayload: Record<string, unknown> = {};
       const parsedForSave = parseLlmJsonOutput(accumulated) || null;
       if (parsedForSave) {
         const html = assembleDashboardHtml(parsedForSave);
@@ -103,8 +103,12 @@ export function useDashboardEditor({
           savePayload.dashboard_html = extractedHtml;
           accumulated = extractedHtml;
         }
-      } else if (dashboardData) {
+      }
+
+      if (!savePayload.dashboard_html && dashboardData && dashboardHtml) {
+        savePayload.dashboard_html = dashboardHtml;
         savePayload.dashboard_data = dashboardData;
+        accumulated = dashboardHtml;
       }
       // Only save if we have valid content
       if (accumulated) {

@@ -3,7 +3,7 @@ import {
   streamDashboardGeneration,
   saveJobApplication,
 } from "@/lib/api/jobApplication";
-import { parseLlmJsonOutput, assembleDashboardHtml, getDashboardZipFiles } from "@/lib/dashboard/assembler";
+import { parseLlmJsonOutput, assembleDashboardHtml, extractHtmlDocument, getDashboardZipFiles } from "@/lib/dashboard/assembler";
 import type { DashboardData } from "@/lib/dashboard/schema";
 import { backgroundGenerator } from "@/lib/backgroundGenerator";
 import { saveDashboardRevision } from "@/lib/api/dashboardRevisions";
@@ -75,18 +75,8 @@ export function useDashboardEditor({
             setDashboardData(parsed);
             accumulated = html;
           } else {
-            // Check if it's actual HTML (not raw JSON/code)
-            const looksLikeHtml = /<!doctype\s+html>/i.test(accumulated) || /<html[\s>]/i.test(accumulated);
-            if (looksLikeHtml) {
-              let clean = accumulated;
-              const htmlStart = clean.indexOf("<!DOCTYPE html>");
-              const htmlStartAlt = clean.indexOf("<!doctype html>");
-              const start = htmlStart !== -1 ? htmlStart : htmlStartAlt;
-              if (start > 0) clean = clean.slice(start);
-              const htmlEnd = clean.lastIndexOf("</html>");
-              if (htmlEnd !== -1) clean = clean.slice(0, htmlEnd + 7);
-              // Strip markdown fences wrapping HTML
-              clean = clean.replace(/^```(?:html)?\s*\n?/i, "").replace(/\n?```\s*$/i, "").trim();
+            const clean = extractHtmlDocument(accumulated);
+            if (clean) {
               setDashboardHtml(clean);
               accumulated = clean;
             } else {
@@ -107,6 +97,12 @@ export function useDashboardEditor({
         savePayload.dashboard_html = html;
         savePayload.dashboard_data = parsedForSave;
         accumulated = html;
+      } else {
+        const extractedHtml = extractHtmlDocument(accumulated);
+        if (extractedHtml) {
+          savePayload.dashboard_html = extractedHtml;
+          accumulated = extractedHtml;
+        }
       } else if (dashboardData) {
         savePayload.dashboard_data = dashboardData;
       }

@@ -1,64 +1,45 @@
-## Plan: Functional Global Filters + Branded Interactive Popup
 
-### Problem 1: Filters are not functional
+## Plan: Make Global/Page Filters Truly Refilter Data (Systemic Fix)
 
-The global filter bar renders correctly but has limited effect:
+### Diagnosis (why this is systemic)
+- Current global filters mostly **dim visuals** instead of changing underlying datasets.
+- Filtering uses broad string matching on `data-labels`, not filter-aware field logic (`filter.id` → data dimension).
+- Segmented/chip filters default to first value (often no “All”), so hidden filters are always active.
+- Multiple filters are combined with strict AND even when a visualization doesn’t contain those dimensions.
+- Generated dashboards can have filter options (e.g., US/CA/UK/EU) that don’t match row/chart vocab (e.g., North America/EMEA).
 
-- **Tables are never filtered** — `applyGlobalFilters()` only iterates `sectionCharts`, which contains Chart.js instances. Tables are not registered anywhere, so filters have zero effect on table data.
-- **Heatmap, funnel, waterfall, gantt renderers** don't register entries in `sectionCharts`, so they are also invisible to both cross-chart and global filtering.
-- When "All" is selected, the reset logic works, but partial matches use `indexOf` which can produce false positives (e.g., "NA" matching "BANANA").
+### Implementation
 
-### Problem 2: Interactive popup not branded
+1. **Refactor filter engine in `src/lib/dashboard/templates/scripts.ts`**
+   - Introduce a structured `filterContext` and apply filtering by dimension, not plain substring.
+   - For each visualization, determine whether a selected filter is applicable; if not applicable, skip that filter for that viz (don’t dim by default).
 
-The "Your dashboard is interactive!" overlay (in `DynamicMaterialsSection.tsx` line 698-713) uses generic styling. It should show the dashboard compay logo and brand identity of the job being applied to .
+2. **Make table filtering truly data-driven**
+   - In table registry, store original row objects plus column-key metadata.
+   - Apply global filters against row fields (with dimension aliases like region/geo/country) and then render visible rows.
+   - Keep per-table count updates accurate after each filter change.
 
----
+3. **Make chart filtering actually change what is shown**
+   - For Chart.js and custom charts (heatmap/funnel/waterfall/gantt), store original chart data and rebuild filtered datasets/labels on selection.
+   - Keep “dim” behavior only as a fallback when partial match is intended; primary behavior is data subset/refilter.
 
-### Changes
+4. **Fix filter state UX defaults**
+   - Ensure every filter type can reset to `All` (including segmented/chips by prepending `All` if missing).
+   - Add a clear/reset path so switching selections always recomputes from original data.
 
-#### File 1: `src/lib/dashboard/templates/scripts.ts`
+5. **Fix page-level table filter isolation**
+   - Scope `activeColumnFilters` per-table instance (currently global by column index, causing collisions).
+   - Ensure page-level filter + global filter compose deterministically.
 
-**A. Register tables in a parallel tracking structure**
+6. **Harden generation consistency in `supabase/functions/generate-dashboard/index.ts`**
+   - Update prompt rules so each global filter dimension is represented in section data fields/labels that should respond.
+   - Enforce value vocabulary alignment between filter options and generated data tokens (e.g., US/CA/UK/EU everywhere if chosen).
 
-- Create a `sectionTables` registry (similar to `sectionCharts`).
-- In `renderTable()`, store a reference to each table's `tbody`, its `rows` data, `columns` config, and the section ID.
-- Each row gets a `data-labels` attribute containing all cell values (pipe-delimited) for filter matching.
+7. **Branding check for interactive popup**
+   - Confirm popup remains site-branded and company-branded consistently (logo/name fallback hierarchy), without regressing current behavior.
 
-**B. Make `applyGlobalFilters()` also filter tables**
-
-- After filtering charts, iterate `sectionTables` entries.
-- For each table row, check if any cell value contains any active filter value. Hide non-matching rows (`display:none`). Update the record count in the table header.
-- Use word-boundary-aware matching (exact option match or the value equals/starts the cell text) to avoid false positives.
-
-**C. Register heatmap/funnel/waterfall/gantt in `sectionCharts**`
-
-- For heatmap: store the card element, labels, and a custom `applyFilter` callback that dims non-matching rows.
-- For funnel: store the card and labels, with a callback that dims non-matching bars.
-- Waterfall and gantt already use Chart.js canvases but don't register — add registration after creating the Chart instance.
-
-**D. Table column-level filter controls (page-level)**
-
-- Add a small filter icon to each sortable table header.
-- Clicking it shows a dropdown of unique values in that column.
-- Selecting a value filters the table rows to only show matches. This is a per-table, per-column filter independent of global filters.
-
-#### File 2: `src/components/DynamicMaterialsSection.tsx`
-
-**Brand the interactive popup:**
-
-- Import `BrandLogo` component.
-- Replace the generic `Sparkles` icon with `<BrandLogo showWordmark={false} iconSize="2.4em" />`.
-- Add the brand name in the heading: "Your  dashboard is interactive!" (using the BRAND constant).
-- Style the popup card border with `border-primary/30` for brand accent.
-- Update the dismiss button text to "Got it — let me explore!" (already correct, keep it).
-
----
-
-### Files to change
-
-
-| File                                         | What                                                                                                                                       |
-| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `src/lib/dashboard/templates/scripts.ts`     | Register tables + heatmap/funnel/waterfall/gantt for filtering; extend `applyGlobalFilters` to filter tables; add per-column table filters |
-| `src/lib/dashboard/templates/styles.ts`      | CSS for table column filter dropdowns, hidden rows                                                                                         |
-| `src/components/DynamicMaterialsSection.tsx` | Brand the interactive welcome popup with BrandLogo and BRAND name                                                                          |
+### Validation checklist (Plaid-specific)
+- In Competitive Landscape, switching Region US → CA → UK → EU visibly changes table/chart content (not just gray-out).
+- Changing one filter then another re-filters from original source data, not previously dimmed state.
+- `All` restores full data on current page and across pages.
+- Page-level column filters work independently per table and combine correctly with global filters.

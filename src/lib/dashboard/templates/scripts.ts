@@ -210,6 +210,51 @@ export function getScriptsJs(): string {
   var sectionCharts = {};
   var sectionTables = [];
 
+  // === DIMENSION ALIASES — maps filter IDs to possible column keys / label words ===
+  var DIMENSION_ALIASES = {
+    region: ['region','geo','geography','country','location','market','territory','area'],
+    quarter: ['quarter','qtr','period','time','date','year','month'],
+    product: ['product','offering','solution','tier','plan','package','sku','line'],
+    segment: ['segment','vertical','industry','sector','category'],
+    department: ['department','dept','team','division','org','unit'],
+    status: ['status','state','stage','phase','health'],
+    priority: ['priority','severity','urgency','level'],
+    type: ['type','kind','class','classification']
+  };
+
+  function getDimensionKeys(filterId) {
+    var id = filterId.toLowerCase();
+    if (DIMENSION_ALIASES[id]) return DIMENSION_ALIASES[id];
+    // fallback: the filter id itself plus common suffixes stripped
+    return [id, id.replace(/_/g, ' '), id.replace(/-/g, ' ')];
+  }
+
+  function findMatchingColumnIndex(columns, filterId) {
+    var keys = getDimensionKeys(filterId);
+    for (var ci = 0; ci < columns.length; ci++) {
+      var colKey = (columns[ci].key || '').toLowerCase();
+      var colLabel = (columns[ci].label || '').toLowerCase();
+      for (var ki = 0; ki < keys.length; ki++) {
+        if (colKey === keys[ki] || colLabel === keys[ki] ||
+            colKey.indexOf(keys[ki]) !== -1 || colLabel.indexOf(keys[ki]) !== -1) {
+          return ci;
+        }
+      }
+    }
+    return -1;
+  }
+
+  function valueMatchesFilter(cellValue, filterValue) {
+    if (!cellValue || !filterValue) return false;
+    var cv = String(cellValue).toLowerCase().trim();
+    var fv = filterValue.toLowerCase().trim();
+    if (cv === fv) return true;
+    // Check if cell contains filter value as a word
+    if (cv.indexOf(fv) !== -1) return true;
+    // Check if filter value is an abbreviation of cell value (e.g., "US" → "United States")
+    return false;
+  }
+
   function addAlpha(color, alpha) {
     if (!color) return color;
     if (color.indexOf('rgba') === 0) return color.replace(/,[^,]+\\)$/, ', ' + alpha + ')');
@@ -291,11 +336,17 @@ export function getScriptsJs(): string {
 
   // === GLOBAL FILTER STATE ===
   var globalFilterState = {};
+  var globalFilterDefs = [];
 
   function buildGlobalFilterBar(filters) {
     if (!filters || !filters.length) return;
+    globalFilterDefs = filters;
     var bar = el('div', { className: 'global-filter-bar' });
     filters.forEach(function(f) {
+      // Ensure "All" is first option
+      if (f.options && f.options.length && f.options[0] !== 'All') {
+        f.options = ['All'].concat(f.options);
+      }
       var group = el('div', { className: 'gf-group' });
       group.appendChild(el('span', { className: 'gf-label' }, f.label));
 
@@ -358,84 +409,175 @@ export function getScriptsJs(): string {
         if (v && v !== 'All') activeFilters.push({ id: k, value: v });
       }
     }
+
+    // --- Reset everything when no filters active ---
     if (!activeFilters.length) {
-      // Reset all charts
       for (var sid in sectionCharts) {
-        if (sectionCharts.hasOwnProperty(sid)) clearCrossFilter(sid);
+        if (sectionCharts.hasOwnProperty(sid)) {
+          sectionCharts[sid].forEach(function(entry) {
+            entry.card.classList.remove('filtered-dimmed', 'filtered-dimmed-global');
+            var badge = entry.card.querySelector('.chart-filter-badge');
+            if (badge) badge.remove();
+            if (entry.resetFilter) { entry.resetFilter(); return; }
+            var inst = entry.instance;
+            if (!inst) return;
+            inst.data = JSON.parse(JSON.stringify(entry.originalData));
+            inst.update('none');
+          });
+        }
       }
-      // Reset all tables
       sectionTables.forEach(function(entry) {
-        var rows = entry.tbody.querySelectorAll('tr');
-        rows.forEach(function(row) { row.style.display = ''; });
-        updateTableCount(entry);
+        rebuildTableRows(entry, entry.originalRows);
       });
-      // Reset custom chart registrations
-      document.querySelectorAll('.chart-card.filtered-dimmed-global').forEach(function(c) { c.classList.remove('filtered-dimmed-global'); });
-      document.querySelectorAll('.funnel-bar.gf-dimmed').forEach(function(b) { b.classList.remove('gf-dimmed'); });
-      document.querySelectorAll('.heatmap-row.gf-dimmed').forEach(function(r) { r.classList.remove('gf-dimmed'); });
       return;
     }
 
-    var activeValues = activeFilters.map(function(f) { return f.value; });
-
-    // --- Filter Chart.js charts ---
+    // --- FILTER CHARTS (true data filtering) ---
     for (var sid in sectionCharts) {
       if (!sectionCharts.hasOwnProperty(sid)) continue;
-      var charts = sectionCharts[sid];
-      charts.forEach(function(entry) {
+      sectionCharts[sid].forEach(function(entry) {
+        entry.card.classList.remove('filtered-dimmed', 'filtered-dimmed-global');
         var badge = entry.card.querySelector('.chart-filter-badge');
         if (badge) badge.remove();
-        entry.card.classList.remove('filtered-dimmed', 'filtered-active');
 
         // Custom filter callback (heatmap, funnel etc.)
         if (entry.applyFilter) {
-          entry.applyFilter(activeValues);
+          entry.applyFilter(activeFilters);
           return;
         }
 
         var inst = entry.instance;
         if (!inst) return;
 
-        var labels = entry.originalData.labels;
-        var hasMatch = false;
-        for (var i = 0; i < labels.length; i++) {
-          if (matchesAnyFilter(labels[i], activeValues)) { hasMatch = true; break; }
+        var origLabels = entry.originalData.labels || [];
+        var origDatasets = entry.originalData.datasets || [];
+
+        // Find which labels match ANY active filter value
+        var matchingIndices = [];
+        for (var li = 0; li < origLabels.length; li++) {
+          var labelStr = String(origLabels[li]).toLowerCase();
+          var matches = activeFilters.some(function(f) {
+            return valueMatchesFilter(labelStr, f.value);
+          });
+          if (matches) matchingIndices.push(li);
         }
 
-        if (!hasMatch) { entry.card.classList.add('filtered-dimmed'); return; }
-
-        inst.data.datasets.forEach(function(ds, dsIdx) {
-          var origDs = entry.originalData.datasets[dsIdx];
-          if (!origDs) return;
-          if (Array.isArray(origDs.backgroundColor)) {
-            ds.backgroundColor = origDs.backgroundColor.map(function(c, i) {
-              return matchesAnyFilter(labels[i], activeValues) ? c : addAlpha(c, 0.12);
-            });
-          }
+        // Also check if any dataset labels match
+        var datasetMatches = [];
+        origDatasets.forEach(function(ds, dsi) {
+          var dsLabel = String(ds.label || '').toLowerCase();
+          var matches = activeFilters.some(function(f) {
+            return valueMatchesFilter(dsLabel, f.value);
+          });
+          if (matches) datasetMatches.push(dsi);
         });
+
+        // If no label matches and no dataset matches, check if filter is even applicable
+        if (matchingIndices.length === 0 && datasetMatches.length === 0) {
+          // Check if any filter dimension relates to chart data at all
+          var chartRelevant = false;
+          var allText = origLabels.join(' ').toLowerCase() + ' ' + origDatasets.map(function(ds) { return ds.label || ''; }).join(' ').toLowerCase();
+          activeFilters.forEach(function(f) {
+            var keys = getDimensionKeys(f.id);
+            keys.forEach(function(k) {
+              if (allText.indexOf(k) !== -1) chartRelevant = true;
+            });
+          });
+          // If the filter dimension isn't even relevant to this chart, skip (don't dim)
+          if (!chartRelevant) {
+            inst.data = JSON.parse(JSON.stringify(entry.originalData));
+            inst.update('none');
+            return;
+          }
+          // Relevant but no matches — dim entire chart
+          entry.card.classList.add('filtered-dimmed-global');
+          return;
+        }
+
+        // Filter by matching indices — rebuild chart with subset
+        if (matchingIndices.length > 0 && matchingIndices.length < origLabels.length) {
+          var newLabels = matchingIndices.map(function(i) { return origLabels[i]; });
+          var newDatasets = origDatasets.map(function(ds) {
+            var newDs = JSON.parse(JSON.stringify(ds));
+            newDs.data = matchingIndices.map(function(i) { return ds.data[i]; });
+            if (Array.isArray(ds.backgroundColor)) {
+              newDs.backgroundColor = matchingIndices.map(function(i) { return ds.backgroundColor[i]; });
+            }
+            if (Array.isArray(ds.borderColor)) {
+              newDs.borderColor = matchingIndices.map(function(i) { return ds.borderColor[i]; });
+            }
+            return newDs;
+          });
+          inst.data.labels = newLabels;
+          inst.data.datasets = newDatasets;
+        } else if (datasetMatches.length > 0 && datasetMatches.length < origDatasets.length) {
+          // Filter by dataset matches
+          inst.data.labels = JSON.parse(JSON.stringify(origLabels));
+          inst.data.datasets = datasetMatches.map(function(dsi) {
+            return JSON.parse(JSON.stringify(origDatasets[dsi]));
+          });
+        } else {
+          // All match — restore original
+          inst.data = JSON.parse(JSON.stringify(entry.originalData));
+        }
         inst.update('none');
       });
     }
 
-    // --- Filter tables ---
+    // --- FILTER TABLES (true data filtering) ---
     sectionTables.forEach(function(entry) {
-      var rows = entry.tbody.querySelectorAll('tr');
-      rows.forEach(function(row) {
-        var labels = (row.getAttribute('data-labels') || '').toLowerCase();
-        var visible = activeValues.every(function(v) {
-          return labels.indexOf(v.toLowerCase()) !== -1;
+      var filteredRows = entry.originalRows.filter(function(row) {
+        return activeFilters.every(function(f) {
+          // Find the column that matches this filter dimension
+          var colIdx = findMatchingColumnIndex(entry.columns, f.id);
+          if (colIdx === -1) {
+            // No matching column — check all columns for the value (broad match)
+            var anyMatch = false;
+            entry.columns.forEach(function(col) {
+              if (valueMatchesFilter(String(row[col.key] || ''), f.value)) anyMatch = true;
+            });
+            return anyMatch;
+          }
+          var colKey = entry.columns[colIdx].key;
+          return valueMatchesFilter(String(row[colKey] || ''), f.value);
         });
-        row.style.display = visible ? '' : 'none';
       });
-      updateTableCount(entry);
+      rebuildTableRows(entry, filteredRows);
     });
+  }
+
+  function rebuildTableRows(entry, rows) {
+    entry.tbody.innerHTML = '';
+    rows.forEach(function(row, idx) {
+      var tr = el('tr', {});
+      var labelParts = [];
+      entry.columns.forEach(function(col) {
+        var val = String(row[col.key] != null ? row[col.key] : '');
+        tr.appendChild(el('td', {}, val));
+        labelParts.push(val);
+      });
+      tr.setAttribute('data-labels', labelParts.join('|'));
+      tr.setAttribute('data-row-idx', String(idx));
+      tr.onclick = function() {
+        var fields = entry.columns.map(function(col) {
+          return { label: col.label, value: String(row[col.key] != null ? row[col.key] : '') };
+        });
+        showDrillDown(entry.title + ' \\u2014 Record #' + (idx + 1), fields);
+      };
+      entry.tbody.appendChild(tr);
+    });
+    // Apply any active column filters on top
+    if (entry.columnFilters && Object.keys(entry.columnFilters).length) {
+      applyColumnFilters(entry);
+    }
+    updateTableCount(entry);
   }
 
   function matchesAnyFilter(label, activeValues) {
     if (!label) return false;
     var lbl = String(label).toLowerCase();
     for (var j = 0; j < activeValues.length; j++) {
-      if (lbl === activeValues[j].toLowerCase() || lbl.indexOf(activeValues[j].toLowerCase()) === 0) return true;
+      if (valueMatchesFilter(lbl, activeValues[j])) return true;
     }
     return false;
   }
@@ -592,13 +734,51 @@ export function getScriptsJs(): string {
       sectionCharts[sectionId].push({
         id: config.id, config: config, instance: null, card: card,
         originalData: config.data, labels: allLabels,
-        applyFilter: function(activeValues) {
+        applyFilter: function(activeFilters) {
           var dataRows = grid.querySelectorAll('.heatmap-row:not(.heatmap-header)');
+          var colHeaders = grid.querySelectorAll('.heatmap-header .heatmap-col-label');
+          var activeValues = activeFilters.map(function(f) { return f.value; });
+
+          // Filter rows
+          var anyRowMatch = false;
           dataRows.forEach(function(row) {
             var rowLabel = row.getAttribute('data-label') || '';
-            var matches = activeValues.some(function(v) { return matchesAnyFilter(rowLabel, [v]); });
-            if (matches) { row.classList.remove('gf-dimmed'); } else { row.classList.add('gf-dimmed'); }
+            var matches = activeValues.some(function(v) { return valueMatchesFilter(rowLabel, v); });
+            if (matches) { row.style.display = ''; anyRowMatch = true; }
+            else { row.style.display = 'none'; }
           });
+          // If no rows matched, show all (filter not applicable to row dimension)
+          if (!anyRowMatch) {
+            dataRows.forEach(function(row) { row.style.display = ''; });
+          }
+
+          // Filter columns
+          var colMatchMap = {};
+          var anyColMatch = false;
+          labels.forEach(function(lbl, i) {
+            var matches = activeValues.some(function(v) { return valueMatchesFilter(lbl, v); });
+            colMatchMap[i] = matches;
+            if (matches) anyColMatch = true;
+          });
+          if (anyColMatch) {
+            dataRows.forEach(function(row) {
+              var cells = row.querySelectorAll('.heatmap-value');
+              cells.forEach(function(cell, i) {
+                cell.style.display = colMatchMap[i] ? '' : 'none';
+              });
+            });
+            colHeaders.forEach(function(ch, i) { ch.style.display = colMatchMap[i] ? '' : 'none'; });
+          } else {
+            // No col match — show all columns
+            dataRows.forEach(function(row) {
+              row.querySelectorAll('.heatmap-value').forEach(function(c) { c.style.display = ''; });
+            });
+            colHeaders.forEach(function(ch) { ch.style.display = ''; });
+          }
+        },
+        resetFilter: function() {
+          grid.querySelectorAll('.heatmap-row').forEach(function(row) { row.style.display = ''; });
+          grid.querySelectorAll('.heatmap-value, .heatmap-col-label').forEach(function(c) { c.style.display = ''; });
         }
       });
     }
@@ -635,17 +815,23 @@ export function getScriptsJs(): string {
       sectionCharts[sectionId].push({
         id: config.id, config: config, instance: null, card: card,
         originalData: config.data, labels: labels,
-        applyFilter: function(activeValues) {
+        applyFilter: function(activeFilters) {
+          var activeValues = activeFilters.map(function(f) { return f.value; });
           var steps = funnel.querySelectorAll('.funnel-step');
+          var anyMatch = false;
           steps.forEach(function(step) {
             var lbl = step.getAttribute('data-label') || '';
-            var matches = activeValues.some(function(v) { return matchesAnyFilter(lbl, [v]); });
-            var bar = step.querySelector('.funnel-bar');
-            if (bar) {
-              if (matches || !activeValues.length) { bar.classList.remove('gf-dimmed'); }
-              else { bar.classList.add('gf-dimmed'); }
-            }
+            var matches = activeValues.some(function(v) { return valueMatchesFilter(lbl, v); });
+            step.style.display = matches ? '' : 'none';
+            if (matches) anyMatch = true;
           });
+          // If no matches, show all (filter not applicable)
+          if (!anyMatch) {
+            steps.forEach(function(step) { step.style.display = ''; });
+          }
+        },
+        resetFilter: function() {
+          funnel.querySelectorAll('.funnel-step').forEach(function(s) { s.style.display = ''; });
         }
       });
     }
@@ -767,6 +953,14 @@ export function getScriptsJs(): string {
 
     var thead = el('thead', {});
     var headerRow = el('tr', {});
+
+    // Create table entry early so column filters can reference it
+    var tableEntry = {
+      tbody: null, columns: config.columns, title: config.title,
+      countEl: countEl, sectionId: sectionId || null,
+      originalRows: rows, columnFilters: {}, card: card
+    };
+
     config.columns.forEach(function(col, colIdx) {
       var th = el('th', {});
       th.appendChild(document.createTextNode(col.label + ' '));
@@ -775,7 +969,7 @@ export function getScriptsJs(): string {
       filterBtn.innerHTML = '&#9662;';
       filterBtn.addEventListener('click', function(e) {
         e.stopPropagation();
-        toggleColumnFilter(card, tbody, config.columns, colIdx, th);
+        toggleColumnFilter(tableEntry, colIdx, th);
       });
       th.appendChild(filterBtn);
       headerRow.appendChild(th);
@@ -806,26 +1000,22 @@ export function getScriptsJs(): string {
     card.appendChild(scroll);
     container.appendChild(card);
 
-    // Register table for global filtering
-    sectionTables.push({ tbody: tbody, columns: config.columns, title: config.title, countEl: countEl, sectionId: sectionId || null });
+    tableEntry.tbody = tbody;
+    sectionTables.push(tableEntry);
   }
 
-  // === PER-COLUMN TABLE FILTER ===
-  var activeColumnFilters = {};
-
-  function toggleColumnFilter(card, tbody, columns, colIdx, thEl) {
-    // Close any existing dropdown
-    var existing = card.querySelector('.col-filter-dropdown');
+  // === PER-COLUMN TABLE FILTER (scoped per table) ===
+  function toggleColumnFilter(tableEntry, colIdx, thEl) {
+    // Close any existing dropdown in this table
+    var existing = tableEntry.card.querySelector('.col-filter-dropdown');
     if (existing) { existing.remove(); return; }
 
-    // Gather unique values for this column
+    // Gather unique values from ORIGINAL rows for this column
+    var colKey = tableEntry.columns[colIdx].key;
     var uniqueVals = {};
-    tbody.querySelectorAll('tr').forEach(function(row) {
-      var cells = row.querySelectorAll('td');
-      if (cells[colIdx]) {
-        var v = cells[colIdx].textContent.trim();
-        if (v) uniqueVals[v] = true;
-      }
+    tableEntry.originalRows.forEach(function(row) {
+      var v = String(row[colKey] != null ? row[colKey] : '').trim();
+      if (v) uniqueVals[v] = true;
     });
     var values = Object.keys(uniqueVals).sort();
 
@@ -833,8 +1023,8 @@ export function getScriptsJs(): string {
     // "All" option
     var allBtn = el('button', { className: 'col-filter-option active' }, '(All)');
     allBtn.addEventListener('click', function() {
-      delete activeColumnFilters[colIdx];
-      applyColumnFilters(tbody, columns);
+      delete tableEntry.columnFilters[colIdx];
+      applyColumnFilters(tableEntry);
       dropdown.remove();
     });
     dropdown.appendChild(allBtn);
@@ -842,8 +1032,8 @@ export function getScriptsJs(): string {
     values.forEach(function(val) {
       var btn = el('button', { className: 'col-filter-option' }, val);
       btn.addEventListener('click', function() {
-        activeColumnFilters[colIdx] = val;
-        applyColumnFilters(tbody, columns);
+        tableEntry.columnFilters[colIdx] = val;
+        applyColumnFilters(tableEntry);
         dropdown.remove();
       });
       dropdown.appendChild(btn);
@@ -860,18 +1050,19 @@ export function getScriptsJs(): string {
     }, 0);
   }
 
-  function applyColumnFilters(tbody, columns) {
-    tbody.querySelectorAll('tr').forEach(function(row) {
+  function applyColumnFilters(tableEntry) {
+    tableEntry.tbody.querySelectorAll('tr').forEach(function(row) {
       var cells = row.querySelectorAll('td');
       var visible = true;
-      for (var ci in activeColumnFilters) {
-        if (activeColumnFilters.hasOwnProperty(ci)) {
+      for (var ci in tableEntry.columnFilters) {
+        if (tableEntry.columnFilters.hasOwnProperty(ci)) {
           var cellVal = cells[ci] ? cells[ci].textContent.trim() : '';
-          if (cellVal !== activeColumnFilters[ci]) { visible = false; break; }
+          if (cellVal !== tableEntry.columnFilters[ci]) { visible = false; break; }
         }
       }
       row.style.display = visible ? '' : 'none';
     });
+    updateTableCount(tableEntry);
   }
 
   // === DRILL-DOWN ===

@@ -614,6 +614,10 @@ body {
   height: 140px;
   max-height: 140px;
 }
+.grid-card-chart .chart-container.chart-radar {
+  height: 260px;
+  max-height: 300px;
+}
 
 .grid-card-chart h3 { display: none; }
 

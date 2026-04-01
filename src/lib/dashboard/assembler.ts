@@ -71,8 +71,6 @@ export function parseLlmJsonOutput(raw: string): DashboardData | null {
   clean = clean.replace(/,\s*([}\]])/g, '$1');
   // Fix unquoted keys (common LLM mistake)
   clean = clean.replace(/([{,]\s*)([a-zA-Z_]\w*)\s*:/g, '$1"$2":');
-  // Remove duplicate double-quotes from the above fix on already-quoted keys
-  clean = clean.replace(/""/g, '"');
   
   // Attempt 1: direct parse
   const attempt1 = tryParseJson(clean);

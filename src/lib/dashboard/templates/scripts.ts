@@ -351,21 +351,34 @@ export function getScriptsJs(): string {
   }
 
   function applyGlobalFilters() {
-    var activeValues = [];
+    var activeFilters = [];
     for (var k in globalFilterState) {
       if (globalFilterState.hasOwnProperty(k)) {
         var v = globalFilterState[k];
-        if (v && v !== 'All') activeValues.push(v);
+        if (v && v !== 'All') activeFilters.push({ id: k, value: v });
       }
     }
-    if (!activeValues.length) {
+    if (!activeFilters.length) {
       // Reset all charts
       for (var sid in sectionCharts) {
         if (sectionCharts.hasOwnProperty(sid)) clearCrossFilter(sid);
       }
+      // Reset all tables
+      sectionTables.forEach(function(entry) {
+        var rows = entry.tbody.querySelectorAll('tr');
+        rows.forEach(function(row) { row.style.display = ''; });
+        updateTableCount(entry);
+      });
+      // Reset custom chart registrations
+      document.querySelectorAll('.chart-card.filtered-dimmed-global').forEach(function(c) { c.classList.remove('filtered-dimmed-global'); });
+      document.querySelectorAll('.funnel-bar.gf-dimmed').forEach(function(b) { b.classList.remove('gf-dimmed'); });
+      document.querySelectorAll('.heatmap-row.gf-dimmed').forEach(function(r) { r.classList.remove('gf-dimmed'); });
       return;
     }
-    // Apply filter label matching across all sections
+
+    var activeValues = activeFilters.map(function(f) { return f.value; });
+
+    // --- Filter Chart.js charts ---
     for (var sid in sectionCharts) {
       if (!sectionCharts.hasOwnProperty(sid)) continue;
       var charts = sectionCharts[sid];
@@ -374,16 +387,19 @@ export function getScriptsJs(): string {
         if (badge) badge.remove();
         entry.card.classList.remove('filtered-dimmed', 'filtered-active');
 
+        // Custom filter callback (heatmap, funnel etc.)
+        if (entry.applyFilter) {
+          entry.applyFilter(activeValues);
+          return;
+        }
+
         var inst = entry.instance;
         if (!inst) return;
 
         var labels = entry.originalData.labels;
         var hasMatch = false;
         for (var i = 0; i < labels.length; i++) {
-          for (var j = 0; j < activeValues.length; j++) {
-            if (labels[i] && labels[i].indexOf(activeValues[j]) !== -1) { hasMatch = true; break; }
-          }
-          if (hasMatch) break;
+          if (matchesAnyFilter(labels[i], activeValues)) { hasMatch = true; break; }
         }
 
         if (!hasMatch) { entry.card.classList.add('filtered-dimmed'); return; }
@@ -393,16 +409,43 @@ export function getScriptsJs(): string {
           if (!origDs) return;
           if (Array.isArray(origDs.backgroundColor)) {
             ds.backgroundColor = origDs.backgroundColor.map(function(c, i) {
-              var lbl = labels[i] || '';
-              var match = false;
-              for (var j = 0; j < activeValues.length; j++) { if (lbl.indexOf(activeValues[j]) !== -1) { match = true; break; } }
-              return match ? c : addAlpha(c, 0.12);
+              return matchesAnyFilter(labels[i], activeValues) ? c : addAlpha(c, 0.12);
             });
           }
         });
         inst.update('none');
       });
     }
+
+    // --- Filter tables ---
+    sectionTables.forEach(function(entry) {
+      var rows = entry.tbody.querySelectorAll('tr');
+      rows.forEach(function(row) {
+        var labels = (row.getAttribute('data-labels') || '').toLowerCase();
+        var visible = activeValues.every(function(v) {
+          return labels.indexOf(v.toLowerCase()) !== -1;
+        });
+        row.style.display = visible ? '' : 'none';
+      });
+      updateTableCount(entry);
+    });
+  }
+
+  function matchesAnyFilter(label, activeValues) {
+    if (!label) return false;
+    var lbl = String(label).toLowerCase();
+    for (var j = 0; j < activeValues.length; j++) {
+      if (lbl === activeValues[j].toLowerCase() || lbl.indexOf(activeValues[j].toLowerCase()) === 0) return true;
+    }
+    return false;
+  }
+
+  function updateTableCount(entry) {
+    var visibleCount = 0;
+    entry.tbody.querySelectorAll('tr').forEach(function(r) {
+      if (r.style.display !== 'none') visibleCount++;
+    });
+    if (entry.countEl) entry.countEl.textContent = entry.title + ' (' + visibleCount + ' records)';
   }
 
   // === RENDER CHART ===

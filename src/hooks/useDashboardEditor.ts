@@ -75,15 +75,26 @@ export function useDashboardEditor({
             setDashboardData(parsed);
             accumulated = html;
           } else {
-            let clean = accumulated;
-            const htmlStart = clean.indexOf("<!DOCTYPE html>");
-            const htmlStartAlt = clean.indexOf("<!doctype html>");
-            const start = htmlStart !== -1 ? htmlStart : htmlStartAlt;
-            if (start > 0) clean = clean.slice(start);
-            const htmlEnd = clean.lastIndexOf("</html>");
-            if (htmlEnd !== -1) clean = clean.slice(0, htmlEnd + 7);
-            setDashboardHtml(clean);
-            accumulated = clean;
+            // Check if it's actual HTML (not raw JSON/code)
+            const looksLikeHtml = /<!doctype\s+html>/i.test(accumulated) || /<html[\s>]/i.test(accumulated);
+            if (looksLikeHtml) {
+              let clean = accumulated;
+              const htmlStart = clean.indexOf("<!DOCTYPE html>");
+              const htmlStartAlt = clean.indexOf("<!doctype html>");
+              const start = htmlStart !== -1 ? htmlStart : htmlStartAlt;
+              if (start > 0) clean = clean.slice(start);
+              const htmlEnd = clean.lastIndexOf("</html>");
+              if (htmlEnd !== -1) clean = clean.slice(0, htmlEnd + 7);
+              // Strip markdown fences wrapping HTML
+              clean = clean.replace(/^```(?:html)?\s*\n?/i, "").replace(/\n?```\s*$/i, "").trim();
+              setDashboardHtml(clean);
+              accumulated = clean;
+            } else {
+              // Raw JSON/text that couldn't be parsed — show error, not code
+              console.error("[Dashboard] LLM output could not be parsed as JSON or HTML. Length:", accumulated.length);
+              setDashboardHtml("");
+              toast({ title: "Dashboard generation failed", description: "The AI response could not be parsed. Please try regenerating.", variant: "destructive" });
+            }
           }
         },
       });

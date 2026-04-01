@@ -83,6 +83,7 @@ export function useDashboardEditor({
               // Raw JSON/text that couldn't be parsed — show error, not code
               console.error("[Dashboard] LLM output could not be parsed as JSON or HTML. Length:", accumulated.length);
               setDashboardHtml("");
+              accumulated = "";
               toast({ title: "Dashboard generation failed", description: "The AI response could not be parsed. Please try regenerating.", variant: "destructive" });
             }
           }
@@ -111,13 +112,15 @@ export function useDashboardEditor({
         accumulated = dashboardHtml;
       }
       // Only save if we have valid content
-      if (accumulated) {
+      if (typeof savePayload.dashboard_html === "string" && savePayload.dashboard_html.trim()) {
         await saveField(savePayload);
       }
-      try {
-        await saveDashboardRevision(id!, accumulated, "Regenerated");
-        setRevisionTrigger((t) => t + 1);
-      } catch { /* non-critical */ }
+      if (accumulated.trim()) {
+        try {
+          await saveDashboardRevision(id!, accumulated, "Regenerated");
+          setRevisionTrigger((t) => t + 1);
+        } catch { /* non-critical */ }
+      }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Unknown error";
       toast({ title: "Error", description: message, variant: "destructive" });

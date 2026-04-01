@@ -1374,7 +1374,7 @@ export function getScriptsJs(): string {
     // Right: table
     var right = el('div', { className: 'map-table-right' });
     if (section.tables && section.tables.length) {
-      renderTable(right, section.tables[0]);
+      renderTable(right, section.tables[0], section.id);
     }
     panel.appendChild(right);
     sectionEl.appendChild(panel);

@@ -605,19 +605,18 @@ export function getScriptsJs(): string {
   }
 
   // === FUNNEL RENDERER (pure CSS) ===
-  function renderFunnel(container, config) {
+  function renderFunnel(container, config, sectionId) {
     var card = el('div', { className: 'chart-card funnel-card' });
     card.appendChild(el('h3', {}, config.title));
 
     var labels = config.data.labels || [];
     var values = (config.data.datasets[0] || {}).data || [];
     var maxVal = Math.max.apply(null, values) || 1;
-    var primary = getComputedStyle(document.documentElement).getPropertyValue('--md-primary').trim() || '#6750A4';
 
     var funnel = el('div', { className: 'funnel-container' });
     labels.forEach(function(lbl, i) {
       var pct = (values[i] || 0) / maxVal * 100;
-      var step = el('div', { className: 'funnel-step' });
+      var step = el('div', { className: 'funnel-step', 'data-label': lbl });
       var bar = el('div', { className: 'funnel-bar' });
       bar.style.width = pct + '%';
       var hue = (i * 35 + 200) % 360;
@@ -629,6 +628,27 @@ export function getScriptsJs(): string {
     });
     card.appendChild(funnel);
     container.appendChild(card);
+
+    // Register for global filtering
+    if (sectionId) {
+      if (!sectionCharts[sectionId]) sectionCharts[sectionId] = [];
+      sectionCharts[sectionId].push({
+        id: config.id, config: config, instance: null, card: card,
+        originalData: config.data, labels: labels,
+        applyFilter: function(activeValues) {
+          var steps = funnel.querySelectorAll('.funnel-step');
+          steps.forEach(function(step) {
+            var lbl = step.getAttribute('data-label') || '';
+            var matches = activeValues.some(function(v) { return matchesAnyFilter(lbl, [v]); });
+            var bar = step.querySelector('.funnel-bar');
+            if (bar) {
+              if (matches || !activeValues.length) { bar.classList.remove('gf-dimmed'); }
+              else { bar.classList.add('gf-dimmed'); }
+            }
+          });
+        }
+      });
+    }
   }
 
   // === WATERFALL RENDERER (Chart.js floating bars) ===

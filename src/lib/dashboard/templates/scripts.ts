@@ -1250,7 +1250,8 @@ export function getScriptsJs(): string {
       var chartType = scenario.chartType || CFO_CHART_TYPES[sIdx % CFO_CHART_TYPES.length];
       var isRadial = (chartType === 'doughnut' || chartType === 'radar');
 
-      var chartDiv = el('div', { className: 'cfo-chart-container' });
+      var cfoRadarClass = (chartType === 'radar') ? ' chart-radar' : '';
+      var chartDiv = el('div', { className: 'cfo-chart-container' + cfoRadarClass });
       var canvas = el('canvas', { id: 'cfo-chart-' + scenario.id });
       chartDiv.appendChild(canvas);
       card.appendChild(chartDiv);

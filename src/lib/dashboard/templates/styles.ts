@@ -882,6 +882,9 @@ input[type="range"]::-webkit-slider-thumb {
   height: 300px;
   margin-top: 16px;
 }
+.cfo-chart-container.chart-radar {
+  height: 400px;
+}
 
 /* === CFO TOGGLE & SEGMENTED CONTROLS === */
 .cfo-controls { margin-bottom: 16px; }

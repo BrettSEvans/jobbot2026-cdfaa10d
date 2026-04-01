@@ -587,7 +587,14 @@ export function getScriptsJs(): string {
     entry.tbody.querySelectorAll('tr').forEach(function(r) {
       if (r.style.display !== 'none') visibleCount++;
     });
-    if (entry.countEl) entry.countEl.textContent = entry.title + ' (' + visibleCount + ' records)';
+    var totalCount = entry.originalRows ? entry.originalRows.length : visibleCount;
+    if (entry.countEl) {
+      if (visibleCount < totalCount) {
+        entry.countEl.innerHTML = entry.title + ' <span class="table-filter-count">(' + visibleCount + ' of ' + totalCount + ' records)</span>';
+      } else {
+        entry.countEl.textContent = entry.title + ' (' + totalCount + ' records)';
+      }
+    }
   }
 
   // === RENDER CHART ===

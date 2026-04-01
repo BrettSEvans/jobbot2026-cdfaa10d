@@ -81,13 +81,21 @@ RULES:
 
 ## GLOBAL FILTERS
 Generate a "globalFilters" array with 3-4 filters relevant to the role/industry. These create a sticky filter bar for cross-page filtering.
+
+CRITICAL FILTER-DATA ALIGNMENT RULES:
+- Every filter option value (e.g., "US", "EMEA", "Enterprise") MUST appear as a verbatim value in at least one column of every section's table generateRows fields. Use the EXACT same strings.
+- For region filters: use the filter option values (e.g., "US", "CA", "UK", "EU") as the "options" array in the corresponding region/geo field of every table's generateRows config.
+- For product/segment filters: use the filter option values as the "options" array in the product/segment pick fields.
+- Chart labels should also use these exact filter option values where the dimension applies.
+- This ensures clicking a filter value actually matches rows and chart labels.
+
 Format:
 "globalFilters": [
-  { "id": "region", "label": "Region", "type": "dropdown", "options": ["All", "NA", "EMEA", "APAC"] },
-  { "id": "quarter", "label": "Quarter", "type": "segmented", "options": ["Q1", "Q2", "Q3", "Q4"] },
-  { "id": "product", "label": "Product", "type": "chips", "options": ["Enterprise", "SMB", "Growth"] }
+  { "id": "region", "label": "Region", "type": "dropdown", "options": ["All", "US", "CA", "UK", "EU"] },
+  { "id": "quarter", "label": "Quarter", "type": "segmented", "options": ["All", "Q1", "Q2", "Q3", "Q4"] },
+  { "id": "product", "label": "Product", "type": "chips", "options": ["All", "Enterprise", "SMB", "Growth"] }
 ]
-Filter types: "dropdown", "segmented", "chips". First option should be "All" for dropdowns.
+Filter types: "dropdown", "segmented", "chips". First option MUST be "All" for every filter.
 
 JSON SCHEMA (follow EXACTLY):
 {

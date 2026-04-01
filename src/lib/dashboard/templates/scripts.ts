@@ -734,13 +734,51 @@ export function getScriptsJs(): string {
       sectionCharts[sectionId].push({
         id: config.id, config: config, instance: null, card: card,
         originalData: config.data, labels: allLabels,
-        applyFilter: function(activeValues) {
+        applyFilter: function(activeFilters) {
           var dataRows = grid.querySelectorAll('.heatmap-row:not(.heatmap-header)');
+          var colHeaders = grid.querySelectorAll('.heatmap-header .heatmap-col-label');
+          var activeValues = activeFilters.map(function(f) { return f.value; });
+
+          // Filter rows
+          var anyRowMatch = false;
           dataRows.forEach(function(row) {
             var rowLabel = row.getAttribute('data-label') || '';
-            var matches = activeValues.some(function(v) { return matchesAnyFilter(rowLabel, [v]); });
-            if (matches) { row.classList.remove('gf-dimmed'); } else { row.classList.add('gf-dimmed'); }
+            var matches = activeValues.some(function(v) { return valueMatchesFilter(rowLabel, v); });
+            if (matches) { row.style.display = ''; anyRowMatch = true; }
+            else { row.style.display = 'none'; }
           });
+          // If no rows matched, show all (filter not applicable to row dimension)
+          if (!anyRowMatch) {
+            dataRows.forEach(function(row) { row.style.display = ''; });
+          }
+
+          // Filter columns
+          var colMatchMap = {};
+          var anyColMatch = false;
+          labels.forEach(function(lbl, i) {
+            var matches = activeValues.some(function(v) { return valueMatchesFilter(lbl, v); });
+            colMatchMap[i] = matches;
+            if (matches) anyColMatch = true;
+          });
+          if (anyColMatch) {
+            dataRows.forEach(function(row) {
+              var cells = row.querySelectorAll('.heatmap-value');
+              cells.forEach(function(cell, i) {
+                cell.style.display = colMatchMap[i] ? '' : 'none';
+              });
+            });
+            colHeaders.forEach(function(ch, i) { ch.style.display = colMatchMap[i] ? '' : 'none'; });
+          } else {
+            // No col match — show all columns
+            dataRows.forEach(function(row) {
+              row.querySelectorAll('.heatmap-value').forEach(function(c) { c.style.display = ''; });
+            });
+            colHeaders.forEach(function(ch) { ch.style.display = ''; });
+          }
+        },
+        resetFilter: function() {
+          grid.querySelectorAll('.heatmap-row').forEach(function(row) { row.style.display = ''; });
+          grid.querySelectorAll('.heatmap-value, .heatmap-col-label').forEach(function(c) { c.style.display = ''; });
         }
       });
     }

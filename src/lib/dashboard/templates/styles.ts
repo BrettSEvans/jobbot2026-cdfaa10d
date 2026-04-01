@@ -637,6 +637,12 @@ body {
   margin-bottom: 12px;
 }
 
+.table-filter-count {
+  color: var(--md-primary);
+  font-weight: 600;
+  font-size: 13px;
+}
+
 .table-scroll {
   max-height: 450px;
   overflow-y: auto;

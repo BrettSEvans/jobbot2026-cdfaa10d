@@ -742,11 +742,17 @@ export function getScriptsJs(): string {
       if (ds.borderRadius === undefined) ds.borderRadius = 4;
     });
 
-    new Chart(canvas.getContext('2d'), {
+    var ganttData = JSON.parse(JSON.stringify(config.data));
+    var ganttInstance = new Chart(canvas.getContext('2d'), {
       type: 'bar',
-      data: JSON.parse(JSON.stringify(config.data)),
+      data: ganttData,
       options: opts
     });
+    // Register for global filtering
+    if (sectionId) {
+      if (!sectionCharts[sectionId]) sectionCharts[sectionId] = [];
+      sectionCharts[sectionId].push({ id: config.id, config: config, instance: ganttInstance, card: card, originalData: JSON.parse(JSON.stringify(config.data)) });
+    }
   }
 
   // === RENDER TABLE ===

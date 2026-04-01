@@ -110,7 +110,10 @@ export function useDashboardEditor({
       } else if (dashboardData) {
         savePayload.dashboard_data = dashboardData;
       }
-      await saveField(savePayload);
+      // Only save if we have valid content
+      if (accumulated) {
+        await saveField(savePayload);
+      }
       try {
         await saveDashboardRevision(id!, accumulated, "Regenerated");
         setRevisionTrigger((t) => t + 1);

@@ -208,6 +208,7 @@ export function getScriptsJs(): string {
 
   // === CROSS-CHART FILTERING ===
   var sectionCharts = {};
+  var sectionTables = [];
 
   function addAlpha(color, alpha) {
     if (!color) return color;
@@ -350,21 +351,34 @@ export function getScriptsJs(): string {
   }
 
   function applyGlobalFilters() {
-    var activeValues = [];
+    var activeFilters = [];
     for (var k in globalFilterState) {
       if (globalFilterState.hasOwnProperty(k)) {
         var v = globalFilterState[k];
-        if (v && v !== 'All') activeValues.push(v);
+        if (v && v !== 'All') activeFilters.push({ id: k, value: v });
       }
     }
-    if (!activeValues.length) {
+    if (!activeFilters.length) {
       // Reset all charts
       for (var sid in sectionCharts) {
         if (sectionCharts.hasOwnProperty(sid)) clearCrossFilter(sid);
       }
+      // Reset all tables
+      sectionTables.forEach(function(entry) {
+        var rows = entry.tbody.querySelectorAll('tr');
+        rows.forEach(function(row) { row.style.display = ''; });
+        updateTableCount(entry);
+      });
+      // Reset custom chart registrations
+      document.querySelectorAll('.chart-card.filtered-dimmed-global').forEach(function(c) { c.classList.remove('filtered-dimmed-global'); });
+      document.querySelectorAll('.funnel-bar.gf-dimmed').forEach(function(b) { b.classList.remove('gf-dimmed'); });
+      document.querySelectorAll('.heatmap-row.gf-dimmed').forEach(function(r) { r.classList.remove('gf-dimmed'); });
       return;
     }
-    // Apply filter label matching across all sections
+
+    var activeValues = activeFilters.map(function(f) { return f.value; });
+
+    // --- Filter Chart.js charts ---
     for (var sid in sectionCharts) {
       if (!sectionCharts.hasOwnProperty(sid)) continue;
       var charts = sectionCharts[sid];
@@ -373,16 +387,19 @@ export function getScriptsJs(): string {
         if (badge) badge.remove();
         entry.card.classList.remove('filtered-dimmed', 'filtered-active');
 
+        // Custom filter callback (heatmap, funnel etc.)
+        if (entry.applyFilter) {
+          entry.applyFilter(activeValues);
+          return;
+        }
+
         var inst = entry.instance;
         if (!inst) return;
 
         var labels = entry.originalData.labels;
         var hasMatch = false;
         for (var i = 0; i < labels.length; i++) {
-          for (var j = 0; j < activeValues.length; j++) {
-            if (labels[i] && labels[i].indexOf(activeValues[j]) !== -1) { hasMatch = true; break; }
-          }
-          if (hasMatch) break;
+          if (matchesAnyFilter(labels[i], activeValues)) { hasMatch = true; break; }
         }
 
         if (!hasMatch) { entry.card.classList.add('filtered-dimmed'); return; }
@@ -392,16 +409,43 @@ export function getScriptsJs(): string {
           if (!origDs) return;
           if (Array.isArray(origDs.backgroundColor)) {
             ds.backgroundColor = origDs.backgroundColor.map(function(c, i) {
-              var lbl = labels[i] || '';
-              var match = false;
-              for (var j = 0; j < activeValues.length; j++) { if (lbl.indexOf(activeValues[j]) !== -1) { match = true; break; } }
-              return match ? c : addAlpha(c, 0.12);
+              return matchesAnyFilter(labels[i], activeValues) ? c : addAlpha(c, 0.12);
             });
           }
         });
         inst.update('none');
       });
     }
+
+    // --- Filter tables ---
+    sectionTables.forEach(function(entry) {
+      var rows = entry.tbody.querySelectorAll('tr');
+      rows.forEach(function(row) {
+        var labels = (row.getAttribute('data-labels') || '').toLowerCase();
+        var visible = activeValues.every(function(v) {
+          return labels.indexOf(v.toLowerCase()) !== -1;
+        });
+        row.style.display = visible ? '' : 'none';
+      });
+      updateTableCount(entry);
+    });
+  }
+
+  function matchesAnyFilter(label, activeValues) {
+    if (!label) return false;
+    var lbl = String(label).toLowerCase();
+    for (var j = 0; j < activeValues.length; j++) {
+      if (lbl === activeValues[j].toLowerCase() || lbl.indexOf(activeValues[j].toLowerCase()) === 0) return true;
+    }
+    return false;
+  }
+
+  function updateTableCount(entry) {
+    var visibleCount = 0;
+    entry.tbody.querySelectorAll('tr').forEach(function(r) {
+      if (r.style.display !== 'none') visibleCount++;
+    });
+    if (entry.countEl) entry.countEl.textContent = entry.title + ' (' + visibleCount + ' records)';
   }
 
   // === RENDER CHART ===
@@ -409,8 +453,8 @@ export function getScriptsJs(): string {
     var type = config.type;
 
     // Delegate to custom renderers for non-Chart.js types
-    if (type === 'heatmap') { renderHeatmap(container, config); return; }
-    if (type === 'funnel') { renderFunnel(container, config); return; }
+    if (type === 'heatmap') { renderHeatmap(container, config, sectionId); return; }
+    if (type === 'funnel') { renderFunnel(container, config, sectionId); return; }
     if (type === 'waterfall') { renderWaterfall(container, config, sectionId); return; }
     if (type === 'gantt') { renderGantt(container, config, sectionId); return; }
 
@@ -493,7 +537,7 @@ export function getScriptsJs(): string {
   }
 
   // === HEATMAP RENDERER (pure HTML/CSS) ===
-  function renderHeatmap(container, config) {
+  function renderHeatmap(container, config, sectionId) {
     var card = el('div', { className: 'chart-card heatmap-card' });
     card.appendChild(el('h3', {}, config.title));
 
@@ -501,7 +545,6 @@ export function getScriptsJs(): string {
     var datasets = config.data.datasets || [];
     var primary = getComputedStyle(document.documentElement).getPropertyValue('--md-primary').trim() || '#6750A4';
 
-    // Build grid: rows = datasets, cols = labels
     var allValues = [];
     datasets.forEach(function(ds) { (ds.data || []).forEach(function(v) { if (typeof v === 'number') allValues.push(v); }); });
     var minVal = Math.min.apply(null, allValues);
@@ -509,18 +552,17 @@ export function getScriptsJs(): string {
     var range = maxVal - minVal || 1;
 
     var grid = el('div', { className: 'heatmap-grid' });
-    // Header row
     var headerRow = el('div', { className: 'heatmap-row heatmap-header' });
     headerRow.appendChild(el('div', { className: 'heatmap-cell heatmap-label' }, ''));
     labels.forEach(function(lbl) { headerRow.appendChild(el('div', { className: 'heatmap-cell heatmap-col-label' }, lbl)); });
     grid.appendChild(headerRow);
 
     datasets.forEach(function(ds) {
-      var row = el('div', { className: 'heatmap-row' });
+      var row = el('div', { className: 'heatmap-row', 'data-label': ds.label });
       row.appendChild(el('div', { className: 'heatmap-cell heatmap-label' }, ds.label));
       (ds.data || []).forEach(function(val, i) {
         var intensity = typeof val === 'number' ? (val - minVal) / range : 0;
-        var cell = el('div', { className: 'heatmap-cell heatmap-value' });
+        var cell = el('div', { className: 'heatmap-cell heatmap-value', 'data-col-label': labels[i] || '' });
         cell.style.backgroundColor = addAlpha(primary, 0.1 + intensity * 0.8);
         cell.style.color = intensity > 0.5 ? '#fff' : 'inherit';
         cell.textContent = typeof val === 'number' ? val.toLocaleString() : String(val);
@@ -532,7 +574,6 @@ export function getScriptsJs(): string {
 
     card.appendChild(grid);
 
-    // Legend
     var legend = el('div', { className: 'heatmap-legend' });
     legend.appendChild(el('span', {}, 'Low'));
     for (var i = 0; i <= 4; i++) {
@@ -543,22 +584,39 @@ export function getScriptsJs(): string {
     legend.appendChild(el('span', {}, 'High'));
     card.appendChild(legend);
     container.appendChild(card);
+
+    // Register for global filtering
+    if (sectionId) {
+      if (!sectionCharts[sectionId]) sectionCharts[sectionId] = [];
+      var allLabels = labels.concat(datasets.map(function(ds) { return ds.label; }));
+      sectionCharts[sectionId].push({
+        id: config.id, config: config, instance: null, card: card,
+        originalData: config.data, labels: allLabels,
+        applyFilter: function(activeValues) {
+          var dataRows = grid.querySelectorAll('.heatmap-row:not(.heatmap-header)');
+          dataRows.forEach(function(row) {
+            var rowLabel = row.getAttribute('data-label') || '';
+            var matches = activeValues.some(function(v) { return matchesAnyFilter(rowLabel, [v]); });
+            if (matches) { row.classList.remove('gf-dimmed'); } else { row.classList.add('gf-dimmed'); }
+          });
+        }
+      });
+    }
   }
 
   // === FUNNEL RENDERER (pure CSS) ===
-  function renderFunnel(container, config) {
+  function renderFunnel(container, config, sectionId) {
     var card = el('div', { className: 'chart-card funnel-card' });
     card.appendChild(el('h3', {}, config.title));
 
     var labels = config.data.labels || [];
     var values = (config.data.datasets[0] || {}).data || [];
     var maxVal = Math.max.apply(null, values) || 1;
-    var primary = getComputedStyle(document.documentElement).getPropertyValue('--md-primary').trim() || '#6750A4';
 
     var funnel = el('div', { className: 'funnel-container' });
     labels.forEach(function(lbl, i) {
       var pct = (values[i] || 0) / maxVal * 100;
-      var step = el('div', { className: 'funnel-step' });
+      var step = el('div', { className: 'funnel-step', 'data-label': lbl });
       var bar = el('div', { className: 'funnel-bar' });
       bar.style.width = pct + '%';
       var hue = (i * 35 + 200) % 360;
@@ -570,6 +628,27 @@ export function getScriptsJs(): string {
     });
     card.appendChild(funnel);
     container.appendChild(card);
+
+    // Register for global filtering
+    if (sectionId) {
+      if (!sectionCharts[sectionId]) sectionCharts[sectionId] = [];
+      sectionCharts[sectionId].push({
+        id: config.id, config: config, instance: null, card: card,
+        originalData: config.data, labels: labels,
+        applyFilter: function(activeValues) {
+          var steps = funnel.querySelectorAll('.funnel-step');
+          steps.forEach(function(step) {
+            var lbl = step.getAttribute('data-label') || '';
+            var matches = activeValues.some(function(v) { return matchesAnyFilter(lbl, [v]); });
+            var bar = step.querySelector('.funnel-bar');
+            if (bar) {
+              if (matches || !activeValues.length) { bar.classList.remove('gf-dimmed'); }
+              else { bar.classList.add('gf-dimmed'); }
+            }
+          });
+        }
+      });
+    }
   }
 
   // === WATERFALL RENDERER (Chart.js floating bars) ===
@@ -600,18 +679,19 @@ export function getScriptsJs(): string {
       colors.push(val >= 0 ? primary : errorColor);
     });
 
-    new Chart(canvas.getContext('2d'), {
+    var wfChartData = {
+      labels: labels,
+      datasets: [{
+        label: (config.data.datasets[0] || {}).label || 'Value',
+        data: floatingData,
+        backgroundColor: colors,
+        borderRadius: 4,
+        borderSkipped: false
+      }]
+    };
+    var wfInstance = new Chart(canvas.getContext('2d'), {
       type: 'bar',
-      data: {
-        labels: labels,
-        datasets: [{
-          label: (config.data.datasets[0] || {}).label || 'Value',
-          data: floatingData,
-          backgroundColor: colors,
-          borderRadius: 4,
-          borderSkipped: false
-        }]
-      },
+      data: JSON.parse(JSON.stringify(wfChartData)),
       options: {
         responsive: true,
         maintainAspectRatio: false,
@@ -622,6 +702,11 @@ export function getScriptsJs(): string {
         }
       }
     });
+    // Register for global filtering
+    if (sectionId) {
+      if (!sectionCharts[sectionId]) sectionCharts[sectionId] = [];
+      sectionCharts[sectionId].push({ id: config.id, config: config, instance: wfInstance, card: card, originalData: wfChartData });
+    }
   }
 
   // === GANTT RENDERER (horizontal stacked bars) ===
@@ -657,26 +742,43 @@ export function getScriptsJs(): string {
       if (ds.borderRadius === undefined) ds.borderRadius = 4;
     });
 
-    new Chart(canvas.getContext('2d'), {
+    var ganttData = JSON.parse(JSON.stringify(config.data));
+    var ganttInstance = new Chart(canvas.getContext('2d'), {
       type: 'bar',
-      data: JSON.parse(JSON.stringify(config.data)),
+      data: ganttData,
       options: opts
     });
+    // Register for global filtering
+    if (sectionId) {
+      if (!sectionCharts[sectionId]) sectionCharts[sectionId] = [];
+      sectionCharts[sectionId].push({ id: config.id, config: config, instance: ganttInstance, card: card, originalData: JSON.parse(JSON.stringify(config.data)) });
+    }
   }
 
   // === RENDER TABLE ===
-  function renderTable(container, config) {
+  function renderTable(container, config, sectionId) {
     var rows = config.rows || (config.generateRows ? generateTableRows(config.generateRows) : []);
     var card = el('div', { className: 'table-card' });
-    card.appendChild(el('h3', {}, config.title + ' (' + rows.length + ' records)'));
+    var countEl = el('h3', {}, config.title + ' (' + rows.length + ' records)');
+    card.appendChild(countEl);
 
     var scroll = el('div', { className: 'table-scroll' });
     var table = el('table', {});
 
     var thead = el('thead', {});
     var headerRow = el('tr', {});
-    config.columns.forEach(function(col) {
-      headerRow.appendChild(el('th', {}, col.label));
+    config.columns.forEach(function(col, colIdx) {
+      var th = el('th', {});
+      th.appendChild(document.createTextNode(col.label + ' '));
+      // Per-column filter icon
+      var filterBtn = el('button', { className: 'th-filter-btn', title: 'Filter ' + col.label });
+      filterBtn.innerHTML = '&#9662;';
+      filterBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        toggleColumnFilter(card, tbody, config.columns, colIdx, th);
+      });
+      th.appendChild(filterBtn);
+      headerRow.appendChild(th);
     });
     thead.appendChild(headerRow);
     table.appendChild(thead);
@@ -684,9 +786,13 @@ export function getScriptsJs(): string {
     var tbody = el('tbody', {});
     rows.forEach(function(row, idx) {
       var tr = el('tr', {});
+      var labelParts = [];
       config.columns.forEach(function(col) {
-        tr.appendChild(el('td', {}, String(row[col.key] != null ? row[col.key] : '')));
+        var val = String(row[col.key] != null ? row[col.key] : '');
+        tr.appendChild(el('td', {}, val));
+        labelParts.push(val);
       });
+      tr.setAttribute('data-labels', labelParts.join('|'));
       tr.onclick = function() {
         var fields = config.columns.map(function(col) {
           return { label: col.label, value: String(row[col.key] != null ? row[col.key] : '') };
@@ -699,6 +805,73 @@ export function getScriptsJs(): string {
     scroll.appendChild(table);
     card.appendChild(scroll);
     container.appendChild(card);
+
+    // Register table for global filtering
+    sectionTables.push({ tbody: tbody, columns: config.columns, title: config.title, countEl: countEl, sectionId: sectionId || null });
+  }
+
+  // === PER-COLUMN TABLE FILTER ===
+  var activeColumnFilters = {};
+
+  function toggleColumnFilter(card, tbody, columns, colIdx, thEl) {
+    // Close any existing dropdown
+    var existing = card.querySelector('.col-filter-dropdown');
+    if (existing) { existing.remove(); return; }
+
+    // Gather unique values for this column
+    var uniqueVals = {};
+    tbody.querySelectorAll('tr').forEach(function(row) {
+      var cells = row.querySelectorAll('td');
+      if (cells[colIdx]) {
+        var v = cells[colIdx].textContent.trim();
+        if (v) uniqueVals[v] = true;
+      }
+    });
+    var values = Object.keys(uniqueVals).sort();
+
+    var dropdown = el('div', { className: 'col-filter-dropdown' });
+    // "All" option
+    var allBtn = el('button', { className: 'col-filter-option active' }, '(All)');
+    allBtn.addEventListener('click', function() {
+      delete activeColumnFilters[colIdx];
+      applyColumnFilters(tbody, columns);
+      dropdown.remove();
+    });
+    dropdown.appendChild(allBtn);
+
+    values.forEach(function(val) {
+      var btn = el('button', { className: 'col-filter-option' }, val);
+      btn.addEventListener('click', function() {
+        activeColumnFilters[colIdx] = val;
+        applyColumnFilters(tbody, columns);
+        dropdown.remove();
+      });
+      dropdown.appendChild(btn);
+    });
+
+    thEl.style.position = 'relative';
+    thEl.appendChild(dropdown);
+
+    // Close on outside click
+    setTimeout(function() {
+      document.addEventListener('click', function closeDD(e) {
+        if (!dropdown.contains(e.target)) { dropdown.remove(); document.removeEventListener('click', closeDD); }
+      });
+    }, 0);
+  }
+
+  function applyColumnFilters(tbody, columns) {
+    tbody.querySelectorAll('tr').forEach(function(row) {
+      var cells = row.querySelectorAll('td');
+      var visible = true;
+      for (var ci in activeColumnFilters) {
+        if (activeColumnFilters.hasOwnProperty(ci)) {
+          var cellVal = cells[ci] ? cells[ci].textContent.trim() : '';
+          if (cellVal !== activeColumnFilters[ci]) { visible = false; break; }
+        }
+      }
+      row.style.display = visible ? '' : 'none';
+    });
   }
 
   // === DRILL-DOWN ===
@@ -1070,7 +1243,7 @@ export function getScriptsJs(): string {
       sectionEl.appendChild(chartsGrid);
     }
     if (section.tables && section.tables.length) {
-      section.tables.forEach(function(t) { renderTable(sectionEl, t); });
+      section.tables.forEach(function(t) { renderTable(sectionEl, t, section.id); });
     }
   }
 
@@ -1127,7 +1300,7 @@ export function getScriptsJs(): string {
 
     // Tables below
     if (section.tables && section.tables.length) {
-      section.tables.forEach(function(t) { renderTable(sectionEl, t); });
+      section.tables.forEach(function(t) { renderTable(sectionEl, t, section.id); });
     }
     // Remaining charts
     if (section.charts && section.charts.length > 2) {
@@ -1152,7 +1325,7 @@ export function getScriptsJs(): string {
       sectionEl.appendChild(chartsGrid);
     }
     if (section.tables && section.tables.length) {
-      section.tables.forEach(function(t) { renderTable(sectionEl, t); });
+      section.tables.forEach(function(t) { renderTable(sectionEl, t, section.id); });
     }
   }
 
@@ -1184,7 +1357,7 @@ export function getScriptsJs(): string {
       sectionEl.appendChild(chartsGrid);
     }
     if (section.tables && section.tables.length) {
-      section.tables.forEach(function(t) { renderTable(sectionEl, t); });
+      section.tables.forEach(function(t) { renderTable(sectionEl, t, section.id); });
     }
   }
 
@@ -1201,7 +1374,7 @@ export function getScriptsJs(): string {
     // Right: table
     var right = el('div', { className: 'map-table-right' });
     if (section.tables && section.tables.length) {
-      renderTable(right, section.tables[0]);
+      renderTable(right, section.tables[0], section.id);
     }
     panel.appendChild(right);
     sectionEl.appendChild(panel);
@@ -1213,7 +1386,7 @@ export function getScriptsJs(): string {
       sectionEl.appendChild(extra);
     }
     if (section.tables && section.tables.length > 1) {
-      for (var i = 1; i < section.tables.length; i++) { renderTable(sectionEl, section.tables[i]); }
+      for (var i = 1; i < section.tables.length; i++) { renderTable(sectionEl, section.tables[i], section.id); }
     }
   }
 

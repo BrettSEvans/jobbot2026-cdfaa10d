@@ -698,9 +698,9 @@ export default function DynamicMaterialsSection({
                 {showDashboardWelcome && (
                   <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/50 backdrop-blur-sm cursor-pointer" onClick={() => { setShowDashboardWelcome(false); localStorage.setItem("dashboard-welcome-dismissed", "1"); }}>
                     <div className="bg-background border border-primary/30 rounded-xl shadow-2xl p-8 max-w-md text-center space-y-4 animate-in fade-in zoom-in-95 duration-300" onClick={(e) => e.stopPropagation()}>
-                      {companyIconUrl ? (
+                      {app?.company_icon_url ? (
                         <div className="mx-auto w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
-                          <img src={companyIconUrl} alt={companyName || "Company"} className="w-10 h-10 object-contain" />
+                          <img src={app.company_icon_url} alt={companyName || "Company"} className="w-10 h-10 object-contain" />
                         </div>
                       ) : (
                         <div className="mx-auto w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">

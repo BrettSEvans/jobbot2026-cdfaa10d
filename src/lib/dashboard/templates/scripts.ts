@@ -1300,7 +1300,7 @@ export function getScriptsJs(): string {
 
     // Tables below
     if (section.tables && section.tables.length) {
-      section.tables.forEach(function(t) { renderTable(sectionEl, t); });
+      section.tables.forEach(function(t) { renderTable(sectionEl, t, section.id); });
     }
     // Remaining charts
     if (section.charts && section.charts.length > 2) {

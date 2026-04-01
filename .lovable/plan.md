@@ -1,45 +1,41 @@
 
-## Plan: Make Global/Page Filters Truly Refilter Data (Systemic Fix)
 
-### Diagnosis (why this is systemic)
-- Current global filters mostly **dim visuals** instead of changing underlying datasets.
-- Filtering uses broad string matching on `data-labels`, not filter-aware field logic (`filter.id` → data dimension).
-- Segmented/chip filters default to first value (often no “All”), so hidden filters are always active.
-- Multiple filters are combined with strict AND even when a visualization doesn’t contain those dimensions.
-- Generated dashboards can have filter options (e.g., US/CA/UK/EU) that don’t match row/chart vocab (e.g., North America/EMEA).
+## Plan: Server-Side Dashboard Output Validation
 
-### Implementation
+### Problem
+All parsing, repair, and validation currently happens client-side after the full stream is accumulated. If the AI produces malformed JSON, the client tries to fix it — but sometimes fails, resulting in raw code rendered in the iframe or silent errors. Moving validation to the server catches and repairs issues before they reach the UI.
 
-1. **Refactor filter engine in `src/lib/dashboard/templates/scripts.ts`**
-   - Introduce a structured `filterContext` and apply filtering by dimension, not plain substring.
-   - For each visualization, determine whether a selected filter is applicable; if not applicable, skip that filter for that viz (don’t dim by default).
+### Approach
+Change the edge function from a pass-through stream proxy to a **buffered validation pipeline**: consume the AI stream server-side, apply the same repair/validation logic, and return either clean validated JSON or a structured error.
 
-2. **Make table filtering truly data-driven**
-   - In table registry, store original row objects plus column-key metadata.
-   - Apply global filters against row fields (with dimension aliases like region/geo/country) and then render visible rows.
-   - Keep per-table count updates accurate after each filter change.
+### Changes
 
-3. **Make chart filtering actually change what is shown**
-   - For Chart.js and custom charts (heatmap/funnel/waterfall/gantt), store original chart data and rebuild filtered datasets/labels on selection.
-   - Keep “dim” behavior only as a fallback when partial match is intended; primary behavior is data subset/refilter.
+**`supabase/functions/generate-dashboard/index.ts`**
+- Instead of proxying `response.body` directly to the client, consume the SSE stream server-side and accumulate the full AI output
+- Add inline parsing/repair functions (adapted from `assembler.ts` for Deno):
+  - Strip markdown fences, extract JSON braces
+  - Sanitize `new Date()` expressions, trailing commas, unquoted keys
+  - Repair truncated JSON (bracket-counting closure)
+  - Validate required top-level fields: `meta`, `branding`, `navigation`, `sections`
+  - Validate each section has `id`, `title`, `metrics`, `charts`, `tables`
+  - Ensure `globalFilters` options start with "All"
+  - Ensure `navigation` includes `agentic-workforce` and `cfo-view` entries
+- Return validated JSON as `{ success: true, data: <DashboardData> }` on success
+- Return `{ success: false, error: "..." }` with details on irrecoverable failure
 
-4. **Fix filter state UX defaults**
-   - Ensure every filter type can reset to `All` (including segmented/chips by prepending `All` if missing).
-   - Add a clear/reset path so switching selections always recomputes from original data.
+**`src/lib/api/jobApplication.ts`**
+- Update `streamDashboardGeneration` to support both streaming and buffered response modes
+- If the response `Content-Type` is `application/json` (validated response), parse it directly instead of processing as SSE stream
 
-5. **Fix page-level table filter isolation**
-   - Scope `activeColumnFilters` per-table instance (currently global by column index, causing collisions).
-   - Ensure page-level filter + global filter compose deterministically.
+**`src/hooks/useDashboardEditor.ts`**
+- Simplify `onDone` handler: the server now guarantees valid JSON or a clear error — remove redundant client-side repair fallbacks
+- Keep `parseLlmJsonOutput` as a safety net but it should rarely be needed
 
-6. **Harden generation consistency in `supabase/functions/generate-dashboard/index.ts`**
-   - Update prompt rules so each global filter dimension is represented in section data fields/labels that should respond.
-   - Enforce value vocabulary alignment between filter options and generated data tokens (e.g., US/CA/UK/EU everywhere if chosen).
+### What stays the same
+- Client-side `parseLlmJsonOutput` and `repairTruncatedJson` remain as a defense-in-depth layer
+- The generation prompt in the edge function is unchanged
+- The refinement flow (`refine-dashboard`) is unchanged (separate concern)
 
-7. **Branding check for interactive popup**
-   - Confirm popup remains site-branded and company-branded consistently (logo/name fallback hierarchy), without regressing current behavior.
+### Trade-off
+The response is no longer streamed progressively — the client receives the full validated payload at once. The existing progress bar / "Generating..." UI still works since it shows during the request. This is acceptable because reliability is more important than showing partial JSON text.
 
-### Validation checklist (Plaid-specific)
-- In Competitive Landscape, switching Region US → CA → UK → EU visibly changes table/chart content (not just gray-out).
-- Changing one filter then another re-filters from original source data, not previously dimmed state.
-- `All` restores full data on current page and across pages.
-- Page-level column filters work independently per table and combine correctly with global filters.

@@ -266,6 +266,13 @@ body {
   max-height: 380px;
 }
 
+/* Radar / spider charts need more room for axis labels */
+.chart-container.chart-radar {
+  min-height: 400px;
+  height: 420px;
+  max-height: 480px;
+}
+
 /* Cross-chart filter badge */
 .chart-filter-badge {
   display: inline-flex;
@@ -567,6 +574,7 @@ body {
 }
 
 .split-right .chart-container { height: 200px; max-height: 200px; }
+.split-right .chart-container.chart-radar { height: 300px; max-height: 340px; }
 
 /* === LAYOUT: FULL WIDTH TIMELINE === */
 .full-width-chart {
@@ -606,6 +614,10 @@ body {
 .grid-card-chart .chart-container {
   height: 140px;
   max-height: 140px;
+}
+.grid-card-chart .chart-container.chart-radar {
+  height: 260px;
+  max-height: 300px;
 }
 
 .grid-card-chart h3 { display: none; }
@@ -869,6 +881,9 @@ input[type="range"]::-webkit-slider-thumb {
   position: relative;
   height: 300px;
   margin-top: 16px;
+}
+.cfo-chart-container.chart-radar {
+  height: 400px;
 }
 
 /* === CFO TOGGLE & SEGMENTED CONTROLS === */

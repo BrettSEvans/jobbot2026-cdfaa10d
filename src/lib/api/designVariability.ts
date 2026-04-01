@@ -5,6 +5,7 @@ export interface VariabilityResult {
   brandingScore: number;
   storytellingScore: number;
   styleScore: number;
+  interactivityScore: number;
   pairwiseScores: Array<{ asset1: string; asset2: string; similarity: number }>;
   structuralPatterns: Array<{ assetName: string; dominantPattern: string }>;
   narrativePatterns: Array<{ assetName: string; narrativeAngle: string }>;
@@ -29,6 +30,7 @@ export async function scoreDesignVariability(
     brandingScore: data.brandingScore ?? 0,
     storytellingScore: data.storytellingScore ?? 0,
     styleScore: data.styleScore ?? 0,
+    interactivityScore: data.interactivityScore ?? 0,
     pairwiseScores: data.pairwiseScores ?? [],
     structuralPatterns: data.structuralPatterns ?? [],
     narrativePatterns: data.narrativePatterns ?? [],
@@ -52,6 +54,7 @@ export function getCachedVariability(app: any): VariabilityResult | null {
     brandingScore: cached.brandingScore ?? 0,
     storytellingScore: cached.storytellingScore ?? 0,
     styleScore: cached.styleScore ?? 0,
+    interactivityScore: cached.interactivityScore ?? 0,
     pairwiseScores: cached.pairwiseScores ?? [],
     structuralPatterns: cached.structuralPatterns ?? [],
     narrativePatterns: cached.narrativePatterns ?? [],

@@ -71,7 +71,7 @@ export default function DesignVariabilityCard({ appId, assets, branding, cachedV
         <CollapsibleContent>
           {result && (
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-4 gap-3">
+              <div className="grid grid-cols-5 gap-3">
                 <div className="text-center">
                   <div className={`text-2xl font-bold ${scoreColor(result.overallScore)}`}>{result.overallScore}%</div>
                   <div className="text-xs text-muted-foreground">Layout</div>
@@ -87,6 +87,10 @@ export default function DesignVariabilityCard({ appId, assets, branding, cachedV
                 <div className="text-center">
                   <div className={`text-2xl font-bold ${scoreColor(result.styleScore)}`}>{result.styleScore}%</div>
                   <div className="text-xs text-muted-foreground">Style</div>
+                </div>
+                <div className="text-center">
+                  <div className={`text-2xl font-bold ${scoreColor(result.interactivityScore)}`}>{result.interactivityScore}%</div>
+                  <div className="text-xs text-muted-foreground">Interactivity</div>
                 </div>
               </div>
 

@@ -574,6 +574,7 @@ body {
 }
 
 .split-right .chart-container { height: 200px; max-height: 200px; }
+.split-right .chart-container.chart-radar { height: 300px; max-height: 340px; }
 
 /* === LAYOUT: FULL WIDTH TIMELINE === */
 .full-width-chart {

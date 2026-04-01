@@ -208,6 +208,7 @@ export function getScriptsJs(): string {
 
   // === CROSS-CHART FILTERING ===
   var sectionCharts = {};
+  var sectionTables = [];
 
   function addAlpha(color, alpha) {
     if (!color) return color;

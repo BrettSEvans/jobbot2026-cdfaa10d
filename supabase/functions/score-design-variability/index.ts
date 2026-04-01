@@ -43,13 +43,14 @@ Deno.serve(async (req) => {
       messages: [
         {
           role: 'system',
-          content: `You are a design analyst evaluating structural, visual, storytelling, and style diversity across a set of HTML documents generated for the same job application. 
+          content: `You are a design analyst evaluating structural, visual, storytelling, style, and interactivity diversity across a set of HTML documents generated for the same job application. 
 
 Evaluate these dimensions:
 
 ## 1. Layout Diversity (feeds into overallScore)
 - Do documents use different layout patterns (tables, timelines, grids, cards, charts, lists)?
 - Different header styles, section arrangements, color usage patterns?
+- For dashboards: do sections use different layout modes (kpi-spotlight, split-panel, full-width-timeline, grid-cards, map-table)?
 
 ## 2. Branding Consistency (feeds into brandingScore)
 - Do all documents appropriately use the company's brand colors/fonts?
@@ -65,6 +66,14 @@ Evaluate these dimensions:
 - **Visual rhythm**: Do documents vary in spacing patterns, section density, and content block sizing?
 - Penalize documents that share similar content-block sequencing or layout formats.
 
+## 5. Interactivity & Chart Diversity (feeds into interactivityScore)
+- For dashboards: evaluate variety of chart types used (bar, line, doughnut, heatmap, gantt, waterfall, funnel, radar, scatter, treemap)
+- Penalize if >50% of charts are bar/line
+- Award bonus for advanced chart types: gantt, heatmap, waterfall, funnel, treemap
+- Evaluate presence of cross-page global filters (dropdown, segmented, chips)
+- Evaluate interactive controls (sliders, toggles, segmented buttons in CFO scenarios)
+- For non-dashboard assets: evaluate presence of any interactive elements, expandable sections, hover effects
+
 ${brandingContext}
 
 Return ONLY valid JSON matching this schema:
@@ -73,6 +82,7 @@ Return ONLY valid JSON matching this schema:
   "brandingScore": <0-100, how well assets match company branding>,
   "storytellingScore": <0-100, higher = more narrative diversity and skill breadth>,
   "styleScore": <0-100, higher = more content flow and layout format variety>,
+  "interactivityScore": <0-100, higher = more chart type diversity, filters, and interactive controls>,
   "pairwiseScores": [{"asset1": "<name>", "asset2": "<name>", "similarity": <0-100>}],
   "structuralPatterns": [{"assetName": "<name>", "dominantPattern": "<description>"}],
   "narrativePatterns": [{"assetName": "<name>", "narrativeAngle": "<e.g. strategic leader, data-driven analyst>"}],

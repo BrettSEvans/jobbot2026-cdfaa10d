@@ -34,6 +34,7 @@ ${JSON.stringify(researchedSections, null, 2)}
 
 For each researched section:
 - Use the provided id, label, icon, and description exactly
+- Assign a UNIQUE "layout" mode to each section (see LAYOUT MODES below) — NO two adjacent sections may share the same layout
 - Generate metrics with realistic values matching the valueFormat hints
 - Generate chart data matching the chart specs (type, axes, datasets)
 - Generate table schemas matching the column definitions and use generateRows with the provided field types
@@ -42,13 +43,51 @@ For each researched section:
     : `
 SECTION REQUIREMENTS:
 - 6-8 sections covering: Overview, Pipeline/Revenue, Competitors, Customers, Products, Analytics, plus always include "agentic-workforce" and "cfo-view" in navigation
-- Each section: unique description, 3-5 metrics, 2-3 charts (VARY chart types), 1 table with generateRows count >= 500
+- Each section: unique description, 3-5 metrics, 2-3 charts (VARY chart types — see CHART TYPE DIVERSITY below), 1 table with generateRows count >= 500
+- Assign a UNIQUE "layout" mode to each section (see LAYOUT MODES below) — NO two adjacent sections may share the same layout
 - Include at least ONE horizontalBar chart (Gantt-style) with time-based labels
 `;
 
-  return `You are a business intelligence data architect. Generate a structured JSON object for a dashboard.
+  return `You are a business intelligence data architect and expert dashboard UX designer. Generate a structured JSON object for a dashboard that tells a DIVERSE visual story across sections.
 
 CRITICAL: Return ONLY the raw JSON object. Do NOT wrap it in HTML, script tags, or markdown fences. Do NOT generate a full HTML page. Start with { and end with }. No other output.
+
+## LAYOUT MODES
+Each section MUST have a "layout" field. Available modes:
+- "default" — metrics grid → charts side-by-side → table below (use for max 1-2 sections)
+- "kpi-spotlight" — one hero metric card (large, colored) + secondary metric cards. Best for overview/summary sections.
+- "split-panel" — 60/40 two-column: left has a large chart, right has stacked metrics + mini chart. Great for analysis sections.
+- "full-width-timeline" — metrics above, then a single full-width chart (gantt/horizontalBar/area). Best for timeline/roadmap data.
+- "grid-cards" — 3×2 card grid, each card has a metric + embedded mini chart. Best for multi-dimensional comparisons.
+- "map-table" — side-by-side: left has a heatmap/chart, right has a data table. Best for geographic or cross-dimensional data.
+
+RULES: No two adjacent sections may use the same layout. Use at least 4 different layouts across all sections.
+
+## CHART TYPE DIVERSITY
+Available chart types: "bar", "line", "doughnut", "pie", "radar", "scatter", "horizontalBar", "area", "gantt", "heatmap", "waterfall", "funnel"
+
+RULES:
+- Each section MUST use a different PRIMARY chart type from the previous section
+- No more than 30% of all charts should be bar or line charts
+- Include at least ONE of each: heatmap, gantt or horizontalBar, and one of waterfall/funnel across the entire dashboard
+- Chart type selection guide:
+  * "gantt" — project timelines, implementation phases, team workstreams (horizontal stacked bars with task labels)
+  * "heatmap" — cross-dimensional comparisons (region×quarter, product×metric). Data format: datasets = rows, labels = columns, data = cell values
+  * "waterfall" — financial breakdowns, revenue build-ups, cost attribution (incremental positive/negative values)
+  * "funnel" — pipeline conversion, hiring funnel, adoption stages (descending values)
+  * "radar" — multi-axis capability comparisons, competitive positioning
+  * "scatter" — correlation analysis, portfolio positioning
+  * "area" — cumulative trends, stacked composition over time
+
+## GLOBAL FILTERS
+Generate a "globalFilters" array with 3-4 filters relevant to the role/industry. These create a sticky filter bar for cross-page filtering.
+Format:
+"globalFilters": [
+  { "id": "region", "label": "Region", "type": "dropdown", "options": ["All", "NA", "EMEA", "APAC"] },
+  { "id": "quarter", "label": "Quarter", "type": "segmented", "options": ["Q1", "Q2", "Q3", "Q4"] },
+  { "id": "product", "label": "Product", "type": "chips", "options": ["Enterprise", "SMB", "Growth"] }
+]
+Filter types: "dropdown", "segmented", "chips". First option should be "All" for dropdowns.
 
 JSON SCHEMA (follow EXACTLY):
 {
@@ -73,6 +112,9 @@ JSON SCHEMA (follow EXACTLY):
     "fontHeading": "Google Font name",
     "fontBody": "Google Font name"
   },
+  "globalFilters": [
+    { "id": "string", "label": "string", "type": "dropdown|segmented|chips", "options": ["string"] }
+  ],
   "navigation": [
     { "id": "unique-id", "label": "Section Name", "icon": "material_icon_name" }
   ],
@@ -81,6 +123,7 @@ JSON SCHEMA (follow EXACTLY):
       "id": "matches navigation id",
       "title": "Section Title",
       "description": "Unique contextual description (2-3 sentences, specific to this section)",
+      "layout": "default|kpi-spotlight|split-panel|full-width-timeline|grid-cards|map-table",
       "metrics": [
         { "label": "Metric Name", "value": "$1.2M", "change": "+12%", "trend": "up|down|neutral" }
       ],
@@ -88,7 +131,7 @@ JSON SCHEMA (follow EXACTLY):
         {
           "id": "unique-chart-id",
           "title": "Chart Title",
-          "type": "bar|line|doughnut|pie|radar|scatter|horizontalBar|area",
+          "type": "bar|line|doughnut|pie|radar|scatter|horizontalBar|area|gantt|heatmap|waterfall|funnel",
           "data": {
             "labels": ["Label1", "Label2"],
             "datasets": [{
@@ -156,6 +199,10 @@ ${sectionInstructions}
 - Chart datasets: use contextual colors derived from branding, not random colors
 - CONTRAST REQUIREMENT: The "outline" color is used for secondary text (labels, descriptions). It MUST have at least 4.5:1 contrast ratio against the "surface" background. Use a dark value like #49454F or darker — never lighter than #5F5F6F. Avoid light greys (#79747E or lighter) for any text on light backgrounds.
 - Table generateRows fields: use company-specific options (competitor names, product names, region names from context)
+- HEATMAP DATA FORMAT: For heatmap charts, datasets are rows (each with a label), labels are columns, and each dataset's data array contains the cell values for that row.
+- WATERFALL DATA FORMAT: For waterfall charts, provide a single dataset with incremental values (positive and negative). The rendering engine calculates floating bars automatically.
+- FUNNEL DATA FORMAT: For funnel charts, provide descending values in a single dataset. Labels are the funnel stages.
+- GANTT DATA FORMAT: For gantt charts, use multiple datasets (phases/workstreams) with stacked horizontal bars. Labels are task names.
 ${brandingContext}
 ${competitorContext}
 ${customerContext}

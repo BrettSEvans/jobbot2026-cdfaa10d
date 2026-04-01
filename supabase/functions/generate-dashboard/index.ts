@@ -1,10 +1,185 @@
-import { errorResponse } from "../_shared/errorResponse.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
+
+// ─── Server-side JSON repair & validation ───
+
+/** Strip markdown fences and extract the outermost JSON object */
+function extractJsonString(raw: string): string {
+  // Remove markdown fences
+  let s = raw.replace(/```(?:json)?\s*/gi, '').replace(/```/g, '').trim();
+  // Find first { and last }
+  const start = s.indexOf('{');
+  const end = s.lastIndexOf('}');
+  if (start === -1) return s;
+  if (end === -1) return s.slice(start);
+  return s.slice(start, end + 1);
+}
+
+/** Sanitize JS-isms that break JSON.parse */
+function sanitizeJsonString(s: string): string {
+  // Replace new Date(...) with string
+  s = s.replace(/new\s+Date\([^)]*\)/g, '"2026-01-01"');
+  // Remove trailing commas before } or ]
+  s = s.replace(/,(\s*[}\]])/g, '$1');
+  // Quote unquoted keys (simple heuristic)
+  s = s.replace(/([{,]\s*)([a-zA-Z_$][\w$]*)\s*:/g, '$1"$2":');
+  return s;
+}
+
+/** Attempt to close truncated JSON by counting brackets */
+function repairTruncatedJson(s: string): string {
+  let inString = false;
+  let escape = false;
+  const stack: string[] = [];
+
+  for (let i = 0; i < s.length; i++) {
+    const ch = s[i];
+    if (escape) { escape = false; continue; }
+    if (ch === '\\' && inString) { escape = true; continue; }
+    if (ch === '"') { inString = !inString; continue; }
+    if (inString) continue;
+    if (ch === '{') stack.push('}');
+    else if (ch === '[') stack.push(']');
+    else if (ch === '}' || ch === ']') {
+      if (stack.length && stack[stack.length - 1] === ch) stack.pop();
+    }
+  }
+
+  // Close any unclosed string
+  if (inString) s += '"';
+
+  // Remove any trailing comma before we close brackets
+  s = s.replace(/,\s*$/, '');
+
+  // Close unclosed brackets in reverse order
+  while (stack.length) s += stack.pop();
+
+  return s;
+}
+
+/** Full parse pipeline: extract → sanitize → repair → parse */
+function parseAiJson(raw: string): any | null {
+  const extracted = extractJsonString(raw);
+  const sanitized = sanitizeJsonString(extracted);
+
+  // First attempt
+  try { return JSON.parse(sanitized); } catch (_) { /* continue */ }
+
+  // Second attempt with repair
+  const repaired = repairTruncatedJson(sanitized);
+  try { return JSON.parse(repaired); } catch (_) { /* continue */ }
+
+  // Third attempt: strip control chars
+  const cleaned = repaired.replace(/[\x00-\x1F\x7F]/g, (c) => c === '\n' || c === '\r' || c === '\t' ? c : '');
+  try { return JSON.parse(cleaned); } catch (_) { return null; }
+}
+
+/** Validate the dashboard schema and auto-repair common issues */
+function validateAndRepair(data: any): { valid: boolean; data?: any; errors: string[] } {
+  const errors: string[] = [];
+
+  if (!data || typeof data !== 'object') {
+    return { valid: false, errors: ['Parsed result is not an object'] };
+  }
+
+  // Required top-level fields
+  if (!data.meta) { data.meta = { companyName: 'Unknown', jobTitle: 'Unknown', department: 'General' }; errors.push('Added missing meta'); }
+  if (!data.branding) { errors.push('Missing branding'); }
+  if (!data.navigation || !Array.isArray(data.navigation)) { errors.push('Missing navigation'); return { valid: false, data, errors }; }
+  if (!data.sections || !Array.isArray(data.sections)) { errors.push('Missing sections'); return { valid: false, data, errors }; }
+
+  // Ensure navigation has agentic-workforce and cfo-view
+  const navIds = new Set(data.navigation.map((n: any) => n.id));
+  if (!navIds.has('agentic-workforce')) {
+    data.navigation.push({ id: 'agentic-workforce', label: 'Agentic Workforce', icon: 'smart_toy' });
+    errors.push('Added missing agentic-workforce nav');
+  }
+  if (!navIds.has('cfo-view')) {
+    data.navigation.push({ id: 'cfo-view', label: 'CFO View', icon: 'account_balance' });
+    errors.push('Added missing cfo-view nav');
+  }
+
+  // Ensure globalFilters options start with "All"
+  if (Array.isArray(data.globalFilters)) {
+    for (const f of data.globalFilters) {
+      if (Array.isArray(f.options) && f.options[0] !== 'All') {
+        f.options.unshift('All');
+        errors.push(`Prepended "All" to filter ${f.id}`);
+      }
+    }
+  }
+
+  // Validate sections
+  for (const sec of data.sections) {
+    if (!sec.id) { errors.push('Section missing id'); }
+    if (!sec.title) { errors.push('Section missing title'); }
+    if (!sec.metrics) sec.metrics = [];
+    if (!sec.charts) sec.charts = [];
+    if (!sec.tables) sec.tables = [];
+  }
+
+  // Ensure agenticWorkforce and cfoScenarios exist (even if empty)
+  if (!data.agenticWorkforce) { data.agenticWorkforce = []; errors.push('Added empty agenticWorkforce'); }
+  if (!data.cfoScenarios) { data.cfoScenarios = []; errors.push('Added empty cfoScenarios'); }
+
+  return { valid: true, data, errors };
+}
+
+/** Consume an SSE stream and accumulate content deltas */
+async function consumeSseStream(body: ReadableStream<Uint8Array>): Promise<string> {
+  const reader = body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let accumulated = '';
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+
+    let idx: number;
+    while ((idx = buffer.indexOf('\n')) !== -1) {
+      let line = buffer.slice(0, idx);
+      buffer = buffer.slice(idx + 1);
+      if (line.endsWith('\r')) line = line.slice(0, -1);
+      if (line.startsWith(':') || line.trim() === '') continue;
+      if (!line.startsWith('data: ')) continue;
+
+      const json = line.slice(6).trim();
+      if (json === '[DONE]') break;
+
+      try {
+        const parsed = JSON.parse(json);
+        const content = parsed.choices?.[0]?.delta?.content;
+        if (content) accumulated += content;
+      } catch { /* skip unparseable chunk */ }
+    }
+  }
+
+  // Flush remaining buffer
+  if (buffer.trim()) {
+    for (let raw of buffer.split('\n')) {
+      if (!raw) continue;
+      if (raw.endsWith('\r')) raw = raw.slice(0, -1);
+      if (!raw.startsWith('data: ')) continue;
+      const json = raw.slice(6).trim();
+      if (json === '[DONE]') continue;
+      try {
+        const parsed = JSON.parse(json);
+        const content = parsed.choices?.[0]?.delta?.content;
+        if (content) accumulated += content;
+      } catch { /* skip */ }
+    }
+  }
+
+  return accumulated;
+}
+
+// ─── System prompt builder (unchanged) ───
 
 function buildSystemPrompt(branding: any, competitors: string[], customers: string[], products: string[], department: string, companyName: string, jobTitle: string, researchedSections?: any[]): string {
   const brandingContext = branding ? `
@@ -21,7 +196,6 @@ Use the dominant extracted colors as the seed for the Material You tonal palette
   const customerContext = customers?.length ? `\nTarget Customers: ${customers.join(', ')}` : '';
   const productContext = products?.length ? `\nCompany Products: ${products.join(', ')}` : '';
 
-  // If we have researched sections, use them as the blueprint
   const sectionInstructions = researchedSections?.length
     ? `
 SECTION BLUEPRINT (from Research Agent):
@@ -241,14 +415,12 @@ serve(async (req) => {
       );
     }
 
-    // Apply user color overrides to branding if provided
     const effectiveBranding = userColors
       ? { ...branding, colors: { ...(branding?.colors || {}), primary: userColors.primary, secondary: userColors.secondary }, userColors }
       : branding;
 
     const systemPrompt = buildSystemPrompt(effectiveBranding, competitors, customers, products, department || 'General', companyName || 'Unknown', jobTitle || 'Unknown', researchedSections);
 
-    // Add CFO scenario instructions if user selected specific ones
     const cfoContext = selectedCfoScenarios?.length
       ? `\n\nUSER-SELECTED CFO SCENARIOS (use these exact scenarios, fill in realistic data, ALL charts must use $ currency labels on Y-axis):\n${JSON.stringify(selectedCfoScenarios, null, 2)}`
       : '\n\nAll CFO scenario charts must use $ currency labels on Y-axis values.';
@@ -292,9 +464,47 @@ serve(async (req) => {
       });
     }
 
-    return new Response(response.body, {
-      headers: { ...corsHeaders, 'Content-Type': 'text/event-stream' },
+    // ─── Buffer the stream, parse, validate, return clean JSON ───
+    if (!response.body) {
+      return new Response(JSON.stringify({ success: false, error: 'No response body from AI' }), {
+        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    console.log('[generate-dashboard] Consuming AI stream...');
+    const rawOutput = await consumeSseStream(response.body);
+    console.log('[generate-dashboard] Stream consumed, length:', rawOutput.length);
+
+    if (!rawOutput.trim()) {
+      return new Response(JSON.stringify({ success: false, error: 'AI returned empty response' }), {
+        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const parsed = parseAiJson(rawOutput);
+    if (!parsed) {
+      console.error('[generate-dashboard] JSON parse failed. First 500 chars:', rawOutput.slice(0, 500));
+      return new Response(JSON.stringify({ success: false, error: 'AI response could not be parsed as JSON. Please regenerate.' }), {
+        status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const validation = validateAndRepair(parsed);
+    if (validation.errors.length) {
+      console.log('[generate-dashboard] Validation repairs:', validation.errors);
+    }
+
+    if (!validation.valid) {
+      console.error('[generate-dashboard] Validation failed:', validation.errors);
+      return new Response(JSON.stringify({ success: false, error: `Dashboard validation failed: ${validation.errors.join('; ')}` }), {
+        status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    return new Response(JSON.stringify({ success: true, data: validation.data }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
+
   } catch (e) {
     console.error('Dashboard generation error:', e);
     return new Response(

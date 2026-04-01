@@ -453,8 +453,8 @@ export function getScriptsJs(): string {
     var type = config.type;
 
     // Delegate to custom renderers for non-Chart.js types
-    if (type === 'heatmap') { renderHeatmap(container, config); return; }
-    if (type === 'funnel') { renderFunnel(container, config); return; }
+    if (type === 'heatmap') { renderHeatmap(container, config, sectionId); return; }
+    if (type === 'funnel') { renderFunnel(container, config, sectionId); return; }
     if (type === 'waterfall') { renderWaterfall(container, config, sectionId); return; }
     if (type === 'gantt') { renderGantt(container, config, sectionId); return; }
 

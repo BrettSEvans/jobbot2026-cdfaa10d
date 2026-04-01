@@ -10,6 +10,7 @@ export interface DashboardData {
   sections: DashboardSection[];
   agenticWorkforce: AgenticAgent[];
   cfoScenarios: CFOScenario[];
+  globalFilters?: GlobalFilter[];
 }
 
 export interface DashboardMeta {
@@ -45,6 +46,7 @@ export interface DashboardSection {
   id: string;
   title: string;
   description: string;
+  layout?: "default" | "kpi-spotlight" | "split-panel" | "full-width-timeline" | "grid-cards" | "map-table";
   metrics?: MetricItem[];
   charts?: ChartConfig[];
   tables?: TableConfig[];
@@ -68,7 +70,12 @@ export interface ChartConfig {
     | "radar"
     | "scatter"
     | "horizontalBar"
-    | "area";
+    | "area"
+    | "gantt"
+    | "heatmap"
+    | "treemap"
+    | "waterfall"
+    | "funnel";
   data: {
     labels: string[];
     datasets: ChartDataset[];
@@ -147,4 +154,11 @@ export interface SliderConfig {
   unit: string;
   controlType?: "slider" | "toggle" | "segmented";
   options?: Array<{ label: string; value: number }>;
+}
+
+export interface GlobalFilter {
+  id: string;
+  label: string;
+  type: "dropdown" | "segmented" | "chips";
+  options: string[];
 }

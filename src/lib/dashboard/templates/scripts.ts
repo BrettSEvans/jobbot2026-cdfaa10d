@@ -250,7 +250,6 @@ export function getScriptsJs(): string {
       var inst = entry.instance;
       if (!inst) return;
 
-      // Add badge to companion
       var compBadge = el('div', { className: 'chart-filter-badge' });
       compBadge.appendChild(document.createTextNode('Filtered: ' + label));
       var clrBtn = el('button', { onclick: function(e) { e.stopPropagation(); clearCrossFilter(sectionId); } }, '\\u00D7');
@@ -258,7 +257,6 @@ export function getScriptsJs(): string {
       var h3c = entry.card.querySelector('h3');
       if (h3c) h3c.after(compBadge); else entry.card.prepend(compBadge);
 
-      // Dim non-matching segments
       inst.data.datasets.forEach(function(ds, dsIdx) {
         var origDs = entry.originalData.datasets[dsIdx];
         if (!origDs) return;
@@ -290,8 +288,132 @@ export function getScriptsJs(): string {
     });
   }
 
+  // === GLOBAL FILTER STATE ===
+  var globalFilterState = {};
+
+  function buildGlobalFilterBar(filters) {
+    if (!filters || !filters.length) return;
+    var bar = el('div', { className: 'global-filter-bar' });
+    filters.forEach(function(f) {
+      var group = el('div', { className: 'gf-group' });
+      group.appendChild(el('span', { className: 'gf-label' }, f.label));
+
+      if (f.type === 'dropdown') {
+        var select = document.createElement('select');
+        select.className = 'gf-select';
+        f.options.forEach(function(opt) {
+          var option = document.createElement('option');
+          option.value = opt;
+          option.textContent = opt;
+          select.appendChild(option);
+        });
+        select.addEventListener('change', function() {
+          globalFilterState[f.id] = this.value;
+          applyGlobalFilters();
+        });
+        globalFilterState[f.id] = f.options[0];
+        group.appendChild(select);
+      } else if (f.type === 'segmented') {
+        var wrap = el('div', { className: 'gf-segmented' });
+        f.options.forEach(function(opt, idx) {
+          var btn = el('button', { className: 'gf-seg-btn' + (idx === 0 ? ' active' : ''), 'data-value': opt }, opt);
+          btn.addEventListener('click', function() {
+            wrap.querySelectorAll('.gf-seg-btn').forEach(function(b) { b.classList.remove('active'); });
+            this.classList.add('active');
+            globalFilterState[f.id] = opt;
+            applyGlobalFilters();
+          });
+          wrap.appendChild(btn);
+        });
+        globalFilterState[f.id] = f.options[0];
+        group.appendChild(wrap);
+      } else if (f.type === 'chips') {
+        var wrap = el('div', { className: 'gf-chips' });
+        f.options.forEach(function(opt, idx) {
+          var chip = el('button', { className: 'gf-chip' + (idx === 0 ? ' active' : ''), 'data-value': opt }, opt);
+          chip.addEventListener('click', function() {
+            wrap.querySelectorAll('.gf-chip').forEach(function(b) { b.classList.remove('active'); });
+            this.classList.add('active');
+            globalFilterState[f.id] = opt;
+            applyGlobalFilters();
+          });
+          wrap.appendChild(chip);
+        });
+        globalFilterState[f.id] = f.options[0];
+        group.appendChild(wrap);
+      }
+
+      bar.appendChild(group);
+    });
+    var topBar = document.getElementById('top-bar');
+    topBar.after(bar);
+  }
+
+  function applyGlobalFilters() {
+    var activeValues = [];
+    for (var k in globalFilterState) {
+      if (globalFilterState.hasOwnProperty(k)) {
+        var v = globalFilterState[k];
+        if (v && v !== 'All') activeValues.push(v);
+      }
+    }
+    if (!activeValues.length) {
+      // Reset all charts
+      for (var sid in sectionCharts) {
+        if (sectionCharts.hasOwnProperty(sid)) clearCrossFilter(sid);
+      }
+      return;
+    }
+    // Apply filter label matching across all sections
+    for (var sid in sectionCharts) {
+      if (!sectionCharts.hasOwnProperty(sid)) continue;
+      var charts = sectionCharts[sid];
+      charts.forEach(function(entry) {
+        var badge = entry.card.querySelector('.chart-filter-badge');
+        if (badge) badge.remove();
+        entry.card.classList.remove('filtered-dimmed', 'filtered-active');
+
+        var inst = entry.instance;
+        if (!inst) return;
+
+        var labels = entry.originalData.labels;
+        var hasMatch = false;
+        for (var i = 0; i < labels.length; i++) {
+          for (var j = 0; j < activeValues.length; j++) {
+            if (labels[i] && labels[i].indexOf(activeValues[j]) !== -1) { hasMatch = true; break; }
+          }
+          if (hasMatch) break;
+        }
+
+        if (!hasMatch) { entry.card.classList.add('filtered-dimmed'); return; }
+
+        inst.data.datasets.forEach(function(ds, dsIdx) {
+          var origDs = entry.originalData.datasets[dsIdx];
+          if (!origDs) return;
+          if (Array.isArray(origDs.backgroundColor)) {
+            ds.backgroundColor = origDs.backgroundColor.map(function(c, i) {
+              var lbl = labels[i] || '';
+              var match = false;
+              for (var j = 0; j < activeValues.length; j++) { if (lbl.indexOf(activeValues[j]) !== -1) { match = true; break; } }
+              return match ? c : addAlpha(c, 0.12);
+            });
+          }
+        });
+        inst.update('none');
+      });
+    }
+  }
+
   // === RENDER CHART ===
   function renderChart(container, config, sectionId) {
+    var type = config.type;
+
+    // Delegate to custom renderers for non-Chart.js types
+    if (type === 'heatmap') { renderHeatmap(container, config); return; }
+    if (type === 'funnel') { renderFunnel(container, config); return; }
+    if (type === 'waterfall') { renderWaterfall(container, config, sectionId); return; }
+    if (type === 'gantt') { renderGantt(container, config, sectionId); return; }
+
     var card = el('div', { className: 'chart-card' });
     card.appendChild(el('h3', {}, config.title));
     var chartDiv = el('div', { className: 'chart-container' });
@@ -302,7 +424,6 @@ export function getScriptsJs(): string {
 
     if (typeof Chart === 'undefined') return;
 
-    var type = config.type;
     var opts = {
       responsive: true,
       maintainAspectRatio: false,
@@ -316,6 +437,11 @@ export function getScriptsJs(): string {
     if (type === 'horizontalBar') { type = 'bar'; opts.indexAxis = 'y'; }
     else if (config.indexAxis) { opts.indexAxis = config.indexAxis; }
     if (type === 'area') { type = 'line'; config.data.datasets.forEach(function(ds) { ds.fill = true; }); }
+
+    if (type === 'treemap' && typeof Chart !== 'undefined' && !Chart.controllers.treemap) {
+      // Treemap plugin not loaded — fallback to bar
+      type = 'bar';
+    }
 
     if (type === 'bar' || type === 'line') {
       opts.scales = {
@@ -366,6 +492,178 @@ export function getScriptsJs(): string {
     };
   }
 
+  // === HEATMAP RENDERER (pure HTML/CSS) ===
+  function renderHeatmap(container, config) {
+    var card = el('div', { className: 'chart-card heatmap-card' });
+    card.appendChild(el('h3', {}, config.title));
+
+    var labels = config.data.labels || [];
+    var datasets = config.data.datasets || [];
+    var primary = getComputedStyle(document.documentElement).getPropertyValue('--md-primary').trim() || '#6750A4';
+
+    // Build grid: rows = datasets, cols = labels
+    var allValues = [];
+    datasets.forEach(function(ds) { (ds.data || []).forEach(function(v) { if (typeof v === 'number') allValues.push(v); }); });
+    var minVal = Math.min.apply(null, allValues);
+    var maxVal = Math.max.apply(null, allValues);
+    var range = maxVal - minVal || 1;
+
+    var grid = el('div', { className: 'heatmap-grid' });
+    // Header row
+    var headerRow = el('div', { className: 'heatmap-row heatmap-header' });
+    headerRow.appendChild(el('div', { className: 'heatmap-cell heatmap-label' }, ''));
+    labels.forEach(function(lbl) { headerRow.appendChild(el('div', { className: 'heatmap-cell heatmap-col-label' }, lbl)); });
+    grid.appendChild(headerRow);
+
+    datasets.forEach(function(ds) {
+      var row = el('div', { className: 'heatmap-row' });
+      row.appendChild(el('div', { className: 'heatmap-cell heatmap-label' }, ds.label));
+      (ds.data || []).forEach(function(val, i) {
+        var intensity = typeof val === 'number' ? (val - minVal) / range : 0;
+        var cell = el('div', { className: 'heatmap-cell heatmap-value' });
+        cell.style.backgroundColor = addAlpha(primary, 0.1 + intensity * 0.8);
+        cell.style.color = intensity > 0.5 ? '#fff' : 'inherit';
+        cell.textContent = typeof val === 'number' ? val.toLocaleString() : String(val);
+        cell.title = ds.label + ' / ' + (labels[i] || '') + ': ' + val;
+        row.appendChild(cell);
+      });
+      grid.appendChild(row);
+    });
+
+    card.appendChild(grid);
+
+    // Legend
+    var legend = el('div', { className: 'heatmap-legend' });
+    legend.appendChild(el('span', {}, 'Low'));
+    for (var i = 0; i <= 4; i++) {
+      var swatch = el('div', { className: 'heatmap-swatch' });
+      swatch.style.backgroundColor = addAlpha(primary, 0.1 + (i / 4) * 0.8);
+      legend.appendChild(swatch);
+    }
+    legend.appendChild(el('span', {}, 'High'));
+    card.appendChild(legend);
+    container.appendChild(card);
+  }
+
+  // === FUNNEL RENDERER (pure CSS) ===
+  function renderFunnel(container, config) {
+    var card = el('div', { className: 'chart-card funnel-card' });
+    card.appendChild(el('h3', {}, config.title));
+
+    var labels = config.data.labels || [];
+    var values = (config.data.datasets[0] || {}).data || [];
+    var maxVal = Math.max.apply(null, values) || 1;
+    var primary = getComputedStyle(document.documentElement).getPropertyValue('--md-primary').trim() || '#6750A4';
+
+    var funnel = el('div', { className: 'funnel-container' });
+    labels.forEach(function(lbl, i) {
+      var pct = (values[i] || 0) / maxVal * 100;
+      var step = el('div', { className: 'funnel-step' });
+      var bar = el('div', { className: 'funnel-bar' });
+      bar.style.width = pct + '%';
+      var hue = (i * 35 + 200) % 360;
+      bar.style.backgroundColor = 'hsl(' + hue + ', 55%, 55%)';
+      var text = el('span', { className: 'funnel-text' }, lbl + ': ' + (values[i] || 0).toLocaleString());
+      bar.appendChild(text);
+      step.appendChild(bar);
+      funnel.appendChild(step);
+    });
+    card.appendChild(funnel);
+    container.appendChild(card);
+  }
+
+  // === WATERFALL RENDERER (Chart.js floating bars) ===
+  function renderWaterfall(container, config, sectionId) {
+    var card = el('div', { className: 'chart-card' });
+    card.appendChild(el('h3', {}, config.title));
+    var chartDiv = el('div', { className: 'chart-container' });
+    var canvas = el('canvas', { id: 'chart-' + config.id });
+    chartDiv.appendChild(canvas);
+    card.appendChild(chartDiv);
+    container.appendChild(card);
+
+    if (typeof Chart === 'undefined') return;
+
+    var labels = config.data.labels || [];
+    var rawData = (config.data.datasets[0] || {}).data || [];
+    var primary = getComputedStyle(document.documentElement).getPropertyValue('--md-primary').trim() || '#6750A4';
+    var errorColor = getComputedStyle(document.documentElement).getPropertyValue('--md-error').trim() || '#B3261E';
+
+    // Calculate running totals for floating bars
+    var floatingData = [];
+    var colors = [];
+    var running = 0;
+    rawData.forEach(function(val, i) {
+      var start = running;
+      running += val;
+      floatingData.push([Math.min(start, running), Math.max(start, running)]);
+      colors.push(val >= 0 ? primary : errorColor);
+    });
+
+    new Chart(canvas.getContext('2d'), {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: (config.data.datasets[0] || {}).label || 'Value',
+          data: floatingData,
+          backgroundColor: colors,
+          borderRadius: 4,
+          borderSkipped: false
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(0,0,0,0.8)', padding: 12, cornerRadius: 8 } },
+        scales: {
+          x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+          y: { grid: { color: 'rgba(0,0,0,0.06)' }, ticks: { font: { size: 11 } } }
+        }
+      }
+    });
+  }
+
+  // === GANTT RENDERER (horizontal stacked bars) ===
+  function renderGantt(container, config, sectionId) {
+    var card = el('div', { className: 'chart-card' });
+    card.appendChild(el('h3', {}, config.title));
+    var chartDiv = el('div', { className: 'chart-container gantt-container' });
+    var canvas = el('canvas', { id: 'chart-' + config.id });
+    chartDiv.appendChild(canvas);
+    card.appendChild(chartDiv);
+    container.appendChild(card);
+
+    if (typeof Chart === 'undefined') return;
+
+    var primary = getComputedStyle(document.documentElement).getPropertyValue('--md-primary').trim() || '#6750A4';
+
+    var opts = {
+      responsive: true,
+      maintainAspectRatio: false,
+      indexAxis: 'y',
+      plugins: {
+        legend: { position: 'bottom', labels: { padding: 16, usePointStyle: true, font: { size: 12 } } },
+        tooltip: { backgroundColor: 'rgba(0,0,0,0.8)', padding: 12, cornerRadius: 8 }
+      },
+      scales: {
+        x: { stacked: true, grid: { color: 'rgba(0,0,0,0.06)' }, ticks: { font: { size: 11 } } },
+        y: { stacked: true, grid: { display: false }, ticks: { font: { size: 11 } } }
+      }
+    };
+
+    config.data.datasets.forEach(function(ds) {
+      if (ds.borderWidth === undefined) ds.borderWidth = 1;
+      if (ds.borderRadius === undefined) ds.borderRadius = 4;
+    });
+
+    new Chart(canvas.getContext('2d'), {
+      type: 'bar',
+      data: JSON.parse(JSON.stringify(config.data)),
+      options: opts
+    });
+  }
+
   // === RENDER TABLE ===
   function renderTable(container, config) {
     var rows = config.rows || (config.generateRows ? generateTableRows(config.generateRows) : []);
@@ -405,14 +703,14 @@ export function getScriptsJs(): string {
 
   // === DRILL-DOWN ===
   var MOCK_NOTES = [
-    'Trending above forecast — monitor for sustained momentum.',
+    'Trending above forecast \\u2014 monitor for sustained momentum.',
     'Review scheduled for next quarter. Stakeholder alignment in progress.',
     'Key dependency on vendor timeline. Risk mitigation plan active.',
     'Performance exceeds benchmark by 12%. Recommend expanding scope.',
-    'Under review — awaiting executive sign-off on budget allocation.',
+    'Under review \\u2014 awaiting executive sign-off on budget allocation.',
     'Strong quarter-over-quarter improvement. Team capacity at 85%.',
     'Flagged for deep-dive in upcoming board presentation.',
-    'Cross-functional initiative — coordinating with 3 departments.',
+    'Cross-functional initiative \\u2014 coordinating with 3 departments.',
     'Pilot phase complete. Results support full rollout recommendation.',
     'Budget reallocation pending. Impact analysis submitted to finance.'
   ];
@@ -436,7 +734,6 @@ export function getScriptsJs(): string {
       body.appendChild(field);
     });
 
-    // Add mock notes section
     var noteIdx = Math.abs(title.split('').reduce(function(a, c) { return a + c.charCodeAt(0); }, 0)) % MOCK_NOTES.length;
     var notesSection = el('div', { className: 'drilldown-notes' });
     notesSection.appendChild(el('h4', { className: 'drilldown-notes-title' }, 'Notes & Context'));
@@ -508,7 +805,6 @@ export function getScriptsJs(): string {
       scenario.sliders.forEach(function(slider, sliderIdx) {
         sliderValues[slider.id] = slider['default'];
 
-        // Alternate between slider, toggle, and segmented controls
         var controlType = slider.controlType || (sliderIdx % 3 === 1 ? 'toggle' : (sliderIdx % 3 === 2 ? 'segmented' : 'slider'));
 
         if (controlType === 'toggle' && slider.options && slider.options.length === 2) {
@@ -579,7 +875,6 @@ export function getScriptsJs(): string {
 
       card.appendChild(controlsDiv);
 
-      // Rotate chart types across scenarios for visual variety
       var chartType = scenario.chartType || CFO_CHART_TYPES[sIdx % CFO_CHART_TYPES.length];
       var isRadial = (chartType === 'doughnut' || chartType === 'radar');
 
@@ -734,41 +1029,215 @@ export function getScriptsJs(): string {
     }, 3000);
   }
 
+  // === LAYOUT RENDERERS ===
+  var LAYOUT_LIST = ['default','kpi-spotlight','split-panel','full-width-timeline','grid-cards','map-table'];
+
+  function renderSectionWithLayout(section, sectionEl) {
+    var layout = section.layout || 'default';
+
+    var headerDiv = el('div', { className: 'section-header' });
+    headerDiv.appendChild(el('h2', {}, section.title));
+    headerDiv.appendChild(el('p', {}, section.description));
+    sectionEl.appendChild(headerDiv);
+
+    switch (layout) {
+      case 'kpi-spotlight':
+        renderLayoutKpiSpotlight(section, sectionEl);
+        break;
+      case 'split-panel':
+        renderLayoutSplitPanel(section, sectionEl);
+        break;
+      case 'full-width-timeline':
+        renderLayoutFullWidthTimeline(section, sectionEl);
+        break;
+      case 'grid-cards':
+        renderLayoutGridCards(section, sectionEl);
+        break;
+      case 'map-table':
+        renderLayoutMapTable(section, sectionEl);
+        break;
+      default:
+        renderLayoutDefault(section, sectionEl);
+        break;
+    }
+  }
+
+  function renderLayoutDefault(section, sectionEl) {
+    renderMetrics(sectionEl, section.metrics);
+    if (section.charts && section.charts.length) {
+      var chartsGrid = el('div', { className: 'charts-grid' });
+      section.charts.forEach(function(c) { renderChart(chartsGrid, c, section.id); });
+      sectionEl.appendChild(chartsGrid);
+    }
+    if (section.tables && section.tables.length) {
+      section.tables.forEach(function(t) { renderTable(sectionEl, t); });
+    }
+  }
+
+  function renderLayoutKpiSpotlight(section, sectionEl) {
+    var metrics = section.metrics || [];
+    if (metrics.length) {
+      var spotlight = el('div', { className: 'kpi-spotlight-container' });
+      // Hero metric
+      var hero = el('div', { className: 'kpi-hero' });
+      hero.appendChild(el('span', { className: 'metric-label' }, metrics[0].label));
+      hero.appendChild(el('span', { className: 'kpi-hero-value' }, metrics[0].value));
+      if (metrics[0].change) hero.appendChild(el('span', { className: 'metric-change ' + (metrics[0].trend || 'neutral') }, metrics[0].change));
+      spotlight.appendChild(hero);
+
+      // Secondary metrics
+      if (metrics.length > 1) {
+        var secondaryGrid = el('div', { className: 'kpi-secondary-grid' });
+        for (var i = 1; i < metrics.length; i++) {
+          var card = el('div', { className: 'metric-card' });
+          card.appendChild(el('span', { className: 'metric-label' }, metrics[i].label));
+          card.appendChild(el('span', { className: 'metric-value' }, metrics[i].value));
+          if (metrics[i].change) card.appendChild(el('span', { className: 'metric-change ' + (metrics[i].trend || 'neutral') }, metrics[i].change));
+          secondaryGrid.appendChild(card);
+        }
+        spotlight.appendChild(secondaryGrid);
+      }
+      sectionEl.appendChild(spotlight);
+    }
+    // Charts below
+    if (section.charts && section.charts.length) {
+      var chartsGrid = el('div', { className: 'charts-grid' });
+      section.charts.forEach(function(c) { renderChart(chartsGrid, c, section.id); });
+      sectionEl.appendChild(chartsGrid);
+    }
+  }
+
+  function renderLayoutSplitPanel(section, sectionEl) {
+    var panel = el('div', { className: 'split-panel' });
+    // Left: large chart
+    var left = el('div', { className: 'split-left' });
+    if (section.charts && section.charts.length) {
+      renderChart(left, section.charts[0], section.id);
+    }
+    panel.appendChild(left);
+
+    // Right: metrics + mini chart
+    var right = el('div', { className: 'split-right' });
+    renderMetrics(right, section.metrics);
+    if (section.charts && section.charts.length > 1) {
+      renderChart(right, section.charts[1], section.id);
+    }
+    panel.appendChild(right);
+    sectionEl.appendChild(panel);
+
+    // Tables below
+    if (section.tables && section.tables.length) {
+      section.tables.forEach(function(t) { renderTable(sectionEl, t); });
+    }
+    // Remaining charts
+    if (section.charts && section.charts.length > 2) {
+      var extra = el('div', { className: 'charts-grid' });
+      for (var i = 2; i < section.charts.length; i++) { renderChart(extra, section.charts[i], section.id); }
+      sectionEl.appendChild(extra);
+    }
+  }
+
+  function renderLayoutFullWidthTimeline(section, sectionEl) {
+    renderMetrics(sectionEl, section.metrics);
+    // First chart gets full width
+    if (section.charts && section.charts.length) {
+      var fullWidth = el('div', { className: 'full-width-chart' });
+      renderChart(fullWidth, section.charts[0], section.id);
+      sectionEl.appendChild(fullWidth);
+    }
+    // Remaining charts in grid
+    if (section.charts && section.charts.length > 1) {
+      var chartsGrid = el('div', { className: 'charts-grid' });
+      for (var i = 1; i < section.charts.length; i++) { renderChart(chartsGrid, section.charts[i], section.id); }
+      sectionEl.appendChild(chartsGrid);
+    }
+    if (section.tables && section.tables.length) {
+      section.tables.forEach(function(t) { renderTable(sectionEl, t); });
+    }
+  }
+
+  function renderLayoutGridCards(section, sectionEl) {
+    var metrics = section.metrics || [];
+    var charts = section.charts || [];
+    var grid = el('div', { className: 'grid-cards-container' });
+
+    // Pair metrics with mini charts
+    metrics.forEach(function(m, i) {
+      var card = el('div', { className: 'grid-card-item' });
+      card.appendChild(el('span', { className: 'metric-label' }, m.label));
+      card.appendChild(el('span', { className: 'metric-value' }, m.value));
+      if (m.change) card.appendChild(el('span', { className: 'metric-change ' + (m.trend || 'neutral') }, m.change));
+      // Embed a mini chart if available
+      if (charts[i]) {
+        var miniDiv = el('div', { className: 'grid-card-chart' });
+        renderChart(miniDiv, charts[i], section.id);
+        card.appendChild(miniDiv);
+      }
+      grid.appendChild(card);
+    });
+    sectionEl.appendChild(grid);
+
+    // Remaining charts not paired with metrics
+    if (charts.length > metrics.length) {
+      var chartsGrid = el('div', { className: 'charts-grid' });
+      for (var i = metrics.length; i < charts.length; i++) { renderChart(chartsGrid, charts[i], section.id); }
+      sectionEl.appendChild(chartsGrid);
+    }
+    if (section.tables && section.tables.length) {
+      section.tables.forEach(function(t) { renderTable(sectionEl, t); });
+    }
+  }
+
+  function renderLayoutMapTable(section, sectionEl) {
+    var panel = el('div', { className: 'map-table-panel' });
+    // Left: heatmap or first chart
+    var left = el('div', { className: 'map-table-left' });
+    renderMetrics(left, section.metrics);
+    if (section.charts && section.charts.length) {
+      renderChart(left, section.charts[0], section.id);
+    }
+    panel.appendChild(left);
+
+    // Right: table
+    var right = el('div', { className: 'map-table-right' });
+    if (section.tables && section.tables.length) {
+      renderTable(right, section.tables[0]);
+    }
+    panel.appendChild(right);
+    sectionEl.appendChild(panel);
+
+    // Extra charts/tables
+    if (section.charts && section.charts.length > 1) {
+      var extra = el('div', { className: 'charts-grid' });
+      for (var i = 1; i < section.charts.length; i++) { renderChart(extra, section.charts[i], section.id); }
+      sectionEl.appendChild(extra);
+    }
+    if (section.tables && section.tables.length > 1) {
+      for (var i = 1; i < section.tables.length; i++) { renderTable(sectionEl, section.tables[i]); }
+    }
+  }
+
   // === RENDER SECTIONS ===
   function renderSections(data) {
     var main = document.getElementById('main-content');
 
-    // Create all section containers from navigation
     data.navigation.forEach(function(nav) {
       var sectionEl = el('div', { className: 'dashboard-section', id: 'section-' + nav.id });
       main.appendChild(sectionEl);
     });
 
-    // Populate data sections
+    // Enforce no adjacent duplicate layouts
+    var prevLayout = null;
     data.sections.forEach(function(section) {
+      if (section.layout && section.layout === prevLayout) {
+        var idx = LAYOUT_LIST.indexOf(section.layout);
+        section.layout = LAYOUT_LIST[(idx + 1) % LAYOUT_LIST.length];
+      }
+      prevLayout = section.layout || 'default';
+
       var sectionEl = document.getElementById('section-' + section.id);
       if (!sectionEl) return;
-
-      var headerDiv = el('div', { className: 'section-header' });
-      headerDiv.appendChild(el('h2', {}, section.title));
-      headerDiv.appendChild(el('p', {}, section.description));
-      sectionEl.appendChild(headerDiv);
-
-      renderMetrics(sectionEl, section.metrics);
-
-      if (section.charts && section.charts.length) {
-        var chartsGrid = el('div', { className: 'charts-grid' });
-        section.charts.forEach(function(chartConfig) {
-          renderChart(chartsGrid, chartConfig, section.id);
-        });
-        sectionEl.appendChild(chartsGrid);
-      }
-
-      if (section.tables && section.tables.length) {
-        section.tables.forEach(function(tableConfig) {
-          renderTable(sectionEl, tableConfig);
-        });
-      }
+      renderSectionWithLayout(section, sectionEl);
     });
 
     // Agentic Workforce
@@ -805,6 +1274,7 @@ export function getScriptsJs(): string {
 
     applyBranding(data.branding);
     buildNavigation(data.navigation, data.meta);
+    buildGlobalFilterBar(data.globalFilters);
     renderSections(data);
 
     // Show first section

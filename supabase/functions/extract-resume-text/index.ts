@@ -57,7 +57,7 @@ Deno.serve(async (req) => {
     }
 
     const aiResponse = await aiFetchWithRetry(LOVABLE_API_KEY, {
-      model: "google/gemini-2.5-flash",
+      model: getModel('flash'),
       messages: [
         {
           role: "system",

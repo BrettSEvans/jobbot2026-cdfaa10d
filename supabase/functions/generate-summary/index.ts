@@ -30,7 +30,7 @@ Deno.serve(async (req) => {
     }
 
     const response = await aiFetchWithRetry(LOVABLE_API_KEY, {
-      model: 'google/gemini-2.5-flash-lite',
+      model: getModel('light'),
       messages: [
         {
           role: 'system',

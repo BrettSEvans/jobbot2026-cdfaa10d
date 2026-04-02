@@ -1126,6 +1126,16 @@ AVOID these complex patterns that frequently cause overlap:
 - Stacked cards with shadows that depend on precise spacing
 - Any layout requiring more than 2 levels of nesting
 
+## LAYOUT BALANCE & PROFESSIONAL POLISH
+Evaluate the ENTIRE document as a single cohesive composition, not individual elements:
+- **Visual weight distribution**: The page must feel balanced top-to-bottom and left-to-right. No half should be significantly denser than the other.
+- **Consistent spacing rhythm**: All peer sections must use the same margin-bottom. Cards/frames at the same level must have equal padding and border styling.
+- **Equal-height rows**: Cards or columns in the same row must use align-items: stretch so they match height.
+- **Alignment coherence**: All body section headings must use the same alignment (all left or all center — never mixed). Margins and padding must be uniform across peer elements.
+- **No orphan elements**: A single card alone in a grid row should span full width, not sit in a half-width cell with empty space beside it.
+- **White space as design**: Margins between sections should feel intentional and even, not random.
+- **Bullet/icon alignment**: All bullet markers, icons, and list indicators must sit INSIDE their text block with adequate left padding (min 0.3in from page edge). Never flush with the page margin.
+
 ## CONTENT BREVITY: LESS IS MORE
 A clean, well-spaced document with 3 strong sections impresses more than a cramped document with 6 mediocre sections.
 The document must fill the page but NOT overflow — aim for 80-85% page fill so it looks complete, not empty.

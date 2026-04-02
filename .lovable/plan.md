@@ -1,55 +1,50 @@
-## Plan: Fix Publish Visibility, Scope Edits to Active View, and Add Collapsible Sidebar Navigation
+## Plan: Fix Nav Behavior, Add Icons, Collapsible Icon Rail, and Prompt Updates
 
-### Problem Summary
+### Problems
 
-1. **Publish button hidden**: The `PublishDashboard` card is rendered *outside* the dashboard `TabsContent`, so it only shows when the dashboard tab is active AND `dashboardData` exists. But it's placed above the tabs content area and may be scrolled past or missed. More critically, when viewing the "Live Dashboard" mode, there are no publish/edit controls visible inline.
-2. **Edits not scoped to active view**: The downloadable dashboard's Vibe Edit and Regenerate modify the app-level `dashboard_html`. The live dashboard's controls are buried in the `PublishDashboard` card. There's no clear separation — users expect the toolbar they see to affect the dashboard they're viewing.
-3. **Navigation is a horizontal tab bar**: The live `DashboardRenderer` uses a top-bar horizontal nav. The downloadable version uses a collapsible sidebar with hamburger toggle. The live dashboard should match.  
-4 . Remove the sync from app button  
-5.  table font/background color contrast is makes the text unreadable .  contrast needs to be increased
+1. &nbsp;
+2. **No icons** — nav items show a `ChevronRight` chevron instead of the `icon` field from the data
+3. **Collapsed sidebar disappears entirely** — goes to `w-0` instead of an icon-only rail
+4. **Prompts don't enforce Lucide icon names** — schema says "material_icon_name" but the React app uses Lucide
+
+### Additional UX improvements a critical reviewer would flag
+
+- **Candidate Hero repeats on every nav click** — it should be sticky/persistent above the sections, not re-rendered inside the scrollable area (or only shown on the first/overview nav)
+  &nbsp;
+- **No active section indicator** — as you scroll through sections, the sidebar doesn't highlight which section is in view
+- **Footer always visible** — takes space; should only show at the bottom of the last section
 
 ### Changes
 
-#### 1. Move Publish Controls Into the Live Dashboard View (`DynamicMaterialsSection.tsx`)
+#### 1. Renderer: Icon mapping + icon rail (`DashboardRenderer.tsx`)
 
-- Move the `PublishDashboard` component from its current position (line ~659, outside TabsContent) into the **Live Dashboard view** section (line ~808).
-- When in "live" mode, show the publish card + vibe edit + regenerate controls inline above the renderer.
-- When in "download" mode, hide publish controls entirely (they don't apply).
-
-#### 2. Scope Vibe Edit / Regenerate to Active View (`DynamicMaterialsSection.tsx`)
-
-- "Download" mode toolbar: Vibe Edit and Regenerate modify `dashboard_html` on the `job_applications` record (existing behavior, unchanged).
-- "Live" mode toolbar: Vibe Edit and Regenerate modify `dashboard_data` on the `live_dashboards` record (handled by `PublishDashboard` component, already correct).
-- No cross-contamination — each mode's controls only touch their own data source.
-
-#### 3. Replace Top Nav with Collapsible Sidebar (`DashboardRenderer.tsx`)
-
-Rewrite the navigation from a horizontal tab bar in the header to a sidebar layout matching the downloadable version:
-
-- **Sidebar** (280px, left): company logo area at top, vertical nav items below, collapsible via hamburger button.
-- **Hamburger button** in the top bar toggles sidebar open/closed.
-- On mobile: sidebar starts collapsed, overlays content when opened.
-- On desktop: sidebar starts expanded, pushes content.
-- Active nav item highlighted with primary color.
-- Same `activeNav` state drives section filtering (no logic change).
-- Style with the existing branding CSS custom properties (`--dash-primary`, `--dash-surface-variant`, etc.).  
-  
-4. remove sync from app button  
-  
-5. increase contrast in tables.
-
-### Files Changed
+- Create a `lucideIconMap` that maps common icon names (from the LLM output, e.g. "dashboard", "trending_up", "people", "attach_money") to Lucide React components
+- Render the mapped icon left-justified in each nav button
+- When sidebar is collapsed on desktop, show a narrow icon rail (`w-14`) with just icons (tooltip on hover) instead of `w-0`
+- On mobile, behavior unchanged (overlay sidebar)
 
 
-| File                                                  | Change                                                                                                     |
-| ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `src/components/DynamicMaterialsSection.tsx`          | Move `PublishDashboard` into the live view section; remove it from the global position above tabs          |
-| `src/components/live-dashboard/DashboardRenderer.tsx` | Replace horizontal nav with collapsible sidebar + hamburger toggle, matching downloadable dashboard layout |
+
+#### 3. Renderer: Candidate Hero placement
+
+- Move `CandidateHero` above the nav-filtered content area so it's always visible regardless of active nav (or only show on overview)
+
+#### 4. Generation prompt: Use Lucide icon names (`generate-dashboard/index.ts`)
+
+- Change the schema example from `"icon": "material_icon_name"` to `"icon": "lucide-icon-name"` 
+- Add a list of recommended Lucide icon names: `"layout-dashboard"`, `"trending-up"`, `"users"`, `"dollar-sign"`, `"target"`, `"bar-chart-3"`, `"briefcase"`, `"rocket"`, `"shield-check"`, `"brain"`, `"calculator"`, `"git-branch"`, `"map-pin"`, `"zap"`, `"pie-chart"`, `"activity"`
+- Add instruction: "Use kebab-case Lucide React icon names for navigation icons"
+
+#### 5. Research prompt: Add icon field (`research-company/index.ts`)
+
+- Add `"icon"` to the section schema in the research prompt with the same Lucide icon guidance
+- So the research agent passes icon names through to the generation step
+
 
 
 ### What stays the same
 
-- `PublishDashboard.tsx` — no changes needed, its vibe edit/regenerate already targets `live_dashboards`
-- Downloadable dashboard toolbar — unchanged
-- Schema, edge functions, database — no changes
-- `LiveDashboard.tsx` (public page) — gets the sidebar automatically via `DashboardRenderer`
+- Schema (`schema.ts`) — `NavItem.icon` is already `string`, no change needed
+- `PublishDashboard.tsx` — unchanged
+- Database — no migrations
+- Existing dashboard data — will work with fallback icons for unmapped names

@@ -96,6 +96,7 @@ export default function PublishDashboard({
         updated_at: new Date().toISOString(),
       };
 
+      let dashId = liveDash?.id;
       if (liveDash) {
         const { error } = await supabase
           .from("live_dashboards")
@@ -103,14 +104,25 @@ export default function PublishDashboard({
           .eq("id", liveDash.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase
+        const { data: inserted, error } = await supabase
           .from("live_dashboards")
-          .insert(payload);
+          .insert(payload)
+          .select("id")
+          .single();
         if (error) throw error;
+        dashId = inserted.id;
+      }
+
+      // Save revision
+      if (dashId) {
+        try {
+          await saveLiveDashboardRevision(dashId, applicationId, dataToPublish, "publish", "Initial publish");
+        } catch { /* non-critical */ }
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["live-dashboard-admin", applicationId] });
+      queryClient.invalidateQueries({ queryKey: ["live-dashboard-revisions"] });
       toast({ title: "Dashboard published!", description: "Your live dashboard is now available." });
     },
     onError: (err: any) => {

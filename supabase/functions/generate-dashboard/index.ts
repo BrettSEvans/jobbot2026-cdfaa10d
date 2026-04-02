@@ -105,11 +105,11 @@ function validateAndRepair(data: any): { valid: boolean; data?: any; errors: str
   // Ensure navigation has agentic-workforce and cfo-view
   const navIds = new Set(data.navigation.map((n: any) => n.id));
   if (!navIds.has('agentic-workforce')) {
-    data.navigation.push({ id: 'agentic-workforce', label: 'Agentic Workforce', icon: 'smart_toy' });
+    data.navigation.push({ id: 'agentic-workforce', label: 'Agentic Workforce', icon: 'brain' });
     errors.push('Added missing agentic-workforce nav');
   }
   if (!navIds.has('cfo-view')) {
-    data.navigation.push({ id: 'cfo-view', label: 'CFO View', icon: 'account_balance' });
+    data.navigation.push({ id: 'cfo-view', label: 'CFO View', icon: 'calculator' });
     errors.push('Added missing cfo-view nav');
   }
 

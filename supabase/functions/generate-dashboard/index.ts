@@ -329,8 +329,8 @@ JSON SCHEMA (follow EXACTLY):
     {
       "id": "matches navigation id",
       "title": "Section Title",
-      "description": "Unique contextual description (2-3 sentences, specific to this section)",
-      "layout": "default|kpi-spotlight|split-panel|full-width-timeline|grid-cards|map-table",
+      "description": "Key takeaway — what the viewer should conclude from this section (2-3 sentences, insight-driven)",
+      "layout": "default|kpi-spotlight|split-panel|full-width-timeline|grid-cards|map-table (overview sections should use kpi-spotlight)",
       "metrics": [
         { "label": "Metric Name", "value": "$1.2M", "change": "+12%", "trend": "up|down|neutral" }
       ],

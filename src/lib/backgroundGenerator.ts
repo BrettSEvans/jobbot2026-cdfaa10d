@@ -467,6 +467,7 @@ class BackgroundGenerationManager {
         // Build task functions for the concurrency pool
         let completedCount = 0;
         const inFlight = new Set<string>();
+        let variabilityRecommendations: string[] = [];
 
         const updateMaterialProgress = () => {
           const inFlightNames = Array.from(inFlight);
@@ -477,7 +478,7 @@ class BackgroundGenerationManager {
           });
         };
 
-        const tasks = recommendedAssets.map((asset: any) => async () => {
+        const buildAsset = async (asset: any, extraBody: Record<string, unknown> = {}) => {
           inFlight.add(asset.name);
           updateMaterialProgress();
 
@@ -517,6 +518,7 @@ class BackgroundGenerationManager {
                     branding: brandingData,
                     regenerationCount: 0,
                     candidateName,
+                    ...extraBody,
                   }),
                 }
               );
@@ -553,12 +555,52 @@ class BackgroundGenerationManager {
             completedCount++;
             updateMaterialProgress();
           }
-        });
+        };
 
-        // Run tasks with concurrency pool (max 3 simultaneous, 1s stagger)
-        await runWithConcurrency(tasks, 3, 1000);
+        // Split into first 2 assets (for variability check) and remaining
+        const firstBatch = recommendedAssets.slice(0, 2);
+        const remainingBatch = recommendedAssets.slice(2);
 
-        // Score design variability after all materials are generated
+        // Build first 2 assets (in a small pool of 2)
+        await runWithConcurrency(firstBatch.map((asset: any) => () => buildAsset(asset)), 2, 1000);
+
+        // Mid-generation variability check (runs once, only if there are more assets to build)
+        if (remainingBatch.length > 0) {
+          try {
+            const { data: firstAssets } = await supabase
+              .from("generated_assets")
+              .select("asset_name, html")
+              .eq("application_id", appId)
+              .eq("generation_status", "complete")
+              .not("html", "eq", "");
+
+            if (firstAssets && firstAssets.length >= 2) {
+              const { scoreDesignVariability } = await import("@/lib/api/designVariability");
+              const midScore = await scoreDesignVariability(
+                appId,
+                firstAssets.map((a: any) => ({ assetName: a.asset_name, html: a.html })),
+                brandingData,
+              );
+              if (midScore.overallScore < 70) {
+                variabilityRecommendations = midScore.recommendations || [];
+                console.log(`Variability score ${midScore.overallScore}/100 — injecting ${variabilityRecommendations.length} recommendations into remaining assets`);
+              }
+            }
+          } catch (e) {
+            console.warn("Mid-generation variability check failed (non-blocking):", e);
+          }
+        }
+
+        // Build remaining assets with concurrency pool, injecting variability guidance if needed
+        if (remainingBatch.length > 0) {
+          const extraBody = variabilityRecommendations.length > 0
+            ? { variabilityRecommendations }
+            : {};
+          const tasks = remainingBatch.map((asset: any) => () => buildAsset(asset, extraBody));
+          await runWithConcurrency(tasks, 3, 1000);
+        }
+
+        // Final variability score (covers all assets, updates UI card)
         try {
           const { data: completedAssets } = await supabase
             .from("generated_assets")
@@ -576,7 +618,7 @@ class BackgroundGenerationManager {
             );
           }
         } catch (e) {
-          console.warn("Design variability scoring failed:", e);
+          console.warn("Final design variability scoring failed:", e);
         }
       }
 

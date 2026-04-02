@@ -813,7 +813,7 @@ export default function DynamicMaterialsSection({
                 <Card className="overflow-hidden">
                   <div className="w-full relative" style={{ height: "80vh", overflow: "auto" }}>
                     <DashboardRenderer data={liveDashData} />
-                    {liveDashRecord?.chatbot_enabled && (
+                    {liveDashRecord && (
                       <DashboardChatbot
                         dashboardId={liveDashRecord.id}
                         companyName={companyName}

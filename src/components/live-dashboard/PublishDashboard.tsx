@@ -10,6 +10,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import type { DashboardData } from "@/lib/dashboard/schema";
 import { streamDashboardGeneration, streamDashboardRefinement } from "@/lib/api/jobApplication";
 import { parseLlmJsonOutput, assembleDashboardHtml } from "@/lib/dashboard/assembler";
+import { saveLiveDashboardRevision } from "@/lib/api/liveDashboardRevisions";
+import LiveDashboardRevisions from "./LiveDashboardRevisions";
 
 function slugify(text: string): string {
   return text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 60);
@@ -23,10 +25,11 @@ interface PublishDashboardProps {
   toast: any;
   app?: any;
   jobDescription?: string;
+  onPreviewLiveData?: (data: DashboardData | null) => void;
 }
 
 export default function PublishDashboard({
-  applicationId, dashboardData, companyName, jobTitle, toast, app, jobDescription,
+  applicationId, dashboardData, companyName, jobTitle, toast, app, jobDescription, onPreviewLiveData,
 }: PublishDashboardProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -66,7 +69,7 @@ export default function PublishDashboard({
   });
 
   const publishMutation = useMutation({
-    mutationFn: async (overrideData?: DashboardData) => {
+    mutationFn: async ({ data: overrideData, source: src }: { data?: DashboardData; source?: string } = {}) => {
       const dataToPublish = overrideData || dashboardData;
       if (!dataToPublish || !user) throw new Error("Missing data");
 
@@ -93,6 +96,7 @@ export default function PublishDashboard({
         updated_at: new Date().toISOString(),
       };
 
+      let dashId = liveDash?.id;
       if (liveDash) {
         const { error } = await supabase
           .from("live_dashboards")
@@ -100,14 +104,25 @@ export default function PublishDashboard({
           .eq("id", liveDash.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase
+        const { data: inserted, error } = await supabase
           .from("live_dashboards")
-          .insert(payload);
+          .insert(payload)
+          .select("id")
+          .single();
         if (error) throw error;
+        dashId = inserted.id;
+      }
+
+      // Save revision
+      if (dashId) {
+        try {
+          await saveLiveDashboardRevision(dashId, applicationId, dataToPublish, src || "publish", src === "regenerate" ? "Regenerated" : "Published");
+        } catch { /* non-critical */ }
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["live-dashboard-admin", applicationId] });
+      queryClient.invalidateQueries({ queryKey: ["live-dashboard-revisions"] });
       toast({ title: "Dashboard published!", description: "Your live dashboard is now available." });
     },
     onError: (err: any) => {
@@ -169,7 +184,7 @@ export default function PublishDashboard({
         return;
       }
 
-      await publishMutation.mutateAsync(parsed);
+      await publishMutation.mutateAsync({ data: parsed, source: "regenerate" });
       setChatHistory([]);
       toast({ title: "Dashboard regenerated!", description: "The live dashboard has been updated with fresh data." });
     } catch (err: any) {
@@ -212,8 +227,14 @@ export default function PublishDashboard({
           .eq("id", liveDash.id);
         if (error) throw error;
 
+        // Save revision
+        try {
+          await saveLiveDashboardRevision(liveDash.id, applicationId, parsed, "vibe-edit", msg.slice(0, 60));
+        } catch { /* non-critical */ }
+
         setChatHistory((prev) => [...prev, { role: "assistant", content: "✅ Dashboard updated!" }]);
         queryClient.invalidateQueries({ queryKey: ["live-dashboard-admin", applicationId] });
+        queryClient.invalidateQueries({ queryKey: ["live-dashboard-revisions"] });
         toast({ title: "Dashboard updated", description: "Your vibe edit has been applied." });
       } else {
         setChatHistory((prev) => [...prev, { role: "assistant", content: "❌ Could not parse the refined output. Try a simpler edit." }]);
@@ -250,7 +271,7 @@ export default function PublishDashboard({
       <div className="flex flex-wrap items-center gap-2">
         {!liveDash ? (
           <Button
-            onClick={() => publishMutation.mutate(undefined)}
+            onClick={() => publishMutation.mutate({})}
             disabled={publishMutation.isPending}
             size="sm"
             className="gap-1.5"
@@ -401,6 +422,18 @@ export default function PublishDashboard({
             </Button>
           </div>
         </div>
+      )}
+
+      {/* Version History */}
+      {liveDash && (
+        <LiveDashboardRevisions
+          liveDashboardId={liveDash.id}
+          applicationId={applicationId}
+          currentData={liveDash.dashboard_data as unknown as DashboardData}
+          onPreview={(data) => onPreviewLiveData?.(data)}
+          onClearPreview={() => onPreviewLiveData?.(null)}
+          toast={toast}
+        />
       )}
     </div>
   );

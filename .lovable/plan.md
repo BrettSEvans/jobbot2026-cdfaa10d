@@ -1,64 +1,89 @@
 
 
-## Plan: Inline Variability Check During Material Generation
+## Plan: Holistic Layout Balance, Bullet Alignment & Page Fill Enforcement
 
 ### Problem
-Design variability scoring currently runs **after** all materials are built. If scores are low, the assets are already finalized and can't be adjusted without manual regeneration.
-
-### Approach
-After the **first asset** completes, run a variability pre-check using the first asset's HTML plus a **design-only summary** of the second asset (generated via a lightweight AI call). If the variability score is below the threshold (70), inject the variability `recommendations` into the remaining assets' generation calls. This check runs **once per generation** to avoid loops.
-
-### Flow
-
-```text
-Current:  Asset1 → Asset2 → Asset3 → ... → AssetN → Variability Score (post-hoc)
-
-Proposed: Asset1 (build) → Asset2 (design-only sketch) →
-          Variability Check (Asset1 HTML + Asset2 sketch) →
-          If score < 70: inject recommendations into Asset2..N requests →
-          Asset2 (build with guidance) → Asset3..N (build with guidance) →
-          Final Variability Score (for display)
-```
+1. **Bullet icons flush with page edge** — list padding is too small (0.16in), and AI-generated icon bullets (spans, pseudo-elements) get pushed against the left margin.
+2. **Layouts look unbalanced** — the review pipeline checks individual elements (overlap, clipping, font size) but never evaluates the **whole-page composition**: visual weight distribution, consistent spacing rhythms, alignment coherence, or whether the document reads as a cohesive, professional layout.
+3. **Page fill not enforced in review** — the 80-85% fill target exists in the generation prompt, but the review pipeline (which is the final gatekeeper) never checks whether the page is actually filled. Sparse documents can pass all 10 checks and ship half-empty.
 
 ### Changes
 
-**1. `src/lib/backgroundGenerator.ts`** — Restructure the material generation loop (lines ~467-580):
-- Build Asset 1 (the first task) **alone** and wait for it to complete
-- Generate a lightweight "design sketch" for Asset 2 by calling `score-design-variability` with Asset 1's HTML + Asset 2's name/description (the variability endpoint already accepts asset structures)
-- Actually, better: call a new lightweight endpoint or reuse the existing `score-design-variability` function by sending Asset 1 HTML and a **mock structural summary** for Asset 2 based on its name — but that won't work because Asset 2 doesn't exist yet.
+#### 1. Fix bullet alignment — `enforceOnePageLayout` CSS (lines 272-274)
 
-**Revised approach**: Build Asset 1 alone. Then build Asset 2 alone. After both are complete, run variability scoring on just those two. If score < 70, capture `recommendations` and pass them to Assets 3..N. This is simpler, still catches problems early (after 2 of 6+ assets), and uses the existing scoring function as-is.
+Increase default list padding and add rules for icon-style bullets:
 
-```text
-Asset1 (build) → Asset2 (build) →
-Variability Check (Asset1 + Asset2) →
-If overallScore < 70: capture recommendations →
-Assets 3..N (build in pool of 3, with variabilityRecommendations injected) →
-Final Variability Score
+```css
+/* Before */
+padding-left: 0.16in !important;
+
+/* After */
+padding-left: 0.3in !important;
+
+/* New rules */
+li { position: relative; padding-left: 0.15in; }
+[class*="bullet"], [class*="icon"] { margin-left: 0.15in; }
 ```
 
-**Specific changes in `backgroundGenerator.ts`**:
-- Split `recommendedAssets` into `firstBatch` (first 2) and `remainingBatch` (rest)
-- Build first 2 sequentially or in a pool of 2
-- After both complete, fetch their HTML from DB, call `scoreDesignVariability`
-- If `overallScore < 70`, store `recommendations` array
-- Pass `variabilityRecommendations` in the request body for remaining assets
-- Run remaining assets through `runWithConcurrency(tasks, 3, 1000)` as before
-- Keep the final variability scoring at the end (now covers all assets)
+#### 2. Add holistic layout rules to the system prompt (~line 1079-1110)
 
-**2. `supabase/functions/generate-material/index.ts`** — Use the already-destructured `variabilityRecommendations` field:
-- If `variabilityRecommendations` is a non-empty array, append a new prompt section after the existing `existingPatternsSection` that says: "A design variability analysis flagged the following issues with previously generated assets. You MUST address these in your design:" followed by the recommendations as bullet points.
+Add a new `## LAYOUT BALANCE & PROFESSIONAL POLISH` section with rules that address the **entire document** as a composition, not individual elements:
 
-### Threshold & loop protection
-- Variability threshold: `overallScore < 70` triggers guidance injection
-- The check runs exactly **once** — after the first 2 assets, before the rest
-- No retry or re-generation of assets 1-2; they stay as-is
-- If there are only 2 or fewer total assets, skip the mid-generation check entirely (the post-hoc score still runs)
+- **Visual weight distribution**: The page should feel balanced top-to-bottom and left-to-right. No half of the page should be significantly denser than the other.
+- **Consistent spacing rhythm**: All peer sections must use the same `margin-bottom`. Cards/frames at the same level must have equal padding and border styling.
+- **Equal-height rows**: Cards or columns in the same row must use `align-items: stretch` so they match height.
+- **Alignment coherence**: All body section headings must use the same alignment (all left or all center — never mixed). Margins and padding must be uniform across peer elements.
+- **No orphan elements**: A single card alone in a grid row should span full width, not sit in a half-width cell with empty space beside it.
+- **White space as design**: Margins between sections should feel intentional and even, not random.
+
+#### 3. Expand review pipeline to check holistic balance + page fill (lines 432-468)
+
+Add three new checks to `COMBINED_REVIEW_PROMPT`:
+
+```
+11. HOLISTIC BALANCE: Step back and evaluate the ENTIRE page as one composition.
+    - Is visual weight evenly distributed? (No half of the page should be 3x denser than the other)
+    - Do all peer sections have consistent padding, borders, and spacing?
+    - Are cards/frames in the same row equal height?
+    - Is section spacing uniform throughout?
+    - Does the page look like a single cohesive design, or a patchwork of disconnected blocks?
+    If the layout feels lopsided, asymmetric, or amateurish, restructure sections for visual harmony.
+
+12. ALIGNMENT CONSISTENCY: All body section headings must use the same alignment style.
+    Bullet markers and icons must sit INSIDE their text block (not flush with the page edge).
+    Padding and margins must be uniform across peer elements at the same hierarchy level.
+
+13. PAGE FILL: The document must fill 80-85% of the usable page area (~9.2in × 7.5in).
+    - If the content only fills ~50-60% of the page, ADD more substantive content (extra bullets,
+      an additional relevant section, or a data element) to reach the 80% target.
+    - If content exceeds 90%, condense the least valuable section.
+    - An under-filled page is a FAILURE — it looks incomplete to a hiring manager.
+    When fixing page fill, maintain all other layout rules (no overflow:hidden, height:auto, etc.).
+```
+
+Update the fix rules section to include:
+- For BALANCE issues: redistribute content, equalize section sizes, add consistent padding
+- For PAGE FILL: expand sparse content with relevant professional material, never leave a document looking half-empty
+
+#### 4. Strengthen sparse detection (lines 1222-1250)
+
+The current sparse check uses `textLength < 1500`. Tighten this:
+- Lower the sparse threshold to `textLength < 1800` to catch more under-filled documents
+- After the expansion pass, re-check: if still under 1500 chars, log a warning (don't loop, but flag it)
+
+### Changes summary
+
+| File | Change |
+|---|---|
+| `supabase/functions/generate-material/index.ts` line ~272-274 | Fix list padding from 0.16in → 0.3in, add icon bullet rules |
+| `supabase/functions/generate-material/index.ts` line ~1079 | Add `LAYOUT BALANCE & PROFESSIONAL POLISH` section to system prompt |
+| `supabase/functions/generate-material/index.ts` line ~432-468 | Add checks 11 (holistic balance), 12 (alignment), 13 (page fill) to review prompt |
+| `supabase/functions/generate-material/index.ts` line ~1223 | Tighten sparse threshold from 1500 → 1800 chars |
 
 ### What stays the same
-- The `score-design-variability` edge function is unchanged
-- The final variability scoring after all assets complete remains (for the UI card)
-- The concurrency pool logic (`runWithConcurrency`) is unchanged
-- Dashboard generation flow is unaffected
-- No database changes needed
+- Style family system unchanged
+- Variability mid-generation check unchanged
+- Condensation/expansion pass logic unchanged (just threshold tweak)
+- No database changes
+- No client-side changes
 

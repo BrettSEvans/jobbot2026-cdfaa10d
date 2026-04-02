@@ -2,6 +2,15 @@
 
 ## Plan: Dashboard Feature Improvements (Priority Order)
 
+### ✅ 0. Improve Dashboard Storytelling (COMPLETED)
+**Files:** `research-company/index.ts`, `generate-dashboard/index.ts`
+- Reduced research sections from 8-12 to 5-7
+- Added `keyInsight`, `sectionRole`, `narrativeArc`, `componentHint` fields to research prompt
+- Added storytelling rules: Section 1 = overview (metrics only), last section = ROI/action
+- Reduced metrics per section from 3-5 to 2-3, charts from 2-3 to 1-2
+- Tables limited to max 2-3 per dashboard (only in deep-dive/evidence sections)
+- Added validation warnings for density violations
+
 ### 1. Apply Company Branding
 **File:** `DashboardRenderer.tsx`
 - Read `data.branding` and apply as CSS custom properties on the root div
@@ -54,12 +63,13 @@
 - Default: subtle "Powered by ResuVibe" — can be overridden or hidden
 
 ### Implementation Order
-1. Branding (highest visual impact, makes every dashboard unique)
-2. Navigation + Filters (fixes the two most obvious broken features)
-3. Candidate Hero (answers "who made this" for hiring managers)
-4. Chatbot suggested questions (low effort, high engagement lift)
-5. Missing chart types (fixes the "fake chart" problem)
-6. Mobile + Footer (polish)
+1. ~~Storytelling prompts~~ ✅
+2. Branding (highest visual impact, makes every dashboard unique)
+3. Navigation + Filters (fixes the two most obvious broken features)
+4. Candidate Hero (answers "who made this" for hiring managers)
+5. Chatbot suggested questions (low effort, high engagement lift)
+6. Missing chart types (fixes the "fake chart" problem)
+7. Mobile + Footer (polish)
 
 ### Schema Changes
 Add to `DashboardData` in `src/lib/dashboard/schema.ts`:
@@ -92,4 +102,3 @@ footer?: {
 - Admin-only publish flow unchanged
 - `dashboard-chat` edge function unchanged
 - No database migrations needed
-

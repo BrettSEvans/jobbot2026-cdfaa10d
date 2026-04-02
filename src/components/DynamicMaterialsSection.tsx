@@ -272,6 +272,7 @@ export default function DynamicMaterialsSection({
   const [showDashboardWelcome, setShowDashboardWelcome] = useState(() => !localStorage.getItem("dashboard-welcome-dismissed"));
   const [showDashboardConfig, setShowDashboardConfig] = useState(false);
   const [dashboardViewMode, setDashboardViewMode] = useState<"download" | "live">("download");
+  const [liveDashPreviewData, setLiveDashPreviewData] = useState<DashboardData | null>(null);
   const [loadingAssets, setLoadingAssets] = useState(true);
   const [assetRevisionTriggers, setAssetRevisionTriggers] = useState<Record<string, number>>({});
   const [assetPreviewHtml, setAssetPreviewHtml] = useState<Record<string, string | null>>({});
@@ -809,10 +810,10 @@ export default function DynamicMaterialsSection({
                 />
               )}
 
-              {liveDashData ? (
+              {(liveDashPreviewData || liveDashData) ? (
                 <Card className="overflow-hidden">
                   <div className="w-full relative" style={{ height: "80vh", overflow: "auto" }}>
-                    <DashboardRenderer data={liveDashData} />
+                    <DashboardRenderer data={liveDashPreviewData || liveDashData!} />
                     {liveDashRecord && (
                       <DashboardChatbot
                         dashboardId={liveDashRecord.id}

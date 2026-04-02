@@ -122,6 +122,8 @@ export default function PublishDashboard({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["live-dashboard-admin", applicationId] });
+      queryClient.invalidateQueries({ queryKey: ["live-dashboard-view", applicationId] });
+      queryClient.invalidateQueries({ queryKey: ["live-dashboard"] });
       queryClient.invalidateQueries({ queryKey: ["live-dashboard-revisions"] });
       toast({ title: "Dashboard published!", description: "Your live dashboard is now available." });
     },
@@ -141,6 +143,8 @@ export default function PublishDashboard({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["live-dashboard-admin", applicationId] });
+      queryClient.invalidateQueries({ queryKey: ["live-dashboard-view", applicationId] });
+      queryClient.invalidateQueries({ queryKey: ["live-dashboard"] });
     },
   });
 
@@ -155,6 +159,8 @@ export default function PublishDashboard({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["live-dashboard-admin", applicationId] });
+      queryClient.invalidateQueries({ queryKey: ["live-dashboard-view", applicationId] });
+      queryClient.invalidateQueries({ queryKey: ["live-dashboard"] });
     },
   });
 
@@ -185,6 +191,7 @@ export default function PublishDashboard({
       }
 
       await publishMutation.mutateAsync({ data: parsed, source: "regenerate" });
+      onPreviewLiveData?.(parsed);
       setChatHistory([]);
       toast({ title: "Dashboard regenerated!", description: "The live dashboard has been updated with fresh data." });
     } catch (err: any) {
@@ -232,8 +239,11 @@ export default function PublishDashboard({
           await saveLiveDashboardRevision(liveDash.id, applicationId, parsed, "vibe-edit", msg.slice(0, 60));
         } catch { /* non-critical */ }
 
+        onPreviewLiveData?.(parsed);
         setChatHistory((prev) => [...prev, { role: "assistant", content: "✅ Dashboard updated!" }]);
         queryClient.invalidateQueries({ queryKey: ["live-dashboard-admin", applicationId] });
+        queryClient.invalidateQueries({ queryKey: ["live-dashboard-view", applicationId] });
+        queryClient.invalidateQueries({ queryKey: ["live-dashboard"] });
         queryClient.invalidateQueries({ queryKey: ["live-dashboard-revisions"] });
         toast({ title: "Dashboard updated", description: "Your vibe edit has been applied." });
       } else {

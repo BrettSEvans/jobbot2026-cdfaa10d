@@ -10,6 +10,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import type { DashboardData } from "@/lib/dashboard/schema";
 import { streamDashboardGeneration, streamDashboardRefinement } from "@/lib/api/jobApplication";
 import { parseLlmJsonOutput, assembleDashboardHtml } from "@/lib/dashboard/assembler";
+import { saveLiveDashboardRevision } from "@/lib/api/liveDashboardRevisions";
+import LiveDashboardRevisions from "./LiveDashboardRevisions";
 
 function slugify(text: string): string {
   return text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 60);

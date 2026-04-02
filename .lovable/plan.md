@@ -1,50 +1,45 @@
-## Plan: Fix Nav Behavior, Add Icons, Collapsible Icon Rail, and Prompt Updates
 
-### Problems
 
-1. &nbsp;
-2. **No icons** — nav items show a `ChevronRight` chevron instead of the `icon` field from the data
-3. **Collapsed sidebar disappears entirely** — goes to `w-0` instead of an icon-only rail
-4. **Prompts don't enforce Lucide icon names** — schema says "material_icon_name" but the React app uses Lucide
+## Plan: Fix Dashboard Data Sync Between Preview and Public URL
 
-### Additional UX improvements a critical reviewer would flag
+### Root Cause
 
-- **Candidate Hero repeats on every nav click** — it should be sticky/persistent above the sections, not re-rendered inside the scrollable area (or only shown on the first/overview nav)
-  &nbsp;
-- **No active section indicator** — as you scroll through sections, the sidebar doesn't highlight which section is in view
-- **Footer always visible** — takes space; should only show at the bottom of the last section
+There are **three separate queries** fetching from the same `live_dashboards` table, each with different query keys and none properly invalidating each other:
+
+1. `["live-dashboard-admin", applicationId]` — used by `PublishDashboard.tsx` for its internal state
+2. `["live-dashboard-view", applicationId]` — used by `DynamicMaterialsSection.tsx` for the preview pane
+3. `["live-dashboard", username, company, jobtitle]` — used by `LiveDashboard.tsx` (public URL page)
+
+When a vibe edit or regenerate completes, only query #1 is invalidated. Queries #2 and #3 keep showing stale data. Additionally, `onPreviewLiveData` is defined as a prop on `PublishDashboard` but is **never passed** from `DynamicMaterialsSection`, so live edits cannot push updated data to the preview renderer.
 
 ### Changes
 
-#### 1. Renderer: Icon mapping + icon rail (`DashboardRenderer.tsx`)
+#### 1. Consolidate query invalidation (`PublishDashboard.tsx`)
 
-- Create a `lucideIconMap` that maps common icon names (from the LLM output, e.g. "dashboard", "trending_up", "people", "attach_money") to Lucide React components
-- Render the mapped icon left-justified in each nav button
-- When sidebar is collapsed on desktop, show a narrow icon rail (`w-14`) with just icons (tooltip on hover) instead of `w-0`
-- On mobile, behavior unchanged (overlay sidebar)
+After every mutation (publish, vibe edit, regenerate, toggle), invalidate ALL three query keys:
+- `["live-dashboard-admin", applicationId]`
+- `["live-dashboard-view", applicationId]`
+- `["live-dashboard", ...]` (broad prefix invalidation)
 
+This ensures the preview pane and public page both refetch fresh data after any change.
 
+#### 2. Wire up `onPreviewLiveData` (`DynamicMaterialsSection.tsx`)
 
-#### 3. Renderer: Candidate Hero placement
+Pass a callback to `PublishDashboard` so that vibe edits and regenerations immediately update the preview renderer's data without waiting for a refetch. Add state for `liveDashPreviewData` and pass it to `DashboardRenderer`.
 
-- Move `CandidateHero` above the nav-filtered content area so it's always visible regardless of active nav (or only show on overview)
+#### 3. Remove duplicate admin query
 
-#### 4. Generation prompt: Use Lucide icon names (`generate-dashboard/index.ts`)
+`PublishDashboard` has its own `liveDash` query (`["live-dashboard-admin"]`) that duplicates the `liveDashRecord` query in `DynamicMaterialsSection`. Pass `liveDashRecord` as a prop instead to ensure both components always reference the same data.
 
-- Change the schema example from `"icon": "material_icon_name"` to `"icon": "lucide-icon-name"` 
-- Add a list of recommended Lucide icon names: `"layout-dashboard"`, `"trending-up"`, `"users"`, `"dollar-sign"`, `"target"`, `"bar-chart-3"`, `"briefcase"`, `"rocket"`, `"shield-check"`, `"brain"`, `"calculator"`, `"git-branch"`, `"map-pin"`, `"zap"`, `"pie-chart"`, `"activity"`
-- Add instruction: "Use kebab-case Lucide React icon names for navigation icons"
+### Files Changed
 
-#### 5. Research prompt: Add icon field (`research-company/index.ts`)
-
-- Add `"icon"` to the section schema in the research prompt with the same Lucide icon guidance
-- So the research agent passes icon names through to the generation step
-
-
+| File | Change |
+|---|---|
+| `src/components/live-dashboard/PublishDashboard.tsx` | Broaden `queryClient.invalidateQueries` to cover all live-dashboard query keys; accept `liveDashRecord` as optional prop |
+| `src/components/DynamicMaterialsSection.tsx` | Pass `onPreviewLiveData` callback and `liveDashRecord` to `PublishDashboard`; use callback data for immediate preview updates |
 
 ### What stays the same
+- `LiveDashboard.tsx` — no code changes needed; query invalidation + refetch will handle sync
+- Database schema — no changes
+- Edge functions — no changes
 
-- Schema (`schema.ts`) — `NavItem.icon` is already `string`, no change needed
-- `PublishDashboard.tsx` — unchanged
-- Database — no migrations
-- Existing dashboard data — will work with fallback icons for unmapped names

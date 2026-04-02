@@ -103,9 +103,9 @@ function AuthenticatedApp() {
 }
 
 function AppRoutes() {
-  const location = window.location.pathname;
+  const location = useLocation();
   // Public dashboard routes don't need auth
-  if (location.startsWith("/d/")) {
+  if (location.pathname.startsWith("/d/")) {
     return (
       <Routes>
         <Route path="/d/:username/:company/:jobtitle" element={<LiveDashboard />} />

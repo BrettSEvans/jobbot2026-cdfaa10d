@@ -596,7 +596,7 @@ async function getBestPractices(
   let bestPracticesText = '';
   try {
     const researchResp = await aiFetchWithRetry(LOVABLE_API_KEY, {
-      model: 'google/gemini-2.5-flash',
+      model: getModel('standard'),
       messages: [
         { role: 'system', content: 'You are a document design consultant specializing in ONE-PAGE professional deliverables (US Letter 8.5×11in). Produce compact, constraint-driven rubrics — NOT verbose essays.' },
         { role: 'user', content: `Create a ONE-PAGE GENERATION RUBRIC for "${assetType}". Use this exact format (keep each line short, total under 250 words):

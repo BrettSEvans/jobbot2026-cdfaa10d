@@ -122,6 +122,8 @@ export default function PublishDashboard({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["live-dashboard-admin", applicationId] });
+      queryClient.invalidateQueries({ queryKey: ["live-dashboard-view", applicationId] });
+      queryClient.invalidateQueries({ queryKey: ["live-dashboard"] });
       queryClient.invalidateQueries({ queryKey: ["live-dashboard-revisions"] });
       toast({ title: "Dashboard published!", description: "Your live dashboard is now available." });
     },

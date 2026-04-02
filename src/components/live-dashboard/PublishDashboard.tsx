@@ -264,7 +264,7 @@ export default function PublishDashboard({
       <CardContent className="space-y-3">
         {!liveDash ? (
           <Button
-            onClick={() => publishMutation.mutate()}
+            onClick={() => publishMutation.mutate(undefined)}
             disabled={publishMutation.isPending}
             size="sm"
           >

@@ -4,7 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { useInactivityLogout } from "@/hooks/useInactivityLogout";
 import { useQuery } from "@tanstack/react-query";
@@ -20,6 +20,7 @@ import ResetPassword from "./pages/ResetPassword";
 import Admin from "./pages/Admin";
 import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
+import LiveDashboard from "./pages/LiveDashboard";
 import BackgroundJobsBanner from "./components/BackgroundJobsBanner";
 import AppHeader from "./components/AppHeader";
 import AiChat from "./components/AiChat";
@@ -101,6 +102,25 @@ function AuthenticatedApp() {
   );
 }
 
+function AppRoutes() {
+  const location = useLocation();
+  // Public dashboard routes don't need auth
+  if (location.pathname.startsWith("/d/")) {
+    return (
+      <Routes>
+        <Route path="/d/:username/:company/:jobtitle" element={<LiveDashboard />} />
+      </Routes>
+    );
+  }
+  return (
+    <ErrorBoundary>
+      <AuthProvider>
+        <AuthenticatedApp />
+      </AuthProvider>
+    </ErrorBoundary>
+  );
+}
+
 const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
@@ -108,11 +128,7 @@ const App = () => {
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <ErrorBoundary>
-            <AuthProvider>
-              <AuthenticatedApp />
-            </AuthProvider>
-          </ErrorBoundary>
+          <AppRoutes />
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>

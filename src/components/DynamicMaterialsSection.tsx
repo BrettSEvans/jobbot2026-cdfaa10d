@@ -29,6 +29,7 @@ import DashboardRevisions from "@/components/DashboardRevisions";
 import GeneratedAssetRevisions from "@/components/GeneratedAssetRevisions";
 import VersionDownloadAlert from "@/components/VersionDownloadAlert";
 import DesignVariabilityCard from "@/components/admin/DesignVariabilityCard";
+import PublishDashboard from "@/components/live-dashboard/PublishDashboard";
 import { supabase } from "@/integrations/supabase/client";
 import { saveGeneratedAssetRevision } from "@/lib/api/generatedAssetRevisions";
 import { streamRefineMaterial } from "@/lib/api/jobApplication";
@@ -631,6 +632,17 @@ export default function DynamicMaterialsSection({
               .map(a => ({ assetName: a.asset_name, html: a.html }))}
             branding={app?.branding}
             cachedVariability={app?.design_variability}
+          />
+        )}
+
+        {/* Admin-only: Publish Live Dashboard */}
+        {isAdmin && dashboardData && (
+          <PublishDashboard
+            applicationId={applicationId}
+            dashboardData={dashboardData}
+            companyName={companyName}
+            jobTitle={jobTitle}
+            toast={toast}
           />
         )}
 

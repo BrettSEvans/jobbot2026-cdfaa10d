@@ -96,8 +96,17 @@ function brandingStyle(b?: DashboardBranding): React.CSSProperties {
     "--dash-error": b.error,
     "--dash-font-heading": b.fontHeading || "inherit",
     "--dash-font-body": b.fontBody || "inherit",
+    "--dash-background": b.background || b.surface || "hsl(var(--background))",
   } as React.CSSProperties;
 }
+
+/* ── Inline fade-in keyframes ── */
+const fadeInStyle: React.CSSProperties = {
+  animation: "dashFadeIn 0.4s ease-out both",
+};
+
+/* ── Subtle SVG wave pattern for background ── */
+const WAVE_PATTERN = `url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 50 Q25 30 50 50 T100 50' fill='none' stroke='%23000' stroke-width='0.5' opacity='0.04'/%3E%3Cpath d='M0 70 Q25 50 50 70 T100 70' fill='none' stroke='%23000' stroke-width='0.5' opacity='0.03'/%3E%3C/svg%3E")`;
 
 /* ── Candidate Hero ── */
 function CandidateHero({ data }: { data: DashboardData }) {

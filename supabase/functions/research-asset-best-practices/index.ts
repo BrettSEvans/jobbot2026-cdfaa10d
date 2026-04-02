@@ -127,7 +127,7 @@ Keep the entire rubric under 250 words. Be specific to "${asset_type}" but stay 
       if (assets && assets.length >= 3) {
         const samples = assets.map((a: any) => a.html.slice(0, 1500)).join('\n---SAMPLE---\n');
         const patternResp = await aiFetchWithRetry(LOVABLE_API_KEY, {
-          model: 'google/gemini-2.5-flash',
+          model: getModel('flash'),
           messages: [
             { role: 'system', content: 'Extract simple layout patterns from downloaded HTML documents. Prefer simple patterns. Return JSON only.' },
             { role: 'user', content: `These "${asset_type}" documents were downloaded (approval signal). Extract SIMPLE patterns only:\n${samples}\n\nReturn JSON: { "common_sections": ["section1","section2","section3"], "layout_approach": "single-column|two-column|table-based", "content_density": "low|medium", "visual_element": "none|progress-bars|metric-cards|small-table" }` },

@@ -20,6 +20,7 @@ import ResetPassword from "./pages/ResetPassword";
 import Admin from "./pages/Admin";
 import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
+import LiveDashboard from "./pages/LiveDashboard";
 import BackgroundJobsBanner from "./components/BackgroundJobsBanner";
 import AppHeader from "./components/AppHeader";
 import AiChat from "./components/AiChat";

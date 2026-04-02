@@ -143,6 +143,8 @@ export default function PublishDashboard({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["live-dashboard-admin", applicationId] });
+      queryClient.invalidateQueries({ queryKey: ["live-dashboard-view", applicationId] });
+      queryClient.invalidateQueries({ queryKey: ["live-dashboard"] });
     },
   });
 

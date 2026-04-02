@@ -635,6 +635,17 @@ export default function DynamicMaterialsSection({
           />
         )}
 
+        {/* Admin-only: Publish Live Dashboard */}
+        {isAdmin && dashboardData && (
+          <PublishDashboard
+            applicationId={applicationId}
+            dashboardData={dashboardData}
+            companyName={companyName}
+            jobTitle={jobTitle}
+            toast={toast}
+          />
+        )}
+
         {/* Dashboard sub-tab */}
         <TabsContent value="dashboard" className="space-y-4">
           <div className="flex flex-wrap gap-2">

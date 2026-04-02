@@ -786,13 +786,15 @@ class BackgroundGenerationManager {
         status: "complete",
         generation_status: "complete",
       } as any);
-    } catch (e) {
-      console.warn("Dashboard generation failed:", e);
+    } catch (e: any) {
+      console.error("Dashboard generation failed:", e);
+      // Mark complete but record the dashboard error so recovery can detect it
       await saveJobApplication({
         id: appId,
         job_url: jobUrl,
         status: "complete",
         generation_status: "complete",
+        generation_error: `Dashboard failed: ${e?.message || "Unknown error"}`,
       } as any);
     }
 

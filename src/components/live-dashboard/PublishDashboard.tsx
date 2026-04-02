@@ -25,10 +25,11 @@ interface PublishDashboardProps {
   toast: any;
   app?: any;
   jobDescription?: string;
+  onPreviewLiveData?: (data: DashboardData | null) => void;
 }
 
 export default function PublishDashboard({
-  applicationId, dashboardData, companyName, jobTitle, toast, app, jobDescription,
+  applicationId, dashboardData, companyName, jobTitle, toast, app, jobDescription, onPreviewLiveData,
 }: PublishDashboardProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();

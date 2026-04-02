@@ -10,6 +10,7 @@ import type { DashboardData } from "@/lib/dashboard/schema";
 import { supabase } from "@/integrations/supabase/client";
 import { useBackgroundJob } from "@/hooks/useBackgroundJob";
 import { useQuery } from "@tanstack/react-query";
+import { backgroundGenerator } from "@/lib/backgroundGenerator";
 import type { JobApplication, UserProfileSnapshot, UserResumePickerItem, ChatMessage, FabricationChange } from "@/types/models";
 
 export function useApplicationDetail() {
@@ -119,9 +120,21 @@ export function useApplicationDetail() {
   }, [bgJob?.status]);
 
   // Initial load + polling
+  const dashboardRecoveryAttempted = useRef(false);
   useEffect(() => {
     if (id && isValidUuid) loadApplication(id);
   }, [id, isValidUuid]);
+
+  // Auto-recover orphaned dashboard generation (app completed but no dashboard)
+  useEffect(() => {
+    if (!app || !id || dashboardRecoveryAttempted.current) return;
+    const isComplete = app.generation_status === "complete" || app.status === "complete";
+    const hasDashboard = !!app.dashboard_html;
+    if (isComplete && !hasDashboard) {
+      dashboardRecoveryAttempted.current = true;
+      backgroundGenerator.recoverDashboardGeneration(id, app);
+    }
+  }, [app, id]);
 
   useEffect(() => {
     if (!id || !isValidUuid) return;

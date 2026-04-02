@@ -581,6 +581,32 @@ class BackgroundGenerationManager {
       }
 
       // 4d. PAUSE for dashboard customization — store research data on job
+      // Persist pipeline state to DB so it survives page refresh
+      const pipelineState = {
+        jobUrl,
+        companyUrl,
+        markdown,
+        brandingData,
+        companyName,
+        jobTitle,
+        department,
+        competitors,
+        customers,
+        products,
+        jdIntelligence,
+        candidateName,
+      };
+      await saveJobApplication({
+        id: appId,
+        job_url: jobUrl,
+        generation_status: "awaiting-dashboard-config",
+        research_reasoning: JSON.stringify({
+          _pipelineState: pipelineState,
+          _researchedSections: researchedSections,
+          _researchedCfoScenarios: researchedCfoScenarios,
+        }),
+      } as any);
+
       this.updateJob(appId, {
         status: "awaiting-dashboard-config",
         progress: "Customize your dashboard",
@@ -588,20 +614,7 @@ class BackgroundGenerationManager {
         researchedSections,
         researchedCfoScenarios,
         scrapedBranding: brandingData,
-        _pipelineState: {
-          jobUrl,
-          companyUrl,
-          markdown,
-          brandingData,
-          companyName,
-          jobTitle,
-          department,
-          competitors,
-          customers,
-          products,
-          jdIntelligence,
-          candidateName,
-        },
+        _pipelineState: pipelineState,
       });
 
       // Auto-resume with defaults after 5 minutes if user doesn't interact
@@ -630,6 +643,59 @@ class BackgroundGenerationManager {
         } as any);
       } catch {}
     }
+  }
+
+  /**
+   * Recover dashboard generation for an app that completed without a dashboard.
+   * Loads persisted pipeline state from research_reasoning column.
+   */
+  async recoverDashboardGeneration(appId: string, app: any) {
+    // Already has a dashboard or is currently generating
+    if (app.dashboard_html) return;
+    const existingJob = this.jobs.get(appId);
+    if (existingJob && !["complete", "error"].includes(existingJob.status)) return;
+
+    // Try to recover pipeline state from DB
+    let pipelineState: any = null;
+    let researchedSections: any[] | undefined;
+    let researchedCfoScenarios: any[] | undefined;
+    try {
+      const stored = typeof app.research_reasoning === "string" ? JSON.parse(app.research_reasoning) : null;
+      if (stored?._pipelineState) {
+        pipelineState = stored._pipelineState;
+        researchedSections = stored._researchedSections;
+        researchedCfoScenarios = stored._researchedCfoScenarios;
+      }
+    } catch { /* not valid JSON pipeline state */ }
+
+    if (!pipelineState) {
+      console.warn("[Recovery] No persisted pipeline state for", appId, "— cannot auto-recover dashboard");
+      return;
+    }
+
+    console.log("[Recovery] Auto-recovering dashboard generation for", appId);
+
+    // Set up in-memory job with recovered state
+    const job: GenerationJob = {
+      applicationId: appId,
+      status: "awaiting-dashboard-config",
+      progress: "Recovering dashboard generation...",
+      currentAsset: "Dashboard",
+      researchedSections,
+      researchedCfoScenarios,
+      scrapedBranding: pipelineState.brandingData,
+      _pipelineState: pipelineState,
+    };
+    this.jobs.set(appId, job);
+    this.notify();
+
+    // Auto-resume with defaults immediately
+    this.resumeDashboardGeneration(appId, {
+      selectedSections: researchedSections?.slice(0, 7),
+      selectedCfoScenarios: researchedCfoScenarios
+        ?.sort((a: any, b: any) => (a.relevanceRank || 99) - (b.relevanceRank || 99))
+        .slice(0, 3),
+    });
   }
 
   /**
@@ -773,13 +839,15 @@ class BackgroundGenerationManager {
         status: "complete",
         generation_status: "complete",
       } as any);
-    } catch (e) {
-      console.warn("Dashboard generation failed:", e);
+    } catch (e: any) {
+      console.error("Dashboard generation failed:", e);
+      // Mark complete but record the dashboard error so recovery can detect it
       await saveJobApplication({
         id: appId,
         job_url: jobUrl,
         status: "complete",
         generation_status: "complete",
+        generation_error: `Dashboard failed: ${e?.message || "Unknown error"}`,
       } as any);
     }
 

@@ -286,9 +286,9 @@ export default function DashboardRenderer({ data }: { data: DashboardData }) {
             )}
             <div className="min-w-0 flex-1">
               <h1 className="text-lg md:text-xl font-bold truncate" style={{ fontFamily: "var(--dash-font-heading)" }}>
-                {data.meta.companyName} — {data.meta.jobTitle}
+                {data.meta.companyName} — {data.meta.department}
               </h1>
-              <p className="text-xs opacity-80 truncate">{data.meta.department}</p>
+              <p className="text-xs opacity-80 truncate">{data.meta.jobTitle}</p>
             </div>
           </div>
         </header>

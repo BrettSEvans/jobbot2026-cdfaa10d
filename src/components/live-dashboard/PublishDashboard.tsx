@@ -116,7 +116,7 @@ export default function PublishDashboard({
       // Save revision
       if (dashId) {
         try {
-          await saveLiveDashboardRevision(dashId, applicationId, dataToPublish, "publish", "Initial publish");
+          await saveLiveDashboardRevision(dashId, applicationId, dataToPublish, src || "publish", src === "regenerate" ? "Regenerated" : "Published");
         } catch { /* non-critical */ }
       }
     },

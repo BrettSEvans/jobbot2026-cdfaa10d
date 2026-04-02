@@ -1,56 +1,41 @@
 
 
-## Plan: WIP Banner, Department Title, Visual Polish, and Background Color in Prompts
+## Plan: Markdown Rendering, Tooltips, and Tab-Aware Chatbot
 
-### Changes
+### 1. Render markdown in chatbot messages (`DashboardChatbot.tsx`)
 
-#### 1. Agentic Workforce WIP banner (`DashboardRenderer.tsx`)
-Add a styled "Work in Progress" callout at the top of the Agentic Workforce section using `primaryContainer`/`onPrimaryContainer` colors with a construction icon.
+Install `react-markdown` and use it to render assistant messages instead of raw text.
 
-#### 2. Retitle header to department-first (`DashboardRenderer.tsx`)
-Change header from `{companyName} — {jobTitle}` to `{companyName} — {department}`. Move `jobTitle` to subtitle.
+- Add `react-markdown` dependency
+- Wrap assistant message content in `<ReactMarkdown>` with prose styling
+- User messages remain plain text
 
-#### 3. Visual polish — Plaid-inspired (`DashboardRenderer.tsx`)
-- Gradient header: blend `primary` to a darker shade instead of flat color
-- Section entrance: add CSS fade-in animation via inline keyframes
-- Subtle SVG background pattern on the surface (low-opacity topographic/wave lines)
-- Hover scale on KPI cards and agent cards
-- Gradient overlay on Candidate Hero
+### 2. Add rollover tooltips to live dashboard elements (`DashboardRenderer.tsx`)
 
-#### 4. Add `background` field to branding schema (`schema.ts`)
-Add optional `background?: string` to `DashboardBranding` for page background color/gradient.
+Add `<Tooltip>` wrappers to interactive elements that lack them:
+- **KPI cards**: tooltip showing the metric label + change detail
+- **Chart blocks**: tooltip on chart title showing full title (useful when truncated)
+- **Agent cards**: tooltip showing full `coreFunctionality` text
+- **Scenario panels**: tooltip on title showing description preview
 
-#### 5. Apply background color in renderer (`DashboardRenderer.tsx`)
-Use `data.branding.background` (falling back to `surface`) for the outermost container background.
+KpiCard already has hover effects; wrap it in a Tooltip showing `"{metric.label}: {metric.value} ({metric.change})"`.
 
-#### 6. Update live dashboard generation prompt (`generate-dashboard/index.ts`)
-- Add `"background"` field to the branding schema in the prompt: `"background": "#hex or CSS gradient — page background color derived from branding. Use a subtle tint or gradient, not plain white."`
-- Add instruction: "The branding.background should be a subtle gradient or tinted surface color derived from the company's palette — not plain #FFFFFF."
-- Update title guidance: "meta.department should be prominent; the header displays `{companyName} — {department}`"
-- Add agentic workforce WIP note: "The agenticWorkforce section description should note it is a work in progress"
+### 3. Enhance chatbot system prompt for tab/page awareness (`dashboard-chat/index.ts`)
 
-#### 7. Update refine prompt (`refine-dashboard/index.ts`)
-Add `"background"` to the branding schema block in the JSON refinement system prompt.
-
-#### 8. Update downloadable dashboard generation prompt (`generate-dashboard/index.ts`)
-The same prompt already serves both live and downloadable dashboards, so the background color addition covers both. Ensure the downloadable template's CSS (`styles.ts`) respects `background` if present by applying it via the JS rendering engine (already handles branding overrides).
-
-#### 9. Update downloadable template scripts (`scripts.ts`)
-In the branding application logic, apply `data.branding.background` to `document.body.style.background` if present.
+Expand the system prompt to include:
+- **Navigation context**: list all nav items with their IDs and labels so the AI knows what tabs exist
+- **Agentic Workforce context**: serialize agent names, functionality, and interfacing teams; note WIP status
+- **CFO Scenarios context**: already included but add the slider details (labels, ranges, defaults)
+- **Candidate context**: include candidate name, tagline, links
+- **Tab purpose mapping**: add a paragraph explaining each standard tab type (overview = KPIs summary, cfo-view = scenario analysis, agentic-workforce = AI agent proposals, etc.)
 
 ### Files Changed
 
 | File | Change |
 |---|---|
-| `src/lib/dashboard/schema.ts` | Add `background?: string` to `DashboardBranding` |
-| `src/components/live-dashboard/DashboardRenderer.tsx` | WIP banner, department-first title, gradient header, fade-in animations, SVG background pattern, hover effects, use `branding.background` |
-| `supabase/functions/generate-dashboard/index.ts` | Add `background` to branding schema in prompt, department-first title guidance, agentic WIP note |
-| `supabase/functions/refine-dashboard/index.ts` | Add `background` to branding schema in refinement prompt |
-| `src/lib/dashboard/templates/scripts.ts` | Apply `branding.background` to body if present |
-
-### What stays the same
-- Database — no migrations
-- `PublishDashboard.tsx` — unchanged
-- `LiveDashboard.tsx` — unchanged (inherits via DashboardRenderer)
-- Downloadable template CSS (`styles.ts`) — unchanged (JS applies background at runtime)
+| `package.json` | Add `react-markdown` dependency |
+| `src/components/live-dashboard/DashboardChatbot.tsx` | Import ReactMarkdown, render assistant messages with markdown |
+| `src/components/live-dashboard/DashboardRenderer.tsx` | Add Tooltip wrappers to KPI cards, chart titles, agent cards |
+| `src/components/live-dashboard/KpiCard.tsx` | Accept optional tooltip prop or wrap internally |
+| `supabase/functions/dashboard-chat/index.ts` | Enrich system prompt with navigation tabs, agentic workforce, candidate info, and tab purpose descriptions |
 

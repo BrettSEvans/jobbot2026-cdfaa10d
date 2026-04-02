@@ -1153,7 +1153,7 @@ Job Title: ${jobTitle || 'Unknown'}
 Competitors: ${(competitors || []).join(', ') || 'N/A'}
 Products: ${(products || []).join(', ') || 'N/A'}
 Customers: ${(customers || []).join(', ') || 'N/A'}
-${brandingSection}${bpSection}${existingPatternsSection}${styleFamilySection}`;
+${brandingSection}${bpSection}${existingPatternsSection}${variabilitySection}${styleFamilySection}`;
 
     const response = await aiFetchWithRetry(LOVABLE_API_KEY, {
       model: getModel('standard'),

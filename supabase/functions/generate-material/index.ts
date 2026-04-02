@@ -473,7 +473,31 @@ RESPONSE FORMAT:
   - Ensure every section has margin-bottom: 0.12in minimum
   - Footer inside flex column wrapper, never absolute/fixed
   - NEVER add overflow:hidden to any text container in your fix
-  - Return ONLY raw HTML — no markdown fences, no explanations`;
+- Return ONLY raw HTML — no markdown fences, no explanations
+
+**HOLISTIC COMPOSITION:**
+11. HOLISTIC BALANCE: Step back and evaluate the ENTIRE page as one composition.
+    - Is visual weight evenly distributed top-to-bottom and left-to-right? No half of the page should be 3x denser than the other.
+    - Do all peer sections have consistent padding, borders, and spacing?
+    - Are cards/frames in the same row equal height?
+    - Is section spacing uniform throughout?
+    - Does the page look like a single cohesive design, or a patchwork of disconnected blocks?
+    If the layout feels lopsided, asymmetric, or amateurish, restructure sections for visual harmony.
+
+12. ALIGNMENT CONSISTENCY: All body section headings must use the same alignment style (all left or all center — never mixed).
+    Bullet markers and icons must sit INSIDE their text block (not flush with the page edge).
+    Padding and margins must be uniform across peer elements at the same hierarchy level.
+
+13. PAGE FILL: The document must fill 80-85% of the usable page area (~9.2in × 7.5in).
+    - If the content only fills ~50-60% of the page, ADD more substantive content (extra bullets, an additional relevant section, or a data element) to reach the 80% target.
+    - If content exceeds 90%, condense the least valuable section.
+    - An under-filled page is a FAILURE — it looks incomplete to a hiring manager.
+    When fixing page fill, maintain all other layout rules (no overflow:hidden, height:auto, etc.).
+
+Fix rules for new checks:
+  - For BALANCE issues: redistribute content, equalize section sizes, add consistent padding
+  - For PAGE FILL: expand sparse content with relevant professional material, never leave a document looking half-empty
+  - For ALIGNMENT: normalize heading alignment and ensure bullet icons have adequate left padding`;
 
 const MAX_REVIEW_CYCLES = 3;
 

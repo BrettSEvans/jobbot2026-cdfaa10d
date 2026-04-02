@@ -1,10 +1,8 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { Globe, Copy, Loader2, Check, RefreshCw, Edit3, Send, Info } from "lucide-react";
+import { Globe, Copy, Loader2, Check, RefreshCw, Edit3, Send, Info, Eye, EyeOff, MessageSquare, MessageSquareOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -23,7 +21,6 @@ interface PublishDashboardProps {
   companyName: string;
   jobTitle: string;
   toast: any;
-  /** Optional: full app record for regeneration context */
   app?: any;
   jobDescription?: string;
 }
@@ -40,7 +37,6 @@ export default function PublishDashboard({
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [chatHistory, setChatHistory] = useState<Array<{ role: string; content: string }>>([]);
 
-  // Check admin role
   const { data: isAdmin } = useQuery({
     queryKey: ["is-admin", user?.id],
     enabled: !!user?.id,
@@ -56,8 +52,7 @@ export default function PublishDashboard({
     },
   });
 
-  // Fetch existing live dashboard
-  const { data: liveDash, isLoading } = useQuery({
+  const { data: liveDash } = useQuery({
     queryKey: ["live-dashboard-admin", applicationId],
     enabled: !!isAdmin && !!applicationId,
     queryFn: async () => {
@@ -70,7 +65,6 @@ export default function PublishDashboard({
     },
   });
 
-  // Publish / update mutation
   const publishMutation = useMutation({
     mutationFn: async (overrideData?: DashboardData) => {
       const dataToPublish = overrideData || dashboardData;
@@ -121,7 +115,6 @@ export default function PublishDashboard({
     },
   });
 
-  // Toggle published
   const toggleMutation = useMutation({
     mutationFn: async (published: boolean) => {
       if (!liveDash) return;
@@ -136,7 +129,6 @@ export default function PublishDashboard({
     },
   });
 
-  // Toggle chatbot
   const chatbotMutation = useMutation({
     mutationFn: async (enabled: boolean) => {
       if (!liveDash) return;
@@ -151,7 +143,6 @@ export default function PublishDashboard({
     },
   });
 
-  // Regenerate live dashboard
   const handleRegenerate = useCallback(async () => {
     if (!liveDash || !jobDescription?.trim()) {
       toast({ title: "Cannot regenerate", description: "Job description is required.", variant: "destructive" });
@@ -178,7 +169,6 @@ export default function PublishDashboard({
         return;
       }
 
-      // Update live dashboard with new data
       await publishMutation.mutateAsync(parsed);
       setChatHistory([]);
       toast({ title: "Dashboard regenerated!", description: "The live dashboard has been updated with fresh data." });
@@ -189,7 +179,6 @@ export default function PublishDashboard({
     }
   }, [liveDash, jobDescription, app, companyName, jobTitle, publishMutation, toast]);
 
-  // Vibe edit: refine live dashboard JSON
   const handleVibeEdit = useCallback(async () => {
     if (!vibeInput.trim() || isRefining || !liveDash) return;
     const msg = vibeInput.trim();
@@ -214,7 +203,6 @@ export default function PublishDashboard({
 
       const parsed = parseLlmJsonOutput(accumulated);
       if (parsed) {
-        // Update live dashboard with refined data
         const { error } = await supabase
           .from("live_dashboards")
           .update({
@@ -253,148 +241,167 @@ export default function PublishDashboard({
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const isPublished = liveDash?.is_published;
+  const isChatbotOn = liveDash?.chatbot_enabled;
+
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-sm flex items-center gap-2">
-          <Globe className="h-4 w-4" />
-          Live Dashboard
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3">
+    <div className="space-y-3">
+      {/* Primary action bar */}
+      <div className="flex flex-wrap items-center gap-2">
         {!liveDash ? (
           <Button
             onClick={() => publishMutation.mutate(undefined)}
             disabled={publishMutation.isPending}
             size="sm"
+            className="gap-1.5"
           >
-            {publishMutation.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />}
+            {publishMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Globe className="h-3.5 w-3.5" />}
             Publish Live Dashboard
           </Button>
         ) : (
           <>
-            {/* URL */}
-            {publicUrl && (
-              <div className="flex items-center gap-2">
-                <code className="text-xs bg-secondary px-2 py-1 rounded flex-1 truncate">
-                  {publicUrl}
-                </code>
-                <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={copyUrl}>
-                  {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-                </Button>
-              </div>
-            )}
+            {/* Publish / Unpublish toggle button */}
+            <Button
+              variant={isPublished ? "outline" : "default"}
+              size="sm"
+              className="gap-1.5"
+              onClick={() => toggleMutation.mutate(!isPublished)}
+              disabled={toggleMutation.isPending}
+            >
+              {toggleMutation.isPending ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : isPublished ? (
+                <EyeOff className="h-3.5 w-3.5" />
+              ) : (
+                <Eye className="h-3.5 w-3.5" />
+              )}
+              {isPublished ? "Unpublish" : "Publish"}
+            </Button>
 
-            {/* Toggles */}
-            <div className="flex items-center justify-between">
-              <span className="text-sm">Published</span>
-              <div className="flex items-center gap-2">
-                <Badge variant={liveDash.is_published ? "default" : "secondary"} className="text-xs">
-                  {liveDash.is_published ? "Live" : "Draft"}
-                </Badge>
-                <Switch
-                  checked={liveDash.is_published}
-                  onCheckedChange={(v) => toggleMutation.mutate(v)}
-                />
-              </div>
-            </div>
+            {/* Status badge */}
+            <Badge variant={isPublished ? "default" : "secondary"} className="text-xs">
+              {isPublished ? "Live" : "Draft"}
+            </Badge>
 
-            <div className="flex items-center justify-between">
-              <span className="text-sm">AI Chatbot</span>
-              <Switch
-                checked={liveDash.chatbot_enabled}
-                onCheckedChange={(v) => chatbotMutation.mutate(v)}
-              />
-            </div>
+            {/* Chatbot toggle button */}
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              onClick={() => chatbotMutation.mutate(!isChatbotOn)}
+              disabled={chatbotMutation.isPending}
+            >
+              {chatbotMutation.isPending ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : isChatbotOn ? (
+                <MessageSquareOff className="h-3.5 w-3.5" />
+              ) : (
+                <MessageSquare className="h-3.5 w-3.5" />
+              )}
+              {isChatbotOn ? "Disable Chat" : "Enable Chat"}
+            </Button>
 
-            {/* Action buttons */}
-            <div className="flex flex-wrap gap-2">
-              <Button
-                variant="outline" size="sm"
-                onClick={handleRegenerate}
-                disabled={isRegenerating || !jobDescription}
-              >
-                {isRegenerating ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <RefreshCw className="h-3.5 w-3.5 mr-1" />}
-                Regenerate
-              </Button>
+            {/* Regenerate */}
+            <Button
+              variant="outline" size="sm"
+              className="gap-1.5"
+              onClick={handleRegenerate}
+              disabled={isRegenerating || !jobDescription}
+            >
+              {isRegenerating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+              Regenerate
+            </Button>
 
-              <Button
-                variant="outline" size="sm"
-                onClick={() => setVibeOpen(!vibeOpen)}
-              >
-                <Edit3 className="h-3.5 w-3.5 mr-1" />
-                {vibeOpen ? "Hide Edit" : "Vibe Edit"}
-              </Button>
-            </div>
-
-            {/* Vibe Edit Panel */}
-            {vibeOpen && (
-              <div className="space-y-2 pt-1">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-xs font-medium text-muted-foreground">Vibe Edit</span>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-5 w-5">
-                        <Info className="h-3 w-3" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-72 text-xs space-y-2" side="top">
-                      <p className="font-semibold">Prompting Guide</p>
-                      <p><strong>Role:</strong> "As a hiring manager…"</p>
-                      <p><strong>Outcome:</strong> "Add a section showing…"</p>
-                      <p><strong>Design:</strong> "Use a heatmap for…"</p>
-                      <div className="border-t pt-2 space-y-1">
-                        <p className="text-muted-foreground">Examples:</p>
-                        <p className="italic">"Replace the pipeline chart with a funnel showing conversion rates"</p>
-                        <p className="italic">"Add a candidate hero section with my name and tagline"</p>
-                        <p className="italic">"Change the color scheme to match Plaid's navy blue"</p>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                </div>
-
-                {/* Chat history */}
-                {chatHistory.length > 0 && (
-                  <div className="max-h-32 overflow-y-auto space-y-1.5 text-xs rounded border p-2 bg-secondary/30">
-                    {chatHistory.map((m, i) => (
-                      <div key={i} className={m.role === "user" ? "text-right" : "text-left"}>
-                        <span className={`inline-block px-2 py-1 rounded ${
-                          m.role === "user" ? "bg-primary text-primary-foreground" : "bg-secondary"
-                        }`}>
-                          {m.content}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                <div className="flex gap-2">
-                  <Textarea
-                    value={vibeInput}
-                    onChange={(e) => setVibeInput(e.target.value)}
-                    placeholder="Describe what to change on the live dashboard..."
-                    className="min-h-[36px] max-h-[72px] resize-none text-sm flex-1"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && !e.shiftKey) {
-                        e.preventDefault();
-                        handleVibeEdit();
-                      }
-                    }}
-                  />
-                  <Button
-                    size="icon"
-                    className="h-9 w-9 shrink-0"
-                    onClick={handleVibeEdit}
-                    disabled={isRefining || !vibeInput.trim()}
-                  >
-                    {isRefining ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                  </Button>
-                </div>
-              </div>
-            )}
+            {/* Vibe Edit toggle */}
+            <Button
+              variant={vibeOpen ? "secondary" : "outline"}
+              size="sm"
+              className="gap-1.5"
+              onClick={() => setVibeOpen(!vibeOpen)}
+            >
+              <Edit3 className="h-3.5 w-3.5" />
+              Vibe Edit
+            </Button>
           </>
         )}
-      </CardContent>
-    </Card>
+      </div>
+
+      {/* Public URL bar */}
+      {publicUrl && (
+        <div className="flex items-center gap-2">
+          <code className="text-xs bg-secondary px-2 py-1 rounded flex-1 truncate">
+            {publicUrl}
+          </code>
+          <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={copyUrl}>
+            {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+          </Button>
+        </div>
+      )}
+
+      {/* Vibe Edit Panel */}
+      {vibeOpen && liveDash && (
+        <div className="space-y-2 rounded-lg border bg-card p-3">
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs font-medium text-muted-foreground">Vibe Edit</span>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-5 w-5">
+                  <Info className="h-3 w-3" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-72 text-xs space-y-2" side="top">
+                <p className="font-semibold">Prompting Guide</p>
+                <p><strong>Role:</strong> "As a hiring manager…"</p>
+                <p><strong>Outcome:</strong> "Add a section showing…"</p>
+                <p><strong>Design:</strong> "Use a heatmap for…"</p>
+                <div className="border-t pt-2 space-y-1">
+                  <p className="text-muted-foreground">Examples:</p>
+                  <p className="italic">"Replace the pipeline chart with a funnel showing conversion rates"</p>
+                  <p className="italic">"Add a candidate hero section with my name and tagline"</p>
+                  <p className="italic">"Change the color scheme to match Plaid's navy blue"</p>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          {chatHistory.length > 0 && (
+            <div className="max-h-32 overflow-y-auto space-y-1.5 text-xs rounded border p-2 bg-secondary/30">
+              {chatHistory.map((m, i) => (
+                <div key={i} className={m.role === "user" ? "text-right" : "text-left"}>
+                  <span className={`inline-block px-2 py-1 rounded ${
+                    m.role === "user" ? "bg-primary text-primary-foreground" : "bg-secondary"
+                  }`}>
+                    {m.content}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="flex gap-2">
+            <Textarea
+              value={vibeInput}
+              onChange={(e) => setVibeInput(e.target.value)}
+              placeholder="Describe what to change on the live dashboard..."
+              className="min-h-[36px] max-h-[72px] resize-none text-sm flex-1"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleVibeEdit();
+                }
+              }}
+            />
+            <Button
+              size="icon"
+              className="h-9 w-9 shrink-0"
+              onClick={handleVibeEdit}
+              disabled={isRefining || !vibeInput.trim()}
+            >
+              {isRefining ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

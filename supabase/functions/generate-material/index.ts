@@ -1182,7 +1182,7 @@ ${brandingSection}${bpSection}${existingPatternsSection}${styleFamilySection}`;
     if (isDense) {
       console.log(`Density detected: sections=${sectionCount}, bullets=${bulletCount}, rows=${tableRowCount}, chars=${textLength}. Running condensation retry.`);
       const condenseResp = await aiFetchWithRetry(LOVABLE_API_KEY, {
-        model: 'google/gemini-2.5-flash',
+        model: getModel('flash'),
         messages: [
           { role: 'system', content: `You are a document editor. The following HTML document is TOO DENSE for a single US Letter page. Condense it:
 1. Merge sections down to max 3 body sections (combine related ones aggressively)

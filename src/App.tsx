@@ -107,9 +107,11 @@ function AppRoutes() {
   // Public dashboard routes don't need auth
   if (location.pathname.startsWith("/d/")) {
     return (
-      <Routes>
-        <Route path="/d/:username/:company/:jobtitle" element={<LiveDashboard />} />
-      </Routes>
+      <ErrorBoundary>
+        <Routes>
+          <Route path="/d/:username/:company/:jobtitle" element={<LiveDashboard />} />
+        </Routes>
+      </ErrorBoundary>
     );
   }
   return (

@@ -291,6 +291,22 @@ export default function DynamicMaterialsSection({
   const [assetChatInput, setAssetChatInput] = useState<Record<string, string>>({});
   const [assetChatHistory, setAssetChatHistory] = useState<Record<string, Array<{ role: string; content: string }>>>({});
   const [assetRefining, setAssetRefining] = useState<Record<string, boolean>>({});
+
+  // Fetch live dashboard for live preview mode
+  const { data: liveDashRecord } = useQuery({
+    queryKey: ["live-dashboard-view", applicationId],
+    enabled: !!applicationId && dashboardViewMode === "live",
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("live_dashboards")
+        .select("*")
+        .eq("application_id", applicationId)
+        .maybeSingle();
+      return data;
+    },
+  });
+  const liveDashData = liveDashRecord?.dashboard_data as unknown as DashboardData | null;
+
   // Fetch generated assets
   useEffect(() => {
     if (!applicationId) return;

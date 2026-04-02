@@ -179,9 +179,17 @@ function SectionBlock({ section, filterValues }: { section: DashboardSection; fi
       {hasMetrics && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
           {section.metrics!.map((m, i) => (
-            <div key={i} className="transition-transform duration-200 hover:scale-105">
-              <KpiCard metric={m} />
-            </div>
+            <Tooltip key={i}>
+              <TooltipTrigger asChild>
+                <div className="transition-transform duration-200 hover:scale-105">
+                  <KpiCard metric={m} />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="text-xs max-w-[200px]">
+                <p className="font-semibold">{m.label}</p>
+                <p>{m.value}{m.change ? ` (${m.change})` : ""}</p>
+              </TooltipContent>
+            </Tooltip>
           ))}
         </div>
       )}
@@ -401,7 +409,17 @@ export default function DashboardRenderer({ data }: { data: DashboardData }) {
                   </h3>
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     {data.cfoScenarios?.map((s) => (
-                      <ScenarioPanel key={s.id} scenario={s} />
+                      <Tooltip key={s.id}>
+                        <TooltipTrigger asChild>
+                          <div>
+                            <ScenarioPanel scenario={s} />
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="text-xs max-w-[280px]">
+                          <p className="font-semibold">{s.title}</p>
+                          <p>{s.description}</p>
+                        </TooltipContent>
+                      </Tooltip>
                     ))}
                   </div>
                 </section>
@@ -431,12 +449,20 @@ export default function DashboardRenderer({ data }: { data: DashboardData }) {
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                     {data.agenticWorkforce?.map((agent, i) => (
-                      <div key={i} className="rounded-lg p-4 space-y-2 border transition-transform duration-200 hover:scale-105"
-                        style={{ background: "var(--dash-surface-variant, hsl(var(--card)))", borderColor: "var(--dash-outline, hsl(var(--border)))" }}>
-                        <h4 className="font-semibold text-sm" style={{ color: "var(--dash-on-surface, hsl(var(--card-foreground)))" }}>{agent.name}</h4>
-                        <p className="text-xs" style={{ color: "var(--dash-on-surface, hsl(var(--muted-foreground)))", opacity: 0.7 }}>{agent.coreFunctionality}</p>
-                        <p className="text-xs italic" style={{ color: "var(--dash-on-surface, hsl(var(--muted-foreground)))", opacity: 0.5 }}>Teams: {agent.interfacingTeams}</p>
-                      </div>
+                      <Tooltip key={i}>
+                        <TooltipTrigger asChild>
+                          <div className="rounded-lg p-4 space-y-2 border transition-transform duration-200 hover:scale-105 cursor-default"
+                            style={{ background: "var(--dash-surface-variant, hsl(var(--card)))", borderColor: "var(--dash-outline, hsl(var(--border)))" }}>
+                            <h4 className="font-semibold text-sm" style={{ color: "var(--dash-on-surface, hsl(var(--card-foreground)))" }}>{agent.name}</h4>
+                            <p className="text-xs line-clamp-2" style={{ color: "var(--dash-on-surface, hsl(var(--muted-foreground)))", opacity: 0.7 }}>{agent.coreFunctionality}</p>
+                            <p className="text-xs italic" style={{ color: "var(--dash-on-surface, hsl(var(--muted-foreground)))", opacity: 0.5 }}>Teams: {agent.interfacingTeams}</p>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="text-xs max-w-[280px]">
+                          <p className="font-semibold">{agent.name}</p>
+                          <p>{agent.coreFunctionality}</p>
+                        </TooltipContent>
+                      </Tooltip>
                     ))}
                   </div>
                 </section>

@@ -68,6 +68,54 @@ export type GenerationJob = {
 
 type Listener = () => void;
 
+/**
+ * Runs async task functions with a maximum concurrency limit and staggered starts.
+ * Each task is a zero-arg async function. At most `limit` tasks run simultaneously.
+ * New tasks are staggered by `staggerMs` to avoid burst-loading APIs.
+ */
+async function runWithConcurrency(
+  tasks: Array<() => Promise<void>>,
+  limit: number = 3,
+  staggerMs: number = 1000,
+): Promise<void> {
+  const queue = [...tasks];
+  const running: Promise<void>[] = [];
+
+  const startNext = async (): Promise<void> => {
+    const task = queue.shift();
+    if (!task) return;
+    const p = task().then(() => {
+      running.splice(running.indexOf(p), 1);
+    });
+    running.push(p);
+    // Stagger the next launch
+    if (queue.length > 0 && running.length < limit) {
+      await new Promise(r => setTimeout(r, staggerMs));
+    }
+  };
+
+  // Seed the pool up to the limit with staggered starts
+  while (queue.length > 0 && running.length < limit) {
+    await startNext();
+    if (queue.length > 0 && running.length < limit) {
+      await new Promise(r => setTimeout(r, staggerMs));
+    }
+  }
+
+  // As tasks complete, start new ones
+  while (running.length > 0 || queue.length > 0) {
+    if (running.length > 0) {
+      await Promise.race(running);
+    }
+    while (queue.length > 0 && running.length < limit) {
+      await startNext();
+      if (queue.length > 0 && running.length < limit) {
+        await new Promise(r => setTimeout(r, staggerMs));
+      }
+    }
+  }
+}
+
 class BackgroundGenerationManager {
   private jobs: Map<string, GenerationJob> = new Map();
   private listeners: Set<Listener> = new Set();

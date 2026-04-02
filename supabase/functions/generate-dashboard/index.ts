@@ -123,13 +123,23 @@ function validateAndRepair(data: any): { valid: boolean; data?: any; errors: str
     }
   }
 
-  // Validate sections
+  // Validate sections + storytelling density warnings
+  let totalTables = 0;
   for (const sec of data.sections) {
     if (!sec.id) { errors.push('Section missing id'); }
     if (!sec.title) { errors.push('Section missing title'); }
     if (!sec.metrics) sec.metrics = [];
     if (!sec.charts) sec.charts = [];
     if (!sec.tables) sec.tables = [];
+    totalTables += sec.tables.length;
+    // Warn if any section has too many metrics (density check)
+    if (sec.metrics.length > 4) {
+      errors.push(`Section "${sec.id}" has ${sec.metrics.length} metrics (recommend ≤3)`);
+    }
+  }
+  // Warn if total tables exceed recommended max
+  if (totalTables > 3) {
+    errors.push(`Dashboard has ${totalTables} tables (recommend ≤3 for narrative clarity)`);
   }
 
   // Ensure agenticWorkforce and cfoScenarios exist (even if empty)

@@ -413,6 +413,9 @@ ${sectionInstructions}
 - 8-10 agentic workforce agents customized to the role
 - 3 CFO scenarios: one "pricing" (sliders: priceChange, elasticity, growthRate), one "headcount" (sliders: newHires, rampTime, quota), one "expansion" (sliders: tam, penetration, investment)
 - All text must be specific to ${companyName || 'the company'} and the ${jobTitle || 'role'}
+- The header displays "{companyName} — {department}" as the primary title, with jobTitle as subtitle. Make meta.department descriptive and prominent.
+- branding.background MUST be a subtle gradient or tinted surface color derived from the company palette — not plain #FFFFFF or #FFF.
+- The agenticWorkforce section represents a work-in-progress concept. Each agent description should note this is a proposed AI-augmented operating model.
 - Branding colors derived from provided branding data using Material You tonal palette principles
 - Chart datasets: use contextual colors derived from branding, not random colors
 - CONTRAST REQUIREMENT: The "outline" color is used for secondary text (labels, descriptions). It MUST have at least 4.5:1 contrast ratio against the "surface" background. Use a dark value like #49454F or darker — never lighter than #5F5F6F. Avoid light greys (#79747E or lighter) for any text on light backgrounds.

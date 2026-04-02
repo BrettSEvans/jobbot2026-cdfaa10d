@@ -40,7 +40,7 @@ OUTPUT: ONLY valid JSON. No markdown fences, no explanation. Start with { and en
 The JSON follows this schema:
 {
   "meta": { "companyName", "jobTitle", "department", "logoUrl?" },
-  "branding": { "primary", "onPrimary", "primaryContainer", "onPrimaryContainer", "secondary", "onSecondary", "surface", "onSurface", "surfaceVariant", "outline", "error", "fontHeading", "fontBody" },
+  "branding": { "primary", "onPrimary", "primaryContainer", "onPrimaryContainer", "secondary", "onSecondary", "surface", "onSurface", "surfaceVariant", "outline", "error", "fontHeading", "fontBody", "background" },
   "navigation": [{ "id", "label", "icon" }],
   "sections": [{ "id", "title", "description", "metrics": [{ "label", "value", "change", "trend" }], "charts": [{ "id", "title", "type", "data": { "labels", "datasets" } }], "tables": [{ "id", "title", "columns", "generateRows" }] }],
   "agenticWorkforce": [{ "name", "coreFunctionality", "interfacingTeams" }],

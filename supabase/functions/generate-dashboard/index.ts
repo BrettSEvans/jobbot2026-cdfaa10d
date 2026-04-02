@@ -333,7 +333,7 @@ JSON SCHEMA (follow EXACTLY):
     { "id": "string", "label": "string", "type": "dropdown|segmented|chips", "options": ["string"] }
   ],
   "navigation": [
-    { "id": "unique-id", "label": "Section Name", "icon": "material_icon_name" }
+    { "id": "unique-id", "label": "Section Name", "icon": "lucide-icon-name (kebab-case, e.g. layout-dashboard, trending-up, users, dollar-sign, target, bar-chart-3, briefcase, rocket, shield-check, brain, calculator, git-branch, map-pin, zap, pie-chart, activity, globe, clock, package, credit-card, building-2, lightbulb, gauge, layers, database, award, heart, search, file-text, truck, settings)" }
   ],
   "sections": [
     {

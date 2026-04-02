@@ -17,7 +17,7 @@ For the overall dashboard, specify:
 For each section, specify:
 - "id": a unique kebab-case identifier (e.g. "pipeline-health", "revenue-analytics")
 - "label": human-readable section name for navigation
-- "icon": Material Icons Outlined name (e.g. "trending_up", "analytics", "groups")
+- "icon": Lucide React icon name in kebab-case (e.g. "trending-up", "bar-chart-3", "users", "dollar-sign", "target", "briefcase", "rocket", "shield-check", "brain", "calculator", "git-branch", "map-pin", "zap", "pie-chart", "activity", "globe", "clock", "package", "credit-card", "building-2", "lightbulb", "gauge", "layers", "database", "award", "layout-dashboard")
 - "description": 2-3 sentences explaining why this section matters for this role at this company
 - "keyInsight": ONE sentence stating the takeaway the viewer should conclude from this section (e.g. "Payment volume growth is outpacing headcount, creating an efficiency gap this role would close.")
 - "sectionRole": one of "overview", "deep-dive", "evidence", "action" — defines the section's place in the narrative:

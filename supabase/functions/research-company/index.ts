@@ -1,6 +1,6 @@
 import { errorResponse } from "../_shared/errorResponse.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { aiFetchWithRetry } from "../_shared/aiRetry.ts";
+import { aiFetchWithRetry, getModel } from "../_shared/aiRetry.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',

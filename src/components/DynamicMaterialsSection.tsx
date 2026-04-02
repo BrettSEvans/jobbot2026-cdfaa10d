@@ -643,6 +643,8 @@ export default function DynamicMaterialsSection({
             companyName={companyName}
             jobTitle={jobTitle}
             toast={toast}
+            app={app}
+            jobDescription={jobDescription}
           />
         )}
 

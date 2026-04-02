@@ -656,18 +656,7 @@ export default function DynamicMaterialsSection({
           />
         )}
 
-        {/* Admin-only: Publish Live Dashboard */}
-        {isAdmin && dashboardData && (
-          <PublishDashboard
-            applicationId={applicationId}
-            dashboardData={dashboardData}
-            companyName={companyName}
-            jobTitle={jobTitle}
-            toast={toast}
-            app={app}
-            jobDescription={jobDescription}
-          />
-        )}
+        {/* PublishDashboard moved into live dashboard view below */}
 
         {/* Dashboard sub-tab */}
         <TabsContent value="dashboard" className="space-y-4">

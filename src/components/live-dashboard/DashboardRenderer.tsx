@@ -254,9 +254,26 @@ export default function DashboardRenderer({ data }: { data: DashboardData }) {
 
   return (
     <TooltipProvider delayDuration={200}>
-      <div className="min-h-screen flex flex-col" style={{ ...brandingStyle(data.branding), background: "var(--dash-surface, hsl(var(--background)))", fontFamily: "var(--dash-font-body)" }}>
+      {/* Inject fade-in keyframes */}
+      <style>{`@keyframes dashFadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }`}</style>
+      <div
+        className="min-h-screen flex flex-col"
+        style={{
+          ...brandingStyle(data.branding),
+          background: `var(--dash-background, hsl(var(--background)))`,
+          backgroundImage: WAVE_PATTERN,
+          backgroundRepeat: "repeat",
+          fontFamily: "var(--dash-font-body)",
+        }}
+      >
         {/* Header */}
-        <header className="sticky top-0 z-30 shadow-sm" style={{ background: "var(--dash-primary, hsl(var(--primary)))", color: "var(--dash-on-primary, hsl(var(--primary-foreground)))" }}>
+        <header
+          className="sticky top-0 z-30 shadow-md"
+          style={{
+            background: `linear-gradient(135deg, var(--dash-primary, hsl(var(--primary))), ${data.branding?.primaryContainer || "var(--dash-primary, hsl(var(--primary)))"})`,
+            color: "var(--dash-on-primary, hsl(var(--primary-foreground)))",
+          }}
+        >
           <div className="px-4 py-3 flex items-center gap-3">
             {hasNav && (
               <button

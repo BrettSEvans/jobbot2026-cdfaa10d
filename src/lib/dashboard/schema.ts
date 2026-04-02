@@ -36,6 +36,7 @@ export interface DashboardBranding {
   error: string;
   fontHeading: string;
   fontBody: string;
+  background?: string;
 }
 
 export interface NavItem {

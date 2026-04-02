@@ -96,8 +96,17 @@ function brandingStyle(b?: DashboardBranding): React.CSSProperties {
     "--dash-error": b.error,
     "--dash-font-heading": b.fontHeading || "inherit",
     "--dash-font-body": b.fontBody || "inherit",
+    "--dash-background": b.background || b.surface || "hsl(var(--background))",
   } as React.CSSProperties;
 }
+
+/* ── Inline fade-in keyframes ── */
+const fadeInStyle: React.CSSProperties = {
+  animation: "dashFadeIn 0.4s ease-out both",
+};
+
+/* ── Subtle SVG wave pattern for background ── */
+const WAVE_PATTERN = `url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 50 Q25 30 50 50 T100 50' fill='none' stroke='%23000' stroke-width='0.5' opacity='0.04'/%3E%3Cpath d='M0 70 Q25 50 50 70 T100 70' fill='none' stroke='%23000' stroke-width='0.5' opacity='0.03'/%3E%3C/svg%3E")`;
 
 /* ── Candidate Hero ── */
 function CandidateHero({ data }: { data: DashboardData }) {
@@ -107,7 +116,10 @@ function CandidateHero({ data }: { data: DashboardData }) {
   return (
     <div
       className="rounded-xl p-6 md:p-8 flex flex-col md:flex-row items-center gap-5"
-      style={{ background: data.branding?.primary || "hsl(var(--primary))", color: data.branding?.onPrimary || "hsl(var(--primary-foreground))" }}
+      style={{
+        background: `linear-gradient(135deg, ${data.branding?.primary || "hsl(var(--primary))"}, ${data.branding?.primaryContainer || "hsl(var(--primary))"})`,
+        color: data.branding?.onPrimary || "hsl(var(--primary-foreground))",
+      }}
     >
       {c.photoUrl ? (
         <img src={c.photoUrl} alt={c.name} className="h-20 w-20 rounded-full object-cover border-2 border-white/30" />
@@ -154,7 +166,7 @@ function SectionBlock({ section, filterValues }: { section: DashboardSection; fi
   };
 
   return (
-    <section className="space-y-4">
+    <section className="space-y-4" style={fadeInStyle}>
       <div>
         <h3 className="text-lg font-bold" style={{ fontFamily: "var(--dash-font-heading)", color: "var(--dash-on-surface, hsl(var(--foreground)))" }}>
           {section.title}
@@ -167,7 +179,9 @@ function SectionBlock({ section, filterValues }: { section: DashboardSection; fi
       {hasMetrics && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
           {section.metrics!.map((m, i) => (
-            <KpiCard key={i} metric={m} />
+            <div key={i} className="transition-transform duration-200 hover:scale-105">
+              <KpiCard metric={m} />
+            </div>
           ))}
         </div>
       )}
@@ -240,9 +254,26 @@ export default function DashboardRenderer({ data }: { data: DashboardData }) {
 
   return (
     <TooltipProvider delayDuration={200}>
-      <div className="min-h-screen flex flex-col" style={{ ...brandingStyle(data.branding), background: "var(--dash-surface, hsl(var(--background)))", fontFamily: "var(--dash-font-body)" }}>
+      {/* Inject fade-in keyframes */}
+      <style>{`@keyframes dashFadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }`}</style>
+      <div
+        className="min-h-screen flex flex-col"
+        style={{
+          ...brandingStyle(data.branding),
+          background: `var(--dash-background, hsl(var(--background)))`,
+          backgroundImage: WAVE_PATTERN,
+          backgroundRepeat: "repeat",
+          fontFamily: "var(--dash-font-body)",
+        }}
+      >
         {/* Header */}
-        <header className="sticky top-0 z-30 shadow-sm" style={{ background: "var(--dash-primary, hsl(var(--primary)))", color: "var(--dash-on-primary, hsl(var(--primary-foreground)))" }}>
+        <header
+          className="sticky top-0 z-30 shadow-md"
+          style={{
+            background: `linear-gradient(135deg, var(--dash-primary, hsl(var(--primary))), ${data.branding?.primaryContainer || "var(--dash-primary, hsl(var(--primary)))"})`,
+            color: "var(--dash-on-primary, hsl(var(--primary-foreground)))",
+          }}
+        >
           <div className="px-4 py-3 flex items-center gap-3">
             {hasNav && (
               <button
@@ -255,9 +286,9 @@ export default function DashboardRenderer({ data }: { data: DashboardData }) {
             )}
             <div className="min-w-0 flex-1">
               <h1 className="text-lg md:text-xl font-bold truncate" style={{ fontFamily: "var(--dash-font-heading)" }}>
-                {data.meta.companyName} — {data.meta.jobTitle}
+                {data.meta.companyName} — {data.meta.department}
               </h1>
-              <p className="text-xs opacity-80 truncate">{data.meta.department}</p>
+              <p className="text-xs opacity-80 truncate">{data.meta.jobTitle}</p>
             </div>
           </div>
         </header>
@@ -378,13 +409,29 @@ export default function DashboardRenderer({ data }: { data: DashboardData }) {
 
               {/* Agentic Workforce */}
               {(isAgenticView || (!hasNav && data.agenticWorkforce?.length > 0)) && (
-                <section className="space-y-4">
+                <section className="space-y-4" style={fadeInStyle}>
                   <h3 className="text-lg font-bold" style={{ fontFamily: "var(--dash-font-heading)", color: "var(--dash-on-surface, hsl(var(--foreground)))" }}>
                     AI-Powered Workforce
                   </h3>
+                  {/* WIP Banner */}
+                  <div
+                    className="rounded-lg px-4 py-3 flex items-start gap-3"
+                    style={{
+                      background: "var(--dash-primary-container, hsl(var(--muted)))",
+                      color: "var(--dash-on-primary-container, hsl(var(--muted-foreground)))",
+                    }}
+                  >
+                    <Rocket className="h-5 w-5 shrink-0 mt-0.5 opacity-80" />
+                    <div>
+                      <p className="text-sm font-semibold">Work in Progress</p>
+                      <p className="text-xs opacity-80 mt-0.5">
+                        Agentic workforce capabilities are being developed and will evolve. The agents listed below represent a proposed AI-augmented operating model for this role.
+                      </p>
+                    </div>
+                  </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                     {data.agenticWorkforce?.map((agent, i) => (
-                      <div key={i} className="rounded-lg p-4 space-y-2 border"
+                      <div key={i} className="rounded-lg p-4 space-y-2 border transition-transform duration-200 hover:scale-105"
                         style={{ background: "var(--dash-surface-variant, hsl(var(--card)))", borderColor: "var(--dash-outline, hsl(var(--border)))" }}>
                         <h4 className="font-semibold text-sm" style={{ color: "var(--dash-on-surface, hsl(var(--card-foreground)))" }}>{agent.name}</h4>
                         <p className="text-xs" style={{ color: "var(--dash-on-surface, hsl(var(--muted-foreground)))", opacity: 0.7 }}>{agent.coreFunctionality}</p>

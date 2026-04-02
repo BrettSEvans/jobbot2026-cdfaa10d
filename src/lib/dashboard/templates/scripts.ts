@@ -134,6 +134,9 @@ export function getScriptsJs(): string {
     s.setProperty('--md-surface-variant', b.surfaceVariant || '#E7E0EC');
     s.setProperty('--md-outline', b.outline || '#79747E');
     s.setProperty('--md-error', b.error || '#B3261E');
+    if (b.background) {
+      document.body.style.background = b.background;
+    }
     if (b.fontHeading) {
       s.setProperty('--font-heading', "'" + b.fontHeading + "', sans-serif");
       var link = document.createElement('link');

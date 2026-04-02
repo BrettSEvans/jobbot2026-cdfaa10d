@@ -1,104 +1,55 @@
+## Plan: Fix Publish Visibility, Scope Edits to Active View, and Add Collapsible Sidebar Navigation
 
+### Problem Summary
 
-## Plan: Dashboard Feature Improvements (Priority Order)
+1. **Publish button hidden**: The `PublishDashboard` card is rendered *outside* the dashboard `TabsContent`, so it only shows when the dashboard tab is active AND `dashboardData` exists. But it's placed above the tabs content area and may be scrolled past or missed. More critically, when viewing the "Live Dashboard" mode, there are no publish/edit controls visible inline.
+2. **Edits not scoped to active view**: The downloadable dashboard's Vibe Edit and Regenerate modify the app-level `dashboard_html`. The live dashboard's controls are buried in the `PublishDashboard` card. There's no clear separation — users expect the toolbar they see to affect the dashboard they're viewing.
+3. **Navigation is a horizontal tab bar**: The live `DashboardRenderer` uses a top-bar horizontal nav. The downloadable version uses a collapsible sidebar with hamburger toggle. The live dashboard should match.  
+4 . Remove the sync from app button  
+5.  table font/background color contrast is makes the text unreadable .  contrast needs to be increased
 
-### ✅ 0. Improve Dashboard Storytelling (COMPLETED)
-**Files:** `research-company/index.ts`, `generate-dashboard/index.ts`
-- Reduced research sections from 8-12 to 5-7
-- Added `keyInsight`, `sectionRole`, `narrativeArc`, `componentHint` fields to research prompt
-- Added storytelling rules: Section 1 = overview (metrics only), last section = ROI/action
-- Reduced metrics per section from 3-5 to 2-3, charts from 2-3 to 1-2
-- Tables limited to max 2-3 per dashboard (only in deep-dive/evidence sections)
-- Added validation warnings for density violations
+### Changes
 
-### 1. Apply Company Branding
-**File:** `DashboardRenderer.tsx`
-- Read `data.branding` and apply as CSS custom properties on the root div
-- Use `branding.primary` for header background, nav active states, chatbot accent
-- Apply `branding.fontHeading` and `branding.fontBody` via Google Fonts dynamic import
-- Cards use `branding.surface`/`branding.onSurface`, borders use `branding.outline`
+#### 1. Move Publish Controls Into the Live Dashboard View (`DynamicMaterialsSection.tsx`)
 
-### 2. Make Navigation Functional
-**File:** `DashboardRenderer.tsx`
-- Map each `NavItem.id` to section IDs (match by prefix or explicit mapping)
-- When a nav tab is active, only render sections whose `id` starts with or matches the nav item
-- If no nav items exist, render all sections (current behavior)
+- Move the `PublishDashboard` component from its current position (line ~659, outside TabsContent) into the **Live Dashboard view** section (line ~808).
+- When in "live" mode, show the publish card + vibe edit + regenerate controls inline above the renderer.
+- When in "download" mode, hide publish controls entirely (they don't apply).
 
-### 3. Wire Up Global Filters
-**Files:** `DashboardRenderer.tsx`, `ChartBlock.tsx`, `DataTable.tsx`
-- Pass `filterValues` down to `SectionBlock` → `ChartBlock` / `DataTable`
-- In `DataTable`: filter rows by matching filter key/value pairs
-- In `ChartBlock`: filter datasets or data points by matching filter labels
-- Show active filter count badge on FilterBar
+#### 2. Scope Vibe Edit / Regenerate to Active View (`DynamicMaterialsSection.tsx`)
 
-### 4. Add Candidate Hero Section
-**File:** `DashboardRenderer.tsx` (new `CandidateHero` sub-component)
-- Add optional `candidate` field to `DashboardData` schema (name, photo URL, tagline, LinkedIn, portfolio links)
-- Render a professional hero banner above sections with candidate info
-- If no candidate data, show a clean company-branded header only
+- "Download" mode toolbar: Vibe Edit and Regenerate modify `dashboard_html` on the `job_applications` record (existing behavior, unchanged).
+- "Live" mode toolbar: Vibe Edit and Regenerate modify `dashboard_data` on the `live_dashboards` record (handled by `PublishDashboard` component, already correct).
+- No cross-contamination — each mode's controls only touch their own data source.
 
-### 5. Implement Missing Chart Types
-**File:** `ChartBlock.tsx`
-- **Waterfall**: Stacked bar with invisible base segments + colored positive/negative bars
-- **Gantt**: Horizontal bars with start/end positions on time axis
-- **Heatmap**: Grid of colored cells using a custom SVG component
-- **Treemap**: Use Recharts' `Treemap` component
+#### 3. Replace Top Nav with Collapsible Sidebar (`DashboardRenderer.tsx`)
 
-### 6. Add Chatbot Suggested Questions
-**File:** `DashboardChatbot.tsx`
-- Generate 3-4 starter prompts from dashboard data (e.g., "What are the top KPIs?", "Explain the revenue scenario")
-- Render as clickable chips in the empty state
-- On click, populate input and auto-send
+Rewrite the navigation from a horizontal tab bar in the header to a sidebar layout matching the downloadable version:
 
-### 7. Mobile Optimization
-**Files:** `DashboardRenderer.tsx`, `DashboardChatbot.tsx`
-- Collapse nav into a horizontal scroll with smaller touch targets
-- FilterBar: stack vertically on mobile
-- Chatbot: full-screen sheet on mobile instead of fixed card
-- Reduce header padding, use collapsible sections
-
-### 8. Configurable Footer
-**File:** `DashboardRenderer.tsx`
-- Add optional `footer` field to schema with custom text/links
-- Default: subtle "Powered by ResuVibe" — can be overridden or hidden
-
-### Implementation Order
-1. ~~Storytelling prompts~~ ✅
-2. Branding (highest visual impact, makes every dashboard unique)
-3. Navigation + Filters (fixes the two most obvious broken features)
-4. Candidate Hero (answers "who made this" for hiring managers)
-5. Chatbot suggested questions (low effort, high engagement lift)
-6. Missing chart types (fixes the "fake chart" problem)
-7. Mobile + Footer (polish)
-
-### Schema Changes
-Add to `DashboardData` in `src/lib/dashboard/schema.ts`:
-```typescript
-candidate?: {
-  name: string;
-  photoUrl?: string;
-  tagline: string;
-  linkedIn?: string;
-  portfolio?: string;
-};
-footer?: {
-  text?: string;
-  showBranding?: boolean;
-};
-```
+- **Sidebar** (280px, left): company logo area at top, vertical nav items below, collapsible via hamburger button.
+- **Hamburger button** in the top bar toggles sidebar open/closed.
+- On mobile: sidebar starts collapsed, overlays content when opened.
+- On desktop: sidebar starts expanded, pushes content.
+- Active nav item highlighted with primary color.
+- Same `activeNav` state drives section filtering (no logic change).
+- Style with the existing branding CSS custom properties (`--dash-primary`, `--dash-surface-variant`, etc.).  
+  
+4. remove sync from app button  
+  
+5. increase contrast in tables.
 
 ### Files Changed
-| File | Change |
-|---|---|
-| `src/lib/dashboard/schema.ts` | Add `candidate`, `footer` types |
-| `src/components/live-dashboard/DashboardRenderer.tsx` | Branding, navigation filtering, hero, footer |
-| `src/components/live-dashboard/ChartBlock.tsx` | Waterfall, gantt, heatmap, treemap implementations |
-| `src/components/live-dashboard/DataTable.tsx` | Filter integration |
-| `src/components/live-dashboard/DashboardChatbot.tsx` | Suggested questions, mobile sheet |
+
+
+| File                                                  | Change                                                                                                     |
+| ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `src/components/DynamicMaterialsSection.tsx`          | Move `PublishDashboard` into the live view section; remove it from the global position above tabs          |
+| `src/components/live-dashboard/DashboardRenderer.tsx` | Replace horizontal nav with collapsible sidebar + hamburger toggle, matching downloadable dashboard layout |
+
 
 ### What stays the same
-- Existing downloadable ZIP workflow untouched
-- `live_dashboards` table schema unchanged
-- Admin-only publish flow unchanged
-- `dashboard-chat` edge function unchanged
-- No database migrations needed
+
+- `PublishDashboard.tsx` — no changes needed, its vibe edit/regenerate already targets `live_dashboards`
+- Downloadable dashboard toolbar — unchanged
+- Schema, edge functions, database — no changes
+- `LiveDashboard.tsx` (public page) — gets the sidebar automatically via `DashboardRenderer`

@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { MessageCircle, X, Send, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
+import ReactMarkdown from "react-markdown";
 import type { DashboardData } from "@/lib/dashboard/schema";
 
 interface Message {

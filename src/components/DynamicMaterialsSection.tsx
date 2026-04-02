@@ -809,10 +809,10 @@ export default function DynamicMaterialsSection({
                 />
               )}
 
-              {liveDashData ? (
+              {(liveDashPreviewData || liveDashData) ? (
                 <Card className="overflow-hidden">
                   <div className="w-full relative" style={{ height: "80vh", overflow: "auto" }}>
-                    <DashboardRenderer data={liveDashData} />
+                    <DashboardRenderer data={liveDashPreviewData || liveDashData!} />
                     {liveDashRecord && (
                       <DashboardChatbot
                         dashboardId={liveDashRecord.id}

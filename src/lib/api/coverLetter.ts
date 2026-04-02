@@ -15,14 +15,18 @@ export async function scrapeJob(url: string): Promise<{ markdown: string; title:
     body: { url },
   });
 
-  if (error) throw new Error(error.message);
-  if (data?.blocked) {
+  // Check for blocked site in both error-path and data-path
+  // (supabase-js treats non-2xx as an error, but the body is in data)
+  const body = data ?? {};
+  if (body.blocked || body.error === 'BLOCKED_SITE') {
     const err = new Error('BLOCKED_SITE');
     (err as any).blocked = true;
     throw err;
   }
-  if (!data?.success) throw new Error(data?.error || 'Failed to scrape job');
-  return { markdown: data.markdown, title: data.title };
+
+  if (error) throw new Error(error.message);
+  if (!body.success) throw new Error(body.error || 'Failed to scrape job');
+  return { markdown: body.markdown, title: body.title };
 }
 
 export async function streamTailoredLetter({

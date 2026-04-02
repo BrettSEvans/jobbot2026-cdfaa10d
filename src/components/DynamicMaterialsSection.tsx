@@ -797,10 +797,10 @@ export default function DynamicMaterialsSection({
             /* Live Dashboard view */
             <>
               {/* Publish controls inline */}
-              {isAdmin && dashboardData && (
+              {(dashboardData || liveDashData) && (
                 <PublishDashboard
                   applicationId={applicationId}
-                  dashboardData={dashboardData}
+                  dashboardData={liveDashData || dashboardData}
                   companyName={companyName}
                   jobTitle={jobTitle}
                   toast={toast}
@@ -813,7 +813,7 @@ export default function DynamicMaterialsSection({
                 <Card className="overflow-hidden">
                   <div className="w-full relative" style={{ height: "80vh", overflow: "auto" }}>
                     <DashboardRenderer data={liveDashData} />
-                    {liveDashRecord?.chatbot_enabled && (
+                    {liveDashRecord && (
                       <DashboardChatbot
                         dashboardId={liveDashRecord.id}
                         companyName={companyName}

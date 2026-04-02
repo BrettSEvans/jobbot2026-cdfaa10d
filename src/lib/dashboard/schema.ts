@@ -11,6 +11,8 @@ export interface DashboardData {
   agenticWorkforce: AgenticAgent[];
   cfoScenarios: CFOScenario[];
   globalFilters?: GlobalFilter[];
+  candidate?: DashboardCandidate;
+  footer?: DashboardFooter;
 }
 
 export interface DashboardMeta {
@@ -46,6 +48,7 @@ export interface DashboardSection {
   id: string;
   title: string;
   description: string;
+  navId?: string; // links section to a NavItem.id
   layout?: "default" | "kpi-spotlight" | "split-panel" | "full-width-timeline" | "grid-cards" | "map-table";
   metrics?: MetricItem[];
   charts?: ChartConfig[];
@@ -161,4 +164,17 @@ export interface GlobalFilter {
   label: string;
   type: "dropdown" | "segmented" | "chips";
   options: string[];
+}
+
+export interface DashboardCandidate {
+  name: string;
+  photoUrl?: string;
+  tagline: string;
+  linkedIn?: string;
+  portfolio?: string;
+}
+
+export interface DashboardFooter {
+  text?: string;
+  showBranding?: boolean;
 }

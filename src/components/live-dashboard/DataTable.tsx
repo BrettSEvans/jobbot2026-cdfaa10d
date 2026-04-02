@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -51,13 +52,37 @@ function generateField(gen: any, rng: () => number, idx: number): string {
   }
 }
 
-export default function DataTable({ config }: { config: TableConfig }) {
-  const rows = generateRows(config);
+export default function DataTable({ config, filterValues = {} }: { config: TableConfig; filterValues?: Record<string, string> }) {
+  const allRows = useMemo(() => generateRows(config), [config]);
+
+  const filteredRows = useMemo(() => {
+    const activeFilters = Object.entries(filterValues).filter(([, v]) => v);
+    if (!activeFilters.length) return allRows;
+
+    return allRows.filter((row) =>
+      activeFilters.every(([filterKey, filterVal]) => {
+        // Check if any column value matches the filter
+        const colKeys = config.columns.map((c) => c.key);
+        return colKeys.some((ck) => {
+          const cellVal = String(row[ck] ?? "");
+          return cellVal === filterVal;
+        });
+      })
+    );
+  }, [allRows, filterValues, config.columns]);
+
+  const isFiltered = filteredRows.length !== allRows.length;
+  const displayRows = filteredRows.slice(0, 50);
 
   return (
-    <div className="bg-card rounded-lg border overflow-hidden">
-      <div className="px-4 py-3 border-b">
-        <h4 className="text-sm font-semibold text-card-foreground">{config.title}</h4>
+    <div className="rounded-lg border overflow-hidden" style={{ background: "var(--dash-surface, hsl(var(--card)))", borderColor: "var(--dash-outline, hsl(var(--border)))" }}>
+      <div className="px-4 py-3 border-b flex items-center justify-between" style={{ borderColor: "var(--dash-outline, hsl(var(--border)))" }}>
+        <h4 className="text-sm font-semibold" style={{ color: "var(--dash-on-surface, hsl(var(--card-foreground)))" }}>{config.title}</h4>
+        {isFiltered && (
+          <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: "var(--dash-primary-container, hsl(var(--accent)))", color: "var(--dash-on-primary-container, hsl(var(--accent-foreground)))" }}>
+            {filteredRows.length} of {allRows.length} records
+          </span>
+        )}
       </div>
       <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
         <Table>
@@ -69,7 +94,7 @@ export default function DataTable({ config }: { config: TableConfig }) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {rows.slice(0, 50).map((row, i) => (
+            {displayRows.map((row, i) => (
               <TableRow key={i}>
                 {config.columns.map((col) => (
                   <TableCell key={col.key} className="text-sm">{row[col.key] ?? ""}</TableCell>
@@ -79,9 +104,9 @@ export default function DataTable({ config }: { config: TableConfig }) {
           </TableBody>
         </Table>
       </div>
-      {rows.length > 50 && (
-        <div className="px-4 py-2 text-xs text-muted-foreground border-t">
-          Showing 50 of {rows.length} rows
+      {filteredRows.length > 50 && (
+        <div className="px-4 py-2 text-xs border-t" style={{ color: "var(--dash-on-surface, hsl(var(--muted-foreground)))", opacity: 0.6, borderColor: "var(--dash-outline, hsl(var(--border)))" }}>
+          Showing 50 of {filteredRows.length} rows
         </div>
       )}
     </div>

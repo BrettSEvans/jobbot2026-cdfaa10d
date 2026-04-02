@@ -423,6 +423,18 @@ export default function PublishDashboard({
           </div>
         </div>
       )}
+
+      {/* Version History */}
+      {liveDash && (
+        <LiveDashboardRevisions
+          liveDashboardId={liveDash.id}
+          applicationId={applicationId}
+          currentData={liveDash.dashboard_data as unknown as DashboardData}
+          onPreview={(data) => onPreviewLiveData?.(data)}
+          onClearPreview={() => onPreviewLiveData?.(null)}
+          toast={toast}
+        />
+      )}
     </div>
   );
 }

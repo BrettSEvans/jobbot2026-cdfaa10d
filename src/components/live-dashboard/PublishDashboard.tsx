@@ -227,8 +227,14 @@ export default function PublishDashboard({
           .eq("id", liveDash.id);
         if (error) throw error;
 
+        // Save revision
+        try {
+          await saveLiveDashboardRevision(liveDash.id, applicationId, parsed, "vibe-edit", msg.slice(0, 60));
+        } catch { /* non-critical */ }
+
         setChatHistory((prev) => [...prev, { role: "assistant", content: "✅ Dashboard updated!" }]);
         queryClient.invalidateQueries({ queryKey: ["live-dashboard-admin", applicationId] });
+        queryClient.invalidateQueries({ queryKey: ["live-dashboard-revisions"] });
         toast({ title: "Dashboard updated", description: "Your vibe edit has been applied." });
       } else {
         setChatHistory((prev) => [...prev, { role: "assistant", content: "❌ Could not parse the refined output. Try a simpler edit." }]);

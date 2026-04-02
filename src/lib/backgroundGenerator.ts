@@ -68,6 +68,54 @@ export type GenerationJob = {
 
 type Listener = () => void;
 
+/**
+ * Runs async task functions with a maximum concurrency limit and staggered starts.
+ * Each task is a zero-arg async function. At most `limit` tasks run simultaneously.
+ * New tasks are staggered by `staggerMs` to avoid burst-loading APIs.
+ */
+async function runWithConcurrency(
+  tasks: Array<() => Promise<void>>,
+  limit: number = 3,
+  staggerMs: number = 1000,
+): Promise<void> {
+  const queue = [...tasks];
+  const running: Promise<void>[] = [];
+
+  const startNext = async (): Promise<void> => {
+    const task = queue.shift();
+    if (!task) return;
+    const p = task().then(() => {
+      running.splice(running.indexOf(p), 1);
+    });
+    running.push(p);
+    // Stagger the next launch
+    if (queue.length > 0 && running.length < limit) {
+      await new Promise(r => setTimeout(r, staggerMs));
+    }
+  };
+
+  // Seed the pool up to the limit with staggered starts
+  while (queue.length > 0 && running.length < limit) {
+    await startNext();
+    if (queue.length > 0 && running.length < limit) {
+      await new Promise(r => setTimeout(r, staggerMs));
+    }
+  }
+
+  // As tasks complete, start new ones
+  while (running.length > 0 || queue.length > 0) {
+    if (running.length > 0) {
+      await Promise.race(running);
+    }
+    while (queue.length > 0 && running.length < limit) {
+      await startNext();
+      if (queue.length > 0 && running.length < limit) {
+        await new Promise(r => setTimeout(r, staggerMs));
+      }
+    }
+  }
+}
+
 class BackgroundGenerationManager {
   private jobs: Map<string, GenerationJob> = new Map();
   private listeners: Set<Listener> = new Set();
@@ -399,11 +447,12 @@ class BackgroundGenerationManager {
         console.warn("Cover letter generation failed:", e);
       }
 
-      // 4c. Generate dynamic materials from JD-recommended assets
+      // 4c. Generate dynamic materials from JD-recommended assets (parallelized with concurrency pool)
       const recommendedAssets = jdIntelligence?.recommended_assets || [];
       if (recommendedAssets.length > 0) {
         this.updateJob(appId, { status: "generating-materials", progress: `Generating materials (0/${recommendedAssets.length})...` });
 
+        // Upsert proposed_assets (fast, non-AI)
         for (const asset of recommendedAssets) {
           try {
             await supabase.from("proposed_assets").upsert({
@@ -415,13 +464,22 @@ class BackgroundGenerationManager {
           } catch { /* non-critical */ }
         }
 
-        for (let i = 0; i < recommendedAssets.length; i++) {
-          const asset = recommendedAssets[i];
+        // Build task functions for the concurrency pool
+        let completedCount = 0;
+        const inFlight = new Set<string>();
+
+        const updateMaterialProgress = () => {
+          const inFlightNames = Array.from(inFlight);
           this.updateJob(appId, {
             status: "generating-materials",
-            progress: `Generating ${asset.name} (${i + 1}/${recommendedAssets.length})...`,
-            currentAsset: asset.name,
+            progress: `Generating materials (${completedCount}/${recommendedAssets.length})...`,
+            currentAsset: inFlightNames.length > 0 ? inFlightNames.join(", ") : undefined,
           });
+        };
+
+        const tasks = recommendedAssets.map((asset: any) => async () => {
+          inFlight.add(asset.name);
+          updateMaterialProgress();
 
           try {
             const { data: assetRow } = await supabase.from("generated_assets").insert({
@@ -490,12 +548,15 @@ class BackgroundGenerationManager {
             }
           } catch (e) {
             console.warn(`Material generation failed for ${asset.name}:`, e);
+          } finally {
+            inFlight.delete(asset.name);
+            completedCount++;
+            updateMaterialProgress();
           }
+        });
 
-          if (i < recommendedAssets.length - 1) {
-            await new Promise(r => setTimeout(r, 3000));
-          }
-        }
+        // Run tasks with concurrency pool (max 3 simultaneous, 1s stagger)
+        await runWithConcurrency(tasks, 3, 1000);
 
         // Score design variability after all materials are generated
         try {

@@ -191,6 +191,7 @@ export default function PublishDashboard({
       }
 
       await publishMutation.mutateAsync({ data: parsed, source: "regenerate" });
+      onPreviewLiveData?.(parsed);
       setChatHistory([]);
       toast({ title: "Dashboard regenerated!", description: "The live dashboard has been updated with fresh data." });
     } catch (err: any) {

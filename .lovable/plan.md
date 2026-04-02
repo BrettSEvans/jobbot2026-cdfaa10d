@@ -1,41 +1,36 @@
 
 
-## Plan: Server-Side Dashboard Output Validation
+## Plan: Parallelize Material Generation with Concurrency Pool
 
-### Problem
-All parsing, repair, and validation currently happens client-side after the full stream is accumulated. If the AI produces malformed JSON, the client tries to fix it — but sometimes fails, resulting in raw code rendered in the iframe or silent errors. Moving validation to the server catches and repairs issues before they reach the UI.
+### Current behavior
+Materials (RAID Log, Architecture Diagram, etc.) are generated **one at a time** in a `for` loop with a 3-second delay between each, inside `backgroundGenerator.ts` lines 418-498. With 6-8 assets, this adds 30-50 seconds of idle waiting.
 
 ### Approach
-Change the edge function from a pass-through stream proxy to a **buffered validation pipeline**: consume the AI stream server-side, apply the same repair/validation logic, and return either clean validated JSON or a structured error.
+Replace the sequential `for` loop with a **concurrency pool** that runs up to 3 material generations simultaneously. Each slot in the pool starts the next asset as soon as it finishes, maintaining a maximum of 3 in-flight AI calls. A 1-second stagger between launches prevents burst-loading the gateway.
 
 ### Changes
 
-**`supabase/functions/generate-dashboard/index.ts`**
-- Instead of proxying `response.body` directly to the client, consume the SSE stream server-side and accumulate the full AI output
-- Add inline parsing/repair functions (adapted from `assembler.ts` for Deno):
-  - Strip markdown fences, extract JSON braces
-  - Sanitize `new Date()` expressions, trailing commas, unquoted keys
-  - Repair truncated JSON (bracket-counting closure)
-  - Validate required top-level fields: `meta`, `branding`, `navigation`, `sections`
-  - Validate each section has `id`, `title`, `metrics`, `charts`, `tables`
-  - Ensure `globalFilters` options start with "All"
-  - Ensure `navigation` includes `agentic-workforce` and `cfo-view` entries
-- Return validated JSON as `{ success: true, data: <DashboardData> }` on success
-- Return `{ success: false, error: "..." }` with details on irrecoverable failure
+**`src/lib/backgroundGenerator.ts`** (lines ~402-498)
 
-**`src/lib/api/jobApplication.ts`**
-- Update `streamDashboardGeneration` to support both streaming and buffered response modes
-- If the response `Content-Type` is `application/json` (validated response), parse it directly instead of processing as SSE stream
+1. Add a `runWithConcurrency(tasks, limit, staggerMs)` helper function:
+   - Accepts an array of async task functions, a concurrency limit (3), and a stagger delay (1000ms)
+   - Maintains a pool of active promises; as each resolves, the next task is dequeued and started
+   - Returns all results (settled) when complete
 
-**`src/hooks/useDashboardEditor.ts`**
-- Simplify `onDone` handler: the server now guarantees valid JSON or a clear error — remove redundant client-side repair fallbacks
-- Keep `parseLlmJsonOutput` as a safety net but it should rarely be needed
+2. Replace the sequential `for` loop (lines 418-498) with the concurrency pool:
+   - Each task function encapsulates: insert `generated_assets` row → fetch `generate-material` → update row with result/error
+   - Progress updates show "Generating materials (N/M)..." with a counter that increments on each task completion
+   - The `currentAsset` field updates to show all currently in-flight asset names
+
+3. Remove the 3-second `setTimeout` delay between assets — the 1-second stagger + concurrency limit of 3 provides sufficient rate-limit protection while being ~2-3x faster overall.
 
 ### What stays the same
-- Client-side `parseLlmJsonOutput` and `repairTruncatedJson` remain as a defense-in-depth layer
-- The generation prompt in the edge function is unchanged
-- The refinement flow (`refine-dashboard`) is unchanged (separate concern)
+- The `proposed_assets` upsert loop before generation (non-AI, fast)
+- Design variability scoring after all materials complete
+- Dashboard generation flow (unchanged)
+- AbortController timeout per asset (120s)
+- Error handling per asset (individual failures don't block others)
 
-### Trade-off
-The response is no longer streamed progressively — the client receives the full validated payload at once. The existing progress bar / "Generating..." UI still works since it shows during the request. This is acceptable because reliability is more important than showing partial JSON text.
+### Expected speedup
+With 6 assets at ~15s each: sequential = ~108s (6×15 + 5×3), pooled = ~35s (2 waves of 3).
 

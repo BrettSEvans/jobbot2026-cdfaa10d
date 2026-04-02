@@ -1,13 +1,63 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import type { DashboardData, DashboardSection, DashboardBranding } from "@/lib/dashboard/schema";
 import KpiCard from "./KpiCard";
 import ChartBlock from "./ChartBlock";
 import DataTable from "./DataTable";
 import ScenarioPanel from "./ScenarioPanel";
 import FilterBar from "./FilterBar";
-import { ExternalLink, Linkedin, User, Menu, X, ChevronRight } from "lucide-react";
+import {
+  ExternalLink, Linkedin, User, Menu, X,
+  LayoutDashboard, TrendingUp, Users, DollarSign, Target,
+  BarChart3, Briefcase, Rocket, ShieldCheck, Brain,
+  Calculator, GitBranch, MapPin, Zap, PieChart, Activity,
+  Database, Settings, Layers, Search, FileText, Globe,
+  Heart, Award, Clock, Package, Truck, CreditCard,
+  Building2, Lightbulb, Gauge, type LucideIcon,
+} from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { BRAND } from "@/lib/branding";
+
+/* ── Lucide icon map ── */
+const ICON_MAP: Record<string, LucideIcon> = {
+  "layout-dashboard": LayoutDashboard, dashboard: LayoutDashboard,
+  "trending-up": TrendingUp, trending_up: TrendingUp,
+  users: Users, people: Users, groups: Users,
+  "dollar-sign": DollarSign, attach_money: DollarSign, payments: DollarSign,
+  target: Target,
+  "bar-chart-3": BarChart3, analytics: BarChart3, bar_chart: BarChart3,
+  briefcase: Briefcase, work: Briefcase,
+  rocket: Rocket,
+  "shield-check": ShieldCheck, security: ShieldCheck, verified_user: ShieldCheck, shield: ShieldCheck,
+  brain: Brain, psychology: Brain, smart_toy: Brain,
+  calculator: Calculator, account_balance: Calculator,
+  "git-branch": GitBranch,
+  "map-pin": MapPin, location_on: MapPin, place: MapPin,
+  zap: Zap, bolt: Zap, flash_on: Zap,
+  "pie-chart": PieChart, donut_large: PieChart,
+  activity: Activity, monitoring: Activity, speed: Activity,
+  database: Database, storage: Database,
+  settings: Settings, tune: Settings,
+  layers: Layers, stacks: Layers,
+  search: Search,
+  "file-text": FileText, description: FileText, article: FileText,
+  globe: Globe, language: Globe, public: Globe,
+  heart: Heart, favorite: Heart,
+  award: Award, emoji_events: Award, star: Award,
+  clock: Clock, schedule: Clock, history: Clock, access_time: Clock,
+  package: Package, inventory: Package, inventory_2: Package,
+  truck: Truck, local_shipping: Truck,
+  "credit-card": CreditCard, credit_card: CreditCard,
+  "building-2": Building2, business: Building2, corporate_fare: Building2, apartment: Building2,
+  lightbulb: Lightbulb, tips_and_updates: Lightbulb,
+  gauge: Gauge, data_usage: Gauge,
+};
+
+function resolveIcon(name?: string): LucideIcon {
+  if (!name) return LayoutDashboard;
+  const key = name.toLowerCase().replace(/\s+/g, "-");
+  return ICON_MAP[key] || LayoutDashboard;
+}
 
 /* ── Google Fonts loader ── */
 function useGoogleFonts(branding?: DashboardBranding) {
@@ -147,11 +197,16 @@ export default function DashboardRenderer({ data }: { data: DashboardData }) {
   const [filterValues, setFilterValues] = useState<Record<string, string>>({});
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isMobile = useIsMobile();
+  const contentRef = useRef<HTMLDivElement>(null);
 
-  // Desktop: sidebar open by default; mobile: collapsed
   const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(true);
 
   useGoogleFonts(data.branding);
+
+  // Scroll content to top on nav change
+  useEffect(() => {
+    contentRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+  }, [activeNav]);
 
   const handleFilterChange = (id: string, value: string) => {
     setFilterValues((prev) => ({ ...prev, [id]: value }));
@@ -159,7 +214,6 @@ export default function DashboardRenderer({ data }: { data: DashboardData }) {
 
   const hasNav = data.navigation && data.navigation.length > 0;
 
-  // Filter sections by active nav
   const visibleSections = useMemo(() => {
     if (!data.navigation?.length || !activeNav) return data.sections;
     return data.sections.filter((s) => {
@@ -168,169 +222,189 @@ export default function DashboardRenderer({ data }: { data: DashboardData }) {
     });
   }, [data.sections, data.navigation, activeNav]);
 
-  // If nav filtering yields nothing, show all (fallback)
   const sectionsToRender = visibleSections.length > 0 ? visibleSections : data.sections;
 
   const footerText = data.footer?.text || "";
   const showBranding = data.footer?.showBranding !== false;
 
-  const sidebarVisible = hasNav && (isMobile ? sidebarOpen : desktopSidebarOpen);
+  // Show first nav item as "overview" for hero
+  const isOverview = activeNav === (data.navigation?.[0]?.id || "");
+  const isCfoView = activeNav === "cfo-view";
+  const isAgenticView = activeNav === "agentic-workforce";
 
   const navItems = data.navigation || [];
 
+  // Sidebar: on desktop, collapsed = icon rail (w-14); expanded = w-[260px]
+  // On mobile: overlay or hidden
+  const sidebarExpanded = isMobile ? sidebarOpen : desktopSidebarOpen;
+
   return (
-    <div className="min-h-screen flex flex-col" style={{ ...brandingStyle(data.branding), background: "var(--dash-surface, hsl(var(--background)))", fontFamily: "var(--dash-font-body)" }}>
-      {/* Header */}
-      <header className="sticky top-0 z-30 shadow-sm" style={{ background: "var(--dash-primary, hsl(var(--primary)))", color: "var(--dash-on-primary, hsl(var(--primary-foreground)))" }}>
-        <div className="px-4 py-3 flex items-center gap-3">
-          {hasNav && (
-            <button
-              onClick={() => isMobile ? setSidebarOpen(!sidebarOpen) : setDesktopSidebarOpen(!desktopSidebarOpen)}
-              className="p-1.5 rounded-md hover:bg-white/10 transition-colors shrink-0"
-              aria-label="Toggle navigation"
-            >
-              <Menu className="h-5 w-5" />
-            </button>
-          )}
-          <div className="min-w-0 flex-1">
-            <h1 className="text-lg md:text-xl font-bold truncate" style={{ fontFamily: "var(--dash-font-heading)" }}>
-              {data.meta.companyName} — {data.meta.jobTitle}
-            </h1>
-            <p className="text-xs opacity-80 truncate">{data.meta.department}</p>
-          </div>
-        </div>
-      </header>
-
-      <div className="flex flex-1 relative">
-        {/* Sidebar overlay on mobile */}
-        {isMobile && sidebarOpen && (
-          <div
-            className="fixed inset-0 z-40 bg-black/40"
-            onClick={() => setSidebarOpen(false)}
-          />
-        )}
-
-        {/* Sidebar */}
-        {hasNav && (
-          <aside
-            className={`
-              ${isMobile ? "fixed left-0 top-0 bottom-0 z-50" : "relative shrink-0"}
-              transition-all duration-200 ease-in-out overflow-hidden
-              ${sidebarVisible ? "w-[260px]" : "w-0"}
-            `}
-            style={{
-              background: "var(--dash-surface-variant, hsl(var(--card)))",
-              borderRight: sidebarVisible ? `1px solid var(--dash-outline, hsl(var(--border)))` : "none",
-            }}
-          >
-            <div className="w-[260px] h-full flex flex-col">
-              {/* Sidebar header */}
-              <div className="p-4 flex items-center justify-between border-b" style={{ borderColor: "var(--dash-outline, hsl(var(--border)))" }}>
-                <span className="text-sm font-semibold truncate" style={{ color: "var(--dash-on-surface, hsl(var(--foreground)))", fontFamily: "var(--dash-font-heading)" }}>
-                  Navigation
-                </span>
-                {isMobile && (
-                  <button
-                    onClick={() => setSidebarOpen(false)}
-                    className="p-1 rounded-md hover:bg-black/5 transition-colors"
-                  >
-                    <X className="h-4 w-4" style={{ color: "var(--dash-on-surface, hsl(var(--foreground)))" }} />
-                  </button>
-                )}
-              </div>
-
-              {/* Nav items */}
-              <nav className="flex-1 overflow-y-auto p-2 space-y-0.5">
-                {navItems.map((nav) => {
-                  const isActive = activeNav === nav.id;
-                  return (
-                    <button
-                      key={nav.id}
-                      className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-left ${
-                        isActive ? "font-semibold" : "opacity-80 hover:opacity-100"
-                      }`}
-                      style={{
-                        background: isActive ? "var(--dash-primary, hsl(var(--primary)))" : "transparent",
-                        color: isActive
-                          ? "var(--dash-on-primary, hsl(var(--primary-foreground)))"
-                          : "var(--dash-on-surface, hsl(var(--foreground)))",
-                      }}
-                      onClick={() => {
-                        setActiveNav(nav.id);
-                        if (isMobile) setSidebarOpen(false);
-                      }}
-                    >
-                      <ChevronRight className={`h-3.5 w-3.5 shrink-0 transition-transform ${isActive ? "rotate-90" : ""}`} />
-                      <span className="truncate">{nav.label}</span>
-                    </button>
-                  );
-                })}
-              </nav>
+    <TooltipProvider delayDuration={200}>
+      <div className="min-h-screen flex flex-col" style={{ ...brandingStyle(data.branding), background: "var(--dash-surface, hsl(var(--background)))", fontFamily: "var(--dash-font-body)" }}>
+        {/* Header */}
+        <header className="sticky top-0 z-30 shadow-sm" style={{ background: "var(--dash-primary, hsl(var(--primary)))", color: "var(--dash-on-primary, hsl(var(--primary-foreground)))" }}>
+          <div className="px-4 py-3 flex items-center gap-3">
+            {hasNav && (
+              <button
+                onClick={() => isMobile ? setSidebarOpen(!sidebarOpen) : setDesktopSidebarOpen(!desktopSidebarOpen)}
+                className="p-1.5 rounded-md hover:bg-white/10 transition-colors shrink-0"
+                aria-label="Toggle navigation"
+              >
+                <Menu className="h-5 w-5" />
+              </button>
+            )}
+            <div className="min-w-0 flex-1">
+              <h1 className="text-lg md:text-xl font-bold truncate" style={{ fontFamily: "var(--dash-font-heading)" }}>
+                {data.meta.companyName} — {data.meta.jobTitle}
+              </h1>
+              <p className="text-xs opacity-80 truncate">{data.meta.department}</p>
             </div>
-          </aside>
-        )}
-
-        {/* Main content */}
-        <main className="flex-1 min-w-0">
-          <div className="max-w-7xl mx-auto px-4 py-6 space-y-8">
-            {/* Candidate hero */}
-            <CandidateHero data={data} />
-
-            {/* Global filters */}
-            {data.globalFilters && data.globalFilters.length > 0 && (
-              <FilterBar
-                filters={data.globalFilters}
-                values={filterValues}
-                onChange={handleFilterChange}
-              />
-            )}
-
-            {/* Sections */}
-            {sectionsToRender.map((section) => (
-              <SectionBlock key={section.id} section={section} filterValues={filterValues} />
-            ))}
-
-            {/* CFO Scenarios */}
-            {data.cfoScenarios?.length > 0 && (
-              <section className="space-y-4">
-                <h3 className="text-lg font-bold" style={{ fontFamily: "var(--dash-font-heading)", color: "var(--dash-on-surface, hsl(var(--foreground)))" }}>
-                  Scenario Analysis
-                </h3>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  {data.cfoScenarios.map((s) => (
-                    <ScenarioPanel key={s.id} scenario={s} />
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {/* Agentic Workforce */}
-            {data.agenticWorkforce?.length > 0 && (
-              <section className="space-y-4">
-                <h3 className="text-lg font-bold" style={{ fontFamily: "var(--dash-font-heading)", color: "var(--dash-on-surface, hsl(var(--foreground)))" }}>
-                  AI-Powered Workforce
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {data.agenticWorkforce.map((agent, i) => (
-                    <div key={i} className="rounded-lg p-4 space-y-2 border"
-                      style={{ background: "var(--dash-surface-variant, hsl(var(--card)))", borderColor: "var(--dash-outline, hsl(var(--border)))" }}>
-                      <h4 className="font-semibold text-sm" style={{ color: "var(--dash-on-surface, hsl(var(--card-foreground)))" }}>{agent.name}</h4>
-                      <p className="text-xs" style={{ color: "var(--dash-on-surface, hsl(var(--muted-foreground)))", opacity: 0.7 }}>{agent.coreFunctionality}</p>
-                      <p className="text-xs italic" style={{ color: "var(--dash-on-surface, hsl(var(--muted-foreground)))", opacity: 0.5 }}>Teams: {agent.interfacingTeams}</p>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            )}
           </div>
-        </main>
-      </div>
+        </header>
 
-      <footer className="border-t py-4 text-center text-xs" style={{ color: "var(--dash-on-surface, hsl(var(--muted-foreground)))", opacity: 0.6, borderColor: "var(--dash-outline, hsl(var(--border)))" }}>
-        {footerText && <span>{footerText}</span>}
-        {footerText && showBranding && <span> · </span>}
-        {showBranding && <span>Built with {BRAND.name}</span>}
-      </footer>
-    </div>
+        <div className="flex flex-1 relative overflow-hidden">
+          {/* Mobile overlay */}
+          {isMobile && sidebarOpen && (
+            <div className="fixed inset-0 z-40 bg-black/40" onClick={() => setSidebarOpen(false)} />
+          )}
+
+          {/* Sidebar */}
+          {hasNav && (
+            <aside
+              className={`
+                ${isMobile ? "fixed left-0 top-0 bottom-0 z-50" : "relative shrink-0"}
+                transition-all duration-200 ease-in-out overflow-hidden
+                ${isMobile
+                  ? (sidebarOpen ? "w-[260px]" : "w-0")
+                  : (sidebarExpanded ? "w-[260px]" : "w-14")
+                }
+              `}
+              style={{
+                background: "var(--dash-surface-variant, hsl(var(--card)))",
+                borderRight: `1px solid var(--dash-outline, hsl(var(--border)))`,
+              }}
+            >
+              <div className={`${sidebarExpanded ? "w-[260px]" : "w-14"} h-full flex flex-col`}>
+                {/* Sidebar header */}
+                <div className="p-3 flex items-center justify-between border-b" style={{ borderColor: "var(--dash-outline, hsl(var(--border)))" }}>
+                  {sidebarExpanded && (
+                    <span className="text-sm font-semibold truncate" style={{ color: "var(--dash-on-surface, hsl(var(--foreground)))", fontFamily: "var(--dash-font-heading)" }}>
+                      Navigation
+                    </span>
+                  )}
+                  {isMobile && sidebarOpen && (
+                    <button onClick={() => setSidebarOpen(false)} className="p-1 rounded-md hover:bg-black/5 transition-colors ml-auto">
+                      <X className="h-4 w-4" style={{ color: "var(--dash-on-surface, hsl(var(--foreground)))" }} />
+                    </button>
+                  )}
+                </div>
+
+                {/* Nav items */}
+                <nav className="flex-1 overflow-y-auto p-1.5 space-y-0.5">
+                  {navItems.map((nav) => {
+                    const isActive = activeNav === nav.id;
+                    const IconComponent = resolveIcon(nav.icon);
+
+                    const button = (
+                      <button
+                        key={nav.id}
+                        className={`w-full flex items-center gap-2.5 rounded-lg text-sm font-medium transition-colors text-left ${
+                          sidebarExpanded ? "px-3 py-2.5" : "px-0 py-2.5 justify-center"
+                        } ${isActive ? "font-semibold" : "opacity-70 hover:opacity-100"}`}
+                        style={{
+                          background: isActive ? "var(--dash-primary, hsl(var(--primary)))" : "transparent",
+                          color: isActive
+                            ? "var(--dash-on-primary, hsl(var(--primary-foreground)))"
+                            : "var(--dash-on-surface, hsl(var(--foreground)))",
+                        }}
+                        onClick={() => {
+                          setActiveNav(nav.id);
+                          if (isMobile) setSidebarOpen(false);
+                        }}
+                      >
+                        <IconComponent className="h-4 w-4 shrink-0" />
+                        {sidebarExpanded && <span className="truncate">{nav.label}</span>}
+                      </button>
+                    );
+
+                    // Show tooltip on collapsed desktop sidebar
+                    if (!sidebarExpanded && !isMobile) {
+                      return (
+                        <Tooltip key={nav.id}>
+                          <TooltipTrigger asChild>{button}</TooltipTrigger>
+                          <TooltipContent side="right" className="text-xs">
+                            {nav.label}
+                          </TooltipContent>
+                        </Tooltip>
+                      );
+                    }
+
+                    return button;
+                  })}
+                </nav>
+              </div>
+            </aside>
+          )}
+
+          {/* Main content */}
+          <main className="flex-1 min-w-0 overflow-y-auto" ref={contentRef}>
+            <div className="max-w-7xl mx-auto px-4 py-6 space-y-8">
+              {/* Candidate hero — only on overview */}
+              {isOverview && <CandidateHero data={data} />}
+
+              {/* Global filters */}
+              {data.globalFilters && data.globalFilters.length > 0 && (
+                <FilterBar filters={data.globalFilters} values={filterValues} onChange={handleFilterChange} />
+              )}
+
+              {/* Sections */}
+              {!isCfoView && !isAgenticView && sectionsToRender.map((section) => (
+                <SectionBlock key={section.id} section={section} filterValues={filterValues} />
+              ))}
+
+              {/* CFO Scenarios */}
+              {(isCfoView || (!hasNav && data.cfoScenarios?.length > 0)) && (
+                <section className="space-y-4">
+                  <h3 className="text-lg font-bold" style={{ fontFamily: "var(--dash-font-heading)", color: "var(--dash-on-surface, hsl(var(--foreground)))" }}>
+                    Scenario Analysis
+                  </h3>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    {data.cfoScenarios?.map((s) => (
+                      <ScenarioPanel key={s.id} scenario={s} />
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {/* Agentic Workforce */}
+              {(isAgenticView || (!hasNav && data.agenticWorkforce?.length > 0)) && (
+                <section className="space-y-4">
+                  <h3 className="text-lg font-bold" style={{ fontFamily: "var(--dash-font-heading)", color: "var(--dash-on-surface, hsl(var(--foreground)))" }}>
+                    AI-Powered Workforce
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {data.agenticWorkforce?.map((agent, i) => (
+                      <div key={i} className="rounded-lg p-4 space-y-2 border"
+                        style={{ background: "var(--dash-surface-variant, hsl(var(--card)))", borderColor: "var(--dash-outline, hsl(var(--border)))" }}>
+                        <h4 className="font-semibold text-sm" style={{ color: "var(--dash-on-surface, hsl(var(--card-foreground)))" }}>{agent.name}</h4>
+                        <p className="text-xs" style={{ color: "var(--dash-on-surface, hsl(var(--muted-foreground)))", opacity: 0.7 }}>{agent.coreFunctionality}</p>
+                        <p className="text-xs italic" style={{ color: "var(--dash-on-surface, hsl(var(--muted-foreground)))", opacity: 0.5 }}>Teams: {agent.interfacingTeams}</p>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {/* Footer — only at the bottom of the last section view */}
+              <footer className="border-t pt-4 mt-8 text-center text-xs" style={{ color: "var(--dash-on-surface, hsl(var(--muted-foreground)))", opacity: 0.5, borderColor: "var(--dash-outline, hsl(var(--border)))" }}>
+                {footerText && <span>{footerText}</span>}
+                {footerText && showBranding && <span> · </span>}
+                {showBranding && <span>Built with {BRAND.name}</span>}
+              </footer>
+            </div>
+          </main>
+        </div>
+      </div>
+    </TooltipProvider>
   );
 }

@@ -327,7 +327,8 @@ JSON SCHEMA (follow EXACTLY):
     "outline": "#hex",
     "error": "#hex",
     "fontHeading": "Google Font name",
-    "fontBody": "Google Font name"
+    "fontBody": "Google Font name",
+    "background": "#hex or CSS gradient — page background color derived from company branding. Use a subtle tint or gradient (e.g. linear-gradient(135deg, #f8f9fa, #e8f0fe)), NEVER plain #FFFFFF."
   },
   "globalFilters": [
     { "id": "string", "label": "string", "type": "dropdown|segmented|chips", "options": ["string"] }

@@ -29,6 +29,7 @@ import DashboardRevisions from "@/components/DashboardRevisions";
 import GeneratedAssetRevisions from "@/components/GeneratedAssetRevisions";
 import VersionDownloadAlert from "@/components/VersionDownloadAlert";
 import DesignVariabilityCard from "@/components/admin/DesignVariabilityCard";
+import PublishDashboard from "@/components/live-dashboard/PublishDashboard";
 import { supabase } from "@/integrations/supabase/client";
 import { saveGeneratedAssetRevision } from "@/lib/api/generatedAssetRevisions";
 import { streamRefineMaterial } from "@/lib/api/jobApplication";

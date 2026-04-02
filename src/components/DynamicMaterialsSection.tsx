@@ -23,6 +23,8 @@ import {
   Download,
   FolderArchive,
   Repeat2,
+  Globe,
+  Monitor,
 } from "lucide-react";
 import SaveAsTemplate from "@/components/SaveAsTemplate";
 import DashboardRevisions from "@/components/DashboardRevisions";

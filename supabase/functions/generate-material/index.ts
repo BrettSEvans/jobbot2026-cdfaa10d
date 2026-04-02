@@ -1217,7 +1217,7 @@ ${brandingSection}${bpSection}${existingPatternsSection}${styleFamilySection}`;
     if (isSparse && !isDense) {
       console.log(`Sparse content detected: chars=${textLength}, sections=${sectionCount}. Running expansion pass.`);
       const expandResp = await aiFetchWithRetry(LOVABLE_API_KEY, {
-        model: 'google/gemini-2.5-flash',
+        model: getModel('flash'),
         messages: [
           { role: 'system', content: `You are a document editor. The following HTML document is TOO SPARSE — it only fills about 10-40% of a US Letter page. Expand it to fill 80-85% of the page:
 1. Add 1-2 more body sections (max 3 total) with relevant professional content

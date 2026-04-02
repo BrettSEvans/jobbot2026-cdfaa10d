@@ -89,7 +89,7 @@ export default function DataTable({ config, filterValues = {} }: { config: Table
           <TableHeader>
             <TableRow>
               {config.columns.map((col) => (
-                <TableHead key={col.key} className="text-xs whitespace-nowrap">{col.label}</TableHead>
+                <TableHead key={col.key} className="text-xs whitespace-nowrap font-semibold" style={{ color: "var(--dash-on-surface, hsl(var(--foreground)))" }}>{col.label}</TableHead>
               ))}
             </TableRow>
           </TableHeader>

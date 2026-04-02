@@ -581,6 +581,32 @@ class BackgroundGenerationManager {
       }
 
       // 4d. PAUSE for dashboard customization — store research data on job
+      // Persist pipeline state to DB so it survives page refresh
+      const pipelineState = {
+        jobUrl,
+        companyUrl,
+        markdown,
+        brandingData,
+        companyName,
+        jobTitle,
+        department,
+        competitors,
+        customers,
+        products,
+        jdIntelligence,
+        candidateName,
+      };
+      await saveJobApplication({
+        id: appId,
+        job_url: jobUrl,
+        generation_status: "awaiting-dashboard-config",
+        research_reasoning: JSON.stringify({
+          _pipelineState: pipelineState,
+          _researchedSections: researchedSections,
+          _researchedCfoScenarios: researchedCfoScenarios,
+        }),
+      } as any);
+
       this.updateJob(appId, {
         status: "awaiting-dashboard-config",
         progress: "Customize your dashboard",
@@ -588,20 +614,7 @@ class BackgroundGenerationManager {
         researchedSections,
         researchedCfoScenarios,
         scrapedBranding: brandingData,
-        _pipelineState: {
-          jobUrl,
-          companyUrl,
-          markdown,
-          brandingData,
-          companyName,
-          jobTitle,
-          department,
-          competitors,
-          customers,
-          products,
-          jdIntelligence,
-          candidateName,
-        },
+        _pipelineState: pipelineState,
       });
 
       // Auto-resume with defaults after 5 minutes if user doesn't interact

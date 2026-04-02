@@ -271,7 +271,15 @@ function enforceOnePageLayout(html: string): string {
   }
   .page-content ul,
   .page-content ol {
-    padding-left: 0.16in !important;
+    padding-left: 0.3in !important;
+  }
+  .page-content li {
+    position: relative;
+    padding-left: 0.15in;
+  }
+  .page-content [class*="bullet"],
+  .page-content [class*="icon"] {
+    margin-left: 0.15in;
   }
   .page-content img,
   .page-content svg,
@@ -465,7 +473,31 @@ RESPONSE FORMAT:
   - Ensure every section has margin-bottom: 0.12in minimum
   - Footer inside flex column wrapper, never absolute/fixed
   - NEVER add overflow:hidden to any text container in your fix
-  - Return ONLY raw HTML — no markdown fences, no explanations`;
+- Return ONLY raw HTML — no markdown fences, no explanations
+
+**HOLISTIC COMPOSITION:**
+11. HOLISTIC BALANCE: Step back and evaluate the ENTIRE page as one composition.
+    - Is visual weight evenly distributed top-to-bottom and left-to-right? No half of the page should be 3x denser than the other.
+    - Do all peer sections have consistent padding, borders, and spacing?
+    - Are cards/frames in the same row equal height?
+    - Is section spacing uniform throughout?
+    - Does the page look like a single cohesive design, or a patchwork of disconnected blocks?
+    If the layout feels lopsided, asymmetric, or amateurish, restructure sections for visual harmony.
+
+12. ALIGNMENT CONSISTENCY: All body section headings must use the same alignment style (all left or all center — never mixed).
+    Bullet markers and icons must sit INSIDE their text block (not flush with the page edge).
+    Padding and margins must be uniform across peer elements at the same hierarchy level.
+
+13. PAGE FILL: The document must fill 80-85% of the usable page area (~9.2in × 7.5in).
+    - If the content only fills ~50-60% of the page, ADD more substantive content (extra bullets, an additional relevant section, or a data element) to reach the 80% target.
+    - If content exceeds 90%, condense the least valuable section.
+    - An under-filled page is a FAILURE — it looks incomplete to a hiring manager.
+    When fixing page fill, maintain all other layout rules (no overflow:hidden, height:auto, etc.).
+
+Fix rules for new checks:
+  - For BALANCE issues: redistribute content, equalize section sizes, add consistent padding
+  - For PAGE FILL: expand sparse content with relevant professional material, never leave a document looking half-empty
+  - For ALIGNMENT: normalize heading alignment and ensure bullet icons have adequate left padding`;
 
 const MAX_REVIEW_CYCLES = 3;
 
@@ -1094,6 +1126,16 @@ AVOID these complex patterns that frequently cause overlap:
 - Stacked cards with shadows that depend on precise spacing
 - Any layout requiring more than 2 levels of nesting
 
+## LAYOUT BALANCE & PROFESSIONAL POLISH
+Evaluate the ENTIRE document as a single cohesive composition, not individual elements:
+- **Visual weight distribution**: The page must feel balanced top-to-bottom and left-to-right. No half should be significantly denser than the other.
+- **Consistent spacing rhythm**: All peer sections must use the same margin-bottom. Cards/frames at the same level must have equal padding and border styling.
+- **Equal-height rows**: Cards or columns in the same row must use align-items: stretch so they match height.
+- **Alignment coherence**: All body section headings must use the same alignment (all left or all center — never mixed). Margins and padding must be uniform across peer elements.
+- **No orphan elements**: A single card alone in a grid row should span full width, not sit in a half-width cell with empty space beside it.
+- **White space as design**: Margins between sections should feel intentional and even, not random.
+- **Bullet/icon alignment**: All bullet markers, icons, and list indicators must sit INSIDE their text block with adequate left padding (min 0.3in from page edge). Never flush with the page margin.
+
 ## CONTENT BREVITY: LESS IS MORE
 A clean, well-spaced document with 3 strong sections impresses more than a cramped document with 6 mediocre sections.
 The document must fill the page but NOT overflow — aim for 80-85% page fill so it looks complete, not empty.
@@ -1220,7 +1262,7 @@ ${brandingSection}${bpSection}${existingPatternsSection}${variabilitySection}${s
     }
 
     // Sparse content detection — if document is too empty, expand it
-    const isSparse = textLength < 1500 || sectionCount < 2;
+    const isSparse = textLength < 1800 || sectionCount < 2;
     if (isSparse && !isDense) {
       console.log(`Sparse content detected: chars=${textLength}, sections=${sectionCount}. Running expansion pass.`);
       const expandResp = await aiFetchWithRetry(LOVABLE_API_KEY, {

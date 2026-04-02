@@ -102,6 +102,25 @@ function AuthenticatedApp() {
   );
 }
 
+function AppRoutes() {
+  const location = window.location.pathname;
+  // Public dashboard routes don't need auth
+  if (location.startsWith("/d/")) {
+    return (
+      <Routes>
+        <Route path="/d/:username/:company/:jobtitle" element={<LiveDashboard />} />
+      </Routes>
+    );
+  }
+  return (
+    <ErrorBoundary>
+      <AuthProvider>
+        <AuthenticatedApp />
+      </AuthProvider>
+    </ErrorBoundary>
+  );
+}
+
 const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
@@ -109,15 +128,7 @@ const App = () => {
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          {/* Public route — no auth required */}
-          <Routes>
-            <Route path="/d/:username/:company/:jobtitle" element={<LiveDashboard />} />
-          </Routes>
-          <ErrorBoundary>
-            <AuthProvider>
-              <AuthenticatedApp />
-            </AuthProvider>
-          </ErrorBoundary>
+          <AppRoutes />
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>

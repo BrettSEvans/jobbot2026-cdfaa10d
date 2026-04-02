@@ -51,7 +51,7 @@ Deno.serve(async (req) => {
 
     // Research via AI — strict one-page rubric format
     const researchResp = await aiFetchWithRetry(LOVABLE_API_KEY, {
-      model: 'google/gemini-2.5-flash',
+      model: getModel('standard'),
       messages: [
         { role: 'system', content: `You are a document design consultant who specializes in ONE-PAGE professional deliverables that fit on a single US Letter page (8.5×11in). You produce compact, constraint-driven rubrics — NOT verbose essays.` },
         { role: 'user', content: `Create a ONE-PAGE GENERATION RUBRIC for a "${asset_type}" document in a professional job context.

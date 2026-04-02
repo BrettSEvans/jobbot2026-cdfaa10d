@@ -106,7 +106,7 @@ ABSOLUTE RULES:
     }
 
     const response = await aiFetchWithRetry(LOVABLE_API_KEY, {
-      model: 'google/gemini-2.5-flash',
+      model: getModel('standard'),
       messages: [
         { role: 'system', content: systemPrompt + jdContext },
         {

@@ -1,5 +1,25 @@
 const AI_GATEWAY_URL = 'https://ai.gateway.lovable.dev/v1/chat/completions';
 
+export type ModelTier = 'heavy' | 'standard' | 'light' | 'flash';
+
+const MODEL_MAP: Record<ModelTier, string> = {
+  heavy: 'google/gemini-2.5-pro',
+  standard: 'google/gemini-3-flash-preview',
+  flash: 'google/gemini-2.5-flash',
+  light: 'google/gemini-2.5-flash-lite',
+};
+
+/**
+ * Centralized model selection by task complexity tier.
+ * - heavy: complex HTML/JS generation (dashboards)
+ * - standard: resumes, materials, analysis, refinement
+ * - flash: simple extraction, scoring, pattern analysis
+ * - light: summaries, bullet scoring, classification
+ */
+export function getModel(tier: ModelTier): string {
+  return MODEL_MAP[tier];
+}
+
 export interface AiRequestOptions {
   model?: string;
   messages: Array<{ role: string; content: string }>;

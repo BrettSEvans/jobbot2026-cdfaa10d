@@ -1149,7 +1149,7 @@ Customers: ${(customers || []).join(', ') || 'N/A'}
 ${brandingSection}${bpSection}${existingPatternsSection}${styleFamilySection}`;
 
     const response = await aiFetchWithRetry(LOVABLE_API_KEY, {
-      model: 'google/gemini-2.5-flash',
+      model: getModel('standard'),
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: `Job Description:\n${(jobDescription || '').slice(0, 6000)}\n\nGenerate the "${assetName}" HTML document now.` },

@@ -710,6 +710,54 @@ export type Database = {
         }
         Relationships: []
       }
+      live_dashboard_revisions: {
+        Row: {
+          application_id: string
+          created_at: string
+          dashboard_data: Json
+          id: string
+          label: string | null
+          live_dashboard_id: string
+          revision_number: number
+          source: string
+        }
+        Insert: {
+          application_id: string
+          created_at?: string
+          dashboard_data?: Json
+          id?: string
+          label?: string | null
+          live_dashboard_id: string
+          revision_number?: number
+          source?: string
+        }
+        Update: {
+          application_id?: string
+          created_at?: string
+          dashboard_data?: Json
+          id?: string
+          label?: string | null
+          live_dashboard_id?: string
+          revision_number?: number
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "live_dashboard_revisions_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "job_applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "live_dashboard_revisions_live_dashboard_id_fkey"
+            columns: ["live_dashboard_id"]
+            isOneToOne: false
+            referencedRelation: "live_dashboards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       live_dashboards: {
         Row: {
           application_id: string

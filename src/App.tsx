@@ -109,6 +109,10 @@ const App = () => {
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          {/* Public route — no auth required */}
+          <Routes>
+            <Route path="/d/:username/:company/:jobtitle" element={<LiveDashboard />} />
+          </Routes>
           <ErrorBoundary>
             <AuthProvider>
               <AuthenticatedApp />

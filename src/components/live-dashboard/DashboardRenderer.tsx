@@ -116,7 +116,10 @@ function CandidateHero({ data }: { data: DashboardData }) {
   return (
     <div
       className="rounded-xl p-6 md:p-8 flex flex-col md:flex-row items-center gap-5"
-      style={{ background: data.branding?.primary || "hsl(var(--primary))", color: data.branding?.onPrimary || "hsl(var(--primary-foreground))" }}
+      style={{
+        background: `linear-gradient(135deg, ${data.branding?.primary || "hsl(var(--primary))"}, ${data.branding?.primaryContainer || "hsl(var(--primary))"})`,
+        color: data.branding?.onPrimary || "hsl(var(--primary-foreground))",
+      }}
     >
       {c.photoUrl ? (
         <img src={c.photoUrl} alt={c.name} className="h-20 w-20 rounded-full object-cover border-2 border-white/30" />

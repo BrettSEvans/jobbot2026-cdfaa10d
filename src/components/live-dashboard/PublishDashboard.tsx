@@ -311,7 +311,7 @@ export default function PublishDashboard({
             <div className="flex flex-wrap gap-2">
               <Button
                 variant="outline" size="sm"
-                onClick={() => publishMutation.mutate()}
+                onClick={() => publishMutation.mutate(undefined)}
                 disabled={publishMutation.isPending}
               >
                 {publishMutation.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />}

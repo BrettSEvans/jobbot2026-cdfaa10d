@@ -272,6 +272,7 @@ export default function DynamicMaterialsSection({
   const [showDashboardWelcome, setShowDashboardWelcome] = useState(() => !localStorage.getItem("dashboard-welcome-dismissed"));
   const [showDashboardConfig, setShowDashboardConfig] = useState(false);
   const [dashboardViewMode, setDashboardViewMode] = useState<"download" | "live">("download");
+  const [liveDashPreviewData, setLiveDashPreviewData] = useState<DashboardData | null>(null);
   const [loadingAssets, setLoadingAssets] = useState(true);
   const [assetRevisionTriggers, setAssetRevisionTriggers] = useState<Record<string, number>>({});
   const [assetPreviewHtml, setAssetPreviewHtml] = useState<Record<string, string | null>>({});

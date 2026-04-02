@@ -23,6 +23,8 @@ import {
   Download,
   FolderArchive,
   Repeat2,
+  Globe,
+  Monitor,
 } from "lucide-react";
 import SaveAsTemplate from "@/components/SaveAsTemplate";
 import DashboardRevisions from "@/components/DashboardRevisions";
@@ -30,6 +32,8 @@ import GeneratedAssetRevisions from "@/components/GeneratedAssetRevisions";
 import VersionDownloadAlert from "@/components/VersionDownloadAlert";
 import DesignVariabilityCard from "@/components/admin/DesignVariabilityCard";
 import PublishDashboard from "@/components/live-dashboard/PublishDashboard";
+import DashboardRenderer from "@/components/live-dashboard/DashboardRenderer";
+import DashboardChatbot from "@/components/live-dashboard/DashboardChatbot";
 import { supabase } from "@/integrations/supabase/client";
 import { saveGeneratedAssetRevision } from "@/lib/api/generatedAssetRevisions";
 import { streamRefineMaterial } from "@/lib/api/jobApplication";
@@ -267,6 +271,7 @@ export default function DynamicMaterialsSection({
   const [generatedAssets, setGeneratedAssets] = useState<GeneratedAsset[]>([]);
   const [showDashboardWelcome, setShowDashboardWelcome] = useState(() => !localStorage.getItem("dashboard-welcome-dismissed"));
   const [showDashboardConfig, setShowDashboardConfig] = useState(false);
+  const [dashboardViewMode, setDashboardViewMode] = useState<"download" | "live">("download");
   const [loadingAssets, setLoadingAssets] = useState(true);
   const [assetRevisionTriggers, setAssetRevisionTriggers] = useState<Record<string, number>>({});
   const [assetPreviewHtml, setAssetPreviewHtml] = useState<Record<string, string | null>>({});
@@ -288,6 +293,22 @@ export default function DynamicMaterialsSection({
   const [assetChatInput, setAssetChatInput] = useState<Record<string, string>>({});
   const [assetChatHistory, setAssetChatHistory] = useState<Record<string, Array<{ role: string; content: string }>>>({});
   const [assetRefining, setAssetRefining] = useState<Record<string, boolean>>({});
+
+  // Fetch live dashboard for live preview mode
+  const { data: liveDashRecord } = useQuery({
+    queryKey: ["live-dashboard-view", applicationId],
+    enabled: !!applicationId && dashboardViewMode === "live",
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("live_dashboards")
+        .select("*")
+        .eq("application_id", applicationId)
+        .maybeSingle();
+      return data;
+    },
+  });
+  const liveDashData = liveDashRecord?.dashboard_data as unknown as DashboardData | null;
+
   // Fetch generated assets
   useEffect(() => {
     if (!applicationId) return;
@@ -650,101 +671,164 @@ export default function DynamicMaterialsSection({
 
         {/* Dashboard sub-tab */}
         <TabsContent value="dashboard" className="space-y-4">
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" onClick={() => setChatOpen(!chatOpen)}>
-              <Edit3 className="mr-2 h-4 w-4" /> {chatOpen ? "Hide Chat" : "Vibe Edit"}
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleRegenerateDashboard} disabled={isRegenerating}>
-              {isRegenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-              Regenerate
-            </Button>
-            {dashboardHtml && (
-              <>
-                <Button variant="outline" size="sm" onClick={() => { navigator.clipboard.writeText(previewHtml || dashboardHtml); toast({ title: "Copied!", description: "Dashboard HTML copied." }); }}>
-                  <Copy className="mr-2 h-4 w-4" /> Copy HTML
-                </Button>
-                <SaveAsTemplate dashboardHtml={previewHtml || dashboardHtml} applicationId={applicationId} defaultLabel={`${companyName} ${jobTitle} Dashboard`.trim()} defaultJobFunction={jobTitle} defaultDepartment="" />
-                {dashboardData ? (
-                  <Button variant="outline" size="sm" onClick={() => guardedDownload(!!previewHtml, handleDownloadZip)}><FolderArchive className="mr-2 h-4 w-4" /> Download ZIP</Button>
-                ) : (
-                  <Button variant="outline" size="sm" onClick={() => guardedDownload(!!previewHtml, () => {
-                    downloadHtmlFile(previewHtml || dashboardHtml, buildFileName(candidateProfile?.first_name, candidateProfile?.last_name, "dashboard", companyName, "html"));
-                    recordDownloadSignal(applicationId, "dashboard", jobTitle);
-                    toast({ title: "Downloaded" });
-                  })}><Download className="mr-2 h-4 w-4" /> Download HTML</Button>
+          {/* View mode toggle */}
+          {isAdmin && dashboardData && (
+            <div className="flex items-center gap-1 p-1 bg-secondary rounded-lg w-fit">
+              <button
+                onClick={() => setDashboardViewMode("download")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                  dashboardViewMode === "download"
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Monitor className="h-3.5 w-3.5" />
+                Downloadable
+              </button>
+              <button
+                onClick={() => setDashboardViewMode("live")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                  dashboardViewMode === "live"
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Globe className="h-3.5 w-3.5" />
+                Live Dashboard
+                {liveDashRecord && (
+                  <Badge variant={liveDashRecord.is_published ? "default" : "secondary"} className="text-[10px] px-1.5 py-0 ml-1">
+                    {liveDashRecord.is_published ? "Live" : "Draft"}
+                  </Badge>
                 )}
-              </>
-            )}
-          </div>
-
-          {chatOpen && (
-            <Card>
-              <CardContent className="pt-4 space-y-3">
-                <div className="max-h-[200px] overflow-y-auto space-y-2">
-                  {chatHistory.map((msg, i) => (
-                    <div key={i} className={`text-sm p-2 rounded ${msg.role === "user" ? "bg-primary/10 text-right" : "bg-muted"}`}>{msg.content}</div>
-                  ))}
-                  {isRefining && <div className="text-sm p-2 rounded bg-muted flex items-center gap-2"><Loader2 className="h-3 w-3 animate-spin" /> Refining...</div>}
-                </div>
-                <div className="flex gap-2">
-                  <Textarea placeholder='e.g. "Change colors to blue"' value={chatInput} onChange={(e) => setChatInput(e.target.value)} rows={2}
-                    onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSendChat(); } }} />
-                  <Button onClick={handleSendChat} disabled={!chatInput.trim() || isRefining} className="self-end">Send</Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {applicationId && dashboardHtml && (
-            <DashboardRevisions applicationId={applicationId} currentHtml={dashboardHtml} onPreviewRevision={(html) => setPreviewHtml(html === dashboardHtml ? null : html)} refreshTrigger={revisionTrigger} />
-          )}
-          {previewHtml && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Badge variant="secondary">Previewing older version</Badge>
-              <Button variant="ghost" size="sm" onClick={() => setPreviewHtml(null)}>Back to current</Button>
+              </button>
             </div>
           )}
 
-          {dashboardHtml ? (
-            <Card className="overflow-hidden">
-              <div className="w-full relative" style={{ height: "70vh" }}>
-                <iframe ref={iframeRef} srcDoc={previewHtml || dashboardHtml} className="w-full h-full border-0" sandbox="allow-scripts" title="Dashboard Preview" />
-                {showDashboardWelcome && (
-                  <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/50 backdrop-blur-sm cursor-pointer" onClick={() => { setShowDashboardWelcome(false); localStorage.setItem("dashboard-welcome-dismissed", "1"); }}>
-                    <div className="bg-background border border-primary/30 rounded-xl shadow-2xl p-8 max-w-md text-center space-y-4 animate-in fade-in zoom-in-95 duration-300" onClick={(e) => e.stopPropagation()}>
-                      {app?.company_icon_url ? (
-                        <div className="mx-auto w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
-                          <img src={app.company_icon_url} alt={companyName || "Company"} className="w-10 h-10 object-contain" />
-                        </div>
-                      ) : (
-                        <div className="mx-auto w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
-                          <Sparkles className="h-7 w-7 text-primary" />
-                        </div>
-                      )}
-                      <h3 className="text-xl font-semibold tracking-tight">
-                        {companyName ? `Your ${companyName} dashboard is interactive!` : "Your dashboard is interactive!"}
-                      </h3>
-                      <p className="text-muted-foreground text-sm leading-relaxed">
-                        Click on charts to drill down, use global filters to slice data across sections, toggle sidebar pages, hover for tooltips, and use the scenario sliders to explore different projections.
-                      </p>
-                      <Button onClick={() => { setShowDashboardWelcome(false); localStorage.setItem("dashboard-welcome-dismissed", "1"); }} className="w-full">
-                        Got it — let me explore!
-                      </Button>
-                    </div>
-                  </div>
+          {dashboardViewMode === "download" ? (
+            <>
+              {/* Downloadable dashboard toolbar */}
+              <div className="flex flex-wrap gap-2">
+                <Button variant="outline" size="sm" onClick={() => setChatOpen(!chatOpen)}>
+                  <Edit3 className="mr-2 h-4 w-4" /> {chatOpen ? "Hide Chat" : "Vibe Edit"}
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleRegenerateDashboard} disabled={isRegenerating}>
+                  {isRegenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+                  Regenerate
+                </Button>
+                {dashboardHtml && (
+                  <>
+                    <Button variant="outline" size="sm" onClick={() => { navigator.clipboard.writeText(previewHtml || dashboardHtml); toast({ title: "Copied!", description: "Dashboard HTML copied." }); }}>
+                      <Copy className="mr-2 h-4 w-4" /> Copy HTML
+                    </Button>
+                    <SaveAsTemplate dashboardHtml={previewHtml || dashboardHtml} applicationId={applicationId} defaultLabel={`${companyName} ${jobTitle} Dashboard`.trim()} defaultJobFunction={jobTitle} defaultDepartment="" />
+                    {dashboardData ? (
+                      <Button variant="outline" size="sm" onClick={() => guardedDownload(!!previewHtml, handleDownloadZip)}><FolderArchive className="mr-2 h-4 w-4" /> Download ZIP</Button>
+                    ) : (
+                      <Button variant="outline" size="sm" onClick={() => guardedDownload(!!previewHtml, () => {
+                        downloadHtmlFile(previewHtml || dashboardHtml, buildFileName(candidateProfile?.first_name, candidateProfile?.last_name, "dashboard", companyName, "html"));
+                        recordDownloadSignal(applicationId, "dashboard", jobTitle);
+                        toast({ title: "Downloaded" });
+                      })}><Download className="mr-2 h-4 w-4" /> Download HTML</Button>
+                    )}
+                  </>
                 )}
               </div>
-            </Card>
-          ) : isBgGenerating ? (
-            <Card><CardContent className="py-12 text-center space-y-3">
-              <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
-              <p className="text-muted-foreground font-medium">{bgJob?.progress || "Generating dashboard..."}</p>
-            </CardContent></Card>
+
+              {chatOpen && (
+                <Card>
+                  <CardContent className="pt-4 space-y-3">
+                    <div className="max-h-[200px] overflow-y-auto space-y-2">
+                      {chatHistory.map((msg, i) => (
+                        <div key={i} className={`text-sm p-2 rounded ${msg.role === "user" ? "bg-primary/10 text-right" : "bg-muted"}`}>{msg.content}</div>
+                      ))}
+                      {isRefining && <div className="text-sm p-2 rounded bg-muted flex items-center gap-2"><Loader2 className="h-3 w-3 animate-spin" /> Refining...</div>}
+                    </div>
+                    <div className="flex gap-2">
+                      <Textarea placeholder='e.g. "Change colors to blue"' value={chatInput} onChange={(e) => setChatInput(e.target.value)} rows={2}
+                        onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSendChat(); } }} />
+                      <Button onClick={handleSendChat} disabled={!chatInput.trim() || isRefining} className="self-end">Send</Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {applicationId && dashboardHtml && (
+                <DashboardRevisions applicationId={applicationId} currentHtml={dashboardHtml} onPreviewRevision={(html) => setPreviewHtml(html === dashboardHtml ? null : html)} refreshTrigger={revisionTrigger} />
+              )}
+              {previewHtml && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Badge variant="secondary">Previewing older version</Badge>
+                  <Button variant="ghost" size="sm" onClick={() => setPreviewHtml(null)}>Back to current</Button>
+                </div>
+              )}
+
+              {dashboardHtml ? (
+                <Card className="overflow-hidden">
+                  <div className="w-full relative" style={{ height: "70vh" }}>
+                    <iframe ref={iframeRef} srcDoc={previewHtml || dashboardHtml} className="w-full h-full border-0" sandbox="allow-scripts" title="Dashboard Preview" />
+                    {showDashboardWelcome && (
+                      <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/50 backdrop-blur-sm cursor-pointer" onClick={() => { setShowDashboardWelcome(false); localStorage.setItem("dashboard-welcome-dismissed", "1"); }}>
+                        <div className="bg-background border border-primary/30 rounded-xl shadow-2xl p-8 max-w-md text-center space-y-4 animate-in fade-in zoom-in-95 duration-300" onClick={(e) => e.stopPropagation()}>
+                          {app?.company_icon_url ? (
+                            <div className="mx-auto w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
+                              <img src={app.company_icon_url} alt={companyName || "Company"} className="w-10 h-10 object-contain" />
+                            </div>
+                          ) : (
+                            <div className="mx-auto w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
+                              <Sparkles className="h-7 w-7 text-primary" />
+                            </div>
+                          )}
+                          <h3 className="text-xl font-semibold tracking-tight">
+                            {companyName ? `Your ${companyName} dashboard is interactive!` : "Your dashboard is interactive!"}
+                          </h3>
+                          <p className="text-muted-foreground text-sm leading-relaxed">
+                            Click on charts to drill down, use global filters to slice data across sections, toggle sidebar pages, hover for tooltips, and use the scenario sliders to explore different projections.
+                          </p>
+                          <Button onClick={() => { setShowDashboardWelcome(false); localStorage.setItem("dashboard-welcome-dismissed", "1"); }} className="w-full">
+                            Got it — let me explore!
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </Card>
+              ) : isBgGenerating ? (
+                <Card><CardContent className="py-12 text-center space-y-3">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+                  <p className="text-muted-foreground font-medium">{bgJob?.progress || "Generating dashboard..."}</p>
+                </CardContent></Card>
+              ) : (
+                <Card><CardContent className="py-12 text-center">
+                  <p className="text-muted-foreground mb-4">No dashboard generated yet.</p>
+                  <Button onClick={handleRegenerateDashboard} disabled={isRegenerating}><Sparkles className="mr-2 h-4 w-4" /> Generate Dashboard</Button>
+                </CardContent></Card>
+              )}
+            </>
           ) : (
-            <Card><CardContent className="py-12 text-center">
-              <p className="text-muted-foreground mb-4">No dashboard generated yet.</p>
-              <Button onClick={handleRegenerateDashboard} disabled={isRegenerating}><Sparkles className="mr-2 h-4 w-4" /> Generate Dashboard</Button>
-            </CardContent></Card>
+            /* Live Dashboard view */
+            <>
+              {liveDashData ? (
+                <Card className="overflow-hidden">
+                  <div className="w-full relative" style={{ height: "80vh", overflow: "auto" }}>
+                    <DashboardRenderer data={liveDashData} />
+                    {liveDashRecord?.chatbot_enabled && (
+                      <DashboardChatbot
+                        dashboardId={liveDashRecord.id}
+                        companyName={companyName}
+                        jobTitle={jobTitle}
+                        dashboardData={liveDashData}
+                      />
+                    )}
+                  </div>
+                </Card>
+              ) : (
+                <Card><CardContent className="py-12 text-center space-y-3">
+                  <Globe className="h-8 w-8 text-muted-foreground mx-auto" />
+                  <p className="text-muted-foreground font-medium">No live dashboard published yet.</p>
+                  <p className="text-xs text-muted-foreground">Use the Live Dashboard card below to publish.</p>
+                </CardContent></Card>
+              )}
+            </>
           )}
         </TabsContent>
 

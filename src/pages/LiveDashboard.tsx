@@ -11,7 +11,7 @@ export default function LiveDashboard() {
     username: string; company: string; jobtitle: string;
   }>();
 
-  const { data: dashboard, isLoading, error } = useQuery({
+  const { data: dashboard, isLoading } = useQuery({
     queryKey: ["live-dashboard", username, company, jobtitle],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -57,6 +57,7 @@ export default function LiveDashboard() {
           dashboardId={dashboard.id}
           companyName={dashData.meta?.companyName || ""}
           jobTitle={dashData.meta?.jobTitle || ""}
+          dashboardData={dashData}
         />
       )}
     </>

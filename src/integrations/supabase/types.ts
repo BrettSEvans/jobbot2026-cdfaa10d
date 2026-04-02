@@ -710,6 +710,56 @@ export type Database = {
         }
         Relationships: []
       }
+      live_dashboards: {
+        Row: {
+          application_id: string
+          chatbot_enabled: boolean
+          created_at: string
+          dashboard_data: Json
+          id: string
+          is_published: boolean
+          slug_company: string
+          slug_jobtitle: string
+          slug_username: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          application_id: string
+          chatbot_enabled?: boolean
+          created_at?: string
+          dashboard_data?: Json
+          id?: string
+          is_published?: boolean
+          slug_company: string
+          slug_jobtitle: string
+          slug_username: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          application_id?: string
+          chatbot_enabled?: boolean
+          created_at?: string
+          dashboard_data?: Json
+          id?: string
+          is_published?: boolean
+          slug_company?: string
+          slug_jobtitle?: string
+          slug_username?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "live_dashboards_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "job_applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pipeline_stage_history: {
         Row: {
           application_id: string

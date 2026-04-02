@@ -5,7 +5,7 @@ import ChartBlock from "./ChartBlock";
 import DataTable from "./DataTable";
 import ScenarioPanel from "./ScenarioPanel";
 import FilterBar from "./FilterBar";
-import { ExternalLink, Linkedin, User } from "lucide-react";
+import { ExternalLink, Linkedin, User, Menu, X, ChevronRight } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { BRAND } from "@/lib/branding";
 
@@ -145,13 +145,19 @@ function SectionBlock({ section, filterValues }: { section: DashboardSection; fi
 export default function DashboardRenderer({ data }: { data: DashboardData }) {
   const [activeNav, setActiveNav] = useState(data.navigation?.[0]?.id || "");
   const [filterValues, setFilterValues] = useState<Record<string, string>>({});
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const isMobile = useIsMobile();
+
+  // Desktop: sidebar open by default; mobile: collapsed
+  const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(true);
 
   useGoogleFonts(data.branding);
 
   const handleFilterChange = (id: string, value: string) => {
     setFilterValues((prev) => ({ ...prev, [id]: value }));
   };
+
+  const hasNav = data.navigation && data.navigation.length > 0;
 
   // Filter sections by active nav
   const visibleSections = useMemo(() => {
@@ -168,91 +174,157 @@ export default function DashboardRenderer({ data }: { data: DashboardData }) {
   const footerText = data.footer?.text || "";
   const showBranding = data.footer?.showBranding !== false;
 
+  const sidebarVisible = hasNav && (isMobile ? sidebarOpen : desktopSidebarOpen);
+
+  const navItems = data.navigation || [];
+
   return (
-    <div className="min-h-screen" style={{ ...brandingStyle(data.branding), background: "var(--dash-surface, hsl(var(--background)))", fontFamily: "var(--dash-font-body)" }}>
+    <div className="min-h-screen flex flex-col" style={{ ...brandingStyle(data.branding), background: "var(--dash-surface, hsl(var(--background)))", fontFamily: "var(--dash-font-body)" }}>
       {/* Header */}
       <header className="sticky top-0 z-30 shadow-sm" style={{ background: "var(--dash-primary, hsl(var(--primary)))", color: "var(--dash-on-primary, hsl(var(--primary-foreground)))" }}>
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div>
-            <h1 className="text-lg md:text-xl font-bold" style={{ fontFamily: "var(--dash-font-heading)" }}>
+        <div className="px-4 py-3 flex items-center gap-3">
+          {hasNav && (
+            <button
+              onClick={() => isMobile ? setSidebarOpen(!sidebarOpen) : setDesktopSidebarOpen(!desktopSidebarOpen)}
+              className="p-1.5 rounded-md hover:bg-white/10 transition-colors shrink-0"
+              aria-label="Toggle navigation"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+          )}
+          <div className="min-w-0 flex-1">
+            <h1 className="text-lg md:text-xl font-bold truncate" style={{ fontFamily: "var(--dash-font-heading)" }}>
               {data.meta.companyName} — {data.meta.jobTitle}
             </h1>
-            <p className="text-xs opacity-80">{data.meta.department}</p>
+            <p className="text-xs opacity-80 truncate">{data.meta.department}</p>
           </div>
         </div>
-
-        {/* Navigation */}
-        {data.navigation?.length > 0 && (
-          <div className="max-w-7xl mx-auto px-4 pb-2">
-            <nav className="flex gap-1 overflow-x-auto scrollbar-hide">
-              {data.navigation.map((nav) => (
-                <button key={nav.id}
-                  className={`px-3 py-1.5 rounded-md text-xs font-medium whitespace-nowrap transition-colors ${
-                    activeNav === nav.id
-                      ? "bg-white/20 text-inherit"
-                      : "text-inherit opacity-70 hover:opacity-100 hover:bg-white/10"
-                  }`}
-                  onClick={() => setActiveNav(nav.id)}
-                >
-                  {nav.label}
-                </button>
-              ))}
-            </nav>
-          </div>
-        )}
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 py-6 space-y-8">
-        {/* Candidate hero */}
-        <CandidateHero data={data} />
-
-        {/* Global filters */}
-        {data.globalFilters && data.globalFilters.length > 0 && (
-          <FilterBar
-            filters={data.globalFilters}
-            values={filterValues}
-            onChange={handleFilterChange}
+      <div className="flex flex-1 relative">
+        {/* Sidebar overlay on mobile */}
+        {isMobile && sidebarOpen && (
+          <div
+            className="fixed inset-0 z-40 bg-black/40"
+            onClick={() => setSidebarOpen(false)}
           />
         )}
 
-        {/* Sections */}
-        {sectionsToRender.map((section) => (
-          <SectionBlock key={section.id} section={section} filterValues={filterValues} />
-        ))}
+        {/* Sidebar */}
+        {hasNav && (
+          <aside
+            className={`
+              ${isMobile ? "fixed left-0 top-0 bottom-0 z-50" : "relative shrink-0"}
+              transition-all duration-200 ease-in-out overflow-hidden
+              ${sidebarVisible ? "w-[260px]" : "w-0"}
+            `}
+            style={{
+              background: "var(--dash-surface-variant, hsl(var(--card)))",
+              borderRight: sidebarVisible ? `1px solid var(--dash-outline, hsl(var(--border)))` : "none",
+            }}
+          >
+            <div className="w-[260px] h-full flex flex-col">
+              {/* Sidebar header */}
+              <div className="p-4 flex items-center justify-between border-b" style={{ borderColor: "var(--dash-outline, hsl(var(--border)))" }}>
+                <span className="text-sm font-semibold truncate" style={{ color: "var(--dash-on-surface, hsl(var(--foreground)))", fontFamily: "var(--dash-font-heading)" }}>
+                  Navigation
+                </span>
+                {isMobile && (
+                  <button
+                    onClick={() => setSidebarOpen(false)}
+                    className="p-1 rounded-md hover:bg-black/5 transition-colors"
+                  >
+                    <X className="h-4 w-4" style={{ color: "var(--dash-on-surface, hsl(var(--foreground)))" }} />
+                  </button>
+                )}
+              </div>
 
-        {/* CFO Scenarios */}
-        {data.cfoScenarios?.length > 0 && (
-          <section className="space-y-4">
-            <h3 className="text-lg font-bold" style={{ fontFamily: "var(--dash-font-heading)", color: "var(--dash-on-surface, hsl(var(--foreground)))" }}>
-              Scenario Analysis
-            </h3>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {data.cfoScenarios.map((s) => (
-                <ScenarioPanel key={s.id} scenario={s} />
-              ))}
+              {/* Nav items */}
+              <nav className="flex-1 overflow-y-auto p-2 space-y-0.5">
+                {navItems.map((nav) => {
+                  const isActive = activeNav === nav.id;
+                  return (
+                    <button
+                      key={nav.id}
+                      className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-left ${
+                        isActive ? "font-semibold" : "opacity-80 hover:opacity-100"
+                      }`}
+                      style={{
+                        background: isActive ? "var(--dash-primary, hsl(var(--primary)))" : "transparent",
+                        color: isActive
+                          ? "var(--dash-on-primary, hsl(var(--primary-foreground)))"
+                          : "var(--dash-on-surface, hsl(var(--foreground)))",
+                      }}
+                      onClick={() => {
+                        setActiveNav(nav.id);
+                        if (isMobile) setSidebarOpen(false);
+                      }}
+                    >
+                      <ChevronRight className={`h-3.5 w-3.5 shrink-0 transition-transform ${isActive ? "rotate-90" : ""}`} />
+                      <span className="truncate">{nav.label}</span>
+                    </button>
+                  );
+                })}
+              </nav>
             </div>
-          </section>
+          </aside>
         )}
 
-        {/* Agentic Workforce */}
-        {data.agenticWorkforce?.length > 0 && (
-          <section className="space-y-4">
-            <h3 className="text-lg font-bold" style={{ fontFamily: "var(--dash-font-heading)", color: "var(--dash-on-surface, hsl(var(--foreground)))" }}>
-              AI-Powered Workforce
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {data.agenticWorkforce.map((agent, i) => (
-                <div key={i} className="rounded-lg p-4 space-y-2 border"
-                  style={{ background: "var(--dash-surface-variant, hsl(var(--card)))", borderColor: "var(--dash-outline, hsl(var(--border)))" }}>
-                  <h4 className="font-semibold text-sm" style={{ color: "var(--dash-on-surface, hsl(var(--card-foreground)))" }}>{agent.name}</h4>
-                  <p className="text-xs" style={{ color: "var(--dash-on-surface, hsl(var(--muted-foreground)))", opacity: 0.7 }}>{agent.coreFunctionality}</p>
-                  <p className="text-xs italic" style={{ color: "var(--dash-on-surface, hsl(var(--muted-foreground)))", opacity: 0.5 }}>Teams: {agent.interfacingTeams}</p>
+        {/* Main content */}
+        <main className="flex-1 min-w-0">
+          <div className="max-w-7xl mx-auto px-4 py-6 space-y-8">
+            {/* Candidate hero */}
+            <CandidateHero data={data} />
+
+            {/* Global filters */}
+            {data.globalFilters && data.globalFilters.length > 0 && (
+              <FilterBar
+                filters={data.globalFilters}
+                values={filterValues}
+                onChange={handleFilterChange}
+              />
+            )}
+
+            {/* Sections */}
+            {sectionsToRender.map((section) => (
+              <SectionBlock key={section.id} section={section} filterValues={filterValues} />
+            ))}
+
+            {/* CFO Scenarios */}
+            {data.cfoScenarios?.length > 0 && (
+              <section className="space-y-4">
+                <h3 className="text-lg font-bold" style={{ fontFamily: "var(--dash-font-heading)", color: "var(--dash-on-surface, hsl(var(--foreground)))" }}>
+                  Scenario Analysis
+                </h3>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {data.cfoScenarios.map((s) => (
+                    <ScenarioPanel key={s.id} scenario={s} />
+                  ))}
                 </div>
-              ))}
-            </div>
-          </section>
-        )}
-      </main>
+              </section>
+            )}
+
+            {/* Agentic Workforce */}
+            {data.agenticWorkforce?.length > 0 && (
+              <section className="space-y-4">
+                <h3 className="text-lg font-bold" style={{ fontFamily: "var(--dash-font-heading)", color: "var(--dash-on-surface, hsl(var(--foreground)))" }}>
+                  AI-Powered Workforce
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {data.agenticWorkforce.map((agent, i) => (
+                    <div key={i} className="rounded-lg p-4 space-y-2 border"
+                      style={{ background: "var(--dash-surface-variant, hsl(var(--card)))", borderColor: "var(--dash-outline, hsl(var(--border)))" }}>
+                      <h4 className="font-semibold text-sm" style={{ color: "var(--dash-on-surface, hsl(var(--card-foreground)))" }}>{agent.name}</h4>
+                      <p className="text-xs" style={{ color: "var(--dash-on-surface, hsl(var(--muted-foreground)))", opacity: 0.7 }}>{agent.coreFunctionality}</p>
+                      <p className="text-xs italic" style={{ color: "var(--dash-on-surface, hsl(var(--muted-foreground)))", opacity: 0.5 }}>Teams: {agent.interfacingTeams}</p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+          </div>
+        </main>
+      </div>
 
       <footer className="border-t py-4 text-center text-xs" style={{ color: "var(--dash-on-surface, hsl(var(--muted-foreground)))", opacity: 0.6, borderColor: "var(--dash-outline, hsl(var(--border)))" }}>
         {footerText && <span>{footerText}</span>}

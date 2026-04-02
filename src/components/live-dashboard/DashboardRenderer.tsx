@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { BRAND } from "@/lib/branding";
+
 
 /* ── Lucide icon map ── */
 const ICON_MAP: Record<string, LucideIcon> = {
@@ -446,7 +446,7 @@ export default function DashboardRenderer({ data }: { data: DashboardData }) {
               <footer className="border-t pt-4 mt-8 text-center text-xs" style={{ color: "var(--dash-on-surface, hsl(var(--muted-foreground)))", opacity: 0.5, borderColor: "var(--dash-outline, hsl(var(--border)))" }}>
                 {footerText && <span>{footerText}</span>}
                 {footerText && showBranding && <span> · </span>}
-                {showBranding && <span>Built with {BRAND.name}</span>}
+                {showBranding && <span>Built by <a href="https://saasless.ai/author" target="_blank" rel="noopener noreferrer" className="underline hover:opacity-80 transition-opacity">saasless.ai</a></span>}
               </footer>
             </div>
           </main>

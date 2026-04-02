@@ -69,7 +69,7 @@ export default function PublishDashboard({
   });
 
   const publishMutation = useMutation({
-    mutationFn: async (overrideData?: DashboardData) => {
+    mutationFn: async ({ data: overrideData, source: src }: { data?: DashboardData; source?: string } = {}) => {
       const dataToPublish = overrideData || dashboardData;
       if (!dataToPublish || !user) throw new Error("Missing data");
 

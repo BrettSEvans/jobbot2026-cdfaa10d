@@ -128,7 +128,13 @@ export default function DashboardChatbot({ dashboardId, companyName, jobTitle, d
                 ? "bg-primary text-primary-foreground"
                 : "bg-secondary text-secondary-foreground"
             }`}>
-              {m.content}
+              {m.role === "assistant" ? (
+                <div className="prose prose-sm prose-neutral dark:prose-invert max-w-none [&>p]:m-0 [&>ul]:my-1 [&>ol]:my-1 [&>h1]:text-sm [&>h2]:text-sm [&>h3]:text-sm">
+                  <ReactMarkdown>{m.content}</ReactMarkdown>
+                </div>
+              ) : (
+                m.content
+              )}
             </div>
           </div>
         ))}

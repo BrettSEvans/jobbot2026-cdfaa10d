@@ -409,7 +409,17 @@ export default function DashboardRenderer({ data }: { data: DashboardData }) {
                   </h3>
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     {data.cfoScenarios?.map((s) => (
-                      <ScenarioPanel key={s.id} scenario={s} />
+                      <Tooltip key={s.id}>
+                        <TooltipTrigger asChild>
+                          <div>
+                            <ScenarioPanel scenario={s} />
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="text-xs max-w-[280px]">
+                          <p className="font-semibold">{s.title}</p>
+                          <p>{s.description}</p>
+                        </TooltipContent>
+                      </Tooltip>
                     ))}
                   </div>
                 </section>

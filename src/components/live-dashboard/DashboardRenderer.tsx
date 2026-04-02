@@ -179,7 +179,9 @@ function SectionBlock({ section, filterValues }: { section: DashboardSection; fi
       {hasMetrics && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
           {section.metrics!.map((m, i) => (
-            <KpiCard key={i} metric={m} />
+            <div key={i} className="transition-transform duration-200 hover:scale-105">
+              <KpiCard metric={m} />
+            </div>
           ))}
         </div>
       )}

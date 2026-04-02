@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { BRAND } from "@/lib/branding";
+
 
 /* ── Lucide icon map ── */
 const ICON_MAP: Record<string, LucideIcon> = {

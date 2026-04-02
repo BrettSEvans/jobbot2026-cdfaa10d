@@ -97,7 +97,7 @@ export default function DataTable({ config, filterValues = {} }: { config: Table
             {displayRows.map((row, i) => (
               <TableRow key={i}>
                 {config.columns.map((col) => (
-                  <TableCell key={col.key} className="text-sm">{row[col.key] ?? ""}</TableCell>
+                  <TableCell key={col.key} className="text-sm" style={{ color: "var(--dash-on-surface, hsl(var(--foreground)))" }}>{row[col.key] ?? ""}</TableCell>
                 ))}
               </TableRow>
             ))}

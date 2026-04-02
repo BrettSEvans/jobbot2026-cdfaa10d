@@ -796,6 +796,19 @@ export default function DynamicMaterialsSection({
           ) : (
             /* Live Dashboard view */
             <>
+              {/* Publish controls inline */}
+              {isAdmin && dashboardData && (
+                <PublishDashboard
+                  applicationId={applicationId}
+                  dashboardData={dashboardData}
+                  companyName={companyName}
+                  jobTitle={jobTitle}
+                  toast={toast}
+                  app={app}
+                  jobDescription={jobDescription}
+                />
+              )}
+
               {liveDashData ? (
                 <Card className="overflow-hidden">
                   <div className="w-full relative" style={{ height: "80vh", overflow: "auto" }}>
@@ -814,7 +827,7 @@ export default function DynamicMaterialsSection({
                 <Card><CardContent className="py-12 text-center space-y-3">
                   <Globe className="h-8 w-8 text-muted-foreground mx-auto" />
                   <p className="text-muted-foreground font-medium">No live dashboard published yet.</p>
-                  <p className="text-xs text-muted-foreground">Use the Live Dashboard card below to publish.</p>
+                  <p className="text-xs text-muted-foreground">Publish using the controls above.</p>
                 </CardContent></Card>
               )}
             </>

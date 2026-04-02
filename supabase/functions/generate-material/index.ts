@@ -941,6 +941,13 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Inject variability recommendations from mid-generation check
+    let variabilitySection = '';
+    if (variabilityRecommendations && Array.isArray(variabilityRecommendations) && variabilityRecommendations.length > 0) {
+      const bullets = variabilityRecommendations.map((r: string) => `- ${r}`).join('\n');
+      variabilitySection = `\n\n## MANDATORY Design Corrections (from variability analysis)\nA design variability analysis of previously generated assets found insufficient diversity. You MUST address ALL of the following in your design:\n${bullets}\n\nThese corrections take priority over general guidelines. Ensure this asset is visually and structurally distinct from all existing assets.`;
+    }
+
     // Normalize best practices into a compact generation rubric
     let bpSection = '';
     if (best_practices) {
@@ -1146,7 +1153,7 @@ Job Title: ${jobTitle || 'Unknown'}
 Competitors: ${(competitors || []).join(', ') || 'N/A'}
 Products: ${(products || []).join(', ') || 'N/A'}
 Customers: ${(customers || []).join(', ') || 'N/A'}
-${brandingSection}${bpSection}${existingPatternsSection}${styleFamilySection}`;
+${brandingSection}${bpSection}${existingPatternsSection}${variabilitySection}${styleFamilySection}`;
 
     const response = await aiFetchWithRetry(LOVABLE_API_KEY, {
       model: getModel('standard'),

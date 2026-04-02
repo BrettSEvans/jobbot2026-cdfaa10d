@@ -1262,7 +1262,7 @@ ${brandingSection}${bpSection}${existingPatternsSection}${variabilitySection}${s
     }
 
     // Sparse content detection — if document is too empty, expand it
-    const isSparse = textLength < 1500 || sectionCount < 2;
+    const isSparse = textLength < 1800 || sectionCount < 2;
     if (isSparse && !isDense) {
       console.log(`Sparse content detected: chars=${textLength}, sections=${sectionCount}. Running expansion pass.`);
       const expandResp = await aiFetchWithRetry(LOVABLE_API_KEY, {

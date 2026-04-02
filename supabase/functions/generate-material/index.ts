@@ -507,7 +507,7 @@ async function reviewPipeline(
       }
 
       const resp = await aiFetchWithRetry(LOVABLE_API_KEY, {
-        model: 'google/gemini-2.5-flash',
+        model: getModel('flash'),
         messages: [
           { role: 'system', content: COMBINED_REVIEW_PROMPT },
           { role: 'user', content: `Document: "${assetName}" (Review cycle ${cycles}/${MAX_REVIEW_CYCLES})${violationContext}\n\nHTML to review:\n${currentHtml}` },

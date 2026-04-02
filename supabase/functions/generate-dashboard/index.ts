@@ -123,13 +123,23 @@ function validateAndRepair(data: any): { valid: boolean; data?: any; errors: str
     }
   }
 
-  // Validate sections
+  // Validate sections + storytelling density warnings
+  let totalTables = 0;
   for (const sec of data.sections) {
     if (!sec.id) { errors.push('Section missing id'); }
     if (!sec.title) { errors.push('Section missing title'); }
     if (!sec.metrics) sec.metrics = [];
     if (!sec.charts) sec.charts = [];
     if (!sec.tables) sec.tables = [];
+    totalTables += sec.tables.length;
+    // Warn if any section has too many metrics (density check)
+    if (sec.metrics.length > 4) {
+      errors.push(`Section "${sec.id}" has ${sec.metrics.length} metrics (recommend ≤3)`);
+    }
+  }
+  // Warn if total tables exceed recommended max
+  if (totalTables > 3) {
+    errors.push(`Dashboard has ${totalTables} tables (recommend ≤3 for narrative clarity)`);
   }
 
   // Ensure agenticWorkforce and cfoScenarios exist (even if empty)
@@ -216,18 +226,33 @@ Always append the 'agentic-workforce' and 'cfo-view' navigation entries and thei
 Research Agent Output:
 ${JSON.stringify(researchedSections, null, 2)}
 
+## STORYTELLING RULES (CRITICAL):
+1. Section 1 MUST be an overview/summary that sets context. Use "kpi-spotlight" layout with metrics only — NO table. It should answer: "Why should you hire this person?"
+2. The LAST content section should answer: "What's the ROI of this hire?" Use an impactful chart + metrics, no table.
+3. NOT every section needs metrics + charts + table. Vary density based on the section's role:
+   - Overview sections: metrics only, maybe one chart
+   - Deep-dive sections: metrics + charts, optionally a table  
+   - Evidence sections: charts + table, fewer metrics
+   - Action sections: metrics + one impactful chart, no table
+4. Maximum 2-3 tables across ALL content sections. Lighter sections create breathing room.
+5. Each section "description" must state the KEY TAKEAWAY — what the viewer should conclude, not just topic context. Bad: "This section covers pipeline data." Good: "Pipeline velocity has increased 23% QoQ, suggesting this role should focus on conversion optimization rather than top-of-funnel growth."
+6. If a section has a "componentHint" from the research agent, follow it (e.g. "metrics-only" means no charts or tables).
+
 For each researched section:
 - Use the provided id, label, icon, and description exactly
+- If the section has a "keyInsight", incorporate it into the section description
 - Assign a UNIQUE "layout" mode to each section (see LAYOUT MODES below) — NO two adjacent sections may share the same layout
-- Generate metrics with realistic values matching the valueFormat hints
-- Generate chart data matching the chart specs (type, axes, datasets)
-- Generate table schemas matching the column definitions and use generateRows with the provided field types
+- Generate metrics with realistic values matching the valueFormat hints (2-3 metrics max per section)
+- Generate chart data matching the chart specs (type, axes, datasets) — 1-2 charts max per section
+- Only generate tables for sections that have table specs AND where density is appropriate
 - Each table must have generateRows count >= 500
 `
     : `
 SECTION REQUIREMENTS:
-- 6-8 sections covering: Overview, Pipeline/Revenue, Competitors, Customers, Products, Analytics, plus always include "agentic-workforce" and "cfo-view" in navigation
-- Each section: unique description, 3-5 metrics, 2-3 charts (VARY chart types — see CHART TYPE DIVERSITY below), 1 table with generateRows count >= 500
+- 5-7 sections covering key areas for this role, plus always include "agentic-workforce" and "cfo-view" in navigation
+- Follow STORYTELLING RULES: Section 1 = overview (metrics only, kpi-spotlight layout), last section = ROI/action
+- Each section: 2-3 metrics, 1-2 charts (VARY chart types — see CHART TYPE DIVERSITY below)
+- Tables only in 2-3 sections (deep-dive/evidence sections), with generateRows count >= 500
 - Assign a UNIQUE "layout" mode to each section (see LAYOUT MODES below) — NO two adjacent sections may share the same layout
 - Include at least ONE horizontalBar chart (Gantt-style) with time-based labels
 `;
@@ -314,8 +339,8 @@ JSON SCHEMA (follow EXACTLY):
     {
       "id": "matches navigation id",
       "title": "Section Title",
-      "description": "Unique contextual description (2-3 sentences, specific to this section)",
-      "layout": "default|kpi-spotlight|split-panel|full-width-timeline|grid-cards|map-table",
+      "description": "Key takeaway — what the viewer should conclude from this section (2-3 sentences, insight-driven)",
+      "layout": "default|kpi-spotlight|split-panel|full-width-timeline|grid-cards|map-table (overview sections should use kpi-spotlight)",
       "metrics": [
         { "label": "Metric Name", "value": "$1.2M", "change": "+12%", "trend": "up|down|neutral" }
       ],

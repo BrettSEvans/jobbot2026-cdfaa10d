@@ -7,24 +7,36 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
-const SYSTEM_PROMPT = `You are a senior business analyst and dashboard architect. Given a company name, company URL, job title, department, and job description, determine the 8-12 most strategically important dashboard sections for someone in this role at this company. Also generate 7 CFO what-if scenarios ranked by relevance.
+const SYSTEM_PROMPT = `You are a senior business analyst, dashboard architect, and UX storyteller. Given a company name, company URL, job title, department, and job description, determine the 5-7 most strategically important dashboard sections for someone in this role at this company. Also generate 7 CFO what-if scenarios ranked by relevance.
+
+Your goal is to create a NARRATIVE ARC — not a data dump. Each section should have a clear role in telling a story about why this candidate is the right hire.
+
+For the overall dashboard, specify:
+- "narrativeArc": 2-sentence summary of the story the dashboard tells (e.g. "This dashboard demonstrates how [candidate] would drive [outcome] at [company]. Starting with the strategic landscape, it builds through operational evidence to a clear ROI case.")
 
 For each section, specify:
 - "id": a unique kebab-case identifier (e.g. "pipeline-health", "revenue-analytics")
 - "label": human-readable section name for navigation
 - "icon": Material Icons Outlined name (e.g. "trending_up", "analytics", "groups")
 - "description": 2-3 sentences explaining why this section matters for this role at this company
-- "metrics": array of 3-5 KPI definitions, each with:
+- "keyInsight": ONE sentence stating the takeaway the viewer should conclude from this section (e.g. "Payment volume growth is outpacing headcount, creating an efficiency gap this role would close.")
+- "sectionRole": one of "overview", "deep-dive", "evidence", "action" — defines the section's place in the narrative:
+  * "overview" — sets context, answers "what's the landscape?" (MUST be section 1)
+  * "deep-dive" — explores a key area in detail with charts and data
+  * "evidence" — provides supporting data tables and proof points
+  * "action" — answers "what's the ROI?" or "what should we do?" (SHOULD be the last content section)
+- "metrics": array of 2-3 KPI definitions (no more than 3), each with:
   - "label": KPI name
   - "valueFormat": example value format (e.g. "$1.2M", "85%", "1,234")
   - "changeFormat": example change format (e.g. "+12%", "-3%")
-- "charts": array of 2-3 chart specifications, each with:
+- "charts": array of 1-2 chart specifications (no more than 2), each with:
   - "title": chart title
   - "type": one of "bar", "line", "doughnut", "pie", "radar", "scatter", "horizontalBar", "area"
   - "xAxis": what the x-axis represents
   - "yAxis": what the y-axis/series represents
   - "datasets": number of datasets and what each represents
-- "tables": array with 1 table specification:
+- "tables": array with 0-1 table specifications. NOT every section needs a table. Only include tables for "deep-dive" or "evidence" sections. The entire dashboard should have at most 2-3 tables total.
+  If included:
   - "title": table title
   - "columns": array of { "key": "fieldKey", "label": "Column Header" }
   - "generateRowsFields": object mapping each column key to a field generator definition with:
@@ -32,6 +44,18 @@ For each section, specify:
     - "options": array of realistic options for "pick", "status", "company", "region", "product" types (use company-specific values)
     - "min"/"max": for numeric types
     - "maxDays": for date types
+- "componentHint": suggest which components this section should include: "metrics-only", "metrics-charts", "metrics-charts-table", or "charts-only". The overview section should be "metrics-only" or "metrics-charts". Evidence sections can have tables.
+
+NARRATIVE RULES:
+1. Section 1 MUST have sectionRole "overview" — it sets context with key metrics only (no table)
+2. The last content section SHOULD have sectionRole "action" — it answers "What's the ROI of hiring this person?"
+3. NOT every section needs all three component types. Vary density:
+   - "overview" sections: metrics only, maybe one chart
+   - "deep-dive" sections: metrics + charts, optionally a table
+   - "evidence" sections: charts + table, fewer metrics
+   - "action" sections: metrics + one impactful chart, no table
+4. Total tables across ALL sections: maximum 3
+5. Section descriptions must state the KEY TAKEAWAY, not just "this section covers X"
 
 For each CFO scenario, specify:
 - "id": unique kebab-case identifier
@@ -70,6 +94,7 @@ For CFO scenarios, think about what financial levers a CFO at THIS company would
 
 Output ONLY valid JSON matching this schema:
 {
+  "narrativeArc": "string",
   "sections": [...],
   "cfoScenarios": [...],
   "reasoning": "2-3 sentence explanation of why you chose these sections and scenarios for this role at this company."

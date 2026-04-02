@@ -271,7 +271,7 @@ export default function PublishDashboard({
       <div className="flex flex-wrap items-center gap-2">
         {!liveDash ? (
           <Button
-            onClick={() => publishMutation.mutate(undefined)}
+            onClick={() => publishMutation.mutate({})}
             disabled={publishMutation.isPending}
             size="sm"
             className="gap-1.5"

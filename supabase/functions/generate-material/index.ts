@@ -271,7 +271,15 @@ function enforceOnePageLayout(html: string): string {
   }
   .page-content ul,
   .page-content ol {
-    padding-left: 0.16in !important;
+    padding-left: 0.3in !important;
+  }
+  .page-content li {
+    position: relative;
+    padding-left: 0.15in;
+  }
+  .page-content [class*="bullet"],
+  .page-content [class*="icon"] {
+    margin-left: 0.15in;
   }
   .page-content img,
   .page-content svg,

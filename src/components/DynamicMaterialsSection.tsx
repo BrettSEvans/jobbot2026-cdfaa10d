@@ -797,10 +797,10 @@ export default function DynamicMaterialsSection({
             /* Live Dashboard view */
             <>
               {/* Publish controls inline */}
-              {isAdmin && dashboardData && (
+              {(dashboardData || liveDashData) && (
                 <PublishDashboard
                   applicationId={applicationId}
-                  dashboardData={dashboardData}
+                  dashboardData={liveDashData || dashboardData}
                   companyName={companyName}
                   jobTitle={jobTitle}
                   toast={toast}

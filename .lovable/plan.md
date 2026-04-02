@@ -1,89 +1,104 @@
 
 
-## Plan: Holistic Layout Balance, Bullet Alignment & Page Fill Enforcement
+## Plan: Live React Dashboards Within ResuVibe (Admin Only)
 
-### Problem
-1. **Bullet icons flush with page edge** — list padding is too small (0.16in), and AI-generated icon bullets (spans, pseudo-elements) get pushed against the left margin.
-2. **Layouts look unbalanced** — the review pipeline checks individual elements (overlap, clipping, font size) but never evaluates the **whole-page composition**: visual weight distribution, consistent spacing rhythms, alignment coherence, or whether the document reads as a cohesive, professional layout.
-3. **Page fill not enforced in review** — the 80-85% fill target exists in the generation prompt, but the review pipeline (which is the final gatekeeper) never checks whether the page is actually filled. Sparse documents can pass all 10 checks and ship half-empty.
+### Overview
+Build a native React dashboard renderer hosted within ResuVibe at public URLs (`/d/:username/:company/:jobtitle`). Visitors see interactive dashboards with Recharts, scenario sliders, and an AI chatbot — no login required to **view**. Only **admin** users can publish/manage live dashboards.
 
-### Changes
+### Architecture
 
-#### 1. Fix bullet alignment — `enforceOnePageLayout` CSS (lines 272-274)
-
-Increase default list padding and add rules for icon-style bullets:
-
-```css
-/* Before */
-padding-left: 0.16in !important;
-
-/* After */
-padding-left: 0.3in !important;
-
-/* New rules */
-li { position: relative; padding-left: 0.15in; }
-[class*="bullet"], [class*="icon"] { margin-left: 0.15in; }
+```text
+Current:  AI → DashboardData JSON → HTML assembler → iframe preview + ZIP download
+New:      AI → DashboardData JSON → stored in live_dashboards table →
+          Public route /d/:username/:company/:jobtitle →
+          Native React renderer (Recharts, filters, scenarios, AI chat)
 ```
 
-#### 2. Add holistic layout rules to the system prompt (~line 1079-1110)
+### 1. Database — `live_dashboards` table
 
-Add a new `## LAYOUT BALANCE & PROFESSIONAL POLISH` section with rules that address the **entire document** as a composition, not individual elements:
+| Column | Type | Notes |
+|---|---|---|
+| id | uuid | PK |
+| application_id | uuid | FK to job_applications |
+| user_id | uuid | Owner (admin who published) |
+| slug_username | text | URL segment |
+| slug_company | text | URL segment |
+| slug_jobtitle | text | URL segment |
+| dashboard_data | jsonb | The DashboardData JSON |
+| is_published | boolean | Toggle visibility |
+| chatbot_enabled | boolean | Enable AI chat for visitors |
+| created_at / updated_at | timestamps | |
 
-- **Visual weight distribution**: The page should feel balanced top-to-bottom and left-to-right. No half of the page should be significantly denser than the other.
-- **Consistent spacing rhythm**: All peer sections must use the same `margin-bottom`. Cards/frames at the same level must have equal padding and border styling.
-- **Equal-height rows**: Cards or columns in the same row must use `align-items: stretch` so they match height.
-- **Alignment coherence**: All body section headings must use the same alignment (all left or all center — never mixed). Margins and padding must be uniform across peer elements.
-- **No orphan elements**: A single card alone in a grid row should span full width, not sit in a half-width cell with empty space beside it.
-- **White space as design**: Margins between sections should feel intentional and even, not random.
+Unique constraint on `(slug_username, slug_company, slug_jobtitle)`.
 
-#### 3. Expand review pipeline to check holistic balance + page fill (lines 432-468)
+**RLS policies:**
+- **Public SELECT**: `anon` and `authenticated` can SELECT where `is_published = true`
+- **Admin CRUD**: Only users with admin role can INSERT/UPDATE/DELETE (via `has_role(auth.uid(), 'admin')`)
 
-Add three new checks to `COMBINED_REVIEW_PROMPT`:
+### 2. Public route (no auth)
 
-```
-11. HOLISTIC BALANCE: Step back and evaluate the ENTIRE page as one composition.
-    - Is visual weight evenly distributed? (No half of the page should be 3x denser than the other)
-    - Do all peer sections have consistent padding, borders, and spacing?
-    - Are cards/frames in the same row equal height?
-    - Is section spacing uniform throughout?
-    - Does the page look like a single cohesive design, or a patchwork of disconnected blocks?
-    If the layout feels lopsided, asymmetric, or amateurish, restructure sections for visual harmony.
+Add `/d/:username/:company/:jobtitle` **outside** `AuthenticatedApp` in `App.tsx` so it renders without login.
 
-12. ALIGNMENT CONSISTENCY: All body section headings must use the same alignment style.
-    Bullet markers and icons must sit INSIDE their text block (not flush with the page edge).
-    Padding and margins must be uniform across peer elements at the same hierarchy level.
+### 3. New components
 
-13. PAGE FILL: The document must fill 80-85% of the usable page area (~9.2in × 7.5in).
-    - If the content only fills ~50-60% of the page, ADD more substantive content (extra bullets,
-      an additional relevant section, or a data element) to reach the 80% target.
-    - If content exceeds 90%, condense the least valuable section.
-    - An under-filled page is a FAILURE — it looks incomplete to a hiring manager.
-    When fixing page fill, maintain all other layout rules (no overflow:hidden, height:auto, etc.).
-```
-
-Update the fix rules section to include:
-- For BALANCE issues: redistribute content, equalize section sizes, add consistent padding
-- For PAGE FILL: expand sparse content with relevant professional material, never leave a document looking half-empty
-
-#### 4. Strengthen sparse detection (lines 1222-1250)
-
-The current sparse check uses `textLength < 1500`. Tighten this:
-- Lower the sparse threshold to `textLength < 1800` to catch more under-filled documents
-- After the expansion pass, re-check: if still under 1500 chars, log a warning (don't loop, but flag it)
-
-### Changes summary
-
-| File | Change |
+| Component | Purpose |
 |---|---|
-| `supabase/functions/generate-material/index.ts` line ~272-274 | Fix list padding from 0.16in → 0.3in, add icon bullet rules |
-| `supabase/functions/generate-material/index.ts` line ~1079 | Add `LAYOUT BALANCE & PROFESSIONAL POLISH` section to system prompt |
-| `supabase/functions/generate-material/index.ts` line ~432-468 | Add checks 11 (holistic balance), 12 (alignment), 13 (page fill) to review prompt |
-| `supabase/functions/generate-material/index.ts` line ~1223 | Tighten sparse threshold from 1500 → 1800 chars |
+| `src/pages/LiveDashboard.tsx` | Public page — fetches by slug, renders dashboard or 404 |
+| `src/components/live-dashboard/DashboardRenderer.tsx` | Converts `DashboardData` JSON → native React: KPI cards, sections, navigation |
+| `src/components/live-dashboard/ChartBlock.tsx` | Renders all chart types via Recharts (bar, line, radar, area, funnel, etc.) |
+| `src/components/live-dashboard/ScenarioPanel.tsx` | Interactive CFO scenarios — sliders/toggles that update charts in real time |
+| `src/components/live-dashboard/FilterBar.tsx` | Global cross-filter bar (dropdowns, chips, segmented) |
+| `src/components/live-dashboard/DashboardChatbot.tsx` | Embedded AI chat panel for visitors to query dashboard data |
+
+### 4. Publish flow (admin only)
+
+Add a "Publish Live Dashboard" button on the Materials/Dashboard tab in `ApplicationDetail.tsx`. This button:
+- Is **only visible to admin users** (check `user_roles` for admin role)
+- Generates URL slugs from profile display_name, company name, and job title
+- Upserts into `live_dashboards` with current `dashboard_data`
+- Shows the shareable public URL
+- Toggle for chatbot enable/disable
+
+### 5. Edge function — `dashboard-chat`
+
+- Receives visitor question + dashboard's `DashboardData` as context
+- Uses `getModel('standard')` for responses
+- No auth required (serves public dashboards)
+- Rate-limited by IP to prevent abuse
+
+### 6. Router update — `App.tsx`
+
+```text
+<BrowserRouter>
+  <Routes>
+    <Route path="/d/:username/:company/:jobtitle" element={<LiveDashboard />} />
+  </Routes>
+  <ErrorBoundary>
+    <AuthProvider>
+      <AuthenticatedApp />
+    </AuthProvider>
+  </ErrorBoundary>
+</BrowserRouter>
+```
+
+The `/d/` route sits outside AuthProvider so it loads without authentication.
+
+### Implementation order
+
+1. DB migration for `live_dashboards` with admin-only write + public read RLS
+2. `DashboardRenderer` + `ChartBlock` + `ScenarioPanel` component tree
+3. `LiveDashboard` public page + router registration
+4. Publish flow UI (admin-gated) on ApplicationDetail
+5. `FilterBar` for cross-filtering
+6. `dashboard-chat` edge function + `DashboardChatbot` component
 
 ### What stays the same
-- Style family system unchanged
-- Variability mid-generation check unchanged
-- Condensation/expansion pass logic unchanged (just threshold tweak)
-- No database changes
-- No client-side changes
+- Existing downloadable ZIP workflow (untouched)
+- Dashboard generation via `generate-dashboard` (same AI, same JSON)
+- iframe preview on Dashboard tab (kept alongside Publish button)
+- All existing `DashboardData` schema — React renderer reads the same JSON
+
+### Admin restriction summary
+- Publishing, unpublishing, and managing live dashboards: **admin only** (RLS + UI gating)
+- Viewing published dashboards at `/d/` URLs: **public, no login**
 

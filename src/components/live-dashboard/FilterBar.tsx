@@ -58,13 +58,13 @@ export default function FilterBar({ filters, values, onChange }: FilterBarProps)
 
         // dropdown
         return (
-          <Select key={f.id} value={values[f.id] || ""} onValueChange={(v) => onChange(f.id, v)}>
+          <Select key={f.id} value={values[f.id] || "__all__"} onValueChange={(v) => onChange(f.id, v === "__all__" ? "" : v)}>
             <SelectTrigger className="w-[160px] h-8 text-xs">
               <SelectValue placeholder={f.label} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All</SelectItem>
-              {f.options.map((opt) => (
+              <SelectItem value="__all__">All</SelectItem>
+              {f.options.filter(Boolean).map((opt) => (
                 <SelectItem key={opt} value={opt}>{opt}</SelectItem>
               ))}
             </SelectContent>

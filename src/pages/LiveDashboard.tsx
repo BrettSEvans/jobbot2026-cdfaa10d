@@ -49,6 +49,17 @@ export default function LiveDashboard() {
 
   const dashData = dashboard.dashboard_data as unknown as DashboardData;
 
+  if (!dashData || !dashData.meta) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center space-y-2">
+          <h1 className="text-2xl font-bold text-foreground">Invalid Dashboard Data</h1>
+          <p className="text-muted-foreground">This dashboard's data could not be loaded.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       <DashboardRenderer data={dashData} />

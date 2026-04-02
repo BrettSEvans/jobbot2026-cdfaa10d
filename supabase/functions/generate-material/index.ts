@@ -650,7 +650,7 @@ MISTAKES (3 bullets): ...` },
       if (assets && assets.length >= 3) {
         const samples = assets.map((a: any) => a.html.slice(0, 2000)).join('\n---SAMPLE---\n');
         const patternResp = await aiFetchWithRetry(LOVABLE_API_KEY, {
-          model: 'google/gemini-2.5-flash',
+          model: getModel('flash'),
           messages: [
             { role: 'system', content: 'Analyze HTML document samples and extract common structural and visual patterns. Return JSON only.' },
             { role: 'user', content: `These ${assets.length} "${assetType}" documents were downloaded by users (approval signal). Extract winning patterns:\n\n${samples}\n\nReturn JSON with: { "common_sections": [], "visual_patterns": [], "content_patterns": [], "layout_approach": "" }` },

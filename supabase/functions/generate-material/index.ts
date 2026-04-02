@@ -1,6 +1,6 @@
 import { errorResponse } from "../_shared/errorResponse.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { aiFetchWithRetry } from "../_shared/aiRetry.ts";
+import { aiFetchWithRetry, getModel } from "../_shared/aiRetry.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -507,7 +507,7 @@ async function reviewPipeline(
       }
 
       const resp = await aiFetchWithRetry(LOVABLE_API_KEY, {
-        model: 'google/gemini-2.5-flash',
+        model: getModel('flash'),
         messages: [
           { role: 'system', content: COMBINED_REVIEW_PROMPT },
           { role: 'user', content: `Document: "${assetName}" (Review cycle ${cycles}/${MAX_REVIEW_CYCLES})${violationContext}\n\nHTML to review:\n${currentHtml}` },
@@ -596,7 +596,7 @@ async function getBestPractices(
   let bestPracticesText = '';
   try {
     const researchResp = await aiFetchWithRetry(LOVABLE_API_KEY, {
-      model: 'google/gemini-2.5-flash',
+      model: getModel('standard'),
       messages: [
         { role: 'system', content: 'You are a document design consultant specializing in ONE-PAGE professional deliverables (US Letter 8.5×11in). Produce compact, constraint-driven rubrics — NOT verbose essays.' },
         { role: 'user', content: `Create a ONE-PAGE GENERATION RUBRIC for "${assetType}". Use this exact format (keep each line short, total under 250 words):
@@ -650,7 +650,7 @@ MISTAKES (3 bullets): ...` },
       if (assets && assets.length >= 3) {
         const samples = assets.map((a: any) => a.html.slice(0, 2000)).join('\n---SAMPLE---\n');
         const patternResp = await aiFetchWithRetry(LOVABLE_API_KEY, {
-          model: 'google/gemini-2.5-flash',
+          model: getModel('flash'),
           messages: [
             { role: 'system', content: 'Analyze HTML document samples and extract common structural and visual patterns. Return JSON only.' },
             { role: 'user', content: `These ${assets.length} "${assetType}" documents were downloaded by users (approval signal). Extract winning patterns:\n\n${samples}\n\nReturn JSON with: { "common_sections": [], "visual_patterns": [], "content_patterns": [], "layout_approach": "" }` },
@@ -1149,7 +1149,7 @@ Customers: ${(customers || []).join(', ') || 'N/A'}
 ${brandingSection}${bpSection}${existingPatternsSection}${styleFamilySection}`;
 
     const response = await aiFetchWithRetry(LOVABLE_API_KEY, {
-      model: 'google/gemini-2.5-flash',
+      model: getModel('standard'),
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: `Job Description:\n${(jobDescription || '').slice(0, 6000)}\n\nGenerate the "${assetName}" HTML document now.` },
@@ -1182,7 +1182,7 @@ ${brandingSection}${bpSection}${existingPatternsSection}${styleFamilySection}`;
     if (isDense) {
       console.log(`Density detected: sections=${sectionCount}, bullets=${bulletCount}, rows=${tableRowCount}, chars=${textLength}. Running condensation retry.`);
       const condenseResp = await aiFetchWithRetry(LOVABLE_API_KEY, {
-        model: 'google/gemini-2.5-flash',
+        model: getModel('flash'),
         messages: [
           { role: 'system', content: `You are a document editor. The following HTML document is TOO DENSE for a single US Letter page. Condense it:
 1. Merge sections down to max 3 body sections (combine related ones aggressively)
@@ -1217,7 +1217,7 @@ ${brandingSection}${bpSection}${existingPatternsSection}${styleFamilySection}`;
     if (isSparse && !isDense) {
       console.log(`Sparse content detected: chars=${textLength}, sections=${sectionCount}. Running expansion pass.`);
       const expandResp = await aiFetchWithRetry(LOVABLE_API_KEY, {
-        model: 'google/gemini-2.5-flash',
+        model: getModel('flash'),
         messages: [
           { role: 'system', content: `You are a document editor. The following HTML document is TOO SPARSE — it only fills about 10-40% of a US Letter page. Expand it to fill 80-85% of the page:
 1. Add 1-2 more body sections (max 3 total) with relevant professional content

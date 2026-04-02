@@ -1,5 +1,5 @@
 import { errorResponse } from "../_shared/errorResponse.ts";
-import { aiFetchWithRetry } from "../_shared/aiRetry.ts";
+import { aiFetchWithRetry, getModel } from "../_shared/aiRetry.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -39,7 +39,7 @@ Deno.serve(async (req) => {
       : 'No branding data available';
 
     const resp = await aiFetchWithRetry(LOVABLE_API_KEY, {
-      model: 'google/gemini-2.5-flash',
+      model: getModel('flash'),
       messages: [
         {
           role: 'system',

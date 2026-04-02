@@ -1,6 +1,6 @@
 import { errorResponse } from "../_shared/errorResponse.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { aiFetchWithRetry } from "../_shared/aiRetry.ts";
+import { aiFetchWithRetry, getModel } from "../_shared/aiRetry.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -112,7 +112,7 @@ Job Description:
 ${jobDescription || 'No description provided.'}`;
 
     const response = await aiFetchWithRetry(LOVABLE_API_KEY, {
-      model: 'google/gemini-2.5-flash',
+      model: getModel('standard'),
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
         { role: 'user', content: userPrompt },

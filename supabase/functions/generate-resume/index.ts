@@ -1,5 +1,5 @@
 import { errorResponse } from "../_shared/errorResponse.ts";
-import { aiFetchWithRetry } from "../_shared/aiRetry.ts";
+import { aiFetchWithRetry, getModel } from "../_shared/aiRetry.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -108,7 +108,7 @@ ${userPrompt ? `\nUSER CONTEXT (use this to inform keyword placement):\n${userPr
     const fullSystemPrompt = systemPrompt + jdInjection;
 
     const response = await aiFetchWithRetry(LOVABLE_API_KEY, {
-      model: 'google/gemini-2.5-flash',
+      model: getModel('standard'),
       messages: [
         { role: 'system', content: fullSystemPrompt },
         {

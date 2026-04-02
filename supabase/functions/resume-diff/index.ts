@@ -1,5 +1,5 @@
 import { errorResponse } from "../_shared/errorResponse.ts";
-import { aiFetchWithRetry } from "../_shared/aiRetry.ts";
+import { aiFetchWithRetry, getModel } from "../_shared/aiRetry.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -96,7 +96,7 @@ ${jobDescriptionMarkdown ? `\nJOB DESCRIPTION (for context on keyword injection 
     const tailoredTrunc = tailoredHtml.slice(0, 6000);
 
     const response = await aiFetchWithRetry(LOVABLE_API_KEY, {
-      model: 'google/gemini-2.5-flash',
+      model: getModel('standard'),
       response_format: { type: 'json_object' },
       messages: [
         { role: 'system', content: systemPrompt },

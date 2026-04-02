@@ -1,5 +1,5 @@
 import { errorResponse } from "../_shared/errorResponse.ts";
-import { aiFetchWithRetry } from "../_shared/aiRetry.ts";
+import { aiFetchWithRetry, getModel } from "../_shared/aiRetry.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -62,7 +62,7 @@ Competitors context: ${(competitors || []).join(', ') || 'N/A'}
 Products context: ${(products || []).join(', ') || 'N/A'}`;
 
     const response = await aiFetchWithRetry(LOVABLE_API_KEY, {
-      model: 'google/gemini-2.5-flash',
+      model: getModel('standard'),
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: `Company: ${companyName || 'Unknown'}\nJob Title: ${jobTitle || 'Unknown'}\nCandidate: ${candidateName || 'Prepared by [Candidate]'}\n\nJob Description:\n${(jobDescription || '').slice(0, 6000)}\n\nGenerate the RAID Log HTML now. Include the candidate's name in the header or footer.` },

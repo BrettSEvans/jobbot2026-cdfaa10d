@@ -1,6 +1,6 @@
 import { errorResponse } from "../_shared/errorResponse.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { aiFetchWithRetry } from "../_shared/aiRetry.ts";
+import { aiFetchWithRetry, getModel } from "../_shared/aiRetry.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -57,7 +57,7 @@ Deno.serve(async (req) => {
     }
 
     const aiResponse = await aiFetchWithRetry(LOVABLE_API_KEY, {
-      model: "google/gemini-2.5-flash",
+      model: getModel('flash'),
       messages: [
         {
           role: "system",

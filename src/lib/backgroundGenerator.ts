@@ -646,6 +646,59 @@ class BackgroundGenerationManager {
   }
 
   /**
+   * Recover dashboard generation for an app that completed without a dashboard.
+   * Loads persisted pipeline state from research_reasoning column.
+   */
+  async recoverDashboardGeneration(appId: string, app: any) {
+    // Already has a dashboard or is currently generating
+    if (app.dashboard_html) return;
+    const existingJob = this.jobs.get(appId);
+    if (existingJob && !["complete", "error"].includes(existingJob.status)) return;
+
+    // Try to recover pipeline state from DB
+    let pipelineState: any = null;
+    let researchedSections: any[] | undefined;
+    let researchedCfoScenarios: any[] | undefined;
+    try {
+      const stored = typeof app.research_reasoning === "string" ? JSON.parse(app.research_reasoning) : null;
+      if (stored?._pipelineState) {
+        pipelineState = stored._pipelineState;
+        researchedSections = stored._researchedSections;
+        researchedCfoScenarios = stored._researchedCfoScenarios;
+      }
+    } catch { /* not valid JSON pipeline state */ }
+
+    if (!pipelineState) {
+      console.warn("[Recovery] No persisted pipeline state for", appId, "— cannot auto-recover dashboard");
+      return;
+    }
+
+    console.log("[Recovery] Auto-recovering dashboard generation for", appId);
+
+    // Set up in-memory job with recovered state
+    const job: GenerationJob = {
+      applicationId: appId,
+      status: "awaiting-dashboard-config",
+      progress: "Recovering dashboard generation...",
+      currentAsset: "Dashboard",
+      researchedSections,
+      researchedCfoScenarios,
+      scrapedBranding: pipelineState.brandingData,
+      _pipelineState: pipelineState,
+    };
+    this.jobs.set(appId, job);
+    this.notify();
+
+    // Auto-resume with defaults immediately
+    this.resumeDashboardGeneration(appId, {
+      selectedSections: researchedSections?.slice(0, 7),
+      selectedCfoScenarios: researchedCfoScenarios
+        ?.sort((a: any, b: any) => (a.relevanceRank || 99) - (b.relevanceRank || 99))
+        .slice(0, 3),
+    });
+  }
+
+  /**
    * Resume dashboard generation after user has made customization choices.
    */
   async resumeDashboardGeneration(

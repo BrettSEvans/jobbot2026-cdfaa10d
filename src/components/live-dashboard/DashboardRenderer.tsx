@@ -166,7 +166,7 @@ function SectionBlock({ section, filterValues }: { section: DashboardSection; fi
   };
 
   return (
-    <section className="space-y-4">
+    <section className="space-y-4" style={fadeInStyle}>
       <div>
         <h3 className="text-lg font-bold" style={{ fontFamily: "var(--dash-font-heading)", color: "var(--dash-on-surface, hsl(var(--foreground)))" }}>
           {section.title}

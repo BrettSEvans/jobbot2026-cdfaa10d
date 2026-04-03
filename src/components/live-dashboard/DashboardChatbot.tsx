@@ -134,13 +134,17 @@ export default function DashboardChatbot({ dashboardId, companyName, jobTitle, d
         )}
         {messages.map((m, i) => (
           <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
-            <div className={`max-w-[80%] rounded-lg px-3 py-2 text-sm ${
-              m.role === "user"
-                ? "bg-primary text-primary-foreground"
-                : "bg-secondary text-secondary-foreground"
-            }`}>
+            <div className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm transition-all duration-300`}
+              style={{
+                background: m.role === "user" ? "var(--dash-primary, #0a8080)" : "var(--dash-surface, #E0E5EC)",
+                color: m.role === "user" ? "var(--dash-on-primary, #fff)" : "var(--dash-on-surface, #3D4852)",
+                boxShadow: m.role === "user"
+                  ? "5px 5px 10px rgb(163,177,198,0.6), -5px -5px 10px rgba(255,255,255,0.5)"
+                  : "inset 6px 6px 10px rgb(163,177,198,0.6), inset -6px -6px 10px rgba(255,255,255,0.5)",
+              }}
+            >
               {m.role === "assistant" ? (
-                <div className="prose prose-sm prose-neutral dark:prose-invert max-w-none [&>p]:m-0 [&>ul]:my-1 [&>ol]:my-1 [&>h1]:text-sm [&>h2]:text-sm [&>h3]:text-sm">
+                <div className="prose prose-sm max-w-none [&>p]:m-0 [&>ul]:my-1 [&>ol]:my-1 [&>h1]:text-sm [&>h2]:text-sm [&>h3]:text-sm">
                   <ReactMarkdown>{m.content}</ReactMarkdown>
                 </div>
               ) : (

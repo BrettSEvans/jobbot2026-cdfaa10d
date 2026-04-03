@@ -23,6 +23,11 @@ function extractJsonString(raw: string): string {
 function sanitizeJsonString(s: string): string {
   // Replace new Date(...) with string
   s = s.replace(/new\s+Date\([^)]*\)/g, '"2026-01-01"');
+  // Fix bare minus sign without following digit (e.g. "change": "-")
+  s = s.replace(/":\s*-\s*([},\]])/g, '": 0$1');
+  s = s.replace(/":\s*-\s*"/g, '": "-"');
+  // Fix "No number after minus sign" — bare minus before non-digit in numeric context
+  s = s.replace(/:\s*(-)\s*,/g, ': 0,');
   // Remove trailing commas before } or ]
   s = s.replace(/,(\s*[}\]])/g, '$1');
   // Quote unquoted keys (simple heuristic)

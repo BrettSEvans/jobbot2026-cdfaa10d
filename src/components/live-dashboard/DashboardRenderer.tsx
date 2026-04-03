@@ -1,10 +1,9 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import type { DashboardData, DashboardSection, DashboardBranding } from "@/lib/dashboard/schema";
 import KpiCard from "./KpiCard";
-import ChartBlock from "./ChartBlock";
+import ChartBlock, { type DrillFilter } from "./ChartBlock";
 import DataTable from "./DataTable";
 import ScenarioPanel from "./ScenarioPanel";
-import FilterBar from "./FilterBar";
 import {
   ExternalLink, Linkedin, User, Menu, X,
   LayoutDashboard, TrendingUp, Users, DollarSign, Target,

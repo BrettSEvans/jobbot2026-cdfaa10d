@@ -1,4 +1,4 @@
-import { useMemo, useCallback } from "react";
+import { useMemo, useCallback, useState } from "react";
 import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
@@ -13,6 +13,8 @@ const COLORS = [
   "hsl(340, 65%, 50%)", "hsl(200, 70%, 50%)", "hsl(45, 80%, 55%)",
   "hsl(280, 50%, 55%)", "hsl(15, 75%, 55%)",
 ];
+
+const DASH_PATTERNS = ["0", "8 4", "4 4", "12 4 4 4", "2 4", "16 4"];
 
 export interface DrillFilter {
   field: string;
@@ -44,16 +46,20 @@ function toPieData(config: ChartConfig) {
   }));
 }
 
-/* ── Determine if a label is actively selected ── */
 function isLabelActive(label: string, chartId: string, activeDrillValues?: Record<string, DrillFilter>) {
-  if (!activeDrillValues) return null; // no filtering active
+  if (!activeDrillValues) return null;
   const myFilter = activeDrillValues[chartId];
-  if (!myFilter) return null; // this chart has no active filter
+  if (!myFilter) return null;
   return myFilter.value === label;
 }
 
 function hasAnyActiveFilter(activeDrillValues?: Record<string, DrillFilter>) {
   return activeDrillValues && Object.keys(activeDrillValues).length > 0;
+}
+
+/* Custom pie label renderer showing percentage */
+function renderPieLabel({ name, percent }: { name: string; percent: number }) {
+  return `${name} ${(percent * 100).toFixed(0)}%`;
 }
 
 /* ── Waterfall chart ── */
@@ -229,6 +235,7 @@ function TreemapChart({ config }: ChartBlockProps) {
 export default function ChartBlock({ config, onDrillDown, activeDrillValues }: ChartBlockProps) {
   const data = useMemo(() => toChartData(config), [config]);
   const datasets = config.data.datasets;
+  const [hiddenSeries, setHiddenSeries] = useState<string[]>([]);
 
   const handleClick = useCallback((payload: any) => {
     if (!onDrillDown || !payload) return;
@@ -241,8 +248,16 @@ export default function ChartBlock({ config, onDrillDown, activeDrillValues }: C
     if (active === null && !hasAnyActiveFilter(activeDrillValues)) return 1;
     if (active === true) return 1;
     if (active === false) return 0.3;
-    return 0.7; // other charts have filters but not this one
+    return 0.7;
   }, [config.id, activeDrillValues]);
+
+  const handleLegendClick = useCallback((e: any) => {
+    const key = e.dataKey || e.value;
+    if (!key) return;
+    setHiddenSeries((prev) =>
+      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
+    );
+  }, []);
 
   const renderChart = () => {
     switch (config.type) {
@@ -281,6 +296,7 @@ export default function ChartBlock({ config, onDrillDown, activeDrillValues }: C
                   {data.map((point) => (
                     <Cell key={point.name} opacity={cellOpacity(point.name)} />
                   ))}
+                  <LabelList dataKey={ds.label} position="top" style={{ fontSize: 10 }} formatter={(v: number) => typeof v === "number" ? v.toLocaleString() : v} />
                 </Bar>
               ))}
             </BarChart>
@@ -295,9 +311,15 @@ export default function ChartBlock({ config, onDrillDown, activeDrillValues }: C
               <XAxis dataKey="name" tick={{ fontSize: 12 }} />
               <YAxis tick={{ fontSize: 12 }} />
               <Tooltip />
-              <Legend />
+              <Legend onClick={handleLegendClick} wrapperStyle={{ cursor: "pointer" }} />
               {datasets.map((ds, i) => (
-                <Line key={ds.label} type="monotone" dataKey={ds.label} stroke={COLORS[i % COLORS.length]} strokeWidth={2} dot={{ r: 3 }} cursor="pointer" />
+                <Line key={ds.label} type="monotone" dataKey={ds.label}
+                  stroke={COLORS[i % COLORS.length]} strokeWidth={2}
+                  strokeDasharray={DASH_PATTERNS[i % DASH_PATTERNS.length]}
+                  dot={{ r: 3 }} cursor="pointer"
+                  hide={hiddenSeries.includes(ds.label)}
+                  strokeOpacity={hiddenSeries.includes(ds.label) ? 0 : 1}
+                />
               ))}
             </LineChart>
           </ResponsiveContainer>
@@ -311,9 +333,15 @@ export default function ChartBlock({ config, onDrillDown, activeDrillValues }: C
               <XAxis dataKey="name" tick={{ fontSize: 12 }} />
               <YAxis tick={{ fontSize: 12 }} />
               <Tooltip />
-              <Legend />
+              <Legend onClick={handleLegendClick} wrapperStyle={{ cursor: "pointer" }} />
               {datasets.map((ds, i) => (
-                <Area key={ds.label} type="monotone" dataKey={ds.label} stroke={COLORS[i % COLORS.length]} fill={COLORS[i % COLORS.length]} fillOpacity={0.2} cursor="pointer" />
+                <Area key={ds.label} type="monotone" dataKey={ds.label}
+                  stroke={COLORS[i % COLORS.length]} fill={COLORS[i % COLORS.length]}
+                  fillOpacity={hiddenSeries.includes(ds.label) ? 0 : 0.2}
+                  strokeDasharray={DASH_PATTERNS[i % DASH_PATTERNS.length]}
+                  cursor="pointer"
+                  hide={hiddenSeries.includes(ds.label)}
+                />
               ))}
             </AreaChart>
           </ResponsiveContainer>
@@ -322,15 +350,17 @@ export default function ChartBlock({ config, onDrillDown, activeDrillValues }: C
       case "doughnut":
       case "pie": {
         const pieData = toPieData(config);
+        const total = pieData.reduce((s, d) => s + d.value, 0);
         return (
           <ResponsiveContainer width="100%" height={320}>
             <PieChart>
               <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%"
-                innerRadius={config.type === "doughnut" ? 60 : 0} outerRadius={110} label
+                innerRadius={config.type === "doughnut" ? 60 : 0} outerRadius={110}
+                label={({ name, value }) => `${name} ${total > 0 ? ((value / total) * 100).toFixed(0) : 0}%`}
                 onClick={handleClick} cursor="pointer"
               >
                 {pieData.map((entry, i) => (
-                  <Cell key={i} fill={COLORS[i % COLORS.length]} opacity={cellOpacity(entry.name)} 
+                  <Cell key={i} fill={COLORS[i % COLORS.length]} opacity={cellOpacity(entry.name)}
                     stroke={isLabelActive(entry.name, config.id, activeDrillValues) === true ? "#000" : "none"}
                     strokeWidth={isLabelActive(entry.name, config.id, activeDrillValues) === true ? 2 : 0}
                   />

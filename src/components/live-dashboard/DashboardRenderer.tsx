@@ -104,8 +104,14 @@ const fadeInStyle: React.CSSProperties = {
   animation: "dashFadeIn 0.4s ease-out both",
 };
 
-/* ── Subtle SVG wave pattern for background ── */
-const WAVE_PATTERN = `url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 50 Q25 30 50 50 T100 50' fill='none' stroke='%23000' stroke-width='0.5' opacity='0.04'/%3E%3Cpath d='M0 70 Q25 50 50 70 T100 70' fill='none' stroke='%23000' stroke-width='0.5' opacity='0.03'/%3E%3C/svg%3E")`;
+/* ── Neumorphic shadow tokens ── */
+const NEU_SHADOW = "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255,0.5)";
+const NEU_SHADOW_HOVER = "12px 12px 20px rgb(163,177,198,0.7), -12px -12px 20px rgba(255,255,255,0.6)";
+const NEU_SHADOW_SM = "5px 5px 10px rgb(163,177,198,0.6), -5px -5px 10px rgba(255,255,255,0.5)";
+const NEU_SHADOW_INSET = "inset 6px 6px 10px rgb(163,177,198,0.6), inset -6px -6px 10px rgba(255,255,255,0.5)";
+const NEU_SHADOW_INSET_DEEP = "inset 10px 10px 20px rgb(163,177,198,0.7), inset -10px -10px 20px rgba(255,255,255,0.6)";
+
+export { NEU_SHADOW, NEU_SHADOW_HOVER, NEU_SHADOW_SM, NEU_SHADOW_INSET, NEU_SHADOW_INSET_DEEP };
 
 /* ── Candidate Hero ── */
 function CandidateHero({ data }: { data: DashboardData }) {

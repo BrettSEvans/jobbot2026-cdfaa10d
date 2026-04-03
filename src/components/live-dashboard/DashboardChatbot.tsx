@@ -87,16 +87,22 @@ export default function DashboardChatbot({ dashboardId, companyName, jobTitle, d
     : "fixed bottom-6 right-6 z-50 w-[360px] h-[480px] flex flex-col shadow-xl";
 
   return (
-    <Card className={panelClasses}>
+    <div
+      className={`${isMobile ? "fixed inset-0 z-50 flex flex-col" : "fixed bottom-6 right-6 z-50 w-[360px] h-[480px] flex flex-col"} rounded-[32px] overflow-hidden`}
+      style={{
+        background: "var(--dash-surface, #E0E5EC)",
+        boxShadow: "12px 12px 20px rgb(163,177,198,0.7), -12px -12px 20px rgba(255,255,255,0.6)",
+      }}
+    >
       {/* Header */}
-      <div className="flex items-center justify-between p-3 border-b">
+      <div className="flex items-center justify-between p-3" style={{ background: "var(--dash-primary, #0a8080)", color: "var(--dash-on-primary, #fff)" }}>
         <div>
-          <p className="text-sm font-semibold">Dashboard Assistant</p>
-          <p className="text-xs text-muted-foreground">{companyName} — {jobTitle}</p>
+          <p className="text-sm font-bold" style={{ fontFamily: "var(--dash-font-heading, 'Plus Jakarta Sans', sans-serif)" }}>Dashboard Assistant</p>
+          <p className="text-xs opacity-80">{companyName} — {jobTitle}</p>
         </div>
-        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setOpen(false)}>
+        <button className="h-7 w-7 rounded-2xl flex items-center justify-center hover:bg-white/10 transition-all duration-300" onClick={() => setOpen(false)}>
           <X className="h-4 w-4" />
-        </Button>
+        </button>
       </div>
 
       {/* Messages */}

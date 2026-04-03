@@ -412,8 +412,8 @@ export default function DashboardRenderer({ data }: { data: DashboardData }) {
                 }
               `}
               style={{
-                background: "var(--dash-surface-variant, hsl(var(--card)))",
-                borderRight: `1px solid var(--dash-outline, hsl(var(--border)))`,
+                background: "var(--dash-surface-variant, #D8DEE6)",
+                boxShadow: NEU_SHADOW_SM,
               }}
             >
               <div className={`${sidebarExpanded ? "w-[260px]" : "w-14"} h-full flex flex-col`}>

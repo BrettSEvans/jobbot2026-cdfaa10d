@@ -440,14 +440,15 @@ export default function DashboardRenderer({ data }: { data: DashboardData }) {
                     const button = (
                       <button
                         key={nav.id}
-                        className={`w-full flex items-center gap-2.5 rounded-lg text-sm font-medium transition-colors text-left ${
+                        className={`w-full flex items-center gap-2.5 rounded-2xl text-sm font-medium transition-all duration-300 ease-out text-left ${
                           sidebarExpanded ? "px-3 py-2.5" : "px-0 py-2.5 justify-center"
-                        } ${isActive ? "font-semibold" : "opacity-70 hover:opacity-100"}`}
+                        } ${isActive ? "font-bold" : "opacity-70 hover:opacity-100 hover:-translate-y-px"}`}
                         style={{
-                          background: isActive ? "var(--dash-primary, hsl(var(--primary)))" : "transparent",
+                          background: isActive ? "var(--dash-primary, #0a8080)" : "transparent",
                           color: isActive
-                            ? "var(--dash-on-primary, hsl(var(--primary-foreground)))"
-                            : "var(--dash-on-surface, hsl(var(--foreground)))",
+                            ? "var(--dash-on-primary, #fff)"
+                            : "var(--dash-on-surface, #3D4852)",
+                          boxShadow: isActive ? NEU_SHADOW_SM : "none",
                         }}
                         onClick={() => {
                           setActiveNav(nav.id);

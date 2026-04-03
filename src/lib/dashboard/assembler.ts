@@ -67,6 +67,10 @@ export function parseLlmJsonOutput(raw: string): DashboardData | null {
   // new Date("...") → string
   clean = clean.replace(/new\s+Date\s*\(\s*["']([^"']*)["']\s*\)/g, '"$1"');
   clean = clean.replace(/new\s+Date\s*\(\s*\)/g, '"2025-01-01"');
+  // Fix bare minus sign without following digit
+  clean = clean.replace(/":\s*-\s*([},\]])/g, '": 0$1');
+  clean = clean.replace(/":\s*-\s*"/g, '": "-"');
+  clean = clean.replace(/:\s*(-)\s*,/g, ': 0,');
   // Remove trailing commas before } or ]
   clean = clean.replace(/,\s*([}\]])/g, '$1');
   // Fix unquoted keys (common LLM mistake)

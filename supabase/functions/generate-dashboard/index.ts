@@ -350,7 +350,7 @@ JSON SCHEMA (follow EXACTLY):
       "description": "Key takeaway — what the viewer should conclude from this section (2-3 sentences, insight-driven). For overview sections, include specific numbers and department-level context.",
       "layout": "default|split-panel|full-width-timeline|grid-cards|map-table|kpi-spotlight (overview sections should use split-panel or default for richer content)",
       "metrics": [
-        { "label": "Metric Name", "value": "$1.2M", "change": "+12%", "trend": "up|down|neutral" }
+        { "label": "Metric Name", "value": "$1.2M", "change": "+12% vs Q3", "trend": "up|down|neutral" }
       ],
       "charts": [
         {

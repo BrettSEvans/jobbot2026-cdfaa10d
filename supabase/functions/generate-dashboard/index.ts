@@ -227,16 +227,21 @@ Research Agent Output:
 ${JSON.stringify(researchedSections, null, 2)}
 
 ## STORYTELLING RULES (CRITICAL):
-1. Section 1 MUST be an overview/summary that sets context. Use "kpi-spotlight" layout with metrics only — NO table. It should answer: "Why should you hire this person?"
+1. Section 1 MUST be a COMPREHENSIVE overview/executive summary that establishes credibility. Use "split-panel" or "default" layout. It should answer: "Why should you hire this person?" Include:
+   - 4-6 department-level KPI metrics (e.g., revenue impact, headcount managed, budget owned, key performance ratios, growth rates, efficiency metrics relevant to the department)
+   - 1-2 charts that provide immediate visual evidence (e.g., a trend line showing growth trajectory, a doughnut showing portfolio/team composition, or a waterfall showing value contribution)
+   - A rich description with specific numbers and the key narrative for the candidacy
+   - Do NOT limit the overview to just metric cards — it must feel like a full executive summary page
 2. The LAST content section should answer: "What's the ROI of this hire?" Use an impactful chart + metrics, no table.
 3. NOT every section needs metrics + charts + table. Vary density based on the section's role:
-   - Overview sections: metrics only, maybe one chart
+   - Overview/summary sections: 4-6 metrics + 1-2 charts (rich and compelling)
    - Deep-dive sections: metrics + charts, optionally a table  
    - Evidence sections: charts + table, fewer metrics
    - Action sections: metrics + one impactful chart, no table
 4. Maximum 2-3 tables across ALL content sections. Lighter sections create breathing room.
 5. Each section "description" must state the KEY TAKEAWAY — what the viewer should conclude, not just topic context. Bad: "This section covers pipeline data." Good: "Pipeline velocity has increased 23% QoQ, suggesting this role should focus on conversion optimization rather than top-of-funnel growth."
-6. If a section has a "componentHint" from the research agent, follow it (e.g. "metrics-only" means no charts or tables).
+6. If a section has a "componentHint" from the research agent, follow it UNLESS it says "metrics-only" for the overview — override to include charts for richer presentation.
+
 
 For each researched section:
 - Use the provided id, label, icon, and description exactly

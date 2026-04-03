@@ -243,7 +243,7 @@ function SectionBlock({ section, drillFilters, onDrillDown }: {
       {hasCharts && (
         <div className={`grid ${chartGrid()} gap-4`}>
           {section.charts!.map((c) => (
-            <ChartBlock key={c.id} config={c} filterValues={filterValues} />
+            <ChartBlock key={c.id} config={c} onDrillDown={onDrillDown} activeDrillValues={drillFilters} />
           ))}
         </div>
       )}

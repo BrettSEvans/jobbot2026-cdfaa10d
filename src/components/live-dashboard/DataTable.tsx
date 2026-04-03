@@ -130,7 +130,7 @@ export default function DataTable({
                 <TableHead
                   key={col.key}
                   className="text-xs whitespace-nowrap font-semibold cursor-pointer select-none hover:bg-muted/30 transition-colors"
-                  style={{ color: "var(--dash-on-surface, hsl(var(--foreground)))" }}
+                  style={{ color: "var(--dash-on-surface, #3D4852)" }}
                   onClick={() => handleSort(col.key)}
                 >
                   <span className="inline-flex items-center gap-1">

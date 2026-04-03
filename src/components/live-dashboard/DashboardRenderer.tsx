@@ -5,7 +5,7 @@ import ChartBlock, { type DrillFilter } from "./ChartBlock";
 import DataTable from "./DataTable";
 import ScenarioPanel from "./ScenarioPanel";
 import {
-  ExternalLink, Linkedin, User, Menu, X,
+  ExternalLink, Linkedin, User, Menu, X, Inbox, ChevronRight, Printer,
   LayoutDashboard, TrendingUp, Users, DollarSign, Target,
   BarChart3, Briefcase, Rocket, ShieldCheck, Brain,
   Calculator, GitBranch, MapPin, Zap, PieChart, Activity,

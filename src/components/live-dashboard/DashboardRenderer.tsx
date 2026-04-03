@@ -368,24 +368,25 @@ export default function DashboardRenderer({ data }: { data: DashboardData }) {
       >
         {/* Header */}
         <header
-          className="sticky top-0 z-30 shadow-md"
+          className="sticky top-0 z-30"
           style={{
-            background: `linear-gradient(135deg, var(--dash-primary, hsl(var(--primary))), ${data.branding?.primaryContainer || "var(--dash-primary, hsl(var(--primary)))"})`,
-            color: "var(--dash-on-primary, hsl(var(--primary-foreground)))",
+            background: `linear-gradient(135deg, var(--dash-primary, #0a8080), ${data.branding?.primaryContainer || "var(--dash-primary, #0a8080)"})`,
+            color: "var(--dash-on-primary, #fff)",
+            boxShadow: "0 4px 16px rgb(163,177,198,0.5)",
           }}
         >
           <div className="px-4 py-3 flex items-center gap-3">
             {hasNav && (
               <button
                 onClick={() => isMobile ? setSidebarOpen(!sidebarOpen) : setDesktopSidebarOpen(!desktopSidebarOpen)}
-                className="p-1.5 rounded-md hover:bg-white/10 transition-colors shrink-0"
+                className="p-1.5 rounded-2xl hover:bg-white/10 transition-all duration-300 shrink-0"
                 aria-label="Toggle navigation"
               >
                 <Menu className="h-5 w-5" />
               </button>
             )}
             <div className="min-w-0 flex-1">
-              <h1 className="text-lg md:text-xl font-bold truncate" style={{ fontFamily: "var(--dash-font-heading)" }}>
+              <h1 className="text-lg md:text-xl font-extrabold tracking-tight truncate" style={{ fontFamily: "var(--dash-font-heading)" }}>
                 {data.meta.companyName} — {data.meta.department}
               </h1>
               <p className="text-xs opacity-80 truncate">{data.meta.jobTitle}</p>

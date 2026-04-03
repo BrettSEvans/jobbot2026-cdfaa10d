@@ -171,10 +171,11 @@ function ActiveFilterPills({ filters, onRemove, onClearAll }: {
       {entries.map(([chartId, f]) => (
         <span
           key={chartId}
-          className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium"
+          className="inline-flex items-center gap-1.5 rounded-2xl px-3 py-1 text-xs font-medium transition-all duration-300"
           style={{
-            background: "var(--dash-primary-container, hsl(var(--accent)))",
-            color: "var(--dash-on-primary-container, hsl(var(--accent-foreground)))",
+            background: "var(--dash-surface, #E0E5EC)",
+            color: "var(--dash-on-surface, #3D4852)",
+            boxShadow: NEU_SHADOW_SM,
           }}
         >
           {f.value}

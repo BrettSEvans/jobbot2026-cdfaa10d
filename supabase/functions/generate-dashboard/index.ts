@@ -347,8 +347,8 @@ JSON SCHEMA (follow EXACTLY):
     {
       "id": "matches navigation id",
       "title": "Section Title",
-      "description": "Key takeaway — what the viewer should conclude from this section (2-3 sentences, insight-driven)",
-      "layout": "default|kpi-spotlight|split-panel|full-width-timeline|grid-cards|map-table (overview sections should use kpi-spotlight)",
+      "description": "Key takeaway — what the viewer should conclude from this section (2-3 sentences, insight-driven). For overview sections, include specific numbers and department-level context.",
+      "layout": "default|split-panel|full-width-timeline|grid-cards|map-table|kpi-spotlight (overview sections should use split-panel or default for richer content)",
       "metrics": [
         { "label": "Metric Name", "value": "$1.2M", "change": "+12%", "trend": "up|down|neutral" }
       ],

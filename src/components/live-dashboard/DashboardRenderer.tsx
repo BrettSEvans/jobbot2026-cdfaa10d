@@ -477,8 +477,8 @@ export default function DashboardRenderer({ data }: { data: DashboardData }) {
               <ActiveFilterPills filters={drillFilters} onRemove={removeDrillFilter} onClearAll={() => setDrillFilters({})} />
 
               {/* Sections */}
-              {!isCfoView && !isAgenticView && sectionsToRender.map((section) => (
-                <SectionBlock key={section.id} section={section} drillFilters={drillFilters} onDrillDown={toggleDrillFilter} />
+              {!isCfoView && !isAgenticView && sectionsToRender.map((section, idx) => (
+                <SectionBlock key={section.id} section={section} drillFilters={drillFilters} onDrillDown={toggleDrillFilter} isFirstSection={idx === 0} />
               ))}
 
               {/* CFO Scenarios */}

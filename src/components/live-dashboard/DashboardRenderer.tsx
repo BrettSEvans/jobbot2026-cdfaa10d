@@ -525,29 +525,34 @@ export default function DashboardRenderer({ data }: { data: DashboardData }) {
                   </h3>
                   {/* WIP Banner */}
                   <div
-                    className="rounded-lg px-4 py-3 flex items-start gap-3"
+                    className="rounded-2xl px-4 py-3 flex items-start gap-3"
                     style={{
-                      background: "var(--dash-primary-container, hsl(var(--muted)))",
-                      color: "var(--dash-on-primary-container, hsl(var(--muted-foreground)))",
+                      background: "var(--dash-surface, #E0E5EC)",
+                      color: "var(--dash-on-surface, #3D4852)",
+                      boxShadow: NEU_SHADOW_INSET,
                     }}
                   >
                     <Rocket className="h-5 w-5 shrink-0 mt-0.5 opacity-80" />
                     <div>
-                      <p className="text-sm font-semibold">Work in Progress</p>
+                      <p className="text-sm font-bold">Work in Progress</p>
                       <p className="text-xs opacity-80 mt-0.5">
                         Agentic workforce capabilities are being developed and will evolve. The agents listed below represent a proposed AI-augmented operating model for this role.
                       </p>
                     </div>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {data.agenticWorkforce?.map((agent, i) => (
                       <Tooltip key={i}>
                         <TooltipTrigger asChild>
-                          <div className="rounded-lg p-4 space-y-2 border transition-transform duration-200 hover:scale-105 cursor-default"
-                            style={{ background: "var(--dash-surface-variant, hsl(var(--card)))", borderColor: "var(--dash-outline, hsl(var(--border)))" }}>
-                            <h4 className="font-semibold text-sm" style={{ color: "var(--dash-on-surface, hsl(var(--card-foreground)))" }}>{agent.name}</h4>
-                            <p className="text-xs line-clamp-2" style={{ color: "var(--dash-on-surface, hsl(var(--muted-foreground)))", opacity: 0.7 }}>{agent.coreFunctionality}</p>
-                            <p className="text-xs italic" style={{ color: "var(--dash-on-surface, hsl(var(--muted-foreground)))", opacity: 0.5 }}>Teams: {agent.interfacingTeams}</p>
+                          <div className="rounded-[32px] p-5 space-y-2 transition-all duration-300 ease-out hover:-translate-y-0.5 cursor-default"
+                            style={{
+                              background: "var(--dash-surface, #E0E5EC)",
+                              boxShadow: NEU_SHADOW,
+                            }}
+                          >
+                            <h4 className="font-bold text-sm" style={{ color: "var(--dash-on-surface, #3D4852)" }}>{agent.name}</h4>
+                            <p className="text-xs line-clamp-2" style={{ color: "var(--dash-on-surface, #6B7280)" }}>{agent.coreFunctionality}</p>
+                            <p className="text-xs italic" style={{ color: "var(--dash-on-surface, #6B7280)", opacity: 0.7 }}>Teams: {agent.interfacingTeams}</p>
                           </div>
                         </TooltipTrigger>
                         <TooltipContent side="top" className="text-xs max-w-[280px]">

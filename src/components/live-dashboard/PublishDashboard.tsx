@@ -17,7 +17,7 @@ function slugify(text: string): string {
   return text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 60);
 }
 
-const LIVE_DASHBOARD_PUBLIC_BASE_URL = "https://jobbot2026.lovable.app";
+const LIVE_DASHBOARD_PUBLIC_BASE_URL = "https://www.resuvibe.ai";
 
 function getLiveDashboardBaseUrl(): string {
   if (typeof window === "undefined") return LIVE_DASHBOARD_PUBLIC_BASE_URL;
@@ -27,7 +27,8 @@ function getLiveDashboardBaseUrl(): string {
     hostname === "localhost" ||
     hostname === "127.0.0.1" ||
     hostname.includes("id-preview--") ||
-    hostname.endsWith(".lovableproject.com");
+    hostname.endsWith(".lovableproject.com") ||
+    hostname.endsWith(".lovable.app");
 
   return isPrivateHost ? LIVE_DASHBOARD_PUBLIC_BASE_URL : window.location.origin;
 }

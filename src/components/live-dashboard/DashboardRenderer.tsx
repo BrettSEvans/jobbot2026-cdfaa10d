@@ -62,18 +62,18 @@ function resolveIcon(name?: string): LucideIcon {
 function useGoogleFonts(branding?: DashboardBranding) {
   useEffect(() => {
     if (!branding) return;
-    const families = [branding.fontHeading, branding.fontBody].filter(Boolean);
+    const families = [branding.fontHeading || "Plus Jakarta Sans", branding.fontBody || "DM Sans"].filter(Boolean);
     if (!families.length) return;
     const id = "live-dash-gfonts";
+    const href = `https://fonts.googleapis.com/css2?${families.map((f) => `family=${f.replace(/ /g, "+")}:wght@400;500;600;700;800`).join("&")}&display=swap`;
     if (document.getElementById(id)) {
-      (document.getElementById(id) as HTMLLinkElement).href =
-        `https://fonts.googleapis.com/css2?${families.map((f) => `family=${f.replace(/ /g, "+")}:wght@400;600;700`).join("&")}&display=swap`;
+      (document.getElementById(id) as HTMLLinkElement).href = href;
       return;
     }
     const link = document.createElement("link");
     link.id = id;
     link.rel = "stylesheet";
-    link.href = `https://fonts.googleapis.com/css2?${families.map((f) => `family=${f.replace(/ /g, "+")}:wght@400;600;700`).join("&")}&display=swap`;
+    link.href = href;
     document.head.appendChild(link);
   }, [branding]);
 }
@@ -93,9 +93,9 @@ function brandingStyle(b?: DashboardBranding): React.CSSProperties {
     "--dash-surface-variant": b.surfaceVariant,
     "--dash-outline": b.outline,
     "--dash-error": b.error,
-    "--dash-font-heading": b.fontHeading || "inherit",
-    "--dash-font-body": b.fontBody || "inherit",
-    "--dash-background": b.background || b.surface || "hsl(var(--background))",
+    "--dash-font-heading": b.fontHeading || "Plus Jakarta Sans, sans-serif",
+    "--dash-font-body": b.fontBody || "DM Sans, sans-serif",
+    "--dash-background": b.background || "#E0E5EC",
   } as React.CSSProperties;
 }
 
@@ -104,8 +104,14 @@ const fadeInStyle: React.CSSProperties = {
   animation: "dashFadeIn 0.4s ease-out both",
 };
 
-/* ── Subtle SVG wave pattern for background ── */
-const WAVE_PATTERN = `url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 50 Q25 30 50 50 T100 50' fill='none' stroke='%23000' stroke-width='0.5' opacity='0.04'/%3E%3Cpath d='M0 70 Q25 50 50 70 T100 70' fill='none' stroke='%23000' stroke-width='0.5' opacity='0.03'/%3E%3C/svg%3E")`;
+/* ── Neumorphic shadow tokens ── */
+const NEU_SHADOW = "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255,0.5)";
+const NEU_SHADOW_HOVER = "12px 12px 20px rgb(163,177,198,0.7), -12px -12px 20px rgba(255,255,255,0.6)";
+const NEU_SHADOW_SM = "5px 5px 10px rgb(163,177,198,0.6), -5px -5px 10px rgba(255,255,255,0.5)";
+const NEU_SHADOW_INSET = "inset 6px 6px 10px rgb(163,177,198,0.6), inset -6px -6px 10px rgba(255,255,255,0.5)";
+const NEU_SHADOW_INSET_DEEP = "inset 10px 10px 20px rgb(163,177,198,0.7), inset -10px -10px 20px rgba(255,255,255,0.6)";
+
+export { NEU_SHADOW, NEU_SHADOW_HOVER, NEU_SHADOW_SM, NEU_SHADOW_INSET, NEU_SHADOW_INSET_DEEP };
 
 /* ── Candidate Hero ── */
 function CandidateHero({ data }: { data: DashboardData }) {
@@ -114,21 +120,25 @@ function CandidateHero({ data }: { data: DashboardData }) {
 
   return (
     <div
-      className="rounded-xl p-6 md:p-8 flex flex-col md:flex-row items-center gap-5"
+      className="rounded-[32px] p-6 md:p-8 flex flex-col md:flex-row items-center gap-5 transition-all duration-300"
       style={{
-        background: `linear-gradient(135deg, ${data.branding?.primary || "hsl(var(--primary))"}, ${data.branding?.primaryContainer || "hsl(var(--primary))"})`,
-        color: data.branding?.onPrimary || "hsl(var(--primary-foreground))",
+        background: `linear-gradient(135deg, ${data.branding?.primary || "#0a8080"}, ${data.branding?.primaryContainer || "#0a8080"})`,
+        color: data.branding?.onPrimary || "#fff",
+        boxShadow: NEU_SHADOW,
       }}
     >
       {c.photoUrl ? (
         <img src={c.photoUrl} alt={c.name} className="h-20 w-20 rounded-full object-cover border-2 border-white/30" />
       ) : (
-        <div className="h-20 w-20 rounded-full flex items-center justify-center bg-white/20">
+        <div
+          className="h-20 w-20 rounded-full flex items-center justify-center"
+          style={{ boxShadow: NEU_SHADOW_INSET_DEEP, background: "rgba(255,255,255,0.15)" }}
+        >
           <User className="h-10 w-10 opacity-70" />
         </div>
       )}
       <div className="text-center md:text-left flex-1">
-        <h2 className="text-2xl font-bold" style={{ fontFamily: "var(--dash-font-heading)" }}>{c.name}</h2>
+        <h2 className="text-2xl font-extrabold tracking-tight" style={{ fontFamily: "var(--dash-font-heading)" }}>{c.name}</h2>
         <p className="opacity-90 mt-1 text-sm">{c.tagline}</p>
         <div className="flex items-center gap-3 mt-2 justify-center md:justify-start">
           {c.linkedIn && (
@@ -161,10 +171,11 @@ function ActiveFilterPills({ filters, onRemove, onClearAll }: {
       {entries.map(([chartId, f]) => (
         <span
           key={chartId}
-          className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium"
+          className="inline-flex items-center gap-1.5 rounded-2xl px-3 py-1 text-xs font-medium transition-all duration-300"
           style={{
-            background: "var(--dash-primary-container, hsl(var(--accent)))",
-            color: "var(--dash-on-primary-container, hsl(var(--accent-foreground)))",
+            background: "var(--dash-surface, #E0E5EC)",
+            color: "var(--dash-on-surface, #3D4852)",
+            boxShadow: NEU_SHADOW_SM,
           }}
         >
           {f.value}
@@ -221,12 +232,13 @@ function SectionBlock({ section, drillFilters, onDrillDown, isFirstSection }: {
         </h3>
         {section.description && (
           <div
-            className="mt-2 rounded-lg px-4 py-3 border-l-4 text-sm"
+            className="mt-2 rounded-2xl px-4 py-3 border-l-4 text-sm transition-all duration-300"
             style={{
-              background: "var(--dash-surface-variant, hsl(var(--muted)))",
-              borderLeftColor: "var(--dash-primary, hsl(var(--primary)))",
-              color: "var(--dash-on-surface, hsl(var(--foreground)))",
+              background: "var(--dash-surface, #E0E5EC)",
+              borderLeftColor: "var(--dash-primary, #0a8080)",
+              color: "var(--dash-on-surface, #3D4852)",
               opacity: 0.85,
+              boxShadow: NEU_SHADOW_INSET,
             }}
           >
             {section.description}
@@ -239,7 +251,7 @@ function SectionBlock({ section, drillFilters, onDrillDown, isFirstSection }: {
           {section.metrics!.map((m, i) => (
             <Tooltip key={i}>
               <TooltipTrigger asChild>
-                <div className="transition-transform duration-200 hover:scale-105">
+                <div className="transition-all duration-300 ease-out hover:-translate-y-0.5">
                   <KpiCard metric={m} spotlight={isFirstSection && i === 0} />
                 </div>
               </TooltipTrigger>
@@ -269,9 +281,9 @@ function SectionBlock({ section, drillFilters, onDrillDown, isFirstSection }: {
       )}
 
       {isEmpty && (
-        <div className="flex flex-col items-center justify-center py-12 text-center rounded-lg border" style={{ background: "var(--dash-surface, hsl(var(--card)))", borderColor: "var(--dash-outline, hsl(var(--border)))" }}>
-          <Inbox className="h-10 w-10 mb-2" style={{ color: "var(--dash-on-surface, hsl(var(--muted-foreground)))", opacity: 0.4 }} />
-          <p className="text-sm" style={{ color: "var(--dash-on-surface, hsl(var(--muted-foreground)))" }}>No data available for this section</p>
+        <div className="flex flex-col items-center justify-center py-12 text-center rounded-[32px]" style={{ background: "var(--dash-surface, #E0E5EC)", boxShadow: NEU_SHADOW_INSET }}>
+          <Inbox className="h-10 w-10 mb-2" style={{ color: "var(--dash-on-surface, #6B7280)", opacity: 0.4 }} />
+          <p className="text-sm" style={{ color: "var(--dash-on-surface, #6B7280)" }}>No data available for this section</p>
         </div>
       )}
     </section>
@@ -350,32 +362,31 @@ export default function DashboardRenderer({ data }: { data: DashboardData }) {
         className="min-h-screen flex flex-col"
         style={{
           ...brandingStyle(data.branding),
-          background: `var(--dash-background, hsl(var(--background)))`,
-          backgroundImage: WAVE_PATTERN,
-          backgroundRepeat: "repeat",
+          background: `var(--dash-background, #E0E5EC)`,
           fontFamily: "var(--dash-font-body)",
         }}
       >
         {/* Header */}
         <header
-          className="sticky top-0 z-30 shadow-md"
+          className="sticky top-0 z-30"
           style={{
-            background: `linear-gradient(135deg, var(--dash-primary, hsl(var(--primary))), ${data.branding?.primaryContainer || "var(--dash-primary, hsl(var(--primary)))"})`,
-            color: "var(--dash-on-primary, hsl(var(--primary-foreground)))",
+            background: `linear-gradient(135deg, var(--dash-primary, #0a8080), ${data.branding?.primaryContainer || "var(--dash-primary, #0a8080)"})`,
+            color: "var(--dash-on-primary, #fff)",
+            boxShadow: "0 4px 16px rgb(163,177,198,0.5)",
           }}
         >
           <div className="px-4 py-3 flex items-center gap-3">
             {hasNav && (
               <button
                 onClick={() => isMobile ? setSidebarOpen(!sidebarOpen) : setDesktopSidebarOpen(!desktopSidebarOpen)}
-                className="p-1.5 rounded-md hover:bg-white/10 transition-colors shrink-0"
+                className="p-1.5 rounded-2xl hover:bg-white/10 transition-all duration-300 shrink-0"
                 aria-label="Toggle navigation"
               >
                 <Menu className="h-5 w-5" />
               </button>
             )}
             <div className="min-w-0 flex-1">
-              <h1 className="text-lg md:text-xl font-bold truncate" style={{ fontFamily: "var(--dash-font-heading)" }}>
+              <h1 className="text-lg md:text-xl font-extrabold tracking-tight truncate" style={{ fontFamily: "var(--dash-font-heading)" }}>
                 {data.meta.companyName} — {data.meta.department}
               </h1>
               <p className="text-xs opacity-80 truncate">{data.meta.jobTitle}</p>
@@ -401,21 +412,21 @@ export default function DashboardRenderer({ data }: { data: DashboardData }) {
                 }
               `}
               style={{
-                background: "var(--dash-surface-variant, hsl(var(--card)))",
-                borderRight: `1px solid var(--dash-outline, hsl(var(--border)))`,
+                background: "var(--dash-surface-variant, #D8DEE6)",
+                boxShadow: NEU_SHADOW_SM,
               }}
             >
               <div className={`${sidebarExpanded ? "w-[260px]" : "w-14"} h-full flex flex-col`}>
                 {/* Sidebar header */}
-                <div className="p-3 flex items-center justify-between border-b" style={{ borderColor: "var(--dash-outline, hsl(var(--border)))" }}>
+                <div className="p-3 flex items-center justify-between" style={{ borderBottom: "none" }}>
                   {sidebarExpanded && (
-                    <span className="text-sm font-semibold truncate" style={{ color: "var(--dash-on-surface, hsl(var(--foreground)))", fontFamily: "var(--dash-font-heading)" }}>
+                    <span className="text-sm font-bold tracking-tight truncate" style={{ color: "var(--dash-on-surface, #3D4852)", fontFamily: "var(--dash-font-heading)" }}>
                       Navigation
                     </span>
                   )}
                   {isMobile && sidebarOpen && (
-                    <button onClick={() => setSidebarOpen(false)} className="p-1 rounded-md hover:bg-black/5 transition-colors ml-auto">
-                      <X className="h-4 w-4" style={{ color: "var(--dash-on-surface, hsl(var(--foreground)))" }} />
+                    <button onClick={() => setSidebarOpen(false)} className="p-1 rounded-2xl hover:bg-black/5 transition-all duration-300 ml-auto">
+                      <X className="h-4 w-4" style={{ color: "var(--dash-on-surface, #3D4852)" }} />
                     </button>
                   )}
                 </div>
@@ -429,14 +440,15 @@ export default function DashboardRenderer({ data }: { data: DashboardData }) {
                     const button = (
                       <button
                         key={nav.id}
-                        className={`w-full flex items-center gap-2.5 rounded-lg text-sm font-medium transition-colors text-left ${
+                        className={`w-full flex items-center gap-2.5 rounded-2xl text-sm font-medium transition-all duration-300 ease-out text-left ${
                           sidebarExpanded ? "px-3 py-2.5" : "px-0 py-2.5 justify-center"
-                        } ${isActive ? "font-semibold" : "opacity-70 hover:opacity-100"}`}
+                        } ${isActive ? "font-bold" : "opacity-70 hover:opacity-100 hover:-translate-y-px"}`}
                         style={{
-                          background: isActive ? "var(--dash-primary, hsl(var(--primary)))" : "transparent",
+                          background: isActive ? "var(--dash-primary, #0a8080)" : "transparent",
                           color: isActive
-                            ? "var(--dash-on-primary, hsl(var(--primary-foreground)))"
-                            : "var(--dash-on-surface, hsl(var(--foreground)))",
+                            ? "var(--dash-on-primary, #fff)"
+                            : "var(--dash-on-surface, #3D4852)",
+                          boxShadow: isActive ? NEU_SHADOW_SM : "none",
                         }}
                         onClick={() => {
                           setActiveNav(nav.id);
@@ -513,29 +525,34 @@ export default function DashboardRenderer({ data }: { data: DashboardData }) {
                   </h3>
                   {/* WIP Banner */}
                   <div
-                    className="rounded-lg px-4 py-3 flex items-start gap-3"
+                    className="rounded-2xl px-4 py-3 flex items-start gap-3"
                     style={{
-                      background: "var(--dash-primary-container, hsl(var(--muted)))",
-                      color: "var(--dash-on-primary-container, hsl(var(--muted-foreground)))",
+                      background: "var(--dash-surface, #E0E5EC)",
+                      color: "var(--dash-on-surface, #3D4852)",
+                      boxShadow: NEU_SHADOW_INSET,
                     }}
                   >
                     <Rocket className="h-5 w-5 shrink-0 mt-0.5 opacity-80" />
                     <div>
-                      <p className="text-sm font-semibold">Work in Progress</p>
+                      <p className="text-sm font-bold">Work in Progress</p>
                       <p className="text-xs opacity-80 mt-0.5">
                         Agentic workforce capabilities are being developed and will evolve. The agents listed below represent a proposed AI-augmented operating model for this role.
                       </p>
                     </div>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {data.agenticWorkforce?.map((agent, i) => (
                       <Tooltip key={i}>
                         <TooltipTrigger asChild>
-                          <div className="rounded-lg p-4 space-y-2 border transition-transform duration-200 hover:scale-105 cursor-default"
-                            style={{ background: "var(--dash-surface-variant, hsl(var(--card)))", borderColor: "var(--dash-outline, hsl(var(--border)))" }}>
-                            <h4 className="font-semibold text-sm" style={{ color: "var(--dash-on-surface, hsl(var(--card-foreground)))" }}>{agent.name}</h4>
-                            <p className="text-xs line-clamp-2" style={{ color: "var(--dash-on-surface, hsl(var(--muted-foreground)))", opacity: 0.7 }}>{agent.coreFunctionality}</p>
-                            <p className="text-xs italic" style={{ color: "var(--dash-on-surface, hsl(var(--muted-foreground)))", opacity: 0.5 }}>Teams: {agent.interfacingTeams}</p>
+                          <div className="rounded-[32px] p-5 space-y-2 transition-all duration-300 ease-out hover:-translate-y-0.5 cursor-default"
+                            style={{
+                              background: "var(--dash-surface, #E0E5EC)",
+                              boxShadow: NEU_SHADOW,
+                            }}
+                          >
+                            <h4 className="font-bold text-sm" style={{ color: "var(--dash-on-surface, #3D4852)" }}>{agent.name}</h4>
+                            <p className="text-xs line-clamp-2" style={{ color: "var(--dash-on-surface, #6B7280)" }}>{agent.coreFunctionality}</p>
+                            <p className="text-xs italic" style={{ color: "var(--dash-on-surface, #6B7280)", opacity: 0.7 }}>Teams: {agent.interfacingTeams}</p>
                           </div>
                         </TooltipTrigger>
                         <TooltipContent side="top" className="text-xs max-w-[280px]">
@@ -549,7 +566,7 @@ export default function DashboardRenderer({ data }: { data: DashboardData }) {
               )}
 
               {/* Footer — only at the bottom of the last section view */}
-              <footer className="border-t pt-4 mt-8 text-center text-xs" style={{ color: "var(--dash-on-surface, hsl(var(--muted-foreground)))", opacity: 0.5, borderColor: "var(--dash-outline, hsl(var(--border)))" }}>
+              <footer className="pt-4 mt-8 text-center text-xs" style={{ color: "var(--dash-on-surface, #6B7280)", opacity: 0.5 }}>
                 {footerText && <span>{footerText}</span>}
                 {footerText && showBranding && <span> · </span>}
                 {showBranding && <span>Built by <a href="https://saasless.ai/author" target="_blank" rel="noopener noreferrer" className="underline hover:opacity-80 transition-opacity">saasless.ai</a></span>}

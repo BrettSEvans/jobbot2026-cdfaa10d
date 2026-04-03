@@ -210,7 +210,7 @@ Company Branding (derive Material You tonal palette from these colors):
 - CSS-Extracted Fonts: ${JSON.stringify(branding.extractedFonts || [])}
 - Logo URL: ${branding.logo || branding.images?.logo || 'N/A'}
 Use the dominant extracted colors as the seed for the Material You tonal palette in the branding object.
-` : 'No branding data — use teal (#0a8080) as primary, coral (#f45d48) as secondary.';
+` : 'No branding data — use teal (#0a8080) as primary, coral (#f45d48) as secondary. Use #E0E5EC as surface/background (neumorphic base grey). Use "Plus Jakarta Sans" for fontHeading and "DM Sans" for fontBody.';
 
   const competitorContext = competitors?.length ? `\nKey Competitors: ${competitors.join(', ')}` : '';
   const customerContext = customers?.length ? `\nTarget Customers: ${customers.join(', ')}` : '';
@@ -264,7 +264,7 @@ SECTION REQUIREMENTS:
 - Include at least ONE horizontalBar chart (Gantt-style) with time-based labels
 `;
 
-  return `You are a business intelligence data architect and expert dashboard UX designer. Generate a structured JSON object for a dashboard that tells a DIVERSE visual story across sections.
+  return `You are a business intelligence data architect and expert dashboard UX designer. Generate a structured JSON object for a dashboard that tells a DIVERSE visual story across sections. The dashboard uses a NEUMORPHIC (Soft UI) design system with tactile depth and dual shadows.
 
 CRITICAL: Return ONLY the raw JSON object. Do NOT wrap it in HTML, script tags, or markdown fences. Do NOT generate a full HTML page. Start with { and end with }. No other output.
 
@@ -322,20 +322,20 @@ JSON SCHEMA (follow EXACTLY):
     "logoUrl": "string (optional)"
   },
   "branding": {
-    "primary": "#hex",
+    "primary": "#hex — company accent color for header, active states, buttons",
     "onPrimary": "#hex",
-    "primaryContainer": "#hex",
+    "primaryContainer": "#hex — lighter tint of primary for container accents",
     "onPrimaryContainer": "#hex",
-    "secondary": "#hex",
+    "secondary": "#hex — secondary accent from company palette",
     "onSecondary": "#hex",
-    "surface": "#hex",
-    "onSurface": "#hex",
-    "surfaceVariant": "#hex",
-    "outline": "#hex",
+    "surface": "#hex — MUST be a cool grey tone between #DDE3EA and #E8ECF0 for neumorphic shadows to render correctly. Never use white (#FFF) or dark colors.",
+    "onSurface": "#hex — text color, must be #3D4852 or darker for WCAG AA compliance",
+    "surfaceVariant": "#hex — slightly different cool grey for sidebar/cards, e.g. #D8DEE6 or #E4E8EE",
+    "outline": "#hex — border/secondary text, minimum #49454F for contrast",
     "error": "#hex",
-    "fontHeading": "Google Font name",
-    "fontBody": "Google Font name",
-    "background": "#hex or CSS gradient — page background color derived from company branding. Use a subtle tint or gradient (e.g. linear-gradient(135deg, #f8f9fa, #e8f0fe)), NEVER plain #FFFFFF."
+    "fontHeading": "Plus Jakarta Sans (default) or company-specific Google Font — used for display headings with weight 700-800",
+    "fontBody": "DM Sans (default) or company-specific Google Font — used for body text and UI elements with weight 400-500",
+    "background": "#hex — MUST be a cool grey (#E0E5EC is the default neumorphic base). Use a subtle tint derived from company primary color (e.g. mix primary hue at 3-5% opacity over #E0E5EC). NEVER plain #FFFFFF."
   },
   "globalFilters": [
     { "id": "string", "label": "string", "type": "dropdown|segmented|chips", "options": ["string"] }
@@ -421,11 +421,17 @@ ${sectionInstructions}
 - 3 CFO scenarios: one "pricing" (sliders: priceChange, elasticity, growthRate), one "headcount" (sliders: newHires, rampTime, quota), one "expansion" (sliders: tam, penetration, investment)
 - All text must be specific to ${companyName || 'the company'} and the ${jobTitle || 'role'}
 - The header displays "{companyName} — {department}" as the primary title, with jobTitle as subtitle. Make meta.department descriptive and prominent.
-- branding.background MUST be a subtle gradient or tinted surface color derived from the company palette — not plain #FFFFFF or #FFF.
+- NEUMORPHIC DESIGN SYSTEM: The dashboard uses a Soft UI / Neumorphic aesthetic. The renderer applies dual opposing shadows (top-left light, bottom-right dark) to cards and containers. For this to work correctly:
+  * "surface" MUST be a cool grey between #DDE3EA and #E8ECF0 (default #E0E5EC). White or dark backgrounds break the neumorphic shadow effect.
+  * "background" should be the same cool grey or a very subtle tint of it with the company primary color at 3-5% opacity.
+  * "surfaceVariant" should be a slightly darker/lighter grey for differentiation (e.g. #D8DEE6).
+  * Cards, KPIs, charts, and tables will all render with extruded neumorphic shadows — no flat borders.
+- TYPOGRAPHY: Default to "Plus Jakarta Sans" for fontHeading and "DM Sans" for fontBody. Only override with company fonts if they are clearly part of the brand identity. These fonts pair well with the neumorphic aesthetic.
+- branding.background MUST be a cool grey (#E0E5EC default) or subtle tint — not plain #FFFFFF or #FFF.
 - The agenticWorkforce section represents a work-in-progress concept. Each agent description should note this is a proposed AI-augmented operating model.
-- Branding colors derived from provided branding data using Material You tonal palette principles
+- Branding colors derived from provided branding data — company colors serve as ACCENT colors (header, active nav, buttons, trend indicators) while the base surface remains cool grey for neumorphic depth.
 - Chart datasets: use contextual colors derived from branding, not random colors
-- CONTRAST REQUIREMENT: The "outline" color is used for secondary text (labels, descriptions). It MUST have at least 4.5:1 contrast ratio against the "surface" background. Use a dark value like #49454F or darker — never lighter than #5F5F6F. Avoid light greys (#79747E or lighter) for any text on light backgrounds.
+- CONTRAST REQUIREMENT: The "outline" color is used for secondary text (labels, descriptions). It MUST have at least 4.5:1 contrast ratio against the cool grey "surface" background. Use a dark value like #49454F or darker — never lighter than #5F5F6F. Avoid light greys (#79747E or lighter) for any text on light backgrounds.
 - DELTA LABELS: Every metric's "change" field MUST include a comparison period (e.g., "+12% vs Q3", "-3.5% vs last month", "+$250K YoY"). Never use bare percentages like "+12%" without context.
 - Table generateRows fields: use company-specific options (competitor names, product names, region names from context)
 - HEATMAP DATA FORMAT: For heatmap charts, datasets are rows (each with a label), labels are columns, and each dataset's data array contains the cell values for that row.

@@ -448,8 +448,16 @@ export default function ChartBlock({ config, onDrillDown, activeDrillValues }: C
   };
 
   return (
-    <div className="rounded-lg border p-4" style={{ background: "var(--dash-surface, hsl(var(--card)))", borderColor: "var(--dash-outline, hsl(var(--border)))" }}>
-      <h4 className="text-sm font-semibold mb-3" style={{ color: "var(--dash-on-surface, hsl(var(--card-foreground)))" }}>{config.title}</h4>
+    <div
+      className="rounded-[32px] p-5 transition-all duration-300 ease-out hover:-translate-y-0.5"
+      style={{
+        background: "var(--dash-surface, #E0E5EC)",
+        boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255,0.5)",
+      }}
+      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = "12px 12px 20px rgb(163,177,198,0.7), -12px -12px 20px rgba(255,255,255,0.6)"; }}
+      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255,0.5)"; }}
+    >
+      <h4 className="text-sm font-bold mb-3" style={{ color: "var(--dash-on-surface, #3D4852)" }}>{config.title}</h4>
       {renderChart()}
     </div>
   );

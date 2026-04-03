@@ -107,11 +107,17 @@ export default function DataTable({
   const displayRows = sortedRows.slice(0, 50);
 
   return (
-    <div className="rounded-lg border overflow-hidden" style={{ background: "var(--dash-surface, hsl(var(--card)))", borderColor: "var(--dash-outline, hsl(var(--border)))" }}>
-      <div className="px-4 py-3 border-b flex items-center justify-between" style={{ borderColor: "var(--dash-outline, hsl(var(--border)))" }}>
-        <h4 className="text-sm font-semibold" style={{ color: "var(--dash-on-surface, hsl(var(--card-foreground)))" }}>{config.title}</h4>
+    <div
+      className="rounded-[32px] overflow-hidden transition-all duration-300"
+      style={{
+        background: "var(--dash-surface, #E0E5EC)",
+        boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255,0.5)",
+      }}
+    >
+      <div className="px-4 py-3 flex items-center justify-between">
+        <h4 className="text-sm font-bold" style={{ color: "var(--dash-on-surface, #3D4852)" }}>{config.title}</h4>
         {isFiltered && (
-          <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: "var(--dash-primary-container, hsl(var(--accent)))", color: "var(--dash-on-primary-container, hsl(var(--accent-foreground)))" }}>
+          <span className="text-xs px-2 py-0.5 rounded-2xl" style={{ background: "var(--dash-primary-container, #D0E8E8)", color: "var(--dash-on-primary-container, #0a5050)" }}>
             {filteredRows.length} of {allRows.length} records
           </span>
         )}
@@ -124,7 +130,7 @@ export default function DataTable({
                 <TableHead
                   key={col.key}
                   className="text-xs whitespace-nowrap font-semibold cursor-pointer select-none hover:bg-muted/30 transition-colors"
-                  style={{ color: "var(--dash-on-surface, hsl(var(--foreground)))" }}
+                  style={{ color: "var(--dash-on-surface, #3D4852)" }}
                   onClick={() => handleSort(col.key)}
                 >
                   <span className="inline-flex items-center gap-1">
@@ -153,7 +159,7 @@ export default function DataTable({
               displayRows.map((row, i) => (
                 <TableRow key={i}>
                   {config.columns.map((col) => (
-                    <TableCell key={col.key} className="text-sm" style={{ color: "var(--dash-on-surface, hsl(var(--foreground)))" }}>{row[col.key] ?? ""}</TableCell>
+                    <TableCell key={col.key} className="text-sm" style={{ color: "var(--dash-on-surface, #3D4852)" }}>{row[col.key] ?? ""}</TableCell>
                   ))}
                 </TableRow>
               ))
@@ -162,7 +168,7 @@ export default function DataTable({
         </Table>
       </div>
       {filteredRows.length > 50 && (
-        <div className="px-4 py-2 text-xs border-t" style={{ color: "var(--dash-on-surface, hsl(var(--muted-foreground)))", opacity: 0.6, borderColor: "var(--dash-outline, hsl(var(--border)))" }}>
+        <div className="px-4 py-2 text-xs" style={{ color: "var(--dash-on-surface, #6B7280)", opacity: 0.6 }}>
           Showing 50 of {filteredRows.length} rows
         </div>
       )}

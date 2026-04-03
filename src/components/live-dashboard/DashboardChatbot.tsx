@@ -87,16 +87,22 @@ export default function DashboardChatbot({ dashboardId, companyName, jobTitle, d
     : "fixed bottom-6 right-6 z-50 w-[360px] h-[480px] flex flex-col shadow-xl";
 
   return (
-    <Card className={panelClasses}>
+    <div
+      className={`${isMobile ? "fixed inset-0 z-50 flex flex-col" : "fixed bottom-6 right-6 z-50 w-[360px] h-[480px] flex flex-col"} rounded-[32px] overflow-hidden`}
+      style={{
+        background: "var(--dash-surface, #E0E5EC)",
+        boxShadow: "12px 12px 20px rgb(163,177,198,0.7), -12px -12px 20px rgba(255,255,255,0.6)",
+      }}
+    >
       {/* Header */}
-      <div className="flex items-center justify-between p-3 border-b">
+      <div className="flex items-center justify-between p-3" style={{ background: "var(--dash-primary, #0a8080)", color: "var(--dash-on-primary, #fff)" }}>
         <div>
-          <p className="text-sm font-semibold">Dashboard Assistant</p>
-          <p className="text-xs text-muted-foreground">{companyName} — {jobTitle}</p>
+          <p className="text-sm font-bold" style={{ fontFamily: "var(--dash-font-heading, 'Plus Jakarta Sans', sans-serif)" }}>Dashboard Assistant</p>
+          <p className="text-xs opacity-80">{companyName} — {jobTitle}</p>
         </div>
-        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setOpen(false)}>
+        <button className="h-7 w-7 rounded-2xl flex items-center justify-center hover:bg-white/10 transition-all duration-300" onClick={() => setOpen(false)}>
           <X className="h-4 w-4" />
-        </Button>
+        </button>
       </div>
 
       {/* Messages */}
@@ -112,7 +118,12 @@ export default function DashboardChatbot({ dashboardId, companyName, jobTitle, d
                   <button
                     key={i}
                     onClick={() => send(s)}
-                    className="text-xs px-3 py-1.5 rounded-full border hover:bg-secondary transition-colors text-left"
+                    className="text-xs px-3 py-1.5 rounded-2xl transition-all duration-300 hover:-translate-y-px text-left"
+                    style={{
+                      background: "var(--dash-surface, #E0E5EC)",
+                      color: "var(--dash-on-surface, #3D4852)",
+                      boxShadow: "5px 5px 10px rgb(163,177,198,0.6), -5px -5px 10px rgba(255,255,255,0.5)",
+                    }}
                   >
                     {s}
                   </button>
@@ -123,13 +134,17 @@ export default function DashboardChatbot({ dashboardId, companyName, jobTitle, d
         )}
         {messages.map((m, i) => (
           <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
-            <div className={`max-w-[80%] rounded-lg px-3 py-2 text-sm ${
-              m.role === "user"
-                ? "bg-primary text-primary-foreground"
-                : "bg-secondary text-secondary-foreground"
-            }`}>
+            <div className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm transition-all duration-300`}
+              style={{
+                background: m.role === "user" ? "var(--dash-primary, #0a8080)" : "var(--dash-surface, #E0E5EC)",
+                color: m.role === "user" ? "var(--dash-on-primary, #fff)" : "var(--dash-on-surface, #3D4852)",
+                boxShadow: m.role === "user"
+                  ? "5px 5px 10px rgb(163,177,198,0.6), -5px -5px 10px rgba(255,255,255,0.5)"
+                  : "inset 6px 6px 10px rgb(163,177,198,0.6), inset -6px -6px 10px rgba(255,255,255,0.5)",
+              }}
+            >
               {m.role === "assistant" ? (
-                <div className="prose prose-sm prose-neutral dark:prose-invert max-w-none [&>p]:m-0 [&>ul]:my-1 [&>ol]:my-1 [&>h1]:text-sm [&>h2]:text-sm [&>h3]:text-sm">
+                <div className="prose prose-sm max-w-none [&>p]:m-0 [&>ul]:my-1 [&>ol]:my-1 [&>h1]:text-sm [&>h2]:text-sm [&>h3]:text-sm">
                   <ReactMarkdown>{m.content}</ReactMarkdown>
                 </div>
               ) : (
@@ -140,7 +155,7 @@ export default function DashboardChatbot({ dashboardId, companyName, jobTitle, d
         ))}
         {loading && (
           <div className="flex justify-start">
-            <div className="bg-secondary rounded-lg px-3 py-2">
+            <div className="rounded-2xl px-3 py-2" style={{ boxShadow: "inset 6px 6px 10px rgb(163,177,198,0.6), inset -6px -6px 10px rgba(255,255,255,0.5)", background: "var(--dash-surface, #E0E5EC)" }}>
               <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
             </div>
           </div>
@@ -148,18 +163,28 @@ export default function DashboardChatbot({ dashboardId, companyName, jobTitle, d
       </div>
 
       {/* Input */}
-      <div className="p-3 border-t flex gap-2">
+      <div className="p-3 flex gap-2">
         <Textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Ask a question..."
-          className="min-h-[36px] max-h-[72px] resize-none text-sm"
+          className="min-h-[36px] max-h-[72px] resize-none text-sm rounded-2xl border-none"
+          style={{ boxShadow: "inset 6px 6px 10px rgb(163,177,198,0.6), inset -6px -6px 10px rgba(255,255,255,0.5)", background: "var(--dash-surface, #E0E5EC)" }}
           onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
         />
-        <Button size="icon" className="h-9 w-9 shrink-0" onClick={() => send()} disabled={loading || !input.trim()}>
+        <button
+          className="h-9 w-9 shrink-0 rounded-2xl flex items-center justify-center transition-all duration-300 ease-out hover:-translate-y-px disabled:opacity-50"
+          style={{
+            background: "var(--dash-primary, #0a8080)",
+            color: "var(--dash-on-primary, #fff)",
+            boxShadow: "5px 5px 10px rgb(163,177,198,0.6), -5px -5px 10px rgba(255,255,255,0.5)",
+          }}
+          onClick={() => send()}
+          disabled={loading || !input.trim()}
+        >
           <Send className="h-4 w-4" />
-        </Button>
+        </button>
       </div>
-    </Card>
+    </div>
   );
 }

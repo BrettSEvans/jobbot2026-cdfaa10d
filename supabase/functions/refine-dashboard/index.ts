@@ -33,16 +33,16 @@ serve(async (req) => {
     const useJsonMode = !!currentDashboardData;
 
     const systemPrompt = useJsonMode
-      ? `You are an expert business intelligence data architect. You are refining a dashboard's structured JSON data based on user feedback.
+      ? `You are an expert business intelligence data architect. You are refining a dashboard's structured JSON data based on user feedback. The dashboard uses a NEUMORPHIC (Soft UI) design system with cool grey surfaces (#E0E5EC), Plus Jakarta Sans / DM Sans fonts, and tactile depth via dual opposing shadows.
 
 OUTPUT: ONLY valid JSON. No markdown fences, no explanation. Start with { and end with }.
 
 The JSON follows this schema:
 {
   "meta": { "companyName", "jobTitle", "department", "logoUrl?" },
-  "branding": { "primary", "onPrimary", "primaryContainer", "onPrimaryContainer", "secondary", "onSecondary", "surface", "onSurface", "surfaceVariant", "outline", "error", "fontHeading", "fontBody", "background" },
+  "branding": { "primary", "onPrimary", "primaryContainer", "onPrimaryContainer", "secondary", "onSecondary", "surface" (cool grey #DDE3EA-#E8ECF0), "onSurface" (#3D4852 or darker), "surfaceVariant", "outline", "error", "fontHeading" (default Plus Jakarta Sans), "fontBody" (default DM Sans), "background" (cool grey #E0E5EC or subtle tint) },
   "navigation": [{ "id", "label", "icon" }],
-  "sections": [{ "id", "title", "description", "metrics": [{ "label", "value", "change", "trend" }], "charts": [{ "id", "title", "type", "data": { "labels", "datasets" } }], "tables": [{ "id", "title", "columns", "generateRows" }] }],
+  "sections": [{ "id", "title", "description", "metrics": [{ "label", "value", "change" (must include comparison period e.g. "+12% vs Q3"), "trend" }], "charts": [{ "id", "title", "type", "data": { "labels", "datasets" } }], "tables": [{ "id", "title", "columns", "generateRows" }] }],
   "agenticWorkforce": [{ "name", "coreFunctionality", "interfacingTeams" }],
   "cfoScenarios": [{ "id", "title", "description", "type", "sliders", "baseline", "quarters", "chartType" }]
 }
@@ -52,6 +52,7 @@ RULES:
 - Keep all existing data unless explicitly asked to change it
 - Maintain valid JSON structure at all times
 - Apply changes precisely as requested
+- Surface colors must remain cool grey (#DDE3EA to #E8ECF0) for neumorphic shadows to work — never white or dark
 - Chart types: bar|line|doughnut|pie|radar|scatter|horizontalBar|area
 - Table generateRows fields: personName|company|date|futureDate|currency|status|region|product|percent|integer|email|pick
 - Ensure navigation includes "agentic-workforce" and "cfo-view" entries`

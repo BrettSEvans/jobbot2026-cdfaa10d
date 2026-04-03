@@ -322,20 +322,20 @@ JSON SCHEMA (follow EXACTLY):
     "logoUrl": "string (optional)"
   },
   "branding": {
-    "primary": "#hex",
+    "primary": "#hex — company accent color for header, active states, buttons",
     "onPrimary": "#hex",
-    "primaryContainer": "#hex",
+    "primaryContainer": "#hex — lighter tint of primary for container accents",
     "onPrimaryContainer": "#hex",
-    "secondary": "#hex",
+    "secondary": "#hex — secondary accent from company palette",
     "onSecondary": "#hex",
-    "surface": "#hex",
-    "onSurface": "#hex",
-    "surfaceVariant": "#hex",
-    "outline": "#hex",
+    "surface": "#hex — MUST be a cool grey tone between #DDE3EA and #E8ECF0 for neumorphic shadows to render correctly. Never use white (#FFF) or dark colors.",
+    "onSurface": "#hex — text color, must be #3D4852 or darker for WCAG AA compliance",
+    "surfaceVariant": "#hex — slightly different cool grey for sidebar/cards, e.g. #D8DEE6 or #E4E8EE",
+    "outline": "#hex — border/secondary text, minimum #49454F for contrast",
     "error": "#hex",
-    "fontHeading": "Google Font name",
-    "fontBody": "Google Font name",
-    "background": "#hex or CSS gradient — page background color derived from company branding. Use a subtle tint or gradient (e.g. linear-gradient(135deg, #f8f9fa, #e8f0fe)), NEVER plain #FFFFFF."
+    "fontHeading": "Plus Jakarta Sans (default) or company-specific Google Font — used for display headings with weight 700-800",
+    "fontBody": "DM Sans (default) or company-specific Google Font — used for body text and UI elements with weight 400-500",
+    "background": "#hex — MUST be a cool grey (#E0E5EC is the default neumorphic base). Use a subtle tint derived from company primary color (e.g. mix primary hue at 3-5% opacity over #E0E5EC). NEVER plain #FFFFFF."
   },
   "globalFilters": [
     { "id": "string", "label": "string", "type": "dropdown|segmented|chips", "options": ["string"] }

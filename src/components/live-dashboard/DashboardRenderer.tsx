@@ -147,8 +147,55 @@ function CandidateHero({ data }: { data: DashboardData }) {
   );
 }
 
+/* ── Active Filter Pills ── */
+function ActiveFilterPills({ filters, onRemove, onClearAll }: {
+  filters: Record<string, DrillFilter>;
+  onRemove: (chartId: string) => void;
+  onClearAll: () => void;
+}) {
+  const entries = Object.entries(filters);
+  if (!entries.length) return null;
+
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      {entries.map(([chartId, f]) => (
+        <span
+          key={chartId}
+          className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium"
+          style={{
+            background: "var(--dash-primary-container, hsl(var(--accent)))",
+            color: "var(--dash-on-primary-container, hsl(var(--accent-foreground)))",
+          }}
+        >
+          {f.value}
+          <button
+            onClick={() => onRemove(chartId)}
+            className="ml-0.5 rounded-full hover:opacity-70 transition-opacity"
+            aria-label={`Remove filter ${f.value}`}
+          >
+            <X className="h-3 w-3" />
+          </button>
+        </span>
+      ))}
+      {entries.length > 1 && (
+        <button
+          onClick={onClearAll}
+          className="text-xs underline opacity-60 hover:opacity-100 transition-opacity"
+          style={{ color: "var(--dash-on-surface, hsl(var(--foreground)))" }}
+        >
+          Clear all
+        </button>
+      )}
+    </div>
+  );
+}
+
 /* ── Section Block ── */
-function SectionBlock({ section, filterValues }: { section: DashboardSection; filterValues: Record<string, string> }) {
+function SectionBlock({ section, drillFilters, onDrillDown }: {
+  section: DashboardSection;
+  drillFilters: Record<string, DrillFilter>;
+  onDrillDown: (chartId: string, field: string, value: string) => void;
+}) {
   const hasMetrics = section.metrics && section.metrics.length > 0;
   const hasCharts = section.charts && section.charts.length > 0;
   const hasTables = section.tables && section.tables.length > 0;

@@ -421,11 +421,17 @@ ${sectionInstructions}
 - 3 CFO scenarios: one "pricing" (sliders: priceChange, elasticity, growthRate), one "headcount" (sliders: newHires, rampTime, quota), one "expansion" (sliders: tam, penetration, investment)
 - All text must be specific to ${companyName || 'the company'} and the ${jobTitle || 'role'}
 - The header displays "{companyName} — {department}" as the primary title, with jobTitle as subtitle. Make meta.department descriptive and prominent.
-- branding.background MUST be a subtle gradient or tinted surface color derived from the company palette — not plain #FFFFFF or #FFF.
+- NEUMORPHIC DESIGN SYSTEM: The dashboard uses a Soft UI / Neumorphic aesthetic. The renderer applies dual opposing shadows (top-left light, bottom-right dark) to cards and containers. For this to work correctly:
+  * "surface" MUST be a cool grey between #DDE3EA and #E8ECF0 (default #E0E5EC). White or dark backgrounds break the neumorphic shadow effect.
+  * "background" should be the same cool grey or a very subtle tint of it with the company primary color at 3-5% opacity.
+  * "surfaceVariant" should be a slightly darker/lighter grey for differentiation (e.g. #D8DEE6).
+  * Cards, KPIs, charts, and tables will all render with extruded neumorphic shadows — no flat borders.
+- TYPOGRAPHY: Default to "Plus Jakarta Sans" for fontHeading and "DM Sans" for fontBody. Only override with company fonts if they are clearly part of the brand identity. These fonts pair well with the neumorphic aesthetic.
+- branding.background MUST be a cool grey (#E0E5EC default) or subtle tint — not plain #FFFFFF or #FFF.
 - The agenticWorkforce section represents a work-in-progress concept. Each agent description should note this is a proposed AI-augmented operating model.
-- Branding colors derived from provided branding data using Material You tonal palette principles
+- Branding colors derived from provided branding data — company colors serve as ACCENT colors (header, active nav, buttons, trend indicators) while the base surface remains cool grey for neumorphic depth.
 - Chart datasets: use contextual colors derived from branding, not random colors
-- CONTRAST REQUIREMENT: The "outline" color is used for secondary text (labels, descriptions). It MUST have at least 4.5:1 contrast ratio against the "surface" background. Use a dark value like #49454F or darker — never lighter than #5F5F6F. Avoid light greys (#79747E or lighter) for any text on light backgrounds.
+- CONTRAST REQUIREMENT: The "outline" color is used for secondary text (labels, descriptions). It MUST have at least 4.5:1 contrast ratio against the cool grey "surface" background. Use a dark value like #49454F or darker — never lighter than #5F5F6F. Avoid light greys (#79747E or lighter) for any text on light backgrounds.
 - DELTA LABELS: Every metric's "change" field MUST include a comparison period (e.g., "+12% vs Q3", "-3.5% vs last month", "+$250K YoY"). Never use bare percentages like "+12%" without context.
 - Table generateRows fields: use company-specific options (competitor names, product names, region names from context)
 - HEATMAP DATA FORMAT: For heatmap charts, datasets are rows (each with a label), labels are columns, and each dataset's data array contains the cell values for that row.

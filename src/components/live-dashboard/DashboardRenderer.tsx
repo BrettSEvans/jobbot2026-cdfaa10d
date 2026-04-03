@@ -78,24 +78,74 @@ function useGoogleFonts(branding?: DashboardBranding) {
   }, [branding]);
 }
 
+/* ── Neumorphic color enforcement ── */
+function hexToLuminance(hex: string): number {
+  const c = hex.replace("#", "");
+  if (c.length < 6) return 1;
+  const r = parseInt(c.slice(0, 2), 16) / 255;
+  const g = parseInt(c.slice(2, 4), 16) / 255;
+  const b = parseInt(c.slice(4, 6), 16) / 255;
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+/** Ensures branding has neumorphic-compatible surface/background colors.
+ *  If surface is too light (>0.88 luminance) or too dark (<0.4),
+ *  override to standard cool grey so dual shadows render correctly. */
+function enforceNeuBranding(b: DashboardBranding): DashboardBranding {
+  const NEU_SURFACE = "#E0E5EC";
+  const NEU_BG = "#E0E5EC";
+  const NEU_VARIANT = "#D8DEE6";
+  const NEU_TEXT = "#3D4852";
+
+  let surface = b.surface || NEU_SURFACE;
+  let background = b.background || NEU_BG;
+  let surfaceVariant = b.surfaceVariant || NEU_VARIANT;
+  let onSurface = b.onSurface || NEU_TEXT;
+
+  // Extract first hex color from gradients or plain values
+  const extractHex = (val: string) => {
+    const m = val.match(/#[0-9A-Fa-f]{6}/);
+    return m ? m[0] : null;
+  };
+
+  const surfaceHex = extractHex(surface);
+  const bgHex = extractHex(typeof background === "string" ? background : "");
+
+  const surfaceTooLight = surfaceHex ? hexToLuminance(surfaceHex) > 0.88 : false;
+  const surfaceTooDark = surfaceHex ? hexToLuminance(surfaceHex) < 0.4 : false;
+  const bgTooLight = bgHex ? hexToLuminance(bgHex) > 0.88 : false;
+
+  if (surfaceTooLight || surfaceTooDark) {
+    surface = NEU_SURFACE;
+    surfaceVariant = NEU_VARIANT;
+    onSurface = NEU_TEXT;
+  }
+  if (bgTooLight) {
+    background = NEU_BG;
+  }
+
+  return { ...b, surface, background, surfaceVariant, onSurface };
+}
+
 /* ── CSS custom properties from branding ── */
 function brandingStyle(b?: DashboardBranding): React.CSSProperties {
   if (!b) return {};
+  const nb = enforceNeuBranding(b);
   return {
-    "--dash-primary": b.primary,
-    "--dash-on-primary": b.onPrimary,
-    "--dash-primary-container": b.primaryContainer,
-    "--dash-on-primary-container": b.onPrimaryContainer,
-    "--dash-secondary": b.secondary,
-    "--dash-on-secondary": b.onSecondary,
-    "--dash-surface": b.surface,
-    "--dash-on-surface": b.onSurface,
-    "--dash-surface-variant": b.surfaceVariant,
-    "--dash-outline": b.outline,
-    "--dash-error": b.error,
-    "--dash-font-heading": b.fontHeading || "Plus Jakarta Sans, sans-serif",
-    "--dash-font-body": b.fontBody || "DM Sans, sans-serif",
-    "--dash-background": b.background || "#E0E5EC",
+    "--dash-primary": nb.primary,
+    "--dash-on-primary": nb.onPrimary,
+    "--dash-primary-container": nb.primaryContainer,
+    "--dash-on-primary-container": nb.onPrimaryContainer,
+    "--dash-secondary": nb.secondary,
+    "--dash-on-secondary": nb.onSecondary,
+    "--dash-surface": nb.surface,
+    "--dash-on-surface": nb.onSurface,
+    "--dash-surface-variant": nb.surfaceVariant,
+    "--dash-outline": nb.outline,
+    "--dash-error": nb.error,
+    "--dash-font-heading": nb.fontHeading || "Plus Jakarta Sans, sans-serif",
+    "--dash-font-body": nb.fontBody || "DM Sans, sans-serif",
+    "--dash-background": nb.background || "#E0E5EC",
   } as React.CSSProperties;
 }
 

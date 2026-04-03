@@ -17,6 +17,21 @@ function slugify(text: string): string {
   return text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 60);
 }
 
+const LIVE_DASHBOARD_PUBLIC_BASE_URL = "https://jobbot2026.lovable.app";
+
+function getLiveDashboardBaseUrl(): string {
+  if (typeof window === "undefined") return LIVE_DASHBOARD_PUBLIC_BASE_URL;
+
+  const hostname = window.location.hostname;
+  const isPrivateHost =
+    hostname === "localhost" ||
+    hostname === "127.0.0.1" ||
+    hostname.includes("id-preview--") ||
+    hostname.endsWith(".lovableproject.com");
+
+  return isPrivateHost ? LIVE_DASHBOARD_PUBLIC_BASE_URL : window.location.origin;
+}
+
 interface PublishDashboardProps {
   applicationId: string;
   dashboardData: DashboardData | null;
@@ -262,7 +277,7 @@ export default function PublishDashboard({
   if (!dashboardData) return null;
 
   const publicUrl = liveDash
-    ? `${window.location.origin}/d/${liveDash.slug_username}/${liveDash.slug_company}/${liveDash.slug_jobtitle}`
+    ? `${getLiveDashboardBaseUrl()}/d/${liveDash.slug_username}/${liveDash.slug_company}/${liveDash.slug_jobtitle}`
     : null;
 
   const copyUrl = () => {

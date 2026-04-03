@@ -251,7 +251,7 @@ function SectionBlock({ section, drillFilters, onDrillDown, isFirstSection }: {
           {section.metrics!.map((m, i) => (
             <Tooltip key={i}>
               <TooltipTrigger asChild>
-                <div className="transition-transform duration-200 hover:scale-105">
+                <div className="transition-all duration-300 ease-out hover:-translate-y-0.5">
                   <KpiCard metric={m} spotlight={isFirstSection && i === 0} />
                 </div>
               </TooltipTrigger>

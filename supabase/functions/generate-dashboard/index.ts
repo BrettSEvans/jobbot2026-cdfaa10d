@@ -107,6 +107,31 @@ function validateAndRepair(data: any): { valid: boolean; data?: any; errors: str
   // Required top-level fields
   if (!data.meta) { data.meta = { companyName: 'Unknown', jobTitle: 'Unknown', department: 'General' }; errors.push('Added missing meta'); }
   if (!data.branding) { errors.push('Missing branding'); }
+
+  // Enforce neumorphic-compatible surface/background colors
+  if (data.branding) {
+    const hexLum = (hex: string) => {
+      const c = hex.replace('#', '');
+      if (c.length < 6) return 1;
+      const r = parseInt(c.slice(0, 2), 16) / 255;
+      const g = parseInt(c.slice(2, 4), 16) / 255;
+      const b = parseInt(c.slice(4, 6), 16) / 255;
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    };
+    const extractHex = (v: string) => { const m = v.match(/#[0-9A-Fa-f]{6}/); return m ? m[0] : null; };
+    const surfHex = extractHex(data.branding.surface || '');
+    const bgHex = extractHex(data.branding.background || '');
+    if (surfHex && hexLum(surfHex) > 0.88) {
+      data.branding.surface = '#E0E5EC';
+      data.branding.surfaceVariant = '#D8DEE6';
+      data.branding.onSurface = '#3D4852';
+      errors.push('Overrode too-light surface to neumorphic grey');
+    }
+    if (bgHex && hexLum(bgHex) > 0.88) {
+      data.branding.background = '#E0E5EC';
+      errors.push('Overrode too-light background to neumorphic grey');
+    }
+  }
   if (!data.navigation || !Array.isArray(data.navigation)) { errors.push('Missing navigation'); return { valid: false, data, errors }; }
   if (!data.sections || !Array.isArray(data.sections)) { errors.push('Missing sections'); return { valid: false, data, errors }; }
 

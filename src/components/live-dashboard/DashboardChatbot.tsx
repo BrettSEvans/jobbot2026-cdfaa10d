@@ -155,7 +155,7 @@ export default function DashboardChatbot({ dashboardId, companyName, jobTitle, d
         ))}
         {loading && (
           <div className="flex justify-start">
-            <div className="bg-secondary rounded-lg px-3 py-2">
+            <div className="rounded-2xl px-3 py-2" style={{ boxShadow: "inset 6px 6px 10px rgb(163,177,198,0.6), inset -6px -6px 10px rgba(255,255,255,0.5)", background: "var(--dash-surface, #E0E5EC)" }}>
               <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
             </div>
           </div>

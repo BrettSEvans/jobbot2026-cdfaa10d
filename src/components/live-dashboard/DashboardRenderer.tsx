@@ -262,7 +262,7 @@ function SectionBlock({ section, drillFilters, onDrillDown }: {
 /* ── Main Renderer ── */
 export default function DashboardRenderer({ data }: { data: DashboardData }) {
   const [activeNav, setActiveNav] = useState(data.navigation?.[0]?.id || "");
-  const [filterValues, setFilterValues] = useState<Record<string, string>>({});
+  const [drillFilters, setDrillFilters] = useState<Record<string, DrillFilter>>({});
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isMobile = useIsMobile();
   const contentRef = useRef<HTMLDivElement>(null);

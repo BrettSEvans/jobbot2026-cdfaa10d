@@ -566,7 +566,7 @@ export default function DashboardRenderer({ data }: { data: DashboardData }) {
               )}
 
               {/* Footer — only at the bottom of the last section view */}
-              <footer className="border-t pt-4 mt-8 text-center text-xs" style={{ color: "var(--dash-on-surface, hsl(var(--muted-foreground)))", opacity: 0.5, borderColor: "var(--dash-outline, hsl(var(--border)))" }}>
+              <footer className="pt-4 mt-8 text-center text-xs" style={{ color: "var(--dash-on-surface, #6B7280)", opacity: 0.5 }}>
                 {footerText && <span>{footerText}</span>}
                 {footerText && showBranding && <span> · </span>}
                 {showBranding && <span>Built by <a href="https://saasless.ai/author" target="_blank" rel="noopener noreferrer" className="underline hover:opacity-80 transition-opacity">saasless.ai</a></span>}

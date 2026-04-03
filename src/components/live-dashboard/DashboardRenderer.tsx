@@ -251,7 +251,7 @@ function SectionBlock({ section, drillFilters, onDrillDown }: {
       {hasTables && (
         <div className="space-y-4">
           {section.tables!.map((t) => (
-            <DataTable key={t.id} config={t} filterValues={filterValues} />
+            <DataTable key={t.id} config={t} drillFilters={drillFilters} />
           ))}
         </div>
       )}

@@ -1,9 +1,9 @@
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2 } from "lucide-react";
 import DashboardRenderer from "@/components/live-dashboard/DashboardRenderer";
 import DashboardChatbot from "@/components/live-dashboard/DashboardChatbot";
+import DashboardSkeleton from "@/components/live-dashboard/DashboardSkeleton";
 import type { DashboardData } from "@/lib/dashboard/schema";
 
 export default function LiveDashboard() {
@@ -29,11 +29,7 @@ export default function LiveDashboard() {
   });
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   if (!dashboard) {

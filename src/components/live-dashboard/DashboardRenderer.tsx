@@ -5,7 +5,7 @@ import ChartBlock, { type DrillFilter } from "./ChartBlock";
 import DataTable from "./DataTable";
 import ScenarioPanel from "./ScenarioPanel";
 import {
-  ExternalLink, Linkedin, User, Menu, X,
+  ExternalLink, Linkedin, User, Menu, X, Inbox, ChevronRight, Printer,
   LayoutDashboard, TrendingUp, Users, DollarSign, Target,
   BarChart3, Briefcase, Rocket, ShieldCheck, Brain,
   Calculator, GitBranch, MapPin, Zap, PieChart, Activity,
@@ -191,14 +191,16 @@ function ActiveFilterPills({ filters, onRemove, onClearAll }: {
 }
 
 /* ── Section Block ── */
-function SectionBlock({ section, drillFilters, onDrillDown }: {
+function SectionBlock({ section, drillFilters, onDrillDown, isFirstSection }: {
   section: DashboardSection;
   drillFilters: Record<string, DrillFilter>;
   onDrillDown: (chartId: string, field: string, value: string) => void;
+  isFirstSection?: boolean;
 }) {
   const hasMetrics = section.metrics && section.metrics.length > 0;
   const hasCharts = section.charts && section.charts.length > 0;
   const hasTables = section.tables && section.tables.length > 0;
+  const isEmpty = !hasMetrics && !hasCharts && !hasTables;
 
   const chartGrid = () => {
     switch (section.layout) {
@@ -218,7 +220,17 @@ function SectionBlock({ section, drillFilters, onDrillDown }: {
           {section.title}
         </h3>
         {section.description && (
-          <p className="text-sm mt-0.5" style={{ color: "var(--dash-on-surface, hsl(var(--muted-foreground)))", opacity: 0.7 }}>{section.description}</p>
+          <div
+            className="mt-2 rounded-lg px-4 py-3 border-l-4 text-sm"
+            style={{
+              background: "var(--dash-surface-variant, hsl(var(--muted)))",
+              borderLeftColor: "var(--dash-primary, hsl(var(--primary)))",
+              color: "var(--dash-on-surface, hsl(var(--foreground)))",
+              opacity: 0.85,
+            }}
+          >
+            {section.description}
+          </div>
         )}
       </div>
 
@@ -228,7 +240,7 @@ function SectionBlock({ section, drillFilters, onDrillDown }: {
             <Tooltip key={i}>
               <TooltipTrigger asChild>
                 <div className="transition-transform duration-200 hover:scale-105">
-                  <KpiCard metric={m} />
+                  <KpiCard metric={m} spotlight={isFirstSection && i === 0} />
                 </div>
               </TooltipTrigger>
               <TooltipContent side="top" className="text-xs max-w-[200px]">
@@ -253,6 +265,13 @@ function SectionBlock({ section, drillFilters, onDrillDown }: {
           {section.tables!.map((t) => (
             <DataTable key={t.id} config={t} drillFilters={drillFilters} />
           ))}
+        </div>
+      )}
+
+      {isEmpty && (
+        <div className="flex flex-col items-center justify-center py-12 text-center rounded-lg border" style={{ background: "var(--dash-surface, hsl(var(--card)))", borderColor: "var(--dash-outline, hsl(var(--border)))" }}>
+          <Inbox className="h-10 w-10 mb-2" style={{ color: "var(--dash-on-surface, hsl(var(--muted-foreground)))", opacity: 0.4 }} />
+          <p className="text-sm" style={{ color: "var(--dash-on-surface, hsl(var(--muted-foreground)))" }}>No data available for this section</p>
         </div>
       )}
     </section>
@@ -458,8 +477,8 @@ export default function DashboardRenderer({ data }: { data: DashboardData }) {
               <ActiveFilterPills filters={drillFilters} onRemove={removeDrillFilter} onClearAll={() => setDrillFilters({})} />
 
               {/* Sections */}
-              {!isCfoView && !isAgenticView && sectionsToRender.map((section) => (
-                <SectionBlock key={section.id} section={section} drillFilters={drillFilters} onDrillDown={toggleDrillFilter} />
+              {!isCfoView && !isAgenticView && sectionsToRender.map((section, idx) => (
+                <SectionBlock key={section.id} section={section} drillFilters={drillFilters} onDrillDown={toggleDrillFilter} isFirstSection={idx === 0} />
               ))}
 
               {/* CFO Scenarios */}

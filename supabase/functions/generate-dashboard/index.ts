@@ -227,31 +227,38 @@ Research Agent Output:
 ${JSON.stringify(researchedSections, null, 2)}
 
 ## STORYTELLING RULES (CRITICAL):
-1. Section 1 MUST be an overview/summary that sets context. Use "kpi-spotlight" layout with metrics only — NO table. It should answer: "Why should you hire this person?"
+1. Section 1 MUST be a COMPREHENSIVE overview/executive summary that establishes credibility. Use "split-panel" or "default" layout. It should answer: "Why should you hire this person?" Include:
+   - 4-6 department-level KPI metrics (e.g., revenue impact, headcount managed, budget owned, key performance ratios, growth rates, efficiency metrics relevant to the department)
+   - 1-2 charts that provide immediate visual evidence (e.g., a trend line showing growth trajectory, a doughnut showing portfolio/team composition, or a waterfall showing value contribution)
+   - A rich description with specific numbers and the key narrative for the candidacy
+   - Do NOT limit the overview to just metric cards — it must feel like a full executive summary page
 2. The LAST content section should answer: "What's the ROI of this hire?" Use an impactful chart + metrics, no table.
 3. NOT every section needs metrics + charts + table. Vary density based on the section's role:
-   - Overview sections: metrics only, maybe one chart
+   - Overview/summary sections: 4-6 metrics + 1-2 charts (rich and compelling)
    - Deep-dive sections: metrics + charts, optionally a table  
    - Evidence sections: charts + table, fewer metrics
    - Action sections: metrics + one impactful chart, no table
 4. Maximum 2-3 tables across ALL content sections. Lighter sections create breathing room.
 5. Each section "description" must state the KEY TAKEAWAY — what the viewer should conclude, not just topic context. Bad: "This section covers pipeline data." Good: "Pipeline velocity has increased 23% QoQ, suggesting this role should focus on conversion optimization rather than top-of-funnel growth."
-6. If a section has a "componentHint" from the research agent, follow it (e.g. "metrics-only" means no charts or tables).
+6. If a section has a "componentHint" from the research agent, follow it UNLESS it says "metrics-only" for the overview — override to include charts for richer presentation.
+
 
 For each researched section:
 - Use the provided id, label, icon, and description exactly
 - If the section has a "keyInsight", incorporate it into the section description
 - Assign a UNIQUE "layout" mode to each section (see LAYOUT MODES below) — NO two adjacent sections may share the same layout
-- Generate metrics with realistic values matching the valueFormat hints (2-3 metrics max per section)
-- Generate chart data matching the chart specs (type, axes, datasets) — 1-2 charts max per section
+- Generate metrics with realistic values matching the valueFormat hints (4-6 metrics for overview sections, 2-3 for others)
+- Generate chart data matching the chart specs (type, axes, datasets) — overview sections should have 1-2 charts for visual impact, other sections 1-2 charts max
 - Only generate tables for sections that have table specs AND where density is appropriate
 - Each table must have generateRows count >= 500
+- OVERRIDE: If the overview/first section has componentHint "metrics-only", still add 1-2 charts for a richer executive summary
 `
     : `
 SECTION REQUIREMENTS:
 - 5-7 sections covering key areas for this role, plus always include "agentic-workforce" and "cfo-view" in navigation
-- Follow STORYTELLING RULES: Section 1 = overview (metrics only, kpi-spotlight layout), last section = ROI/action
-- Each section: 2-3 metrics, 1-2 charts (VARY chart types — see CHART TYPE DIVERSITY below)
+- Section 1 MUST be a COMPREHENSIVE overview/executive summary with 4-6 department-level KPIs AND 1-2 charts. Use "split-panel" or "default" layout — NOT "kpi-spotlight". Include metrics like revenue impact, budget, headcount, growth rates, efficiency ratios relevant to the department. Add a trend chart or composition chart for visual impact.
+- Follow STORYTELLING RULES: last section = ROI/action
+- Each section: 2-4 metrics, 1-2 charts (VARY chart types — see CHART TYPE DIVERSITY below)
 - Tables only in 2-3 sections (deep-dive/evidence sections), with generateRows count >= 500
 - Assign a UNIQUE "layout" mode to each section (see LAYOUT MODES below) — NO two adjacent sections may share the same layout
 - Include at least ONE horizontalBar chart (Gantt-style) with time-based labels
@@ -340,8 +347,8 @@ JSON SCHEMA (follow EXACTLY):
     {
       "id": "matches navigation id",
       "title": "Section Title",
-      "description": "Key takeaway — what the viewer should conclude from this section (2-3 sentences, insight-driven)",
-      "layout": "default|kpi-spotlight|split-panel|full-width-timeline|grid-cards|map-table (overview sections should use kpi-spotlight)",
+      "description": "Key takeaway — what the viewer should conclude from this section (2-3 sentences, insight-driven). For overview sections, include specific numbers and department-level context.",
+      "layout": "default|split-panel|full-width-timeline|grid-cards|map-table|kpi-spotlight (overview sections should use split-panel or default for richer content)",
       "metrics": [
         { "label": "Metric Name", "value": "$1.2M", "change": "+12%", "trend": "up|down|neutral" }
       ],

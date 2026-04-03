@@ -159,7 +159,7 @@ export default function DataTable({
               displayRows.map((row, i) => (
                 <TableRow key={i}>
                   {config.columns.map((col) => (
-                    <TableCell key={col.key} className="text-sm" style={{ color: "var(--dash-on-surface, hsl(var(--foreground)))" }}>{row[col.key] ?? ""}</TableCell>
+                    <TableCell key={col.key} className="text-sm" style={{ color: "var(--dash-on-surface, #3D4852)" }}>{row[col.key] ?? ""}</TableCell>
                   ))}
                 </TableRow>
               ))

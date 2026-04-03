@@ -356,9 +356,7 @@ export default function DashboardRenderer({ data }: { data: DashboardData }) {
         className="min-h-screen flex flex-col"
         style={{
           ...brandingStyle(data.branding),
-          background: `var(--dash-background, hsl(var(--background)))`,
-          backgroundImage: WAVE_PATTERN,
-          backgroundRepeat: "repeat",
+          background: `var(--dash-background, #E0E5EC)`,
           fontFamily: "var(--dash-font-body)",
         }}
       >

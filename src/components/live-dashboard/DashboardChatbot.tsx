@@ -163,18 +163,28 @@ export default function DashboardChatbot({ dashboardId, companyName, jobTitle, d
       </div>
 
       {/* Input */}
-      <div className="p-3 border-t flex gap-2">
+      <div className="p-3 flex gap-2">
         <Textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Ask a question..."
-          className="min-h-[36px] max-h-[72px] resize-none text-sm"
+          className="min-h-[36px] max-h-[72px] resize-none text-sm rounded-2xl border-none"
+          style={{ boxShadow: "inset 6px 6px 10px rgb(163,177,198,0.6), inset -6px -6px 10px rgba(255,255,255,0.5)", background: "var(--dash-surface, #E0E5EC)" }}
           onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
         />
-        <Button size="icon" className="h-9 w-9 shrink-0" onClick={() => send()} disabled={loading || !input.trim()}>
+        <button
+          className="h-9 w-9 shrink-0 rounded-2xl flex items-center justify-center transition-all duration-300 ease-out hover:-translate-y-px disabled:opacity-50"
+          style={{
+            background: "var(--dash-primary, #0a8080)",
+            color: "var(--dash-on-primary, #fff)",
+            boxShadow: "5px 5px 10px rgb(163,177,198,0.6), -5px -5px 10px rgba(255,255,255,0.5)",
+          }}
+          onClick={() => send()}
+          disabled={loading || !input.trim()}
+        >
           <Send className="h-4 w-4" />
-        </Button>
+        </button>
       </div>
-    </Card>
+    </div>
   );
 }

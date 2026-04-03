@@ -418,15 +418,15 @@ export default function DashboardRenderer({ data }: { data: DashboardData }) {
             >
               <div className={`${sidebarExpanded ? "w-[260px]" : "w-14"} h-full flex flex-col`}>
                 {/* Sidebar header */}
-                <div className="p-3 flex items-center justify-between border-b" style={{ borderColor: "var(--dash-outline, hsl(var(--border)))" }}>
+                <div className="p-3 flex items-center justify-between" style={{ borderBottom: "none" }}>
                   {sidebarExpanded && (
-                    <span className="text-sm font-semibold truncate" style={{ color: "var(--dash-on-surface, hsl(var(--foreground)))", fontFamily: "var(--dash-font-heading)" }}>
+                    <span className="text-sm font-bold tracking-tight truncate" style={{ color: "var(--dash-on-surface, #3D4852)", fontFamily: "var(--dash-font-heading)" }}>
                       Navigation
                     </span>
                   )}
                   {isMobile && sidebarOpen && (
-                    <button onClick={() => setSidebarOpen(false)} className="p-1 rounded-md hover:bg-black/5 transition-colors ml-auto">
-                      <X className="h-4 w-4" style={{ color: "var(--dash-on-surface, hsl(var(--foreground)))" }} />
+                    <button onClick={() => setSidebarOpen(false)} className="p-1 rounded-2xl hover:bg-black/5 transition-all duration-300 ml-auto">
+                      <X className="h-4 w-4" style={{ color: "var(--dash-on-surface, #3D4852)" }} />
                     </button>
                   )}
                 </div>

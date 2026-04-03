@@ -426,6 +426,7 @@ ${sectionInstructions}
 - Branding colors derived from provided branding data using Material You tonal palette principles
 - Chart datasets: use contextual colors derived from branding, not random colors
 - CONTRAST REQUIREMENT: The "outline" color is used for secondary text (labels, descriptions). It MUST have at least 4.5:1 contrast ratio against the "surface" background. Use a dark value like #49454F or darker — never lighter than #5F5F6F. Avoid light greys (#79747E or lighter) for any text on light backgrounds.
+- DELTA LABELS: Every metric's "change" field MUST include a comparison period (e.g., "+12% vs Q3", "-3.5% vs last month", "+$250K YoY"). Never use bare percentages like "+12%" without context.
 - Table generateRows fields: use company-specific options (competitor names, product names, region names from context)
 - HEATMAP DATA FORMAT: For heatmap charts, datasets are rows (each with a label), labels are columns, and each dataset's data array contains the cell values for that row.
 - WATERFALL DATA FORMAT: For waterfall charts, provide a single dataset with incremental values (positive and negative). The rendering engine calculates floating bars automatically.

@@ -247,10 +247,11 @@ For each researched section:
 - Use the provided id, label, icon, and description exactly
 - If the section has a "keyInsight", incorporate it into the section description
 - Assign a UNIQUE "layout" mode to each section (see LAYOUT MODES below) — NO two adjacent sections may share the same layout
-- Generate metrics with realistic values matching the valueFormat hints (2-3 metrics max per section)
-- Generate chart data matching the chart specs (type, axes, datasets) — 1-2 charts max per section
+- Generate metrics with realistic values matching the valueFormat hints (4-6 metrics for overview sections, 2-3 for others)
+- Generate chart data matching the chart specs (type, axes, datasets) — overview sections should have 1-2 charts for visual impact, other sections 1-2 charts max
 - Only generate tables for sections that have table specs AND where density is appropriate
 - Each table must have generateRows count >= 500
+- OVERRIDE: If the overview/first section has componentHint "metrics-only", still add 1-2 charts for a richer executive summary
 `
     : `
 SECTION REQUIREMENTS:

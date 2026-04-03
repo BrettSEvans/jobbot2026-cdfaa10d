@@ -256,8 +256,9 @@ For each researched section:
     : `
 SECTION REQUIREMENTS:
 - 5-7 sections covering key areas for this role, plus always include "agentic-workforce" and "cfo-view" in navigation
-- Follow STORYTELLING RULES: Section 1 = overview (metrics only, kpi-spotlight layout), last section = ROI/action
-- Each section: 2-3 metrics, 1-2 charts (VARY chart types — see CHART TYPE DIVERSITY below)
+- Section 1 MUST be a COMPREHENSIVE overview/executive summary with 4-6 department-level KPIs AND 1-2 charts. Use "split-panel" or "default" layout — NOT "kpi-spotlight". Include metrics like revenue impact, budget, headcount, growth rates, efficiency ratios relevant to the department. Add a trend chart or composition chart for visual impact.
+- Follow STORYTELLING RULES: last section = ROI/action
+- Each section: 2-4 metrics, 1-2 charts (VARY chart types — see CHART TYPE DIVERSITY below)
 - Tables only in 2-3 sections (deep-dive/evidence sections), with generateRows count >= 500
 - Assign a UNIQUE "layout" mode to each section (see LAYOUT MODES below) — NO two adjacent sections may share the same layout
 - Include at least ONE horizontalBar chart (Gantt-style) with time-based labels

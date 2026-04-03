@@ -264,7 +264,7 @@ SECTION REQUIREMENTS:
 - Include at least ONE horizontalBar chart (Gantt-style) with time-based labels
 `;
 
-  return `You are a business intelligence data architect and expert dashboard UX designer. Generate a structured JSON object for a dashboard that tells a DIVERSE visual story across sections.
+  return `You are a business intelligence data architect and expert dashboard UX designer. Generate a structured JSON object for a dashboard that tells a DIVERSE visual story across sections. The dashboard uses a NEUMORPHIC (Soft UI) design system with tactile depth and dual shadows.
 
 CRITICAL: Return ONLY the raw JSON object. Do NOT wrap it in HTML, script tags, or markdown fences. Do NOT generate a full HTML page. Start with { and end with }. No other output.
 

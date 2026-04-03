@@ -271,13 +271,30 @@ export default function DashboardRenderer({ data }: { data: DashboardData }) {
 
   useGoogleFonts(data.branding);
 
-  // Scroll content to top on nav change
+  // Scroll content to top and clear drill filters on nav change
   useEffect(() => {
     contentRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+    setDrillFilters({});
   }, [activeNav]);
 
-  const handleFilterChange = (id: string, value: string) => {
-    setFilterValues((prev) => ({ ...prev, [id]: value }));
+  const toggleDrillFilter = (chartId: string, field: string, value: string) => {
+    setDrillFilters((prev) => {
+      const existing = prev[chartId];
+      if (existing && existing.value === value) {
+        const next = { ...prev };
+        delete next[chartId];
+        return next;
+      }
+      return { ...prev, [chartId]: { field, value } };
+    });
+  };
+
+  const removeDrillFilter = (chartId: string) => {
+    setDrillFilters((prev) => {
+      const next = { ...prev };
+      delete next[chartId];
+      return next;
+    });
   };
 
   const hasNav = data.navigation && data.navigation.length > 0;

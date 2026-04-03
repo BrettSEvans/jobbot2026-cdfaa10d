@@ -120,21 +120,25 @@ function CandidateHero({ data }: { data: DashboardData }) {
 
   return (
     <div
-      className="rounded-xl p-6 md:p-8 flex flex-col md:flex-row items-center gap-5"
+      className="rounded-[32px] p-6 md:p-8 flex flex-col md:flex-row items-center gap-5 transition-all duration-300"
       style={{
-        background: `linear-gradient(135deg, ${data.branding?.primary || "hsl(var(--primary))"}, ${data.branding?.primaryContainer || "hsl(var(--primary))"})`,
-        color: data.branding?.onPrimary || "hsl(var(--primary-foreground))",
+        background: `linear-gradient(135deg, ${data.branding?.primary || "#0a8080"}, ${data.branding?.primaryContainer || "#0a8080"})`,
+        color: data.branding?.onPrimary || "#fff",
+        boxShadow: NEU_SHADOW,
       }}
     >
       {c.photoUrl ? (
         <img src={c.photoUrl} alt={c.name} className="h-20 w-20 rounded-full object-cover border-2 border-white/30" />
       ) : (
-        <div className="h-20 w-20 rounded-full flex items-center justify-center bg-white/20">
+        <div
+          className="h-20 w-20 rounded-full flex items-center justify-center"
+          style={{ boxShadow: NEU_SHADOW_INSET_DEEP, background: "rgba(255,255,255,0.15)" }}
+        >
           <User className="h-10 w-10 opacity-70" />
         </div>
       )}
       <div className="text-center md:text-left flex-1">
-        <h2 className="text-2xl font-bold" style={{ fontFamily: "var(--dash-font-heading)" }}>{c.name}</h2>
+        <h2 className="text-2xl font-extrabold tracking-tight" style={{ fontFamily: "var(--dash-font-heading)" }}>{c.name}</h2>
         <p className="opacity-90 mt-1 text-sm">{c.tagline}</p>
         <div className="flex items-center gap-3 mt-2 justify-center md:justify-start">
           {c.linkedIn && (

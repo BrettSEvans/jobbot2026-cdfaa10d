@@ -62,18 +62,18 @@ function resolveIcon(name?: string): LucideIcon {
 function useGoogleFonts(branding?: DashboardBranding) {
   useEffect(() => {
     if (!branding) return;
-    const families = [branding.fontHeading, branding.fontBody].filter(Boolean);
+    const families = [branding.fontHeading || "Plus Jakarta Sans", branding.fontBody || "DM Sans"].filter(Boolean);
     if (!families.length) return;
     const id = "live-dash-gfonts";
+    const href = `https://fonts.googleapis.com/css2?${families.map((f) => `family=${f.replace(/ /g, "+")}:wght@400;500;600;700;800`).join("&")}&display=swap`;
     if (document.getElementById(id)) {
-      (document.getElementById(id) as HTMLLinkElement).href =
-        `https://fonts.googleapis.com/css2?${families.map((f) => `family=${f.replace(/ /g, "+")}:wght@400;600;700`).join("&")}&display=swap`;
+      (document.getElementById(id) as HTMLLinkElement).href = href;
       return;
     }
     const link = document.createElement("link");
     link.id = id;
     link.rel = "stylesheet";
-    link.href = `https://fonts.googleapis.com/css2?${families.map((f) => `family=${f.replace(/ /g, "+")}:wght@400;600;700`).join("&")}&display=swap`;
+    link.href = href;
     document.head.appendChild(link);
   }, [branding]);
 }

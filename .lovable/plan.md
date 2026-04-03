@@ -1,41 +1,66 @@
 
 
-## Plan: Markdown Rendering, Tooltips, and Tab-Aware Chatbot
+## Plan: Replace Global Filters with Chart-Click Cross-Filtering
 
-### 1. Render markdown in chatbot messages (`DashboardChatbot.tsx`)
+### Summary
+Remove the header filter bar. Instead, clicking a chart segment (bar, pie slice, etc.) sets a drill-down filter that cross-filters all sibling charts and tables within the same tab view. Multiple chart clicks combine with AND logic. Active filters display as dismissible pills above the filtered content.
 
-Install `react-markdown` and use it to render assistant messages instead of raw text.
+### Architecture
 
-- Add `react-markdown` dependency
-- Wrap assistant message content in `<ReactMarkdown>` with prose styling
-- User messages remain plain text
+```text
+DashboardRenderer
+  ├── drillFilters state: Map<chartId, { field: string, value: string }>
+  ├── ActiveFilterPills (shows pills with ✕ to remove)
+  ├── SectionBlock
+  │     ├── ChartBlock (onClick → toggle drill filter)
+  │     └── DataTable (receives combined drill filters)
+```
 
-### 2. Add rollover tooltips to live dashboard elements (`DashboardRenderer.tsx`)
+### Changes
 
-Add `<Tooltip>` wrappers to interactive elements that lack them:
-- **KPI cards**: tooltip showing the metric label + change detail
-- **Chart blocks**: tooltip on chart title showing full title (useful when truncated)
-- **Agent cards**: tooltip showing full `coreFunctionality` text
-- **Scenario panels**: tooltip on title showing description preview
+#### 1. Remove global FilterBar (`DashboardRenderer.tsx`)
+- Delete the `FilterBar` import and its rendering block (lines 394-397)
+- Remove `filterValues` state and `handleFilterChange` handler
+- Add new `drillFilters` state: `Record<string, { field: string; value: string }>` keyed by `chartId`
+- Add `toggleDrillFilter(chartId, field, value)` function that adds or removes a filter entry
+- Compute `activeDrillValues` from drillFilters for passing to charts and tables
 
-KpiCard already has hover effects; wrap it in a Tooltip showing `"{metric.label}: {metric.value} ({metric.change})"`.
+#### 2. New `ActiveFilterPills` component (inline in `DashboardRenderer.tsx`)
+- Renders above sections when any drill filters are active
+- Each pill shows the filter value with an ✕ button
+- Styled with dashboard branding colors (`primaryContainer`/`onPrimaryContainer`)
+- Clicking ✕ removes that specific filter; "Clear all" link clears everything
 
-### 3. Enhance chatbot system prompt for tab/page awareness (`dashboard-chat/index.ts`)
+#### 3. Make charts clickable (`ChartBlock.tsx`)
+- Accept new prop: `onDrillDown: (chartId: string, field: string, value: string) => void`
+- Accept new prop: `activeDrillValues: Record<string, { field: string; value: string }>`
+- For **bar/horizontalBar/line/area**: add `onClick` handler to Recharts `Bar`/`Line`/`Area` that extracts the clicked label (`name`) and calls `onDrillDown`
+- For **pie/doughnut**: add `onClick` on `Pie` component; extract `name` from payload
+- For **funnel**: add `onClick` on `Funnel`
+- Highlight the active/selected segment visually (increased opacity or stroke) based on `activeDrillValues`
+- Add `cursor: pointer` styling to clickable chart elements
 
-Expand the system prompt to include:
-- **Navigation context**: list all nav items with their IDs and labels so the AI knows what tabs exist
-- **Agentic Workforce context**: serialize agent names, functionality, and interfacing teams; note WIP status
-- **CFO Scenarios context**: already included but add the slider details (labels, ranges, defaults)
-- **Candidate context**: include candidate name, tagline, links
-- **Tab purpose mapping**: add a paragraph explaining each standard tab type (overview = KPIs summary, cfo-view = scenario analysis, agentic-workforce = AI agent proposals, etc.)
+#### 4. Update DataTable filtering (`DataTable.tsx`)
+- Change `filterValues` prop type from `Record<string, string>` to accept the new drill filter format: `Array<{ field: string; value: string }>`
+- Filter rows where ANY column value matches ALL active filter values (AND logic across filters)
+- Display active filter pills inline in the table header area
+
+#### 5. Wire it all together (`DashboardRenderer.tsx` → `SectionBlock`)
+- Pass `onDrillDown` and `activeDrillValues` through `SectionBlock` to both `ChartBlock` and `DataTable`
+- Clear drill filters on nav tab change (reset when `activeNav` changes)
 
 ### Files Changed
 
 | File | Change |
 |---|---|
-| `package.json` | Add `react-markdown` dependency |
-| `src/components/live-dashboard/DashboardChatbot.tsx` | Import ReactMarkdown, render assistant messages with markdown |
-| `src/components/live-dashboard/DashboardRenderer.tsx` | Add Tooltip wrappers to KPI cards, chart titles, agent cards |
-| `src/components/live-dashboard/KpiCard.tsx` | Accept optional tooltip prop or wrap internally |
-| `supabase/functions/dashboard-chat/index.ts` | Enrich system prompt with navigation tabs, agentic workforce, candidate info, and tab purpose descriptions |
+| `src/components/live-dashboard/DashboardRenderer.tsx` | Remove FilterBar; add drillFilters state, ActiveFilterPills, pass drill props to SectionBlock |
+| `src/components/live-dashboard/ChartBlock.tsx` | Add onClick handlers to all chart types; accept onDrillDown + activeDrillValues props; highlight selected segments |
+| `src/components/live-dashboard/DataTable.tsx` | Update filtering to use drill filter array with AND logic; show filter pills in table header |
+| `src/components/live-dashboard/FilterBar.tsx` | No changes (remains available but unused by live renderer) |
+
+### What stays the same
+- Schema (`schema.ts`) — no changes; `globalFilters` stays optional
+- Edge functions — no changes
+- Database — no changes
+- CFO scenarios and agentic workforce sections — unaffected
 

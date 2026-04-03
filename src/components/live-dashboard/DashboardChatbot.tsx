@@ -118,7 +118,12 @@ export default function DashboardChatbot({ dashboardId, companyName, jobTitle, d
                   <button
                     key={i}
                     onClick={() => send(s)}
-                    className="text-xs px-3 py-1.5 rounded-full border hover:bg-secondary transition-colors text-left"
+                    className="text-xs px-3 py-1.5 rounded-2xl transition-all duration-300 hover:-translate-y-px text-left"
+                    style={{
+                      background: "var(--dash-surface, #E0E5EC)",
+                      color: "var(--dash-on-surface, #3D4852)",
+                      boxShadow: "5px 5px 10px rgb(163,177,198,0.6), -5px -5px 10px rgba(255,255,255,0.5)",
+                    }}
                   >
                     {s}
                   </button>

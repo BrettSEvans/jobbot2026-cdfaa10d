@@ -454,14 +454,12 @@ export default function DashboardRenderer({ data }: { data: DashboardData }) {
               {/* Candidate hero — only on overview */}
               {isOverview && <CandidateHero data={data} />}
 
-              {/* Global filters */}
-              {data.globalFilters && data.globalFilters.length > 0 && (
-                <FilterBar filters={data.globalFilters} values={filterValues} onChange={handleFilterChange} />
-              )}
+              {/* Active drill-down filter pills */}
+              <ActiveFilterPills filters={drillFilters} onRemove={removeDrillFilter} onClearAll={() => setDrillFilters({})} />
 
               {/* Sections */}
               {!isCfoView && !isAgenticView && sectionsToRender.map((section) => (
-                <SectionBlock key={section.id} section={section} filterValues={filterValues} />
+                <SectionBlock key={section.id} section={section} drillFilters={drillFilters} onDrillDown={toggleDrillFilter} />
               ))}
 
               {/* CFO Scenarios */}

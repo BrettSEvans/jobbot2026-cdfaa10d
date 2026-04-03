@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useCallback } from "react";
 import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
@@ -13,6 +13,17 @@ const COLORS = [
   "hsl(340, 65%, 50%)", "hsl(200, 70%, 50%)", "hsl(45, 80%, 55%)",
   "hsl(280, 50%, 55%)", "hsl(15, 75%, 55%)",
 ];
+
+export interface DrillFilter {
+  field: string;
+  value: string;
+}
+
+interface ChartBlockProps {
+  config: ChartConfig;
+  onDrillDown?: (chartId: string, field: string, value: string) => void;
+  activeDrillValues?: Record<string, DrillFilter>;
+}
 
 function toChartData(config: ChartConfig) {
   return config.data.labels.map((label, i) => {
@@ -33,25 +44,20 @@ function toPieData(config: ChartConfig) {
   }));
 }
 
-/* ── Filter chart data by active global filters ── */
-function useFilteredChartData(config: ChartConfig, filterValues: Record<string, string>) {
-  return useMemo(() => {
-    const rawData = toChartData(config);
-    const activeFilters = Object.entries(filterValues).filter(([, v]) => v);
-    if (!activeFilters.length) return rawData;
+/* ── Determine if a label is actively selected ── */
+function isLabelActive(label: string, chartId: string, activeDrillValues?: Record<string, DrillFilter>) {
+  if (!activeDrillValues) return null; // no filtering active
+  const myFilter = activeDrillValues[chartId];
+  if (!myFilter) return null; // this chart has no active filter
+  return myFilter.value === label;
+}
 
-    // Filter labels that match any active filter value
-    return rawData.filter((point) => {
-      return activeFilters.every(([, value]) => {
-        // Keep point if its name matches a filter value, or if no label-level filtering applies
-        return point.name === value || !config.data.labels.includes(value);
-      });
-    });
-  }, [config, filterValues]);
+function hasAnyActiveFilter(activeDrillValues?: Record<string, DrillFilter>) {
+  return activeDrillValues && Object.keys(activeDrillValues).length > 0;
 }
 
 /* ── Waterfall chart ── */
-function WaterfallChart({ config }: { config: ChartConfig }) {
+function WaterfallChart({ config, onDrillDown, activeDrillValues }: ChartBlockProps) {
   const ds = config.data.datasets[0];
   if (!ds) return null;
 
@@ -60,7 +66,6 @@ function WaterfallChart({ config }: { config: ChartConfig }) {
     return { name: label, value: val };
   });
 
-  // Compute running total for stacked invisible base
   let cumulative = 0;
   const stackedData = waterfallData.map((item, i) => {
     const isTotal = i === waterfallData.length - 1;
@@ -79,10 +84,21 @@ function WaterfallChart({ config }: { config: ChartConfig }) {
         <YAxis tick={{ fontSize: 11 }} />
         <Tooltip formatter={(v: number) => v.toLocaleString()} />
         <Bar dataKey="base" stackId="wf" fill="transparent" />
-        <Bar dataKey="height" stackId="wf" radius={[4, 4, 0, 0]}>
-          {stackedData.map((entry, i) => (
-            <Cell key={i} fill={entry.isTotal ? COLORS[1] : entry.positive ? COLORS[2] : COLORS[3]} />
-          ))}
+        <Bar dataKey="height" stackId="wf" radius={[4, 4, 0, 0]}
+          onClick={(d: any) => onDrillDown?.(config.id, "name", d?.name)}
+          cursor="pointer"
+        >
+          {stackedData.map((entry, i) => {
+            const active = isLabelActive(entry.name, config.id, activeDrillValues);
+            return (
+              <Cell key={i}
+                fill={entry.isTotal ? COLORS[1] : entry.positive ? COLORS[2] : COLORS[3]}
+                opacity={active === false ? 0.3 : 1}
+                stroke={active === true ? "#000" : "none"}
+                strokeWidth={active === true ? 2 : 0}
+              />
+            );
+          })}
           <LabelList dataKey="height" position="top" formatter={(v: number) => v.toLocaleString()} style={{ fontSize: 10 }} />
         </Bar>
       </BarChart>
@@ -90,8 +106,8 @@ function WaterfallChart({ config }: { config: ChartConfig }) {
   );
 }
 
-/* ── Gantt chart (horizontal bars with time offsets) ── */
-function GanttChart({ config }: { config: ChartConfig }) {
+/* ── Gantt chart ── */
+function GanttChart({ config, onDrillDown, activeDrillValues }: ChartBlockProps) {
   const ds = config.data.datasets[0];
   if (!ds) return null;
 
@@ -110,10 +126,21 @@ function GanttChart({ config }: { config: ChartConfig }) {
         <XAxis type="number" tick={{ fontSize: 11 }} />
         <Tooltip />
         <Bar dataKey="start" stackId="gantt" fill="transparent" />
-        <Bar dataKey="duration" stackId="gantt" radius={[0, 4, 4, 0]}>
-          {ganttData.map((_, i) => (
-            <Cell key={i} fill={COLORS[i % COLORS.length]} />
-          ))}
+        <Bar dataKey="duration" stackId="gantt" radius={[0, 4, 4, 0]}
+          onClick={(d: any) => onDrillDown?.(config.id, "name", d?.name)}
+          cursor="pointer"
+        >
+          {ganttData.map((entry, i) => {
+            const active = isLabelActive(entry.name, config.id, activeDrillValues);
+            return (
+              <Cell key={i}
+                fill={COLORS[i % COLORS.length]}
+                opacity={active === false ? 0.3 : 1}
+                stroke={active === true ? "#000" : "none"}
+                strokeWidth={active === true ? 2 : 0}
+              />
+            );
+          })}
         </Bar>
       </BarChart>
     </ResponsiveContainer>
@@ -121,7 +148,7 @@ function GanttChart({ config }: { config: ChartConfig }) {
 }
 
 /* ── Heatmap ── */
-function HeatmapChart({ config }: { config: ChartConfig }) {
+function HeatmapChart({ config }: ChartBlockProps) {
   const ds = config.data.datasets;
   if (!ds.length) return null;
 
@@ -148,11 +175,9 @@ function HeatmapChart({ config }: { config: ChartConfig }) {
   return (
     <div className="overflow-x-auto">
       <svg width={width} height={height} className="text-xs">
-        {/* Column headers */}
         {config.data.labels.map((label, ci) => (
           <text key={ci} x={leftPad + ci * cellW + cellW / 2} y={topPad - 8} textAnchor="middle" fontSize={10} fill="currentColor">{label}</text>
         ))}
-        {/* Rows */}
         {ds.map((dataset, ri) => (
           <g key={ri}>
             <text x={leftPad - 8} y={topPad + ri * cellH + cellH / 2 + 4} textAnchor="end" fontSize={10} fill="currentColor">{dataset.label}</text>
@@ -170,7 +195,7 @@ function HeatmapChart({ config }: { config: ChartConfig }) {
 }
 
 /* ── Treemap ── */
-function TreemapChart({ config }: { config: ChartConfig }) {
+function TreemapChart({ config }: ChartBlockProps) {
   const pieData = toPieData(config);
   if (!pieData.length) return null;
 
@@ -201,16 +226,30 @@ function TreemapChart({ config }: { config: ChartConfig }) {
 }
 
 /* ── Main ChartBlock ── */
-export default function ChartBlock({ config, filterValues = {} }: { config: ChartConfig; filterValues?: Record<string, string> }) {
-  const data = useFilteredChartData(config, filterValues);
+export default function ChartBlock({ config, onDrillDown, activeDrillValues }: ChartBlockProps) {
+  const data = useMemo(() => toChartData(config), [config]);
   const datasets = config.data.datasets;
+
+  const handleClick = useCallback((payload: any) => {
+    if (!onDrillDown || !payload) return;
+    const label = payload.name || payload.payload?.name;
+    if (label) onDrillDown(config.id, "name", label);
+  }, [onDrillDown, config.id]);
+
+  const cellOpacity = useCallback((label: string) => {
+    const active = isLabelActive(label, config.id, activeDrillValues);
+    if (active === null && !hasAnyActiveFilter(activeDrillValues)) return 1;
+    if (active === true) return 1;
+    if (active === false) return 0.3;
+    return 0.7; // other charts have filters but not this one
+  }, [config.id, activeDrillValues]);
 
   const renderChart = () => {
     switch (config.type) {
       case "waterfall":
-        return <WaterfallChart config={config} />;
+        return <WaterfallChart config={config} onDrillDown={onDrillDown} activeDrillValues={activeDrillValues} />;
       case "gantt":
-        return <GanttChart config={config} />;
+        return <GanttChart config={config} onDrillDown={onDrillDown} activeDrillValues={activeDrillValues} />;
       case "heatmap":
         return <HeatmapChart config={config} />;
       case "treemap":
@@ -236,7 +275,13 @@ export default function ChartBlock({ config, filterValues = {} }: { config: Char
               <Tooltip />
               <Legend />
               {datasets.map((ds, i) => (
-                <Bar key={ds.label} dataKey={ds.label} fill={COLORS[i % COLORS.length]} radius={[4, 4, 0, 0]} />
+                <Bar key={ds.label} dataKey={ds.label} fill={COLORS[i % COLORS.length]} radius={[4, 4, 0, 0]}
+                  onClick={handleClick} cursor="pointer"
+                >
+                  {data.map((point) => (
+                    <Cell key={point.name} opacity={cellOpacity(point.name)} />
+                  ))}
+                </Bar>
               ))}
             </BarChart>
           </ResponsiveContainer>
@@ -245,14 +290,14 @@ export default function ChartBlock({ config, filterValues = {} }: { config: Char
       case "line":
         return (
           <ResponsiveContainer width="100%" height={320}>
-            <LineChart data={data}>
+            <LineChart data={data} onClick={(e: any) => e?.activeLabel && onDrillDown?.(config.id, "name", e.activeLabel)}>
               <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
               <XAxis dataKey="name" tick={{ fontSize: 12 }} />
               <YAxis tick={{ fontSize: 12 }} />
               <Tooltip />
               <Legend />
               {datasets.map((ds, i) => (
-                <Line key={ds.label} type="monotone" dataKey={ds.label} stroke={COLORS[i % COLORS.length]} strokeWidth={2} dot={{ r: 3 }} />
+                <Line key={ds.label} type="monotone" dataKey={ds.label} stroke={COLORS[i % COLORS.length]} strokeWidth={2} dot={{ r: 3 }} cursor="pointer" />
               ))}
             </LineChart>
           </ResponsiveContainer>
@@ -261,27 +306,34 @@ export default function ChartBlock({ config, filterValues = {} }: { config: Char
       case "area":
         return (
           <ResponsiveContainer width="100%" height={320}>
-            <AreaChart data={data}>
+            <AreaChart data={data} onClick={(e: any) => e?.activeLabel && onDrillDown?.(config.id, "name", e.activeLabel)}>
               <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
               <XAxis dataKey="name" tick={{ fontSize: 12 }} />
               <YAxis tick={{ fontSize: 12 }} />
               <Tooltip />
               <Legend />
               {datasets.map((ds, i) => (
-                <Area key={ds.label} type="monotone" dataKey={ds.label} stroke={COLORS[i % COLORS.length]} fill={COLORS[i % COLORS.length]} fillOpacity={0.2} />
+                <Area key={ds.label} type="monotone" dataKey={ds.label} stroke={COLORS[i % COLORS.length]} fill={COLORS[i % COLORS.length]} fillOpacity={0.2} cursor="pointer" />
               ))}
             </AreaChart>
           </ResponsiveContainer>
         );
 
       case "doughnut":
-      case "pie":
+      case "pie": {
+        const pieData = toPieData(config);
         return (
           <ResponsiveContainer width="100%" height={320}>
             <PieChart>
-              <Pie data={toPieData(config)} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={config.type === "doughnut" ? 60 : 0} outerRadius={110} label>
-                {toPieData(config).map((_, i) => (
-                  <Cell key={i} fill={COLORS[i % COLORS.length]} />
+              <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%"
+                innerRadius={config.type === "doughnut" ? 60 : 0} outerRadius={110} label
+                onClick={handleClick} cursor="pointer"
+              >
+                {pieData.map((entry, i) => (
+                  <Cell key={i} fill={COLORS[i % COLORS.length]} opacity={cellOpacity(entry.name)} 
+                    stroke={isLabelActive(entry.name, config.id, activeDrillValues) === true ? "#000" : "none"}
+                    strokeWidth={isLabelActive(entry.name, config.id, activeDrillValues) === true ? 2 : 0}
+                  />
                 ))}
               </Pie>
               <Tooltip />
@@ -289,6 +341,7 @@ export default function ChartBlock({ config, filterValues = {} }: { config: Char
             </PieChart>
           </ResponsiveContainer>
         );
+      }
 
       case "radar":
         return (
@@ -321,20 +374,24 @@ export default function ChartBlock({ config, filterValues = {} }: { config: Char
           </ResponsiveContainer>
         );
 
-      case "funnel":
+      case "funnel": {
+        const funnelData = toPieData(config);
         return (
           <ResponsiveContainer width="100%" height={320}>
             <FunnelChart>
               <Tooltip />
-              <Funnel dataKey="value" data={toPieData(config)} isAnimationActive>
-                {toPieData(config).map((_, i) => (
-                  <Cell key={i} fill={COLORS[i % COLORS.length]} />
+              <Funnel dataKey="value" data={funnelData} isAnimationActive
+                onClick={handleClick} cursor="pointer"
+              >
+                {funnelData.map((entry, i) => (
+                  <Cell key={i} fill={COLORS[i % COLORS.length]} opacity={cellOpacity(entry.name)} />
                 ))}
                 <LabelList position="right" fill="#000" stroke="none" dataKey="name" />
               </Funnel>
             </FunnelChart>
           </ResponsiveContainer>
         );
+      }
 
       default:
         return (
@@ -346,7 +403,13 @@ export default function ChartBlock({ config, filterValues = {} }: { config: Char
               <Tooltip />
               <Legend />
               {datasets.map((ds, i) => (
-                <Bar key={ds.label} dataKey={ds.label} fill={COLORS[i % COLORS.length]} radius={[4, 4, 0, 0]} />
+                <Bar key={ds.label} dataKey={ds.label} fill={COLORS[i % COLORS.length]} radius={[4, 4, 0, 0]}
+                  onClick={handleClick} cursor="pointer"
+                >
+                  {data.map((point) => (
+                    <Cell key={point.name} opacity={cellOpacity(point.name)} />
+                  ))}
+                </Bar>
               ))}
             </BarChart>
           </ResponsiveContainer>

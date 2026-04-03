@@ -1,10 +1,9 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import type { DashboardData, DashboardSection, DashboardBranding } from "@/lib/dashboard/schema";
 import KpiCard from "./KpiCard";
-import ChartBlock from "./ChartBlock";
+import ChartBlock, { type DrillFilter } from "./ChartBlock";
 import DataTable from "./DataTable";
 import ScenarioPanel from "./ScenarioPanel";
-import FilterBar from "./FilterBar";
 import {
   ExternalLink, Linkedin, User, Menu, X,
   LayoutDashboard, TrendingUp, Users, DollarSign, Target,
@@ -148,8 +147,55 @@ function CandidateHero({ data }: { data: DashboardData }) {
   );
 }
 
+/* ── Active Filter Pills ── */
+function ActiveFilterPills({ filters, onRemove, onClearAll }: {
+  filters: Record<string, DrillFilter>;
+  onRemove: (chartId: string) => void;
+  onClearAll: () => void;
+}) {
+  const entries = Object.entries(filters);
+  if (!entries.length) return null;
+
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      {entries.map(([chartId, f]) => (
+        <span
+          key={chartId}
+          className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium"
+          style={{
+            background: "var(--dash-primary-container, hsl(var(--accent)))",
+            color: "var(--dash-on-primary-container, hsl(var(--accent-foreground)))",
+          }}
+        >
+          {f.value}
+          <button
+            onClick={() => onRemove(chartId)}
+            className="ml-0.5 rounded-full hover:opacity-70 transition-opacity"
+            aria-label={`Remove filter ${f.value}`}
+          >
+            <X className="h-3 w-3" />
+          </button>
+        </span>
+      ))}
+      {entries.length > 1 && (
+        <button
+          onClick={onClearAll}
+          className="text-xs underline opacity-60 hover:opacity-100 transition-opacity"
+          style={{ color: "var(--dash-on-surface, hsl(var(--foreground)))" }}
+        >
+          Clear all
+        </button>
+      )}
+    </div>
+  );
+}
+
 /* ── Section Block ── */
-function SectionBlock({ section, filterValues }: { section: DashboardSection; filterValues: Record<string, string> }) {
+function SectionBlock({ section, drillFilters, onDrillDown }: {
+  section: DashboardSection;
+  drillFilters: Record<string, DrillFilter>;
+  onDrillDown: (chartId: string, field: string, value: string) => void;
+}) {
   const hasMetrics = section.metrics && section.metrics.length > 0;
   const hasCharts = section.charts && section.charts.length > 0;
   const hasTables = section.tables && section.tables.length > 0;
@@ -197,7 +243,7 @@ function SectionBlock({ section, filterValues }: { section: DashboardSection; fi
       {hasCharts && (
         <div className={`grid ${chartGrid()} gap-4`}>
           {section.charts!.map((c) => (
-            <ChartBlock key={c.id} config={c} filterValues={filterValues} />
+            <ChartBlock key={c.id} config={c} onDrillDown={onDrillDown} activeDrillValues={drillFilters} />
           ))}
         </div>
       )}
@@ -205,7 +251,7 @@ function SectionBlock({ section, filterValues }: { section: DashboardSection; fi
       {hasTables && (
         <div className="space-y-4">
           {section.tables!.map((t) => (
-            <DataTable key={t.id} config={t} filterValues={filterValues} />
+            <DataTable key={t.id} config={t} drillFilters={drillFilters} />
           ))}
         </div>
       )}
@@ -216,7 +262,7 @@ function SectionBlock({ section, filterValues }: { section: DashboardSection; fi
 /* ── Main Renderer ── */
 export default function DashboardRenderer({ data }: { data: DashboardData }) {
   const [activeNav, setActiveNav] = useState(data.navigation?.[0]?.id || "");
-  const [filterValues, setFilterValues] = useState<Record<string, string>>({});
+  const [drillFilters, setDrillFilters] = useState<Record<string, DrillFilter>>({});
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isMobile = useIsMobile();
   const contentRef = useRef<HTMLDivElement>(null);
@@ -225,13 +271,30 @@ export default function DashboardRenderer({ data }: { data: DashboardData }) {
 
   useGoogleFonts(data.branding);
 
-  // Scroll content to top on nav change
+  // Scroll content to top and clear drill filters on nav change
   useEffect(() => {
     contentRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+    setDrillFilters({});
   }, [activeNav]);
 
-  const handleFilterChange = (id: string, value: string) => {
-    setFilterValues((prev) => ({ ...prev, [id]: value }));
+  const toggleDrillFilter = (chartId: string, field: string, value: string) => {
+    setDrillFilters((prev) => {
+      const existing = prev[chartId];
+      if (existing && existing.value === value) {
+        const next = { ...prev };
+        delete next[chartId];
+        return next;
+      }
+      return { ...prev, [chartId]: { field, value } };
+    });
+  };
+
+  const removeDrillFilter = (chartId: string) => {
+    setDrillFilters((prev) => {
+      const next = { ...prev };
+      delete next[chartId];
+      return next;
+    });
   };
 
   const hasNav = data.navigation && data.navigation.length > 0;
@@ -391,14 +454,12 @@ export default function DashboardRenderer({ data }: { data: DashboardData }) {
               {/* Candidate hero — only on overview */}
               {isOverview && <CandidateHero data={data} />}
 
-              {/* Global filters */}
-              {data.globalFilters && data.globalFilters.length > 0 && (
-                <FilterBar filters={data.globalFilters} values={filterValues} onChange={handleFilterChange} />
-              )}
+              {/* Active drill-down filter pills */}
+              <ActiveFilterPills filters={drillFilters} onRemove={removeDrillFilter} onClearAll={() => setDrillFilters({})} />
 
               {/* Sections */}
               {!isCfoView && !isAgenticView && sectionsToRender.map((section) => (
-                <SectionBlock key={section.id} section={section} filterValues={filterValues} />
+                <SectionBlock key={section.id} section={section} drillFilters={drillFilters} onDrillDown={toggleDrillFilter} />
               ))}
 
               {/* CFO Scenarios */}

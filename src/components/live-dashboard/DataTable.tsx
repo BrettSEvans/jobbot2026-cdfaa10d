@@ -3,6 +3,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import type { TableConfig } from "@/lib/dashboard/schema";
+import type { DrillFilter } from "./ChartBlock";
 
 function generateRows(config: TableConfig): Array<Record<string, any>> {
   if (config.rows?.length) return config.rows;
@@ -52,24 +53,30 @@ function generateField(gen: any, rng: () => number, idx: number): string {
   }
 }
 
-export default function DataTable({ config, filterValues = {} }: { config: TableConfig; filterValues?: Record<string, string> }) {
+export default function DataTable({
+  config,
+  drillFilters = {},
+}: {
+  config: TableConfig;
+  drillFilters?: Record<string, DrillFilter>;
+}) {
   const allRows = useMemo(() => generateRows(config), [config]);
 
-  const filteredRows = useMemo(() => {
-    const activeFilters = Object.entries(filterValues).filter(([, v]) => v);
-    if (!activeFilters.length) return allRows;
+  const activeFilterValues = useMemo(() => {
+    return Object.values(drillFilters).map((f) => f.value);
+  }, [drillFilters]);
 
-    return allRows.filter((row) =>
-      activeFilters.every(([filterKey, filterVal]) => {
-        // Check if any column value matches the filter
-        const colKeys = config.columns.map((c) => c.key);
-        return colKeys.some((ck) => {
-          const cellVal = String(row[ck] ?? "");
-          return cellVal === filterVal;
-        });
-      })
-    );
-  }, [allRows, filterValues, config.columns]);
+  const filteredRows = useMemo(() => {
+    if (!activeFilterValues.length) return allRows;
+
+    return allRows.filter((row) => {
+      const colKeys = config.columns.map((c) => c.key);
+      // AND logic: every active filter value must match at least one column
+      return activeFilterValues.every((filterVal) =>
+        colKeys.some((ck) => String(row[ck] ?? "") === filterVal)
+      );
+    });
+  }, [allRows, activeFilterValues, config.columns]);
 
   const isFiltered = filteredRows.length !== allRows.length;
   const displayRows = filteredRows.slice(0, 50);

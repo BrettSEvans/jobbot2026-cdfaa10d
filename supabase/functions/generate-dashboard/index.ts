@@ -210,7 +210,7 @@ Company Branding (derive Material You tonal palette from these colors):
 - CSS-Extracted Fonts: ${JSON.stringify(branding.extractedFonts || [])}
 - Logo URL: ${branding.logo || branding.images?.logo || 'N/A'}
 Use the dominant extracted colors as the seed for the Material You tonal palette in the branding object.
-` : 'No branding data — use teal (#0a8080) as primary, coral (#f45d48) as secondary.';
+` : 'No branding data — use teal (#0a8080) as primary, coral (#f45d48) as secondary. Use #E0E5EC as surface/background (neumorphic base grey). Use "Plus Jakarta Sans" for fontHeading and "DM Sans" for fontBody.';
 
   const competitorContext = competitors?.length ? `\nKey Competitors: ${competitors.join(', ')}` : '';
   const customerContext = customers?.length ? `\nTarget Customers: ${customers.join(', ')}` : '';

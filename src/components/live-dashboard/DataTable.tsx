@@ -168,7 +168,7 @@ export default function DataTable({
         </Table>
       </div>
       {filteredRows.length > 50 && (
-        <div className="px-4 py-2 text-xs border-t" style={{ color: "var(--dash-on-surface, hsl(var(--muted-foreground)))", opacity: 0.6, borderColor: "var(--dash-outline, hsl(var(--border)))" }}>
+        <div className="px-4 py-2 text-xs" style={{ color: "var(--dash-on-surface, #6B7280)", opacity: 0.6 }}>
           Showing 50 of {filteredRows.length} rows
         </div>
       )}

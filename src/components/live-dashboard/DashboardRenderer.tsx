@@ -93,9 +93,9 @@ function brandingStyle(b?: DashboardBranding): React.CSSProperties {
     "--dash-surface-variant": b.surfaceVariant,
     "--dash-outline": b.outline,
     "--dash-error": b.error,
-    "--dash-font-heading": b.fontHeading || "inherit",
-    "--dash-font-body": b.fontBody || "inherit",
-    "--dash-background": b.background || b.surface || "hsl(var(--background))",
+    "--dash-font-heading": b.fontHeading || "Plus Jakarta Sans, sans-serif",
+    "--dash-font-body": b.fontBody || "DM Sans, sans-serif",
+    "--dash-background": b.background || "#E0E5EC",
   } as React.CSSProperties;
 }
 

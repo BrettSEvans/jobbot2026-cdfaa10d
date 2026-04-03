@@ -73,9 +73,12 @@ function parseAiJson(raw: string): any | null {
   // 1) Try raw extracted JSON first (AI usually outputs valid JSON)
   try { return JSON.parse(extracted); } catch (_) { /* continue */ }
 
-  // 2) Try with trailing-comma and Date() fixes only (safe transforms)
+  // 2) Try with trailing-comma, Date(), and bare-minus fixes
   const lightSanitized = extracted
     .replace(/new\s+Date\([^)]*\)/g, '"2026-01-01"')
+    .replace(/":\s*-\s*([},\]])/g, '": 0$1')
+    .replace(/":\s*-\s*"/g, '": "-"')
+    .replace(/:\s*(-)\s*,/g, ': 0,')
     .replace(/,(\s*[}\]])/g, '$1');
   try { return JSON.parse(lightSanitized); } catch (_) { /* continue */ }
 

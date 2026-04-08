@@ -334,8 +334,46 @@ export default function ChartBlock({ config, onDrillDown, activeDrillValues }: C
     );
   }, []);
 
+  if (!config.data?.labels || !config.data?.datasets) {
+    return (
+      <div className="rounded-[32px] p-5" style={{ background: "var(--dash-surface, #E0E5EC)" }}>
+        <h4 className="text-sm font-bold mb-3" style={{ color: "var(--dash-on-surface, #3D4852)" }}>{config.title}</h4>
+        <p className="text-xs" style={{ color: "var(--dash-on-surface, #6B7280)" }}>No chart data available</p>
+      </div>
+    );
+  }
+
   const renderChart = () => {
     switch (config.type) {
+      case "sparkline-line":
+      case "sparkline-bar": {
+        const sparkData = toChartData(config);
+        const configAny = config as any;
+        return (
+          <div className="flex flex-col gap-1">
+            <div className="text-2xl font-bold" style={{ color: "var(--dash-on-surface, #3D4852)" }}>{configAny.value || ""}</div>
+            {configAny.change && (
+              <div className="text-xs font-medium" style={{ color: configAny.change?.startsWith("-") ? "#ef4444" : "#22c55e" }}>{configAny.change}</div>
+            )}
+            <ResponsiveContainer width="100%" height={48}>
+              {config.type === "sparkline-line" ? (
+                <LineChart data={sparkData}>
+                  {datasets.map((ds, i) => (
+                    <Line key={ds.label} type="monotone" dataKey={ds.label} stroke={COLORS[i % COLORS.length]} strokeWidth={2} dot={false} />
+                  ))}
+                </LineChart>
+              ) : (
+                <BarChart data={sparkData}>
+                  {datasets.map((ds, i) => (
+                    <Bar key={ds.label} dataKey={ds.label} fill={COLORS[i % COLORS.length]} radius={[2, 2, 0, 0]} />
+                  ))}
+                </BarChart>
+              )}
+            </ResponsiveContainer>
+          </div>
+        );
+      }
+
       case "waterfall":
         return <WaterfallChart config={config} onDrillDown={onDrillDown} activeDrillValues={activeDrillValues} />;
       case "gantt":

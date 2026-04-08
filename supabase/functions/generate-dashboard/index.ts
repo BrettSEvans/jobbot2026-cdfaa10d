@@ -275,6 +275,14 @@ ${JSON.stringify(researchedSections, null, 2)}
 5. Each section "description" must state the KEY TAKEAWAY — what the viewer should conclude, not just topic context. Bad: "This section covers pipeline data." Good: "Pipeline velocity has increased 23% QoQ, suggesting this role should focus on conversion optimization rather than top-of-funnel growth."
 6. If a section has a "componentHint" from the research agent, follow it UNLESS it says "metrics-only" for the overview — override to include charts for richer presentation.
 
+## JD INITIATIVE EXTRACTION (CRITICAL):
+Scan the job description for NAMED PROGRAMS, STRATEGIC INITIATIVES, DELIVERABLES, and RECURRING ACTIVITIES (e.g., "build a coaching practice", "open-source playbook", "shared timelines with customers", "webinars / IRL events", "GTM motions", "partner enablement"). Each substantive initiative MUST become its own dedicated dashboard section/tab with:
+- A navigation entry with a descriptive label matching the initiative
+- 2-4 KPI metrics specific to that initiative (e.g., "Playbook Downloads", "Coaching Sessions Completed", "Event Attendance", "Timeline Adherence Rate")
+- 1-2 charts showing progress, adoption, or impact of that initiative
+- A description explaining how this initiative drives the department's goals
+There is NO cap on the number of sections — generate as many tabs as needed to faithfully represent every key initiative in the JD. Quality and coverage matter more than brevity.
+
 
 For each researched section:
 - Use the provided id, label, icon, and description exactly
@@ -285,16 +293,24 @@ For each researched section:
 - Only generate tables for sections that have table specs AND where density is appropriate
 - Each table must have generateRows count >= 500
 - OVERRIDE: If the overview/first section has componentHint "metrics-only", still add 1-2 charts for a richer executive summary
+- ADDITIONALLY: After generating the researched sections, scan the job description for any named initiatives or deliverables NOT already covered by the research agent's sections. Create additional sections for those initiatives.
 `
     : `
 SECTION REQUIREMENTS:
-- 5-7 sections covering key areas for this role, plus always include "agentic-workforce" and "cfo-view" in navigation
+- Generate sections covering ALL key areas for this role — there is NO maximum tab limit. Create as many sections as needed to faithfully represent every strategic initiative, deliverable, and focus area in the job description. Always include "agentic-workforce" and "cfo-view" in navigation.
 - Section 1 MUST be a COMPREHENSIVE overview/executive summary with 4-6 department-level KPIs AND 1-2 charts. Use "split-panel" or "default" layout — NOT "kpi-spotlight". Include metrics like revenue impact, budget, headcount, growth rates, efficiency ratios relevant to the department. Add a trend chart or composition chart for visual impact.
 - Follow STORYTELLING RULES: last section = ROI/action
 - Each section: 2-4 metrics, 1-2 charts (VARY chart types — see CHART TYPE DIVERSITY below)
 - Tables only in 2-3 sections (deep-dive/evidence sections), with generateRows count >= 500
 - Assign a UNIQUE "layout" mode to each section (see LAYOUT MODES below) — NO two adjacent sections may share the same layout
 - Include at least ONE horizontalBar chart (Gantt-style) with time-based labels
+
+## JD INITIATIVE EXTRACTION (CRITICAL):
+Scan the job description for NAMED PROGRAMS, STRATEGIC INITIATIVES, DELIVERABLES, and RECURRING ACTIVITIES (e.g., "build a coaching practice", "open-source playbook", "shared timelines with customers", "webinars / IRL events", "GTM motions", "partner enablement"). Each substantive initiative MUST become its own dedicated dashboard section/tab with:
+- A navigation entry with a descriptive label matching the initiative
+- 2-4 KPI metrics specific to that initiative (e.g., "Playbook Downloads", "Coaching Sessions Completed", "Event Attendance", "Timeline Adherence Rate")
+- 1-2 charts showing progress, adoption, or impact of that initiative
+- A description explaining how this initiative drives the department's goals
 `;
 
   return `You are a business intelligence data architect and expert dashboard UX designer. Generate a structured JSON object for a dashboard that tells a DIVERSE visual story across sections. The dashboard uses a NEUMORPHIC (Soft UI) design system with tactile depth and dual shadows.

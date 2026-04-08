@@ -1,47 +1,61 @@
 
 
-## Fix: Convert "Key Customer Timeline Progress" to a Proper Gantt Chart
+## Multi-Phase Gantt Chart with Color-Coded Phases
 
 ### Problem
-The Gantt chart renderer expects data as `[start, end]` number pairs (e.g., `[1, 5]` for weeks 1–5), but the AI generates plain scalar numbers. This makes `duration = end - start = 0`, resulting in invisible thin lines.
+Currently, each customer row in the Gantt chart gets a different color. The user wants all customers to show the **same set of phases** (e.g., "Technical Setup", "Integration", "UAT") distinguished by color, with a legend at the bottom.
+
+### Data Model Change
+
+The current Gantt chart uses a **single dataset** with one bar per customer. To show phases, we need **multiple datasets** — one per phase — where each dataset contains `[start, end]` pairs for every customer.
+
+**Current format (single dataset):**
+```json
+{
+  "type": "gantt",
+  "labels": ["Customer A", "Customer B"],
+  "datasets": [{ "label": "Timeline", "data": [[0, 8], [2, 10]] }]
+}
+```
+
+**New format (multi-dataset, one per phase):**
+```json
+{
+  "type": "gantt",
+  "labels": ["Customer A", "Customer B"],
+  "datasets": [
+    { "label": "Discovery", "data": [[0, 2], [2, 4]] },
+    { "label": "Technical Setup", "data": [[2, 5], [4, 7]] },
+    { "label": "Integration", "data": [[5, 7], [7, 9]] },
+    { "label": "UAT & Go-Live", "data": [[7, 8], [9, 10]] }
+  ]
+}
+```
 
 ### Changes
 
-**1. Fix the generation prompt** (`supabase/functions/generate-dashboard/index.ts`)
+**1. `src/components/live-dashboard/ChartBlock.tsx` — Rewrite GanttChart**
 
-Update the GANTT DATA FORMAT instruction to be explicit about the required array format:
+- Detect multi-dataset Gantt charts (datasets.length > 1) and render **stacked horizontal bars**, one `<Bar>` per phase/dataset, all using `stackId="gantt"`.
+- Each phase gets a consistent color from COLORS array, keyed by dataset index (not row index).
+- All rows for the same phase share the same color.
+- Add a `<Legend />` at the bottom showing phase names and their colors.
+- For each dataset, compute `duration = end - start` per customer and use a transparent `start` bar for offset.
+- Keep the single-dataset fallback for backward compatibility.
 
-```
-GANTT DATA FORMAT: Each dataset entry MUST be a [start, end] number pair (e.g. [0, 3], [2, 6]) 
-representing time units. Labels are task/milestone names. Use a SINGLE dataset. 
-Example: labels: ["Discovery Phase", "Implementation", "UAT"], 
-datasets: [{ label: "Timeline", data: [[0, 3], [2, 8], [7, 10]] }]
-```
+**2. `supabase/functions/generate-dashboard/index.ts` — Update prompt**
 
-**2. Make the GanttChart renderer resilient** (`src/components/live-dashboard/ChartBlock.tsx`)
-
-Add a fallback in `GanttChart` so if the AI produces plain numbers instead of arrays, the renderer auto-converts them into sequential ranges (each task gets a proportional bar width based on its value). Also enforce a minimum `barSize` of 20 and minimum duration of 1 to prevent invisible bars.
-
-```tsx
-// If data is scalar, convert to sequential gantt ranges
-const ganttData = config.data.labels.map((label, i) => {
-  const d = ds.data[i];
-  if (Array.isArray(d)) {
-    return { name: label, start: d[0], duration: Math.max(d[1] - d[0], 1), end: d[1] };
-  }
-  // Fallback: treat scalar as duration, stack sequentially
-  const val = d as number;
-  const prevEnd = i > 0 ? ganttData[i-1].end : 0; // won't work in map — use reduce instead
-  return { name: label, start: prevEnd, duration: Math.max(val, 1), end: prevEnd + Math.max(val, 1) };
-});
-```
-
-Will use a reduce loop instead of map for the sequential fallback.
+- Update the GANTT DATA FORMAT instruction to describe the multi-dataset phase format:
+  - Labels = customer/project names (Y-axis rows)
+  - Each dataset = one phase (e.g., "Technical Setup", "Integration")
+  - Each dataset's data = `[start, end]` pairs, one per label
+  - Phases should be sequential within each customer row
+  - Include a concrete example in the prompt
 
 ### Files to modify
 
 | File | Change |
 |------|--------|
-| `supabase/functions/generate-dashboard/index.ts` | Update GANTT DATA FORMAT with explicit `[start, end]` array example |
-| `src/components/live-dashboard/ChartBlock.tsx` | Add scalar-to-range fallback in GanttChart, enforce minimum duration of 1 |
+| `src/components/live-dashboard/ChartBlock.tsx` | Rewrite `GanttChart` to support multi-dataset phase rendering with per-phase colors and a Legend |
+| `supabase/functions/generate-dashboard/index.ts` | Update GANTT DATA FORMAT to describe multi-dataset phase structure with example |
 

@@ -28,6 +28,7 @@ interface ChartBlockProps {
 }
 
 function toChartData(config: ChartConfig) {
+  if (!config.data?.labels || !config.data?.datasets) return [];
   return config.data.labels.map((label, i) => {
     const point: Record<string, any> = { name: label };
     config.data.datasets.forEach((ds) => {
@@ -38,6 +39,7 @@ function toChartData(config: ChartConfig) {
 }
 
 function toPieData(config: ChartConfig) {
+  if (!config.data?.labels || !config.data?.datasets) return [];
   const ds = config.data.datasets[0];
   if (!ds) return [];
   return config.data.labels.map((label, i) => ({

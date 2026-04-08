@@ -104,12 +104,13 @@ function AuthenticatedApp() {
 
 function AppRoutes() {
   const location = useLocation();
-  // Public dashboard routes don't need auth
-  if (location.pathname.startsWith("/d/")) {
+  // Public dashboard and demo routes don't need auth
+  if (location.pathname.startsWith("/d/") || location.pathname.startsWith("/demo/")) {
     return (
       <ErrorBoundary>
         <Routes>
           <Route path="/d/:username/:company/:jobtitle" element={<LiveDashboard />} />
+          <Route path="/demo/suger" element={<DemoSuger />} />
         </Routes>
       </ErrorBoundary>
     );

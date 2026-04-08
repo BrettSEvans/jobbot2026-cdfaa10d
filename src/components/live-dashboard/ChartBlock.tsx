@@ -117,12 +117,20 @@ function GanttChart({ config, onDrillDown, activeDrillValues }: ChartBlockProps)
   const ds = config.data.datasets[0];
   if (!ds) return null;
 
-  const ganttData = config.data.labels.map((label, i) => {
+  const ganttData = config.data.labels.reduce<Array<{ name: string; start: number; duration: number; end: number }>>((acc, label, i) => {
     const d = ds.data[i];
-    const start = Array.isArray(d) ? d[0] : 0;
-    const end = Array.isArray(d) ? d[1] : (d as number);
-    return { name: label, start, duration: end - start, end };
-  });
+    if (Array.isArray(d)) {
+      const start = d[0] as number;
+      const end = d[1] as number;
+      acc.push({ name: label, start, duration: Math.max(end - start, 1), end });
+    } else {
+      // Fallback: treat scalar as duration, stack sequentially
+      const prevEnd = i > 0 ? acc[i - 1].end : 0;
+      const val = typeof d === "number" && d > 0 ? d : 1;
+      acc.push({ name: label, start: prevEnd, duration: val, end: prevEnd + val });
+    }
+    return acc;
+  }, []);
 
   return (
     <ResponsiveContainer width="100%" height={Math.max(200, ganttData.length * 40 + 60)}>

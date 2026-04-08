@@ -334,7 +334,7 @@ export default function ChartBlock({ config, onDrillDown, activeDrillValues }: C
     );
   }, []);
 
-  if (!config.data?.labels || !config.data?.datasets) {
+  if (!config.data?.datasets) {
     return (
       <div className="rounded-[32px] p-5" style={{ background: "var(--dash-surface, #E0E5EC)" }}>
         <h4 className="text-sm font-bold mb-3" style={{ color: "var(--dash-on-surface, #3D4852)" }}>{config.title}</h4>

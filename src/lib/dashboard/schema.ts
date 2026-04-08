@@ -79,7 +79,9 @@ export interface ChartConfig {
     | "heatmap"
     | "treemap"
     | "waterfall"
-    | "funnel";
+    | "funnel"
+    | "sparkline-line"
+    | "sparkline-bar";
   data: {
     labels: string[];
     datasets: ChartDataset[];

@@ -114,9 +114,75 @@ function WaterfallChart({ config, onDrillDown, activeDrillValues }: ChartBlockPr
 
 /* ── Gantt chart ── */
 function GanttChart({ config, onDrillDown, activeDrillValues }: ChartBlockProps) {
-  const ds = config.data.datasets[0];
-  if (!ds) return null;
+  const datasets = config.data.datasets;
+  if (!datasets.length) return null;
 
+  const isMultiPhase = datasets.length > 1;
+
+  // Multi-phase: each dataset is a phase, labels are rows (customers)
+  if (isMultiPhase) {
+    // Build row data: for each phase, compute start (transparent offset) and duration
+    const phases = datasets.map((ds, pi) => {
+      const segments = config.data.labels.map((_, ri) => {
+        const d = ds.data[ri];
+        if (Array.isArray(d)) {
+          const start = d[0] as number;
+          const end = d[1] as number;
+          return { start, duration: Math.max(end - start, 1) };
+        }
+        return { start: 0, duration: typeof d === "number" ? Math.max(d, 1) : 1 };
+      });
+      return { label: ds.label, color: COLORS[pi % COLORS.length], segments };
+    });
+
+    // Build row data for recharts: each row = { name, phase0_start, phase0_dur, ... }
+    const rowData = config.data.labels.map((label, ri) => {
+      const row: Record<string, any> = { name: label };
+      phases.forEach((phase, pi) => {
+        row[`phase${pi}_start`] = phase.segments[ri].start;
+        row[`phase${pi}_dur`] = phase.segments[ri].duration;
+      });
+      return row;
+    });
+
+    return (
+      <ResponsiveContainer width="100%" height={Math.max(200, config.data.labels.length * 50 + 80)}>
+        <BarChart data={rowData} layout="vertical" barSize={22}>
+          <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+          <YAxis dataKey="name" type="category" width={140} tick={{ fontSize: 11 }} />
+          <XAxis type="number" tick={{ fontSize: 11 }} />
+          <Tooltip
+            formatter={(value: number, name: string) => {
+              const pi = parseInt(name.replace(/\D/g, ""), 10);
+              if (name.includes("start")) return [null, null];
+              return [value.toLocaleString() + " units", phases[pi]?.label || name];
+            }}
+            labelFormatter={(label) => label}
+          />
+          {phases.map((phase, pi) => (
+            <Bar key={`start-${pi}`} dataKey={`phase${pi}_start`} stackId="gantt" fill="transparent" legendType="none" />
+          ))}
+          {phases.map((phase, pi) => (
+            <Bar key={`dur-${pi}`} dataKey={`phase${pi}_dur`} stackId="gantt" fill={phase.color} radius={[0, 4, 4, 0]}
+              name={phase.label}
+              onClick={(d: any) => onDrillDown?.(config.id, "name", d?.name)}
+              cursor="pointer"
+            />
+          ))}
+          <Legend
+            payload={phases.map((phase) => ({
+              value: phase.label,
+              type: "rect" as const,
+              color: phase.color,
+            }))}
+          />
+        </BarChart>
+      </ResponsiveContainer>
+    );
+  }
+
+  // Single-dataset fallback (backward compat)
+  const ds = datasets[0];
   const ganttData = config.data.labels.reduce<Array<{ name: string; start: number; duration: number; end: number }>>((acc, label, i) => {
     const d = ds.data[i];
     if (Array.isArray(d)) {
@@ -124,7 +190,6 @@ function GanttChart({ config, onDrillDown, activeDrillValues }: ChartBlockProps)
       const end = d[1] as number;
       acc.push({ name: label, start, duration: Math.max(end - start, 1), end });
     } else {
-      // Fallback: treat scalar as duration, stack sequentially
       const prevEnd = i > 0 ? acc[i - 1].end : 0;
       const val = typeof d === "number" && d > 0 ? d : 1;
       acc.push({ name: label, start: prevEnd, duration: val, end: prevEnd + val });

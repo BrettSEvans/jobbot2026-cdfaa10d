@@ -309,7 +309,7 @@ function TreemapChart({ config }: ChartBlockProps) {
 /* ── Main ChartBlock ── */
 export default function ChartBlock({ config, onDrillDown, activeDrillValues }: ChartBlockProps) {
   const data = useMemo(() => toChartData(config), [config]);
-  const datasets = config.data.datasets;
+  const datasets = config.data?.datasets || [];
   const [hiddenSeries, setHiddenSeries] = useState<string[]>([]);
 
   const handleClick = useCallback((payload: any) => {
@@ -502,20 +502,27 @@ export default function ChartBlock({ config, onDrillDown, activeDrillValues }: C
           </ResponsiveContainer>
         );
 
-      case "scatter":
+      case "scatter": {
+        // Scatter data may use {x, y} objects directly in datasets
+        const scatterData = datasets.map((ds) => ({
+          label: ds.label,
+          data: Array.isArray(ds.data) ? ds.data : [],
+        }));
         return (
           <ResponsiveContainer width="100%" height={320}>
             <ScatterChart>
               <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-              <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-              <YAxis tick={{ fontSize: 12 }} />
-              <Tooltip />
-              {datasets.map((ds, i) => (
-                <Scatter key={ds.label} name={ds.label} data={data} fill={COLORS[i % COLORS.length]} />
+              <XAxis dataKey="x" type="number" name="Effort" tick={{ fontSize: 12 }} />
+              <YAxis dataKey="y" type="number" name="Impact" tick={{ fontSize: 12 }} />
+              <Tooltip cursor={{ strokeDasharray: "3 3" }} />
+              <Legend />
+              {scatterData.map((sd, i) => (
+                <Scatter key={sd.label} name={sd.label} data={sd.data as any[]} fill={COLORS[i % COLORS.length]} />
               ))}
             </ScatterChart>
           </ResponsiveContainer>
         );
+      }
 
       case "funnel": {
         const funnelData = toPieData(config);

@@ -28,15 +28,7 @@ Deno.serve(async (req) => {
     const isHtml = contentType === 'html';
 
     const systemPrompt = isHtml
-      ? `You are a Principal Business Architect and Lead Technical Editor refining a professional "${assetName || 'document'}" HTML document. Your style is modeled after top-tier management consulting firms (McKinsey, BCG). You prioritize the "Data-to-Ink Ratio" — every character must serve a functional purpose.
-
-CONSULTING-GRADE STANDARDS (apply when refining):
-- BLUF: If adding new sections, lead with the bottom line. No burying conclusions.
-- MECE: Ensure sections remain mutually exclusive and collectively exhaustive after edits.
-- Forbidden Phrasing: Never use "In today's world," "it's important to remember," "it is worth noting," or "in conclusion."
-- Sentence Integrity: No two consecutive sentences start with the same word. 80% active voice.
-- Tables: Headers bold, text left-aligned, numbers right-aligned. Figure Title above, italic Key Insight below.
-- For unknown metrics, use **[BOLDED BRACKETS]** (e.g., **[Insert Q3 Revenue %]**). Never hallucinate numbers.
+      ? `You are an expert consultant refining a professional "${assetName || 'document'}" HTML document.
 
 RULES:
 - Output the COMPLETE modified HTML file, starting with <!DOCTYPE html> (or the opening tag) and ending with </html>

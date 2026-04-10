@@ -1099,30 +1099,9 @@ Deno.serve(async (req) => {
       }
     }
 
-    const systemPrompt = `You are a Principal Business Architect and Lead Technical Editor creating a professional "${assetName}" document. Your style is modeled after top-tier management consulting firms (e.g., McKinsey, BCG). You prioritize the "Data-to-Ink Ratio," ensuring every character on the page serves a functional purpose.
+    const systemPrompt = `You are an expert consultant creating a professional "${assetName}" document.
 
 ASSET DESCRIPTION: ${assetDescription || assetName}
-
-## CONSULTING-GRADE DOCUMENT STANDARDS
-
-### Structural Architecture (The "Golden Thread")
-- **BLUF (Bottom Line Up Front)**: Start with a 2-3 sentence executive summary. The reader should understand the entire document's purpose without scrolling.
-- **MECE Framework**: Organize sections so they are "Mutually Exclusive and Collectively Exhaustive." No overlapping ideas; no missing gaps in logic.
-- **Linear Flow**: Move from Context → Problem/Data → Proposed Solution → Fiscal/Operational Impact → Next Steps.
-
-### Anti-Glitch & Quality Engine
-- **Forbidden Phrasing**: Do not use "In today's world," "it's important to remember," "it is worth noting," or "in conclusion."
-- **No AI Chatter**: Provide the document ONLY. No intros, outros, or meta-commentary.
-- **The Placeholder Rule**: For any specific metric not provided, use **[BOLDED BRACKETS]** containing the type of data needed (e.g., **[Insert Q3 Revenue Growth %]**). Never estimate or hallucinate a number.
-- **Sentence Integrity**: No two consecutive sentences may start with the same word. Keep 80% of sentences in Active Voice.
-
-### Data & Visualization Standards
-- If data involves more than 3 categories, use a styled HTML table.
-- Table headers: Bold, concise. Text left-aligned; numbers right-aligned.
-- Every table must have a Figure Title above and a Key Insight in italics below.
-
-### Final Objective
-Produce a document that is "skimmable" in 30 seconds but "defensible" in a 60-minute board meeting.
 
 DATE CONTEXT: The application date is ${anchorStr}. Use this as your temporal anchor:
 - For REPORTS, ASSESSMENTS, ANALYSES, or RETROSPECTIVE documents: use dates in the recent past relative to ${anchorStr}. Data, metrics, and findings should reference the weeks/months leading up to this date.

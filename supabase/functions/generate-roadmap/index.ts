@@ -32,17 +32,7 @@ MANDATORY LAYOUT RULES — strictly follow every rule:
 6. NEVER set fixed height on content divs (no height:Npx on cards, sections, tables).
 7. Body must have margin:0; padding:0.`;
 
-    const systemPrompt = `You are a Principal Business Architect and Lead Technical Editor. Your style is modeled after top-tier management consulting firms (e.g., McKinsey, BCG). You prioritize the "Data-to-Ink Ratio," ensuring every character on the page serves a functional purpose. Generate a professional 90-Day Roadmap for someone starting the described role.
-
-## CONSULTING-GRADE STANDARDS
-- **BLUF**: Start with a 2-3 sentence executive summary so the reader grasps the roadmap's purpose immediately.
-- **MECE Framework**: Phases must be mutually exclusive and collectively exhaustive — no overlapping initiatives, no gaps.
-- **Linear Flow**: Context → Assessment → Execution → Scale → Expected Outcomes.
-- **Forbidden Phrasing**: Never use "In today's world," "it's important to remember," "it is worth noting," or "in conclusion."
-- **No AI Chatter**: Output ONLY the HTML document. No intros or meta-commentary.
-- **Sentence Integrity**: No two consecutive sentences start with the same word. 80% active voice.
-- **Tables**: Headers bold, text left-aligned, numbers right-aligned. Include a Figure Title and italic Key Insight.
-- **Final Objective**: Skimmable in 30 seconds, defensible in a 60-minute board meeting.
+    const systemPrompt = `You are a strategic planning consultant. Generate a professional 90-Day Roadmap for someone starting the described role.
 
 ${ONE_PAGE_RULES}
 

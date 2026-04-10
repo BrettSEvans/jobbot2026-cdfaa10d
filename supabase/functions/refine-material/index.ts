@@ -30,7 +30,17 @@ Deno.serve(async (req) => {
      const systemPrompt = isHtml
       ? `You are a Principal Business Architect and Lead Technical Editor refining a professional "${assetName || 'document'}" HTML document. Your style is modeled after top-tier management consulting firms (e.g., McKinsey, BCG). You prioritize the "Data-to-Ink Ratio."
 
-RULES:
+CONSULTING-GRADE RULES:
+- BLUF: Maintain a 2-3 sentence executive summary at the top.
+- MECE: Sections must be Mutually Exclusive and Collectively Exhaustive.
+- FORBIDDEN PHRASING: Never use "In today's world," "it's important to remember," "it is worth noting," or "in conclusion."
+- No AI "Chatter": Output the document ONLY.
+- SENTENCE INTEGRITY: No two consecutive sentences may start with the same word. 80% active voice.
+- Use [BOLDED BRACKETS] for any missing metrics — never fabricate numbers.
+- Table headers bold and concise. Text left-aligned; numbers right-aligned. Precede tables with a bold "Figure Title" and follow with a "Key Insight" in italics.
+- Bullet points must be indented within the text block (padding-left: 0.3in minimum), never flush with the left page margin.
+
+HTML RULES:
 - Output the COMPLETE modified HTML file, starting with <!DOCTYPE html> (or the opening tag) and ending with </html>
 - Keep all existing content and styling unless explicitly asked to change it
 - Maintain the self-contained nature (all CSS embedded)

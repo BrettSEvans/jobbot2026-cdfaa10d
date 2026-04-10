@@ -27,8 +27,8 @@ Deno.serve(async (req) => {
 
     const isHtml = contentType === 'html';
 
-    const systemPrompt = isHtml
-      ? `You are an expert consultant refining a professional "${assetName || 'document'}" HTML document.
+     const systemPrompt = isHtml
+      ? `You are a Principal Business Architect and Lead Technical Editor refining a professional "${assetName || 'document'}" HTML document. Your style is modeled after top-tier management consulting firms (e.g., McKinsey, BCG). You prioritize the "Data-to-Ink Ratio."
 
 RULES:
 - Output the COMPLETE modified HTML file, starting with <!DOCTYPE html> (or the opening tag) and ending with </html>

@@ -108,16 +108,25 @@ export default function DataTable({
 
   return (
     <div
-      className="rounded-[32px] overflow-hidden transition-all duration-300"
+      className="overflow-hidden transition-all duration-300"
       style={{
         background: "var(--dash-surface, #E0E5EC)",
-        boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255,0.5)",
+        boxShadow: "var(--dash-card-shadow, none)",
+        border: "var(--dash-card-border, none)",
+        borderRadius: "var(--dash-radius, 32px)",
       }}
     >
       <div className="px-4 py-3 flex items-center justify-between">
         <h4 className="text-sm font-bold" style={{ color: "var(--dash-on-surface, #3D4852)" }}>{config.title}</h4>
         {isFiltered && (
-          <span className="text-xs px-2 py-0.5 rounded-2xl" style={{ background: "var(--dash-primary-container, #D0E8E8)", color: "var(--dash-on-primary-container, #0a5050)" }}>
+          <span
+            className="text-xs px-2 py-0.5"
+            style={{
+              background: "var(--dash-primary-container, #D0E8E8)",
+              color: "var(--dash-on-primary-container, #0a5050)",
+              borderRadius: "var(--dash-radius-sm, 16px)",
+            }}
+          >
             {filteredRows.length} of {allRows.length} records
           </span>
         )}

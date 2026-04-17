@@ -511,8 +511,9 @@ export default function DashboardRenderer({ data }: { data: DashboardData }) {
                 }
               `}
               style={{
-                background: "var(--dash-surface-variant, #D8DEE6)",
-                boxShadow: NEU_SHADOW_SM,
+                background: "var(--dash-sidebar-bg, var(--dash-surface-variant, #D8DEE6))",
+                boxShadow: styleFamily === "neumorphic-soft" ? NEU_SHADOW_SM : "1px 0 0 rgba(0,0,0,0.06)",
+                borderRight: styleFamily !== "neumorphic-soft" ? "var(--dash-card-border, none)" : "none",
               }}
             >
               <div className={`${sidebarExpanded ? "w-[260px]" : "w-14"} h-full flex flex-col`}>
@@ -539,7 +540,7 @@ export default function DashboardRenderer({ data }: { data: DashboardData }) {
                     const button = (
                       <button
                         key={nav.id}
-                        className={`w-full flex items-center gap-2.5 rounded-2xl text-sm font-medium transition-all duration-300 ease-out text-left ${
+                        className={`w-full flex items-center gap-2.5 text-sm font-medium transition-all duration-300 ease-out text-left ${
                           sidebarExpanded ? "px-3 py-2.5" : "px-0 py-2.5 justify-center"
                         } ${isActive ? "font-bold" : "opacity-70 hover:opacity-100 hover:-translate-y-px"}`}
                         style={{
@@ -547,7 +548,8 @@ export default function DashboardRenderer({ data }: { data: DashboardData }) {
                           color: isActive
                             ? "var(--dash-on-primary, #fff)"
                             : "var(--dash-on-surface, #3D4852)",
-                          boxShadow: isActive ? NEU_SHADOW_SM : "none",
+                          boxShadow: isActive && styleFamily === "neumorphic-soft" ? NEU_SHADOW_SM : "none",
+                          borderRadius: "var(--dash-radius-sm, 16px)",
                         }}
                         onClick={() => {
                           setActiveNav(nav.id);

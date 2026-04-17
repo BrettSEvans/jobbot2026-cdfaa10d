@@ -37,6 +37,15 @@ export interface DashboardBranding {
   fontHeading: string;
   fontBody: string;
   background?: string;
+  /**
+   * Visual identity for the entire dashboard. ONE family per dashboard — never mix.
+   * Defaults to "neumorphic-soft" for backwards compatibility.
+   */
+  styleFamily?:
+    | "neumorphic-soft"
+    | "crisp-analytics"
+    | "editorial-minimal"
+    | "data-dense-pro";
 }
 
 export interface NavItem {

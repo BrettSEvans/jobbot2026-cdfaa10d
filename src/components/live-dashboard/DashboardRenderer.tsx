@@ -626,11 +626,13 @@ export default function DashboardRenderer({ data }: { data: DashboardData }) {
                   </h3>
                   {/* WIP Banner */}
                   <div
-                    className="rounded-2xl px-4 py-3 flex items-start gap-3"
+                    className="px-4 py-3 flex items-start gap-3"
                     style={{
-                      background: "var(--dash-surface, #E0E5EC)",
+                      background: "var(--dash-surface-variant, var(--dash-surface, #E0E5EC))",
                       color: "var(--dash-on-surface, #3D4852)",
-                      boxShadow: NEU_SHADOW_INSET,
+                      boxShadow: "var(--dash-inset-shadow, none)",
+                      border: "var(--dash-card-border, none)",
+                      borderRadius: "var(--dash-radius-sm, 16px)",
                     }}
                   >
                     <Rocket className="h-5 w-5 shrink-0 mt-0.5 opacity-80" />
@@ -645,15 +647,18 @@ export default function DashboardRenderer({ data }: { data: DashboardData }) {
                     {data.agenticWorkforce?.map((agent, i) => (
                       <Tooltip key={i}>
                         <TooltipTrigger asChild>
-                          <div className="rounded-[32px] p-5 space-y-2 transition-all duration-300 ease-out hover:-translate-y-0.5 cursor-default"
+                          <div
+                            className="p-5 space-y-2 transition-all duration-300 ease-out hover:-translate-y-0.5 cursor-default"
                             style={{
                               background: "var(--dash-surface, #E0E5EC)",
-                              boxShadow: NEU_SHADOW,
+                              boxShadow: "var(--dash-card-shadow, none)",
+                              border: "var(--dash-card-border, none)",
+                              borderRadius: "var(--dash-radius, 32px)",
                             }}
                           >
                             <h4 className="font-bold text-sm" style={{ color: "var(--dash-on-surface, #3D4852)" }}>{agent.name}</h4>
-                            <p className="text-xs line-clamp-2" style={{ color: "var(--dash-on-surface, #6B7280)" }}>{agent.coreFunctionality}</p>
-                            <p className="text-xs italic" style={{ color: "var(--dash-on-surface, #6B7280)", opacity: 0.7 }}>Teams: {agent.interfacingTeams}</p>
+                            <p className="text-xs line-clamp-2" style={{ color: "var(--dash-on-surface-muted, #6B7280)" }}>{agent.coreFunctionality}</p>
+                            <p className="text-xs italic" style={{ color: "var(--dash-on-surface-muted, #6B7280)", opacity: 0.7 }}>Teams: {agent.interfacingTeams}</p>
                           </div>
                         </TooltipTrigger>
                         <TooltipContent side="top" className="text-xs max-w-[280px]">

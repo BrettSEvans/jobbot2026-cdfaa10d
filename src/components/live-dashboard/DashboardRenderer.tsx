@@ -429,6 +429,29 @@ export default function DashboardRenderer({ data }: { data: DashboardData }) {
   // On mobile: overlay or hidden
   const sidebarExpanded = isMobile ? sidebarOpen : desktopSidebarOpen;
 
+  // Resolve style family for header style decisions
+  const styleFamily = resolveStyleFamily(data.branding?.styleFamily);
+  const familyTokens = STYLE_FAMILIES[styleFamily];
+
+  const headerBackground =
+    familyTokens.headerStyle === "minimal"
+      ? "var(--dash-surface, #fff)"
+      : familyTokens.headerStyle === "flat"
+        ? "var(--dash-primary, #0a8080)"
+        : `linear-gradient(135deg, var(--dash-primary, #0a8080), ${data.branding?.primaryContainer || "var(--dash-primary, #0a8080)"})`;
+
+  const headerColor =
+    familyTokens.headerStyle === "minimal"
+      ? "var(--dash-on-surface, #1A1A1A)"
+      : "var(--dash-on-primary, #fff)";
+
+  const headerShadow =
+    styleFamily === "neumorphic-soft"
+      ? "0 4px 16px rgba(163,177,198,0.5)"
+      : familyTokens.headerStyle === "minimal"
+        ? "0 1px 0 rgba(0,0,0,0.08)"
+        : "0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)";
+
   return (
     <TooltipProvider delayDuration={200}>
       {/* Inject fade-in keyframes */}
@@ -437,7 +460,7 @@ export default function DashboardRenderer({ data }: { data: DashboardData }) {
         className="min-h-screen flex flex-col"
         style={{
           ...brandingStyle(data.branding),
-          background: `var(--dash-background, #E0E5EC)`,
+          background: `var(--dash-bg, var(--dash-background, #E0E5EC))`,
           fontFamily: "var(--dash-font-body)",
         }}
       >
@@ -445,16 +468,17 @@ export default function DashboardRenderer({ data }: { data: DashboardData }) {
         <header
           className="sticky top-0 z-30"
           style={{
-            background: `linear-gradient(135deg, var(--dash-primary, #0a8080), ${data.branding?.primaryContainer || "var(--dash-primary, #0a8080)"})`,
-            color: "var(--dash-on-primary, #fff)",
-            boxShadow: "0 4px 16px rgb(163,177,198,0.5)",
+            background: headerBackground,
+            color: headerColor,
+            boxShadow: headerShadow,
+            borderBottom: familyTokens.headerStyle === "minimal" ? "1px solid rgba(0,0,0,0.06)" : "none",
           }}
         >
           <div className="px-4 py-3 flex items-center gap-3">
             {hasNav && (
               <button
                 onClick={() => isMobile ? setSidebarOpen(!sidebarOpen) : setDesktopSidebarOpen(!desktopSidebarOpen)}
-                className="p-1.5 rounded-2xl hover:bg-white/10 transition-all duration-300 shrink-0"
+                className="p-1.5 rounded-md hover:bg-black/5 transition-all duration-300 shrink-0"
                 aria-label="Toggle navigation"
               >
                 <Menu className="h-5 w-5" />

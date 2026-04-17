@@ -296,13 +296,16 @@ function SectionBlock({ section, drillFilters, onDrillDown, isFirstSection }: {
         </h3>
         {section.description && (
           <div
-            className="mt-2 rounded-2xl px-4 py-3 border-l-4 text-sm transition-all duration-300"
+            className="mt-2 px-4 py-3 border-l-4 text-sm transition-all duration-300"
             style={{
-              background: "var(--dash-surface, #E0E5EC)",
+              background: "var(--dash-surface-variant, var(--dash-surface, #E0E5EC))",
               borderLeftColor: "var(--dash-primary, #0a8080)",
               color: "var(--dash-on-surface, #3D4852)",
-              opacity: 0.85,
-              boxShadow: NEU_SHADOW_INSET,
+              opacity: 0.92,
+              boxShadow: "var(--dash-inset-shadow, none)",
+              border: "var(--dash-card-border, none)",
+              borderLeftWidth: "4px",
+              borderRadius: "var(--dash-radius-sm, 16px)",
             }}
           >
             {section.description}

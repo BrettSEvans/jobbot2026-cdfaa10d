@@ -348,9 +348,17 @@ function SectionBlock({ section, drillFilters, onDrillDown, isFirstSection }: {
       )}
 
       {isEmpty && (
-        <div className="flex flex-col items-center justify-center py-12 text-center rounded-[32px]" style={{ background: "var(--dash-surface, #E0E5EC)", boxShadow: NEU_SHADOW_INSET }}>
-          <Inbox className="h-10 w-10 mb-2" style={{ color: "var(--dash-on-surface, #6B7280)", opacity: 0.4 }} />
-          <p className="text-sm" style={{ color: "var(--dash-on-surface, #6B7280)" }}>No data available for this section</p>
+        <div
+          className="flex flex-col items-center justify-center py-12 text-center"
+          style={{
+            background: "var(--dash-surface, #E0E5EC)",
+            boxShadow: "var(--dash-inset-shadow, var(--dash-card-shadow, none))",
+            border: "var(--dash-card-border, none)",
+            borderRadius: "var(--dash-radius, 32px)",
+          }}
+        >
+          <Inbox className="h-10 w-10 mb-2" style={{ color: "var(--dash-on-surface-muted, #6B7280)", opacity: 0.4 }} />
+          <p className="text-sm" style={{ color: "var(--dash-on-surface-muted, #6B7280)" }}>No data available for this section</p>
         </div>
       )}
     </section>

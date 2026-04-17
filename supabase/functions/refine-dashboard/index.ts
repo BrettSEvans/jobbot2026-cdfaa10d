@@ -32,15 +32,28 @@ serve(async (req) => {
     // Use JSON-based refinement if we have structured data, otherwise fall back to HTML
     const useJsonMode = !!currentDashboardData;
 
+    // Detect existing style family so we never mix identities mid-refinement
+    const existingStyleFamily =
+      currentDashboardData?.branding?.styleFamily || "neumorphic-soft";
+
     const systemPrompt = useJsonMode
-      ? `You are an expert business intelligence data architect. You are refining a dashboard's structured JSON data based on user feedback. The dashboard uses a NEUMORPHIC (Soft UI) design system with cool grey surfaces (#E0E5EC), Plus Jakarta Sans / DM Sans fonts, and tactile depth via dual opposing shadows.
+      ? `You are an expert business intelligence data architect refining a dashboard's structured JSON data based on user feedback.
+
+CRITICAL — STYLE FAMILY LOCK:
+The dashboard's visual identity is "${existingStyleFamily}". You MUST preserve this exact value in branding.styleFamily. NEVER change it, NEVER mix families, NEVER blend visual styles. One family per dashboard, period.
+
+Style families and their surface palettes (do not mix):
+- neumorphic-soft → cool grey #E0E5EC surface, Plus Jakarta Sans / DM Sans
+- crisp-analytics → white #FFFFFF surface on #F7F8FA bg, Inter
+- editorial-minimal → off-white #FAFAF7 bg, white cards, Playfair Display + Inter
+- data-dense-pro → #F1F3F5 bg, white compact cards, IBM Plex Sans + monospaced numerals
 
 OUTPUT: ONLY valid JSON. No markdown fences, no explanation. Start with { and end with }.
 
 The JSON follows this schema:
 {
   "meta": { "companyName", "jobTitle", "department", "logoUrl?" },
-  "branding": { "primary", "onPrimary", "primaryContainer", "onPrimaryContainer", "secondary", "onSecondary", "surface" (cool grey #DDE3EA-#E8ECF0), "onSurface" (#3D4852 or darker), "surfaceVariant", "outline", "error", "fontHeading" (default Plus Jakarta Sans), "fontBody" (default DM Sans), "background" (cool grey #E0E5EC or subtle tint) },
+  "branding": { "primary", "onPrimary", "primaryContainer", "onPrimaryContainer", "secondary", "onSecondary", "surface", "onSurface", "surfaceVariant", "outline", "error", "fontHeading", "fontBody", "background", "styleFamily" (MUST equal "${existingStyleFamily}") },
   "navigation": [{ "id", "label", "icon" }],
   "sections": [{ "id", "title", "description", "metrics": [{ "label", "value", "change" (must include comparison period e.g. "+12% vs Q3"), "trend" }], "charts": [{ "id", "title", "type", "data": { "labels", "datasets" } }], "tables": [{ "id", "title", "columns", "generateRows" }] }],
   "agenticWorkforce": [{ "name", "coreFunctionality", "interfacingTeams" }],
@@ -52,8 +65,10 @@ RULES:
 - Keep all existing data unless explicitly asked to change it
 - Maintain valid JSON structure at all times
 - Apply changes precisely as requested
-- Surface colors must remain cool grey (#DDE3EA to #E8ECF0) for neumorphic shadows to work — never white or dark
-- Chart types: bar|line|doughnut|pie|radar|scatter|horizontalBar|area
+- branding.styleFamily MUST stay "${existingStyleFamily}" — do not switch identity
+- Keep surface/background colors consistent with the locked family above
+- Justinmind best practices: max 5–6 KPI cards per section, F/Z reading hierarchy, all KPIs need comparative deltas (e.g. "+12% vs Q3"), pair chart-heavy sections with a supporting table
+- Chart types: bar|line|doughnut|pie|radar|scatter|horizontalBar|area|gantt|heatmap|treemap|waterfall|funnel|sparkline-line|sparkline-bar
 - Table generateRows fields: personName|company|date|futureDate|currency|status|region|product|percent|integer|email|pick
 - Ensure navigation includes "agentic-workforce" and "cfo-view" entries`
       : `You are an expert front-end developer helping refine a standalone HTML Business Intelligence Dashboard.

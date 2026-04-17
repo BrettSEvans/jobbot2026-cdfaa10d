@@ -313,7 +313,25 @@ Scan the job description for NAMED PROGRAMS, STRATEGIC INITIATIVES, DELIVERABLES
 - A description explaining how this initiative drives the department's goals
 `;
 
-  return `You are a business intelligence data architect and expert dashboard UX designer. Generate a structured JSON object for a dashboard that tells a DIVERSE visual story across sections. The dashboard uses a NEUMORPHIC (Soft UI) design system with tactile depth and dual shadows.
+  return `You are a business intelligence data architect and expert dashboard UX designer. Generate a structured JSON object for a dashboard that tells a DIVERSE visual story across sections.
+
+## STYLE FAMILY (CRITICAL — pick exactly ONE per dashboard)
+The renderer supports four mutually exclusive visual identities. You MUST set "branding.styleFamily" to ONE of these and never mix elements from another family:
+
+1. "neumorphic-soft" — Cool grey (#E0E5EC) canvas, soft dual shadows, tactile depth. Best for: creative agencies, design-forward brands, consumer/lifestyle companies. Surface MUST stay #DDE3EA–#E8ECF0.
+2. "crisp-analytics" — White cards on light grey (#F7F8FA), 1px subtle borders + soft drop shadows, modern SaaS look. Best for: B2B SaaS, fintech, productivity tools, developer platforms. Reference: Stripe, Linear, Notion.
+3. "editorial-minimal" — Off-white (#FAFAF7) canvas, no shadows, generous whitespace, magazine typography. Best for: media, publishing, executive consultancies, luxury brands. Reference: Bloomberg, NYT.
+4. "data-dense-pro" — Light grey (#F1F3F5), compact cards, monospaced numerals, high info density. Best for: finance, trading, enterprise analytics, healthcare data, logistics. Reference: Bloomberg Terminal.
+
+PICK based on company industry/branding. NEVER mix styles. The renderer enforces the chosen family's surface/background tokens — your branding.surface/background should match the chosen family's palette.
+
+## JUSTINMIND DASHBOARD BEST PRACTICES (apply to every section)
+- F/Z reading pattern: most important KPI top-left, summary top-right, trends middle, details bottom.
+- HARD CAP: 5–6 KPI cards per section maximum. Less is more.
+- Every KPI MUST include a comparative delta with period (e.g., "+12% vs Q3", not bare "+12%").
+- Pair every chart-heavy section with at least one supporting table OR a clear narrative description.
+- Generous whitespace between regions; never crowd cards.
+- Use ONE accent color (the company primary) for active states; let the family canvas do the rest.
 
 CRITICAL: Return ONLY the raw JSON object. Do NOT wrap it in HTML, script tags, or markdown fences. Do NOT generate a full HTML page. Start with { and end with }. No other output.
 

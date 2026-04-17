@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import type { DashboardData, DashboardSection, DashboardBranding } from "@/lib/dashboard/schema";
+import { buildStyleFamilyVars, resolveStyleFamily, STYLE_FAMILIES } from "@/lib/dashboard/styleFamilies";
 import KpiCard from "./KpiCard";
 import ChartBlock, { type DrillFilter } from "./ChartBlock";
 import DataTable from "./DataTable";
@@ -62,7 +63,12 @@ function resolveIcon(name?: string): LucideIcon {
 function useGoogleFonts(branding?: DashboardBranding) {
   useEffect(() => {
     if (!branding) return;
-    const families = [branding.fontHeading || "Plus Jakarta Sans", branding.fontBody || "DM Sans"].filter(Boolean);
+    const family = resolveStyleFamily(branding.styleFamily);
+    const familyTokens = STYLE_FAMILIES[family];
+    const families = [
+      branding.fontHeading || familyTokens.fontHeading,
+      branding.fontBody || familyTokens.fontBody,
+    ].filter(Boolean);
     if (!families.length) return;
     const id = "live-dash-gfonts";
     const href = `https://fonts.googleapis.com/css2?${families.map((f) => `family=${f.replace(/ /g, "+")}:wght@400;500;600;700;800`).join("&")}&display=swap`;
@@ -88,49 +94,60 @@ function hexToLuminance(hex: string): number {
   return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
 
-/** Ensures branding has neumorphic-compatible surface/background colors.
- *  If surface is too light (>0.88 luminance) or too dark (<0.4),
- *  override to standard cool grey so dual shadows render correctly. */
-function enforceNeuBranding(b: DashboardBranding): DashboardBranding {
-  const NEU_SURFACE = "#E0E5EC";
-  const NEU_BG = "#E0E5EC";
-  const NEU_VARIANT = "#D8DEE6";
-  const NEU_TEXT = "#3D4852";
+/** Apply style-family defaults to branding. The chosen family wins over
+ *  any AI-supplied surface/background that conflicts with its identity. */
+function applyStyleFamilyToBranding(b: DashboardBranding): DashboardBranding {
+  const family = resolveStyleFamily(b.styleFamily);
+  const tokens = STYLE_FAMILIES[family];
 
-  let surface = b.surface || NEU_SURFACE;
-  let background = b.background || NEU_BG;
-  let surfaceVariant = b.surfaceVariant || NEU_VARIANT;
-  let onSurface = b.onSurface || NEU_TEXT;
+  if (family === "neumorphic-soft") {
+    const NEU_SURFACE = "#E0E5EC";
+    const NEU_BG = "#E0E5EC";
+    const NEU_VARIANT = "#D8DEE6";
+    const NEU_TEXT = "#3D4852";
 
-  // Extract first hex color from gradients or plain values
-  const extractHex = (val: string) => {
-    const m = val.match(/#[0-9A-Fa-f]{6}/);
-    return m ? m[0] : null;
+    let surface = b.surface || NEU_SURFACE;
+    let background = b.background || NEU_BG;
+    let surfaceVariant = b.surfaceVariant || NEU_VARIANT;
+    let onSurface = b.onSurface || NEU_TEXT;
+
+    const extractHex = (val: string) => {
+      const m = val.match(/#[0-9A-Fa-f]{6}/);
+      return m ? m[0] : null;
+    };
+    const surfaceHex = extractHex(surface);
+    const bgHex = extractHex(typeof background === "string" ? background : "");
+
+    if (surfaceHex && (hexToLuminance(surfaceHex) > 0.88 || hexToLuminance(surfaceHex) < 0.4)) {
+      surface = NEU_SURFACE;
+      surfaceVariant = NEU_VARIANT;
+      onSurface = NEU_TEXT;
+    }
+    if (bgHex && hexToLuminance(bgHex) > 0.88) background = NEU_BG;
+
+    return { ...b, styleFamily: family, surface, background, surfaceVariant, onSurface };
+  }
+
+  // Non-neumorphic families: ALWAYS apply the family's surface/background tokens
+  // so we never see a mixed-style dashboard.
+  return {
+    ...b,
+    styleFamily: family,
+    surface: tokens.surface,
+    background: tokens.background,
+    surfaceVariant: tokens.surfaceVariant,
+    onSurface: tokens.onSurface,
   };
-
-  const surfaceHex = extractHex(surface);
-  const bgHex = extractHex(typeof background === "string" ? background : "");
-
-  const surfaceTooLight = surfaceHex ? hexToLuminance(surfaceHex) > 0.88 : false;
-  const surfaceTooDark = surfaceHex ? hexToLuminance(surfaceHex) < 0.4 : false;
-  const bgTooLight = bgHex ? hexToLuminance(bgHex) > 0.88 : false;
-
-  if (surfaceTooLight || surfaceTooDark) {
-    surface = NEU_SURFACE;
-    surfaceVariant = NEU_VARIANT;
-    onSurface = NEU_TEXT;
-  }
-  if (bgTooLight) {
-    background = NEU_BG;
-  }
-
-  return { ...b, surface, background, surfaceVariant, onSurface };
 }
 
-/* ── CSS custom properties from branding ── */
+/* ── CSS custom properties from branding + style family ── */
 function brandingStyle(b?: DashboardBranding): React.CSSProperties {
   if (!b) return {};
-  const nb = enforceNeuBranding(b);
+  const nb = applyStyleFamilyToBranding(b);
+  const family = resolveStyleFamily(nb.styleFamily);
+  const familyVars = buildStyleFamilyVars(family);
+  const tokens = STYLE_FAMILIES[family];
+
   return {
     "--dash-primary": nb.primary,
     "--dash-on-primary": nb.onPrimary,
@@ -138,14 +155,11 @@ function brandingStyle(b?: DashboardBranding): React.CSSProperties {
     "--dash-on-primary-container": nb.onPrimaryContainer,
     "--dash-secondary": nb.secondary,
     "--dash-on-secondary": nb.onSecondary,
-    "--dash-surface": nb.surface,
-    "--dash-on-surface": nb.onSurface,
-    "--dash-surface-variant": nb.surfaceVariant,
     "--dash-outline": nb.outline,
     "--dash-error": nb.error,
-    "--dash-font-heading": nb.fontHeading || "Plus Jakarta Sans, sans-serif",
-    "--dash-font-body": nb.fontBody || "DM Sans, sans-serif",
-    "--dash-background": nb.background || "#E0E5EC",
+    "--dash-font-heading": `${nb.fontHeading || tokens.fontHeading}, sans-serif`,
+    "--dash-font-body": `${nb.fontBody || tokens.fontBody}, sans-serif`,
+    ...familyVars,
   } as React.CSSProperties;
 }
 
@@ -154,7 +168,7 @@ const fadeInStyle: React.CSSProperties = {
   animation: "dashFadeIn 0.4s ease-out both",
 };
 
-/* ── Neumorphic shadow tokens ── */
+/* ── Legacy neumorphic shadow tokens (kept for ScenarioPanel + non-themed surfaces) ── */
 const NEU_SHADOW = "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255,0.5)";
 const NEU_SHADOW_HOVER = "12px 12px 20px rgb(163,177,198,0.7), -12px -12px 20px rgba(255,255,255,0.6)";
 const NEU_SHADOW_SM = "5px 5px 10px rgb(163,177,198,0.6), -5px -5px 10px rgba(255,255,255,0.5)";
@@ -282,13 +296,16 @@ function SectionBlock({ section, drillFilters, onDrillDown, isFirstSection }: {
         </h3>
         {section.description && (
           <div
-            className="mt-2 rounded-2xl px-4 py-3 border-l-4 text-sm transition-all duration-300"
+            className="mt-2 px-4 py-3 border-l-4 text-sm transition-all duration-300"
             style={{
-              background: "var(--dash-surface, #E0E5EC)",
+              background: "var(--dash-surface-variant, var(--dash-surface, #E0E5EC))",
               borderLeftColor: "var(--dash-primary, #0a8080)",
               color: "var(--dash-on-surface, #3D4852)",
-              opacity: 0.85,
-              boxShadow: NEU_SHADOW_INSET,
+              opacity: 0.92,
+              boxShadow: "var(--dash-inset-shadow, none)",
+              border: "var(--dash-card-border, none)",
+              borderLeftWidth: "4px",
+              borderRadius: "var(--dash-radius-sm, 16px)",
             }}
           >
             {section.description}
@@ -331,9 +348,17 @@ function SectionBlock({ section, drillFilters, onDrillDown, isFirstSection }: {
       )}
 
       {isEmpty && (
-        <div className="flex flex-col items-center justify-center py-12 text-center rounded-[32px]" style={{ background: "var(--dash-surface, #E0E5EC)", boxShadow: NEU_SHADOW_INSET }}>
-          <Inbox className="h-10 w-10 mb-2" style={{ color: "var(--dash-on-surface, #6B7280)", opacity: 0.4 }} />
-          <p className="text-sm" style={{ color: "var(--dash-on-surface, #6B7280)" }}>No data available for this section</p>
+        <div
+          className="flex flex-col items-center justify-center py-12 text-center"
+          style={{
+            background: "var(--dash-surface, #E0E5EC)",
+            boxShadow: "var(--dash-inset-shadow, var(--dash-card-shadow, none))",
+            border: "var(--dash-card-border, none)",
+            borderRadius: "var(--dash-radius, 32px)",
+          }}
+        >
+          <Inbox className="h-10 w-10 mb-2" style={{ color: "var(--dash-on-surface-muted, #6B7280)", opacity: 0.4 }} />
+          <p className="text-sm" style={{ color: "var(--dash-on-surface-muted, #6B7280)" }}>No data available for this section</p>
         </div>
       )}
     </section>
@@ -404,6 +429,29 @@ export default function DashboardRenderer({ data }: { data: DashboardData }) {
   // On mobile: overlay or hidden
   const sidebarExpanded = isMobile ? sidebarOpen : desktopSidebarOpen;
 
+  // Resolve style family for header style decisions
+  const styleFamily = resolveStyleFamily(data.branding?.styleFamily);
+  const familyTokens = STYLE_FAMILIES[styleFamily];
+
+  const headerBackground =
+    familyTokens.headerStyle === "minimal"
+      ? "var(--dash-surface, #fff)"
+      : familyTokens.headerStyle === "flat"
+        ? "var(--dash-primary, #0a8080)"
+        : `linear-gradient(135deg, var(--dash-primary, #0a8080), ${data.branding?.primaryContainer || "var(--dash-primary, #0a8080)"})`;
+
+  const headerColor =
+    familyTokens.headerStyle === "minimal"
+      ? "var(--dash-on-surface, #1A1A1A)"
+      : "var(--dash-on-primary, #fff)";
+
+  const headerShadow =
+    styleFamily === "neumorphic-soft"
+      ? "0 4px 16px rgba(163,177,198,0.5)"
+      : familyTokens.headerStyle === "minimal"
+        ? "0 1px 0 rgba(0,0,0,0.08)"
+        : "0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)";
+
   return (
     <TooltipProvider delayDuration={200}>
       {/* Inject fade-in keyframes */}
@@ -412,7 +460,7 @@ export default function DashboardRenderer({ data }: { data: DashboardData }) {
         className="min-h-screen flex flex-col"
         style={{
           ...brandingStyle(data.branding),
-          background: `var(--dash-background, #E0E5EC)`,
+          background: `var(--dash-bg, var(--dash-background, #E0E5EC))`,
           fontFamily: "var(--dash-font-body)",
         }}
       >
@@ -420,16 +468,17 @@ export default function DashboardRenderer({ data }: { data: DashboardData }) {
         <header
           className="sticky top-0 z-30"
           style={{
-            background: `linear-gradient(135deg, var(--dash-primary, #0a8080), ${data.branding?.primaryContainer || "var(--dash-primary, #0a8080)"})`,
-            color: "var(--dash-on-primary, #fff)",
-            boxShadow: "0 4px 16px rgb(163,177,198,0.5)",
+            background: headerBackground,
+            color: headerColor,
+            boxShadow: headerShadow,
+            borderBottom: familyTokens.headerStyle === "minimal" ? "1px solid rgba(0,0,0,0.06)" : "none",
           }}
         >
           <div className="px-4 py-3 flex items-center gap-3">
             {hasNav && (
               <button
                 onClick={() => isMobile ? setSidebarOpen(!sidebarOpen) : setDesktopSidebarOpen(!desktopSidebarOpen)}
-                className="p-1.5 rounded-2xl hover:bg-white/10 transition-all duration-300 shrink-0"
+                className="p-1.5 rounded-md hover:bg-black/5 transition-all duration-300 shrink-0"
                 aria-label="Toggle navigation"
               >
                 <Menu className="h-5 w-5" />
@@ -462,8 +511,9 @@ export default function DashboardRenderer({ data }: { data: DashboardData }) {
                 }
               `}
               style={{
-                background: "var(--dash-surface-variant, #D8DEE6)",
-                boxShadow: NEU_SHADOW_SM,
+                background: "var(--dash-sidebar-bg, var(--dash-surface-variant, #D8DEE6))",
+                boxShadow: styleFamily === "neumorphic-soft" ? NEU_SHADOW_SM : "1px 0 0 rgba(0,0,0,0.06)",
+                borderRight: styleFamily !== "neumorphic-soft" ? "var(--dash-card-border, none)" : "none",
               }}
             >
               <div className={`${sidebarExpanded ? "w-[260px]" : "w-14"} h-full flex flex-col`}>
@@ -490,7 +540,7 @@ export default function DashboardRenderer({ data }: { data: DashboardData }) {
                     const button = (
                       <button
                         key={nav.id}
-                        className={`w-full flex items-center gap-2.5 rounded-2xl text-sm font-medium transition-all duration-300 ease-out text-left ${
+                        className={`w-full flex items-center gap-2.5 text-sm font-medium transition-all duration-300 ease-out text-left ${
                           sidebarExpanded ? "px-3 py-2.5" : "px-0 py-2.5 justify-center"
                         } ${isActive ? "font-bold" : "opacity-70 hover:opacity-100 hover:-translate-y-px"}`}
                         style={{
@@ -498,7 +548,8 @@ export default function DashboardRenderer({ data }: { data: DashboardData }) {
                           color: isActive
                             ? "var(--dash-on-primary, #fff)"
                             : "var(--dash-on-surface, #3D4852)",
-                          boxShadow: isActive ? NEU_SHADOW_SM : "none",
+                          boxShadow: isActive && styleFamily === "neumorphic-soft" ? NEU_SHADOW_SM : "none",
+                          borderRadius: "var(--dash-radius-sm, 16px)",
                         }}
                         onClick={() => {
                           setActiveNav(nav.id);
@@ -575,11 +626,13 @@ export default function DashboardRenderer({ data }: { data: DashboardData }) {
                   </h3>
                   {/* WIP Banner */}
                   <div
-                    className="rounded-2xl px-4 py-3 flex items-start gap-3"
+                    className="px-4 py-3 flex items-start gap-3"
                     style={{
-                      background: "var(--dash-surface, #E0E5EC)",
+                      background: "var(--dash-surface-variant, var(--dash-surface, #E0E5EC))",
                       color: "var(--dash-on-surface, #3D4852)",
-                      boxShadow: NEU_SHADOW_INSET,
+                      boxShadow: "var(--dash-inset-shadow, none)",
+                      border: "var(--dash-card-border, none)",
+                      borderRadius: "var(--dash-radius-sm, 16px)",
                     }}
                   >
                     <Rocket className="h-5 w-5 shrink-0 mt-0.5 opacity-80" />
@@ -594,15 +647,18 @@ export default function DashboardRenderer({ data }: { data: DashboardData }) {
                     {data.agenticWorkforce?.map((agent, i) => (
                       <Tooltip key={i}>
                         <TooltipTrigger asChild>
-                          <div className="rounded-[32px] p-5 space-y-2 transition-all duration-300 ease-out hover:-translate-y-0.5 cursor-default"
+                          <div
+                            className="p-5 space-y-2 transition-all duration-300 ease-out hover:-translate-y-0.5 cursor-default"
                             style={{
                               background: "var(--dash-surface, #E0E5EC)",
-                              boxShadow: NEU_SHADOW,
+                              boxShadow: "var(--dash-card-shadow, none)",
+                              border: "var(--dash-card-border, none)",
+                              borderRadius: "var(--dash-radius, 32px)",
                             }}
                           >
                             <h4 className="font-bold text-sm" style={{ color: "var(--dash-on-surface, #3D4852)" }}>{agent.name}</h4>
-                            <p className="text-xs line-clamp-2" style={{ color: "var(--dash-on-surface, #6B7280)" }}>{agent.coreFunctionality}</p>
-                            <p className="text-xs italic" style={{ color: "var(--dash-on-surface, #6B7280)", opacity: 0.7 }}>Teams: {agent.interfacingTeams}</p>
+                            <p className="text-xs line-clamp-2" style={{ color: "var(--dash-on-surface-muted, #6B7280)" }}>{agent.coreFunctionality}</p>
+                            <p className="text-xs italic" style={{ color: "var(--dash-on-surface-muted, #6B7280)", opacity: 0.7 }}>Teams: {agent.interfacingTeams}</p>
                           </div>
                         </TooltipTrigger>
                         <TooltipContent side="top" className="text-xs max-w-[280px]">

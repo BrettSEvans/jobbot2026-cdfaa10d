@@ -1,61 +1,48 @@
+## Problem
 
+On the Materials tab of the Plaid — Integrations Operations Program Manager application, when many materials exist (Dashboard, Cover Letter, Resume, Roadmap, RAID Log, Architecture Diagram, Standardized Integration QA Framework, etc.), the tab labels wrap to a second row. The last tab ("Standardized Integration QA Framework") visually escapes the muted background "card" of the tab strip.
 
-## Multi-Phase Gantt Chart with Color-Coded Phases
+## Root cause
 
-### Problem
-Currently, each customer row in the Gantt chart gets a different color. The user wants all customers to show the **same set of phases** (e.g., "Technical Setup", "Integration", "UAT") distinguished by color, with a legend at the bottom.
+`src/components/ui/tabs.tsx` defines `TabsList` with a hard-coded `h-10` (40px height). In `DynamicMaterialsSection.tsx` the materials tab strip uses `flex-wrap` so labels can wrap, but the container's height is locked at 40px. When tabs wrap onto a second line, that second row renders **below** the 40px muted background — making the wrapped tabs appear to "escape" the card.
 
-### Data Model Change
+```tsx
+// src/components/ui/tabs.tsx
+"inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 ..."
 
-The current Gantt chart uses a **single dataset** with one bar per customer. To show phases, we need **multiple datasets** — one per phase — where each dataset contains `[start, end]` pairs for every customer.
-
-**Current format (single dataset):**
-```json
-{
-  "type": "gantt",
-  "labels": ["Customer A", "Customer B"],
-  "datasets": [{ "label": "Timeline", "data": [[0, 8], [2, 10]] }]
-}
+// src/components/DynamicMaterialsSection.tsx (line 621)
+<TabsList className="w-full justify-start flex-wrap">
 ```
 
-**New format (multi-dataset, one per phase):**
-```json
-{
-  "type": "gantt",
-  "labels": ["Customer A", "Customer B"],
-  "datasets": [
-    { "label": "Discovery", "data": [[0, 2], [2, 4]] },
-    { "label": "Technical Setup", "data": [[2, 5], [4, 7]] },
-    { "label": "Integration", "data": [[5, 7], [7, 9]] },
-    { "label": "UAT & Go-Live", "data": [[7, 8], [9, 10]] }
-  ]
-}
+The base `h-10` was designed for single-row tab strips. The materials strip is the only place in the app that combines `flex-wrap` with a dynamic, unbounded number of tabs.
+
+## Fix
+
+Override the fixed height locally on the materials `TabsList` so the muted background grows to contain however many wrapped rows exist. I'll also add a small vertical gap so the rows have breathing room.
+
+**File: `src/components/DynamicMaterialsSection.tsx` (line 621)**
+
+Change:
+```tsx
+<TabsList className="w-full justify-start flex-wrap">
+```
+to:
+```tsx
+<TabsList className="w-full justify-start flex-wrap h-auto gap-1">
 ```
 
-### Changes
+- `h-auto` releases the 40px lock so the muted container expands to fit wrapped rows.
+- `gap-1` adds a 4px vertical/horizontal gap between wrapped triggers so rows don't visually collide.
+- No change to the shared `tabs.tsx` primitive — other tab strips in the app (Resume / Cover Letter / JD / Materials / Details on the parent page, dashboard sub-tabs, etc.) keep their existing single-row 40px design.
 
-**1. `src/components/live-dashboard/ChartBlock.tsx` — Rewrite GanttChart**
+## Verification
 
-- Detect multi-dataset Gantt charts (datasets.length > 1) and render **stacked horizontal bars**, one `<Bar>` per phase/dataset, all using `stackId="gantt"`.
-- Each phase gets a consistent color from COLORS array, keyed by dataset index (not row index).
-- All rows for the same phase share the same color.
-- Add a `<Legend />` at the bottom showing phase names and their colors.
-- For each dataset, compute `duration = end - start` per customer and use a transparent `start` bar for offset.
-- Keep the single-dataset fallback for backward compatibility.
+After the change, on the Plaid application:
+- All material tabs (including "Standardized Integration QA Framework") sit fully inside the muted rounded-md background.
+- When the strip wraps to two rows (~965px viewport, current user width), both rows are contained.
+- Single-row strips elsewhere in the app remain visually identical.
 
-**2. `supabase/functions/generate-dashboard/index.ts` — Update prompt**
+## Out of scope
 
-- Update the GANTT DATA FORMAT instruction to describe the multi-dataset phase format:
-  - Labels = customer/project names (Y-axis rows)
-  - Each dataset = one phase (e.g., "Technical Setup", "Integration")
-  - Each dataset's data = `[start, end]` pairs, one per label
-  - Phases should be sequential within each customer row
-  - Include a concrete example in the prompt
-
-### Files to modify
-
-| File | Change |
-|------|--------|
-| `src/components/live-dashboard/ChartBlock.tsx` | Rewrite `GanttChart` to support multi-dataset phase rendering with per-phase colors and a Legend |
-| `supabase/functions/generate-dashboard/index.ts` | Update GANTT DATA FORMAT to describe multi-dataset phase structure with example |
-
+- No changes to tab content, generation logic, or material count.
+- Not modifying the shared `TabsList` primitive — keeps risk surface to one line in one file.

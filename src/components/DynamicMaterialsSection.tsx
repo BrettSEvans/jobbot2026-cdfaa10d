@@ -618,7 +618,7 @@ export default function DynamicMaterialsSection({
         versionLabel="an older revision"
       />
       <Tabs defaultValue="dashboard" className="space-y-4">
-        <TabsList className="w-full justify-start flex-wrap">
+        <TabsList className="w-full justify-start flex-wrap h-auto gap-1">
           {allMaterialTabs.map((tab) => {
             const familyMatch = 'asset' in tab && tab.asset?.html
               ? tab.asset.html.match(/data-style-family="([A-F])"/)

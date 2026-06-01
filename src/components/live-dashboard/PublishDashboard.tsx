@@ -49,7 +49,7 @@ export default function PublishDashboard({
 }: PublishDashboardProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState<null | "resuvibe" | "lovable">(null);
   const [vibeOpen, setVibeOpen] = useState(false);
   const [vibeInput, setVibeInput] = useState("");
   const [isRefining, setIsRefining] = useState(false);

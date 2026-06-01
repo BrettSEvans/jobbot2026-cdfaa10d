@@ -49,7 +49,7 @@ export default function PublishDashboard({
 }: PublishDashboardProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState<null | "resuvibe" | "lovable">(null);
   const [vibeOpen, setVibeOpen] = useState(false);
   const [vibeInput, setVibeInput] = useState("");
   const [isRefining, setIsRefining] = useState(false);
@@ -277,15 +277,17 @@ export default function PublishDashboard({
   if (!isAdmin) return null;
   if (!dashboardData) return null;
 
-  const publicUrl = liveDash
-    ? `${getLiveDashboardBaseUrl()}/d/${liveDash.slug_username}/${liveDash.slug_company}/${liveDash.slug_jobtitle}`
+  const dashPath = liveDash
+    ? `/d/${liveDash.slug_username}/${liveDash.slug_company}/${liveDash.slug_jobtitle}`
     : null;
+  const resuvibeUrl = dashPath ? `https://www.resuvibe.ai${dashPath}` : null;
+  const lovableUrl = dashPath ? `https://jobbot2026.lovable.app${dashPath}` : null;
+  const publicUrl = dashPath ? `${getLiveDashboardBaseUrl()}${dashPath}` : null;
 
-  const copyUrl = () => {
-    if (!publicUrl) return;
-    navigator.clipboard.writeText(publicUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const copyUrl = (which: "resuvibe" | "lovable", url: string) => {
+    navigator.clipboard.writeText(url);
+    setCopied(which);
+    setTimeout(() => setCopied(null), 2000);
   };
 
   const isPublished = liveDash?.is_published;
@@ -373,15 +375,31 @@ export default function PublishDashboard({
         )}
       </div>
 
-      {/* Public URL bar */}
-      {publicUrl && (
-        <div className="flex items-center gap-2">
-          <code className="text-xs bg-secondary px-2 py-1 rounded flex-1 truncate">
-            {publicUrl}
-          </code>
-          <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={copyUrl}>
-            {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-          </Button>
+      {/* Public URL bars — two shareable options */}
+      {resuvibeUrl && lovableUrl && (
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground w-16 shrink-0">
+              Resuvibe
+            </span>
+            <code className="text-xs bg-secondary px-2 py-1 rounded flex-1 truncate">
+              {resuvibeUrl}
+            </code>
+            <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => copyUrl("resuvibe", resuvibeUrl)}>
+              {copied === "resuvibe" ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+            </Button>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground w-16 shrink-0">
+              Lovable
+            </span>
+            <code className="text-xs bg-secondary px-2 py-1 rounded flex-1 truncate">
+              {lovableUrl}
+            </code>
+            <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => copyUrl("lovable", lovableUrl)}>
+              {copied === "lovable" ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+            </Button>
+          </div>
         </div>
       )}
 

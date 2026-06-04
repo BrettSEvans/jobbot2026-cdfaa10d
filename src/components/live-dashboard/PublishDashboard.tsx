@@ -98,7 +98,22 @@ export default function PublishDashboard({
       const displayName = profile?.display_name || `${profile?.first_name || ""} ${profile?.last_name || ""}`.trim() || "user";
       const slugUsername = slugify(displayName);
       const slugCompany = slugify(companyName || "company");
-      const slugJobtitle = slugify(jobTitle || "role");
+      const baseSlugJobtitle = slugify(jobTitle || "role");
+
+      // Check if base slug is already taken by a DIFFERENT application
+      let slugJobtitle = baseSlugJobtitle;
+      if (!liveDash) {
+        const { data: existing } = await supabase
+          .from("live_dashboards")
+          .select("application_id")
+          .eq("slug_username", slugUsername)
+          .eq("slug_company", slugCompany)
+          .eq("slug_jobtitle", baseSlugJobtitle)
+          .maybeSingle();
+        if (existing && existing.application_id !== applicationId) {
+          slugJobtitle = `${baseSlugJobtitle}-${applicationId.slice(0, 6)}`;
+        }
+      }
 
       const payload = {
         application_id: applicationId,

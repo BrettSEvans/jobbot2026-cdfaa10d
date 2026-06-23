@@ -254,14 +254,14 @@ const Applications = () => {
                     <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("company_name")}>
                       <div className="flex items-center">Company <SortIcon col="company_name" /></div>
                     </TableHead>
+                    <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("created_at")}>
+                      <div className="flex items-center">Created <SortIcon col="created_at" /></div>
+                    </TableHead>
                     <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("job_title")}>
                       <div className="flex items-center">Role <SortIcon col="job_title" /></div>
                     </TableHead>
                     <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("status")}>
                       <div className="flex items-center">Status <SortIcon col="status" /></div>
-                    </TableHead>
-                    <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("created_at")}>
-                      <div className="flex items-center">Created <SortIcon col="created_at" /></div>
                     </TableHead>
                     <TableHead className="cursor-pointer select-none hidden md:table-cell" onClick={() => toggleSort("updated_at")}>
                       <div className="flex items-center">Updated <SortIcon col="updated_at" /></div>
@@ -286,12 +286,12 @@ const Applications = () => {
                           {app.company_name || "Unknown"}
                         </div>
                       </TableCell>
-                      <TableCell>{app.job_title || "Unknown"}</TableCell>
-                      <TableCell>
-                        <ApplicationStatusCell appId={app.id} dbStatus={app.status} generationStatus={app.generation_status} generationError={app.generation_error} />
-                      </TableCell>
                       <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
                         {new Date(app.created_at).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell className="max-w-[44rem] truncate">{app.job_title || "Unknown"}</TableCell>
+                      <TableCell>
+                        <ApplicationStatusCell appId={app.id} dbStatus={app.status} generationStatus={app.generation_status} generationError={app.generation_error} />
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground hidden md:table-cell">
                         {new Date(app.updated_at).toLocaleDateString()}

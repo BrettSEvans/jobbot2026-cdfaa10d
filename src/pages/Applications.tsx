@@ -260,7 +260,7 @@ const Applications = () => {
                     <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("status")}>
                       <div className="flex items-center">Status <SortIcon col="status" /></div>
                     </TableHead>
-                    <TableHead className="cursor-pointer select-none hidden md:table-cell" onClick={() => toggleSort("created_at")}>
+                    <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("created_at")}>
                       <div className="flex items-center">Created <SortIcon col="created_at" /></div>
                     </TableHead>
                     <TableHead className="cursor-pointer select-none hidden md:table-cell" onClick={() => toggleSort("updated_at")}>
@@ -290,7 +290,7 @@ const Applications = () => {
                       <TableCell>
                         <ApplicationStatusCell appId={app.id} dbStatus={app.status} generationStatus={app.generation_status} generationError={app.generation_error} />
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground hidden md:table-cell">
+                      <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
                         {new Date(app.created_at).toLocaleDateString()}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground hidden md:table-cell">
